@@ -1,0 +1,23 @@
+{
+  "synthetic": true,
+  "files": {
+    "aisstream-position.json": {
+      "synthetic": true,
+      "origin": "ingest/test_offline.py:POSITION_REPORT"
+    },
+    "aisstream-static.json": { "synthetic": true, "origin": "ingest/test_offline.py:SHIP_STATIC" },
+    "aisstream-class-b-static.json": {
+      "synthetic": true,
+      "origin": "ingest/test_offline.py:STATIC_REPORT_B"
+    },
+    "aisstream-class-b-position.json": { "synthetic": true, "origin": "generated" },
+    "marinetraffic-v9.json": { "synthetic": true, "origin": "generated" },
+    "marinetraffic-legacy.json": {
+      "synthetic": true,
+      "origin": "ingest/test_marinetraffic_offline.py:RECORD_FULL"
+    },
+    "candidates.json": { "synthetic": true, "origin": "generated" },
+    "fixture-page.html": { "synthetic": true, "origin": "generated" },
+    "fixture-browser.html": { "synthetic": true, "origin": "generated" }
+  }
+}

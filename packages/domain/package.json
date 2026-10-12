@@ -1,0 +1,15 @@
+{
+  "name": "@ais/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "node --import tsx ../../scripts/build.ts --workspace domain"
+  },
+  "dependencies": {
+    "@ais/contracts": "workspace:*"
+  }
+}

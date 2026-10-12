@@ -1,0 +1,19 @@
+{
+  "name": "@ais/processor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "scripts": {
+    "dev": "node --import tsx main.ts",
+    "build": "node --import tsx ../../scripts/build.ts --workspace processor",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ais/contracts": "workspace:*",
+    "@ais/domain": "workspace:*",
+    "@ais/infrastructure": "workspace:*",
+    "@ais/source-adapters": "workspace:*"
+  }
+}

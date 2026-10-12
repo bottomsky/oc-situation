@@ -1,0 +1,17 @@
+{
+  "name": "@ais/source-adapters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "scripts": {
+    "build": "node --import tsx ../../scripts/build.ts --workspace source-adapters",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ais/contracts": "workspace:*",
+    "@ais/domain": "workspace:*",
+    "cheerio": "1.2.0"
+  }
+}

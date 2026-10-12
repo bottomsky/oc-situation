@@ -1,0 +1,28 @@
+{
+  "MessageType": "PositionReport",
+  "MetaData": {
+    "MMSI": 413793000,
+    "MMSI_String": 413793000,
+    "ShipName": "XIN HAI TONG 23 ",
+    "latitude": 33.31234,
+    "longitude": 124.91234,
+    "time_utc": "2026-09-29 06:42:13.123456 +0000 UTC"
+  },
+  "Message": {
+    "PositionReport": {
+      "Cog": 87.5,
+      "Latitude": 33.31234,
+      "Longitude": 124.91234,
+      "MessageID": 1,
+      "NavigationalStatus": 0,
+      "RateOfTurn": -2,
+      "RepeatIndicator": 0,
+      "Sog": 12.3,
+      "Spare": 0,
+      "Timestamp": 42,
+      "TrueHeading": 91,
+      "UserID": 413793000,
+      "Valid": true
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "MessageType": "StandardClassBPositionReport",
+  "MetaData": { "MMSI": 412345678, "time_utc": "2026-09-29 06:45:00.000000 +0000 UTC" },
+  "Message": {
+    "StandardClassBPositionReport": {
+      "UserID": 412345678,
+      "Latitude": 33.9,
+      "Longitude": 126.5,
+      "Sog": 6,
+      "Cog": 180,
+      "TrueHeading": 180,
+      "Valid": true
+    }
+  }
+}

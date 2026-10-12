@@ -1,0 +1,13 @@
+groups:
+  - name: ais-pipeline
+    rules:
+      - alert: AISPipelineWarning
+        expr: ais_bus_pressure >= 1
+        for: 1m
+        labels: { severity: warning }
+        annotations: { summary: 'AIS stream storage or consumer lag requires attention' }
+      - alert: AISCollectionPaused
+        expr: ais_bus_pressure >= 2
+        for: 15s
+        labels: { severity: critical }
+        annotations: { summary: 'AIS collection halted by durable consumer or storage guard' }

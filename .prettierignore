@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.nuxt/
+.output/
+coverage/
+.data/
+test-results/
+playwright-report/
+bun.lock
+doc_work/
+review_render/
+ingest/
+*.docx
+analysis_modes_draft.md
+conclusions_planning_draft.md
+finalized_content.md
+references/osint/

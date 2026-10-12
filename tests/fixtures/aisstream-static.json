@@ -1,0 +1,38 @@
+{
+  "MessageType": "ShipStaticData",
+  "MetaData": {
+    "MMSI": 413793000,
+    "ShipName": "XIN HAI TONG 23 ",
+    "latitude": 33.31234,
+    "longitude": 124.91234,
+    "time_utc": "2026-09-29 06:42:20.000000 +0000 UTC"
+  },
+  "Message": {
+    "ShipStaticData": {
+      "AisVersion": 0,
+      "CallSign": "BQAB2",
+      "Destination": "SHANGHAI@@@@@@@@@@@@",
+      "Dimension": {
+        "A": 120,
+        "B": 25,
+        "C": 12,
+        "D": 13
+      },
+      "Dte": 0,
+      "Eta": {
+        "Day": 30,
+        "Hour": 8,
+        "Minute": 30,
+        "Month": 9
+      },
+      "FixType": 1,
+      "ImoNumber": 9601234,
+      "MaximumStaticDraught": 8.5,
+      "MessageID": 5,
+      "Name": "XIN HAI TONG 23 ",
+      "Type": 70,
+      "UserID": 413793000,
+      "Valid": true
+    }
+  }
+}

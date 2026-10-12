@@ -1,0 +1,11 @@
+:80 {
+  handle /health {
+    respond "ok" 200
+  }
+  handle /api/* {
+    reverse_proxy host.docker.internal:13000
+  }
+  handle {
+    reverse_proxy host.docker.internal:13001
+  }
+}

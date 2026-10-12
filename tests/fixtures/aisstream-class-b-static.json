@@ -1,0 +1,28 @@
+{
+  "MessageType": "StaticDataReport",
+  "MetaData": {
+    "MMSI": 412345678,
+    "ShipName": "",
+    "time_utc": "2026-09-29 06:45:00.000000 +0000 UTC"
+  },
+  "Message": {
+    "StaticDataReport": {
+      "MessageID": 24,
+      "PartNumber": 0,
+      "ReportA": {
+        "Name": "CLASS B BOAT@@@@@@@@@@"
+      },
+      "ReportB": {
+        "CallSign": "XY1234",
+        "Dimension": {
+          "A": 10,
+          "B": 3,
+          "C": 2,
+          "D": 2
+        },
+        "ShipType": 36
+      },
+      "UserID": 412345678
+    }
+  }
+}

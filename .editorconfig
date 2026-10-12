@@ -1,0 +1,14 @@
+root = true
+
+[*.{ts,mts,cts,mjs,cjs,js,vue,json,yaml,yml}]
+charset = utf-8
+indent_style = space
+indent_size = 2
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[{README.md,docs/**.md,.env.example,.gitignore,.prettierignore}]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true

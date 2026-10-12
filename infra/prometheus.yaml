@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: ais-workers
+    static_configs:
+      - targets:
+          [
+            'host.docker.internal:13100',
+            'host.docker.internal:13101',
+            'host.docker.internal:13102',
+            'host.docker.internal:13103',
+            'host.docker.internal:13104',
+            'host.docker.internal:13105',
+            'host.docker.internal:13106',
+            'host.docker.internal:13107',
+            'host.docker.internal:13108',
+            'host.docker.internal:13109',
+            'host.docker.internal:13110',
+          ]
+rule_files: ['/etc/prometheus/alerts.yaml']

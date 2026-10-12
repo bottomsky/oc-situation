@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "ais-development",
+      "credentials": [{ "accessKey": "ais-local", "secretKey": "ais-local-only-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

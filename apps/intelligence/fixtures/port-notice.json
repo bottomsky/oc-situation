@@ -1,0 +1,22 @@
+[
+  {
+    "sourceId": "fixture-intelligence",
+    "externalId": "demo-port-001",
+    "version": 1,
+    "status": "active",
+    "category": "port-restriction",
+    "title": "演示港区货船限速公告",
+    "summary": "演示数据：指定港区货船限速，供专题规则验收。",
+    "publishedAt": "2026-10-10T00:00:00Z",
+    "effectiveFrom": "2026-10-10T00:00:00Z",
+    "effectiveTo": "2026-10-20T00:00:00Z",
+    "bbox": [121, 30, 123, 32],
+    "vesselTypes": [70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
+    "mmsis": [],
+    "paragraphs": [
+      { "id": "p1", "text": "演示：2026年10月10日至20日，指定港区内货船执行限速要求。" }
+    ],
+    "commonSourceId": "demo-port-authority-001",
+    "raw": { "fixture": true, "publisher": "演示港务机构" }
+  }
+]

@@ -1,0 +1,36 @@
+{
+  "synthetic": true,
+  "positions": [
+    {
+      "mmsi": "413793000",
+      "observedAt": "2026-09-29T06:42:13Z",
+      "lat": 33.31234,
+      "lon": 124.91234,
+      "sogKnots": 12.3,
+      "cogDegrees": 87.5,
+      "headingDegrees": 91,
+      "receptionType": "TER"
+    },
+    {
+      "mmsi": "412345678",
+      "observedAt": "2026-09-29T06:45:00Z",
+      "lat": 33.9,
+      "lon": 126.5,
+      "sogKnots": 6,
+      "cogDegrees": 180,
+      "receptionType": "SAT"
+    }
+  ],
+  "static": [
+    {
+      "mmsi": "413793000",
+      "observedAt": null,
+      "fields": {
+        "name": "SYNTHETIC DEMO A",
+        "destination": "SHANGHAI",
+        "eta": { "month": 9, "day": 30, "hour": 8, "minute": 30 }
+      }
+    }
+  ],
+  "quarantine": [{ "mmsi": "413793000", "lat": 33.3, "lon": 124.9 }]
+}

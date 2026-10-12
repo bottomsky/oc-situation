@@ -1,0 +1,26 @@
+{
+  "name": "@ais/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --host 127.0.0.1 --port 13001",
+    "build": "nuxt build",
+    "typecheck": "nuxt prepare && nuxt typecheck",
+    "test": "vitest run utils.test.ts vessel-markers.test.ts fusion.test.ts live-proxy.test.ts navigation.test.ts chart-workspace.test.ts chart-workspace-state.test.ts chart-tasks-state.test.ts chart-layers.test.ts chart-business-layers.test.ts chart-layout.test.ts intelligence-workspace.test.ts intelligence-map.test.ts intelligence-form.test.ts intelligence-drawing.test.ts agent-conversation.test.ts",
+    "start": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@ais/contracts": "workspace:*",
+    "@nuxt/ui": "4.11.2",
+    "maplibre-gl": "6.11.2",
+    "nuxt": "4.5.2",
+    "tailwindcss": "4.3.3",
+    "terra-draw": "1.37.0",
+    "terra-draw-maplibre-gl-adapter": "1.5.0",
+    "vue": "3.5.43"
+  },
+  "devDependencies": {
+    "vue-tsc": "3.3.11"
+  }
+}

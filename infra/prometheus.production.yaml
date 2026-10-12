@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: ais-services
+    static_configs:
+      - targets:
+          [
+            'api:13100',
+            'processor:13101',
+            'postgres-writer:13102',
+            'clickhouse-writer:13103',
+            'archiver:13104',
+            'collector:13105',
+            'crawler:13106',
+            'intelligence:13107',
+            'topic-port-restriction:13108',
+            'topic-low-speed:13109',
+          ]
+rule_files: ['/etc/prometheus/alerts.yaml']

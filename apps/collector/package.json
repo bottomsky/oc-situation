@@ -1,0 +1,18 @@
+{
+  "name": "@ais/collector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx src/main.ts",
+    "build": "node --import tsx ../../scripts/build.ts --workspace collector",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ais/contracts": "workspace:*",
+    "@ais/infrastructure": "workspace:*",
+    "ws": "8.22.0",
+    "prom-client": "15.1.3"
+  }
+}

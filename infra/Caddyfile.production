@@ -1,0 +1,9 @@
+{$PUBLIC_DOMAIN} {
+  encode zstd gzip
+  handle /api/* {
+    reverse_proxy api:13000
+  }
+  handle {
+    reverse_proxy web:13001
+  }
+}

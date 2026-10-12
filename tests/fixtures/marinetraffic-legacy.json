@@ -1,0 +1,18 @@
+{
+  "MMSI": "413793000",
+  "IMO": "9601234",
+  "SHIPNAME": "XIN HAI TONG 23",
+  "CALLSIGN": "BQAB2",
+  "SHIPTYPE": "70",
+  "LAT": "33.31234",
+  "LON": "124.91234",
+  "SPEED": "12.3",
+  "COURSE": "87.5",
+  "HEADING": "91",
+  "NAVSTAT": "0",
+  "DESTINATION": "SHANGHAI",
+  "ETA": "09-30 08:30",
+  "DRAUGHT": "8.5",
+  "TIMESTAMP": "2026-09-29 06:42:13",
+  "STATUS": "0"
+}

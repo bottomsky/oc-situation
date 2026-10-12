@@ -1,0 +1,573 @@
+{
+  "type": "Feature",
+  "bbox": [106.9, 21, 106.9, 21],
+  "geometry": {
+    "type": "Point",
+    "coordinates": [106.9, 21]
+  },
+  "properties": {
+    "eventtype": "TC",
+    "eventid": 1001090,
+    "episodeid": 24,
+    "eventname": "YAGI-24",
+    "glide": "",
+    "name": "Tropical Cyclone YAGI-24",
+    "description": "Tropical Cyclone YAGI-24",
+    "htmldescription": "Red Tropical Cyclone YAGI-24 in China, Viet Nam, Philippines from: 01 Sep 2024  to: 07 Sep 2024 .",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Red/TC.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Red/TC.png",
+    "url": {
+      "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=TC&eventid=1001090&episodeid=24",
+      "report": "https://www.gdacs.org/report.aspx?eventid=1001090&episodeid=24&eventtype=TC",
+      "media": "https://www.gdacs.org/gdacsapi/api/emm/getemmnewsbykey?eventtype=TC&eventid=1001090",
+      "eventnews": "https://www.gdacs.org/gdacsapi/api/news/getnewsbygdacskey?eventtype=TC&eventid=1001090"
+    },
+    "alertlevel": "Red",
+    "alertscore": 3,
+    "episodealertlevel": "Red",
+    "episodealertscore": 3,
+    "istemporary": "false",
+    "iscurrent": "false",
+    "country": "China, Viet Nam, Philippines",
+    "fromdate": "2024-09-01T12:00:00",
+    "todate": "2024-09-07T06:00:00",
+    "datemodified": "2026-02-11T15:18:59.037",
+    "iso3": "VNM",
+    "source": "JTWC",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "countryonland": "",
+    "affectedcountries": [
+      {
+        "iso2": "CN",
+        "iso3": "CHN",
+        "countryname": "China"
+      },
+      {
+        "iso2": "PH",
+        "iso3": "PHL",
+        "countryname": "Philippines"
+      }
+    ],
+    "severitydata": {
+      "severity": 240.7392,
+      "severitytext": "Hurricane/Typhoon > 74 mph (maximum wind speed of 241 km/h)",
+      "severityunit": "km/h"
+    },
+    "impacts": [
+      {
+        "source": "JTWC",
+        "resource": {
+          "timeline": "https://www.gdacs.org/gdacsapi/api/export/gettimeline?id=626946",
+          "buffer74": "https://www.gdacs.org/gdacsapi/api/export/getimpact?id=626947",
+          "buffer39": "https://www.gdacs.org/gdacsapi/api/export/getimpact?id=626948",
+          "locations": "https://www.gdacs.org/gdacsapi/api/export/getlocations?id=627030"
+        }
+      }
+    ],
+    "images": {
+      "rainmap": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/rain_1001090_24.png",
+      "overviewmap": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/clouds_1001090_24.png",
+      "rainaccumulationmap": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/current_rain_1001090_24.png",
+      "thumbnailmap_cached": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/1001090_24_tn.png",
+      "storm_surge_animation_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/outres1.gif",
+      "storm_surge_maxheight_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/P1_MAP_END.jpg",
+      "inundationHeight_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/run2/inundationHeight.tif.png",
+      "stormsurge_background_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/run2/shoreline.map.png",
+      "storm_surge_animation_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/outres1.gif",
+      "storm_surge_maxheight_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/P1_MAP_END.jpg",
+      "inundationHeight_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/run2/inundationHeight.tif.png",
+      "stormsurge_background_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/run2/shoreline.map.png",
+      "storm_surge_maxwind_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/OUT_umax.jpg",
+      "storm_surge_maxwind_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/OUT_umax.jpg",
+      "inundationHeight_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/run2/inundationHeight.tif.png",
+      "storm_surge_animation_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/outres1.gif",
+      "storm_surge_maxheight_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/P1_MAP_END.jpg",
+      "storm_surge_maxwind_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/OUT_umax.jpg",
+      "stormsurge_background_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/run2/shoreline.map.png",
+      "overviewmap_zoomed": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/clouds_zoomed_1001090_24.png",
+      "overviewmap_zoom": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/clouds_1001090_24_zoom.png",
+      "storm_surge_maxheight_end_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/P1_MAXHEIGHT_END.jpg",
+      "storm_surge_maxheight_end_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/P1_MAXHEIGHT_END.jpg",
+      "storm_surge_maxheight_end_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/P1_MAXHEIGHT_END.jpg",
+      "meteoimages": "https://www.gdacs.org/contentdata/resources/TC/1001090/meteo/",
+      "mslpimages": "https://www.gdacs.org/contentdata/img/mslp/",
+      "calculation_surge_maxwind_image": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/{episodedate|yyyyMMdd.HH}/wind.jpg",
+      "calculation_surge_maxheight_end_image": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/{episodedate|yyyyMMdd.HH}/P1_MAXHEIGHT_END.jpg",
+      "calculation_surge_animation_image": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/{episodedate|yyyyMMdd.HH}/outres1.gif",
+      "calculation_surge_maxheight_image": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/{episodedate|yyyyMMdd.HH}/P1_MAP_END.jpg",
+      "calculation_surge_maxwind_image_final": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/final/wind.jpg",
+      "calculation_surge_maxheight_end_image_final": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/final/P1_MAXHEIGHT_END.jpg",
+      "calculation_surge_animation_image_final": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/final/outres1.gif",
+      "calculation_surge_maxheight_image_final": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/final/P1_MAP_END.jpg",
+      "storm_surge_animation_HOLLAND": "https://www.gdacs.org/contentdata/resources/{eventtype}/{eventid}/HOLLAND/{additional.grid_subfolder_HOLLAND}/final/outres1.gif",
+      "storm_surge_maxheight_HOLLAND": "https://www.gdacs.org/contentdata/resources/{eventtype}/{eventid}/HOLLAND/{additional.grid_subfolder_HOLLAND}/final/P1_MAP_END.jpg",
+      "inundationHeight_HOLLAND": "https://www.gdacs.org/contentdata/resources/{eventtype}/{eventid}/HOLLAND/{additional.grid_subfolder_HOLLAND}/final/run2/inundationHeight.tif.png",
+      "stormsurge_background_HOLLAND": "https://www.gdacs.org/contentdata/resources/{eventtype}/{eventid}/HOLLAND/{additional.grid_subfolder_HOLLAND}/final/run2/shoreline.map.png",
+      "storm_surge_maxwind_HOLLAND": "https://www.gdacs.org/contentdata/resources/{eventtype}/{eventid}/HOLLAND/{additional.grid_subfolder_HOLLAND}/final/OUT_umax.jpg",
+      "storm_surge_maxheight_end_HOLLAND": "https://www.gdacs.org/contentdata/resources/{eventtype}/{eventid}/HOLLAND/{additional.grid_subfolder_HOLLAND}/final/P1_MAXHEIGHT_END.jpg",
+      "storm_surge_maxrain_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/rain.jpg",
+      "storm_surge_maxrain_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/rain.jpg",
+      "storm_surge_maxrain_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/rain.jpg",
+      "calculation_surge_maxrain_image_final": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/final/rain.jpg",
+      "calculation_surge_maxrain_image": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/{episodedate|yyyyMMdd.HH}/rain.jpg",
+      "storm_surge_maxwind2_ECMWF": "https://www.gdacs.org/contentdata/resources/TC/1001090/ECMWF/1/final/wind.jpg",
+      "storm_surge_maxwind2_HWRF": "https://www.gdacs.org/contentdata/resources/TC/1001090/HWRF/1/final/wind.jpg",
+      "storm_surge_maxwind2_GFS": "https://www.gdacs.org/contentdata/resources/TC/1001090/GFS/1/final/wind.jpg",
+      "calculation_surge_maxwind2_image": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/{episodedate|yyyyMMdd.HH}/wind.jpg",
+      "calculation_surge_maxwind2_image_final": "https://www.gdacs.org/contentdata/resources/TC/{eventid}/{source}/{folderindex}/final/wind.jpg",
+      "inundationHeight": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/run2/inundationHeight.tif.png",
+      "stormsurge_background_episode": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/run2/shoreline.map.png",
+      "storm_surge_animation_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/outres1.gif",
+      "storm_surge_maxheight_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/P1_MAXHEIGHT_END.jpg",
+      "inundationHeight_episode_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/run2/inundationHeight.tif.png",
+      "stormsurge_background_episode_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/run2/shoreline.map.png",
+      "inundationHeight_episode": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/run2/inundationHeight.tif.png",
+      "inundationHeight_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/run2/inundationHeight.tif.png",
+      "storm_surge_animation": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/outres1.gif",
+      "storm_surge_animation_episode_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/outres1.gif",
+      "storm_surge_maxheight_episode": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/P1_MAXHEIGHT_END.jpg",
+      "storm_surge_maxheight": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/P1_MAXHEIGHT_END.jpg",
+      "storm_surge_animation_episode": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/outres1.gif",
+      "storm_surge_maxheight_episode_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/final/P1_MAXHEIGHT_END.jpg",
+      "stormsurge_background": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/run2/shoreline.map.png",
+      "stormsurge_background_v2": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/final/run2/shoreline.map.png",
+      "storm_surge_maxwind2_HOLLAND": "https://www.gdacs.org/contentdata/resources/{eventtype}/{eventid}/HOLLAND/{additional.grid_subfolder_HOLLAND}/final/wind.jpg",
+      "event_icon_map": "https://www.gdacs.org/images/gdacs_icons/maps/Red/TC.png",
+      "event_overall_icon_map": "https://www.gdacs.org/images/gdacs_icons/maps/Red/TC.png",
+      "event_icon": "https://www.gdacs.org/images/gdacs_icons/big/Red/TC.png",
+      "thumbnailmap": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/1001090_24_tn.png",
+      "cloudmap": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/clouds_1001090_24.png",
+      "cloudmap_zoom": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/clouds_1001090_24_zoom.png",
+      "cloudmap_proj": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/clouds_1001090_24.png",
+      "cloudmap_zoom_proj": "https://www.gdacs.org/contentdata/resources/TC/1001090/JTWC/24/clouds_1001090_24_zoom.png",
+      "npp_icon": "https://www.gdacs.org/images/gdacs_icons/iconmap/Nuclear.png"
+    },
+    "additionalinfos": {},
+    "documents": {},
+    "cyclonesurge": [
+      {
+        "source": "HWRF",
+        "data": [
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43067",
+            "last": true,
+            "overall": false,
+            "bulletinid": "25",
+            "episodedate": "2024-09-07T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43065",
+            "last": false,
+            "overall": false,
+            "bulletinid": "24",
+            "episodedate": "2024-09-07T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43060",
+            "last": false,
+            "overall": false,
+            "bulletinid": "23",
+            "episodedate": "2024-09-07T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43057",
+            "last": false,
+            "overall": false,
+            "bulletinid": "22",
+            "episodedate": "2024-09-06T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43048",
+            "last": false,
+            "overall": false,
+            "bulletinid": "21",
+            "episodedate": "2024-09-06T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43045",
+            "last": false,
+            "overall": false,
+            "bulletinid": "20",
+            "episodedate": "2024-09-06T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43041",
+            "last": false,
+            "overall": false,
+            "bulletinid": "19",
+            "episodedate": "2024-09-06T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43038",
+            "last": false,
+            "overall": false,
+            "bulletinid": "18",
+            "episodedate": "2024-09-05T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43033",
+            "last": false,
+            "overall": false,
+            "bulletinid": "17",
+            "episodedate": "2024-09-05T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43029",
+            "last": false,
+            "overall": false,
+            "bulletinid": "16",
+            "episodedate": "2024-09-05T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43025",
+            "last": false,
+            "overall": false,
+            "bulletinid": "15",
+            "episodedate": "2024-09-05T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43020",
+            "last": false,
+            "overall": false,
+            "bulletinid": "14",
+            "episodedate": "2024-09-04T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43015",
+            "last": false,
+            "overall": false,
+            "bulletinid": "13",
+            "episodedate": "2024-09-04T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43011",
+            "last": false,
+            "overall": false,
+            "bulletinid": "12",
+            "episodedate": "2024-09-04T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43003",
+            "last": false,
+            "overall": false,
+            "bulletinid": "11",
+            "episodedate": "2024-09-04T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42999",
+            "last": false,
+            "overall": false,
+            "bulletinid": "10",
+            "episodedate": "2024-09-03T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42996",
+            "last": false,
+            "overall": false,
+            "bulletinid": "9",
+            "episodedate": "2024-09-03T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42980",
+            "last": false,
+            "overall": false,
+            "bulletinid": "8",
+            "episodedate": "2024-09-03T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42962",
+            "last": false,
+            "overall": false,
+            "bulletinid": "7",
+            "episodedate": "2024-09-03T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42961",
+            "last": false,
+            "overall": false,
+            "bulletinid": "6",
+            "episodedate": "2024-09-02T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42960",
+            "last": false,
+            "overall": false,
+            "bulletinid": "5",
+            "episodedate": "2024-09-02T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42948",
+            "last": false,
+            "overall": false,
+            "bulletinid": "4",
+            "episodedate": "2024-09-02T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42937",
+            "last": false,
+            "overall": false,
+            "bulletinid": "3",
+            "episodedate": "2024-09-02T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42936",
+            "last": false,
+            "overall": false,
+            "bulletinid": "2",
+            "episodedate": "2024-09-01T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42935",
+            "last": false,
+            "overall": false,
+            "bulletinid": "1",
+            "episodedate": "2024-09-01T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42938",
+            "last": true,
+            "overall": true,
+            "bulletinid": "0",
+            "episodedate": "2024-09-07T12:00:00"
+          }
+        ]
+      },
+      {
+        "source": "ECMWF",
+        "data": [
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42997",
+            "last": true,
+            "overall": false,
+            "bulletinid": "6",
+            "episodedate": "2024-09-03T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42968",
+            "last": false,
+            "overall": false,
+            "bulletinid": "5",
+            "episodedate": "2024-09-03T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42967",
+            "last": false,
+            "overall": false,
+            "bulletinid": "4",
+            "episodedate": "2024-09-02T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42947",
+            "last": false,
+            "overall": false,
+            "bulletinid": "3",
+            "episodedate": "2024-09-02T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42940",
+            "last": false,
+            "overall": false,
+            "bulletinid": "2",
+            "episodedate": "2024-09-01T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42939",
+            "last": false,
+            "overall": false,
+            "bulletinid": "1",
+            "episodedate": "2024-09-01T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42941",
+            "last": true,
+            "overall": true,
+            "bulletinid": "0",
+            "episodedate": "2024-09-03T12:00:00"
+          }
+        ]
+      },
+      {
+        "source": "GFS",
+        "data": [
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43063",
+            "last": true,
+            "overall": false,
+            "bulletinid": "24",
+            "episodedate": "2024-09-07T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43058",
+            "last": false,
+            "overall": false,
+            "bulletinid": "23",
+            "episodedate": "2024-09-07T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43050",
+            "last": false,
+            "overall": false,
+            "bulletinid": "22",
+            "episodedate": "2024-09-06T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43046",
+            "last": false,
+            "overall": false,
+            "bulletinid": "21",
+            "episodedate": "2024-09-06T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43043",
+            "last": false,
+            "overall": false,
+            "bulletinid": "20",
+            "episodedate": "2024-09-06T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43039",
+            "last": false,
+            "overall": false,
+            "bulletinid": "19",
+            "episodedate": "2024-09-06T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43036",
+            "last": false,
+            "overall": false,
+            "bulletinid": "18",
+            "episodedate": "2024-09-05T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43031",
+            "last": false,
+            "overall": false,
+            "bulletinid": "17",
+            "episodedate": "2024-09-05T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43027",
+            "last": false,
+            "overall": false,
+            "bulletinid": "16",
+            "episodedate": "2024-09-05T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43022",
+            "last": false,
+            "overall": false,
+            "bulletinid": "15",
+            "episodedate": "2024-09-05T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43018",
+            "last": false,
+            "overall": false,
+            "bulletinid": "14",
+            "episodedate": "2024-09-04T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43013",
+            "last": false,
+            "overall": false,
+            "bulletinid": "13",
+            "episodedate": "2024-09-04T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43009",
+            "last": false,
+            "overall": false,
+            "bulletinid": "12",
+            "episodedate": "2024-09-04T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=43000",
+            "last": false,
+            "overall": false,
+            "bulletinid": "11",
+            "episodedate": "2024-09-04T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42998",
+            "last": false,
+            "overall": false,
+            "bulletinid": "10",
+            "episodedate": "2024-09-03T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42995",
+            "last": false,
+            "overall": false,
+            "bulletinid": "9",
+            "episodedate": "2024-09-03T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42966",
+            "last": false,
+            "overall": false,
+            "bulletinid": "8",
+            "episodedate": "2024-09-03T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42965",
+            "last": false,
+            "overall": false,
+            "bulletinid": "7",
+            "episodedate": "2024-09-03T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42964",
+            "last": false,
+            "overall": false,
+            "bulletinid": "6",
+            "episodedate": "2024-09-02T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42963",
+            "last": false,
+            "overall": false,
+            "bulletinid": "5",
+            "episodedate": "2024-09-02T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42946",
+            "last": false,
+            "overall": false,
+            "bulletinid": "4",
+            "episodedate": "2024-09-02T06:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42944",
+            "last": false,
+            "overall": false,
+            "bulletinid": "3",
+            "episodedate": "2024-09-02T00:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42943",
+            "last": false,
+            "overall": false,
+            "bulletinid": "2",
+            "episodedate": "2024-09-01T18:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42942",
+            "last": false,
+            "overall": false,
+            "bulletinid": "1",
+            "episodedate": "2024-09-01T12:00:00"
+          },
+          {
+            "url": "https://www.gdacs.org/gdacsapi/api/cyclonesurge/getdetails?id=42945",
+            "last": true,
+            "overall": true,
+            "bulletinid": "0",
+            "episodedate": "2024-09-07T06:00:00"
+          }
+        ]
+      }
+    ]
+  }
+}

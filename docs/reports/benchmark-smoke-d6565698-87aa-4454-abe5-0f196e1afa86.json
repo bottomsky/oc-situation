@@ -1,0 +1,86 @@
+{
+  "mode": "smoke",
+  "runId": "d6565698-87aa-4454-abe5-0f196e1afa86",
+  "sourceId": "benchmark-d6565698-87aa-4454-abe5-0f196e1afa86",
+  "startedAt": "2026-10-01T04:53:17.170Z",
+  "endedAt": "2026-10-01T04:54:34.071Z",
+  "failure": null,
+  "hardware": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "cpuCount": 24,
+    "cpuModel": "Intel(R) Core(TM) i7-14650HX",
+    "memoryBytes": 34053414912
+  },
+  "targets": {
+    "continuousObservationsPerSecond": 1000,
+    "continuousSeconds": 3600,
+    "peakObservationsPerSecond": 3000,
+    "peakSeconds": 300,
+    "ships": 500000,
+    "concurrentUsers": 20
+  },
+  "observed": {
+    "httpLikeCaptures": 40,
+    "expandedPositions": 4000,
+    "denseHistoryObservations": 200,
+    "stored": {
+      "observations": 4200,
+      "ships": 1001
+    },
+    "phaseResults": [
+      {
+        "name": "steady",
+        "targetRate": 100,
+        "observations": 1500,
+        "seconds": 15.005701400000001,
+        "actualRate": 99.96200510827171
+      },
+      {
+        "name": "peak",
+        "targetRate": 300,
+        "observations": 1500,
+        "seconds": 5.013642899999999,
+        "actualRate": 299.18365346682356
+      },
+      {
+        "name": "recovery",
+        "targetRate": 100,
+        "observations": 1000,
+        "seconds": 10.0135467,
+        "actualRate": 99.86471626481755
+      }
+    ],
+    "peakRecoverySeconds": 0.012329999999998108,
+    "publishErrors": 0,
+    "queryErrors": 0,
+    "visibilitySamples": 30,
+    "unresolvedSamples": 0,
+    "latestVisibilityP95Ms": 1999,
+    "historyVisibilityP95Ms": 2086,
+    "mapP95Ms": 276.1139000000003,
+    "track24hP95Ms": 1331.0974000000006,
+    "track30dP95Ms": 1325.8702000000003,
+    "archive": {
+      "batches": "2",
+      "captures": "42",
+      "compressed_bytes": "52280",
+      "conservative_latency_p95_ms": 57200.028
+    },
+    "rawEnvelopeBytes": 777546,
+    "clickhousePhysicalCapacity": {
+      "rows": 7925,
+      "compressedBytes": 1298296,
+      "uncompressedBytes": 6580151
+    }
+  },
+  "limitations": [
+    "30-day 2.59 billion row query capacity remains a separate unverified scale gate.",
+    "Visibility latency is a 1-second polling upper bound on one sampled position per second.",
+    "Archive latency uses the oldest received record in each committed batch; conservative per-batch p95.",
+    "Authentication setup provisions sessions; query traffic uses 20 distinct viewer identities.",
+    "Physical ClickHouse bytes include other observations in this development database."
+  ],
+  "complete": true,
+  "capacityTargetsVerified": false
+}

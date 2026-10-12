@@ -1,0 +1,26 @@
+{
+  "name": "@ais/infrastructure",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "node --import tsx ../../scripts/build.ts --workspace infrastructure"
+  },
+  "dependencies": {
+    "@ais/contracts": "workspace:*",
+    "@ais/domain": "workspace:*",
+    "pg": "^8.16.3",
+    "@clickhouse/client": "^1.12.1",
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@nats-io/transport-node": "^3.1.0",
+    "@nats-io/jetstream": "^3.1.0",
+    "pino": "^9.13.0",
+    "prom-client": "^15.1.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5"
+  }
+}

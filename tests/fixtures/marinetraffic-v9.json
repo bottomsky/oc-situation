@@ -1,0 +1,38 @@
+{
+  "METADATA": {
+    "CURSOR": "synthetic-next-page",
+    "DATE_FROM": "2026-09-29T06:40:00Z",
+    "DATE_TO": "2026-09-29T06:45:00Z"
+  },
+  "DATA": [
+    {
+      "MMSI": "413793000",
+      "IMO": "9601234",
+      "SHIPNAME": "SYNTHETIC DEMO A",
+      "CALLSIGN": "BQAB2",
+      "SHIPTYPE": "70",
+      "LAT": "33.31234",
+      "LON": "124.91234",
+      "SPEED": "123",
+      "COURSE": "87.5",
+      "HEADING": "91",
+      "STATUS": "0",
+      "TIMESTAMP": "2026-09-29T06:42:13Z",
+      "DSRC": "TER",
+      "DESTINATION": "SHANGHAI",
+      "DRAUGHT": "85"
+    },
+    {
+      "MMSI": "412345678",
+      "SHIPNAME": "SYNTHETIC DEMO B",
+      "LAT": "33.9",
+      "LON": "126.5",
+      "SPEED": "60",
+      "COURSE": "180",
+      "HEADING": "511",
+      "STATUS": "15",
+      "TIMESTAMP": "2026-09-29T06:45:00Z",
+      "DSRC": "SAT"
+    }
+  ]
+}

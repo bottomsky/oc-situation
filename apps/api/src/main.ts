@@ -1,0 +1,21 @@
+import { createInfrastructure } from '@ais/infrastructure';
+import { createApi } from './app';
+import { SystemController } from './system/controller';
+import { startOperationsServer } from './system/operations';
+const infra = await createInfrastructure();
+const api = await createApi(infra);
+const production = process.env.NODE_ENV === 'production';
+const port = Number(process.env.API_PORT ?? 13000);
+await api.app.listen(port, process.env.API_HOST ?? (production ? '0.0.0.0' : '127.0.0.1'));
+const operations = await startOperationsServer(api.app.get(SystemController));
+console.log(`AIS API listening on port ${port}`);
+let closing = false;
+const shutdown = async () => {
+  if (closing) return;
+  closing = true;
+  await operations.close();
+  await api.stop();
+  await infra.close();
+};
+process.once('SIGTERM', () => void shutdown());
+process.once('SIGINT', () => void shutdown());

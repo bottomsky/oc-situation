@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>合成 AIS 浏览器样例</title>
+  </head>
+  <body data-synthetic="true">
+    <table id="vessels">
+      <tbody id="rows"></tbody>
+    </table>
+    <script>
+      document.getElementById('rows').innerHTML =
+        '<tr data-mmsi="412345678" data-lat="33.9" data-lon="126.5" data-observed-at="2026-09-29T06:45:00Z"><td>412345678</td><td>33.9</td><td>126.5</td><td>2026-09-29T06:45:00Z</td></tr>';
+    </script>
+  </body>
+</html>
