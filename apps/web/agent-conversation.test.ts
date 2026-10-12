@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { computed, effectScope, ref, watch } from 'vue';
+import { computed, effectScope, nextTick, ref, watch } from 'vue';
 import {
   agentTaskHasAnalysis,
   createAgentMessageFollow,
@@ -28,15 +28,487 @@ function harness(
   role = 'operator',
 ) {
   const scope = effectScope();
+  const identity = ref({ user: { id: 'user-a', role } });
   vi.stubGlobal('ref', ref);
   vi.stubGlobal('computed', computed);
   vi.stubGlobal('watch', watch);
   vi.stubGlobal('onMounted', () => {});
   vi.stubGlobal('onBeforeUnmount', () => {});
-  vi.stubGlobal('usePlatform', () => ({ api, session: ref({ user: { id: 'user-a', role } }) }));
-  return { state: scope.run(() => useAgentConversation())!, stop: () => scope.stop() };
+  vi.stubGlobal('usePlatform', () => ({ api, session: identity }));
+  return { state: scope.run(() => useAgentConversation())!, identity, stop: () => scope.stop() };
 }
+
+function replyHarness() {
+  const messages: Record<string, unknown>[] = [];
+  const tasks: Record<string, unknown>[] = [];
+  const posts: Record<string, unknown>[] = [];
+  const cancelPosts: string[] = [];
+  const eventCursors: string[] = [];
+  let eventCounter = 0;
+  let readError = '';
+  let postError = '';
+  let eventError = '';
+  let emptyEvents = false;
+  let nextTaskRead: Promise<unknown> | null = null;
+  let nextSessionRead: Promise<unknown> | null = null;
+  const state = harness(async (path, options) => {
+    if (path.endsWith('/config')) return config;
+    if (path === '/agent/sessions')
+      return options?.method === 'POST' ? session : { items: [session] };
+    if (path.endsWith('/messages')) {
+      posts.push(options!);
+      if (postError) throw new Error(postError);
+      const currentTask = { ...task, id: `task-${tasks.length + 1}`, resultVersion: 0 };
+      const message = {
+        id: `user-${tasks.length + 1}`,
+        sessionId: session.id,
+        taskId: currentTask.id,
+        role: 'user',
+        content: (options!.body as { content: string }).content,
+      };
+      tasks.push(currentTask);
+      messages.push(message);
+      return { message, task: currentTask };
+    }
+    if (path.includes('/events?')) {
+      eventCursors.push(new URL(path, 'http://fixture').searchParams.get('cursor')!);
+      if (eventError) throw new Error(eventError);
+      const revision = String(++eventCounter);
+      return {
+        items: emptyEvents ? [] : [{ id: revision, type: 'task.updated' }],
+        nextCursor: revision,
+      };
+    }
+    if (path.endsWith('/cancel')) {
+      cancelPosts.push(path);
+      const currentTask = tasks.find((item) => path.includes(`/${item.id}/`))!;
+      currentTask.status = 'cancelled';
+      return currentTask;
+    }
+    if (path.startsWith('/agent/sessions/') && nextSessionRead) {
+      const response = nextSessionRead;
+      nextSessionRead = null;
+      return response;
+    }
+    if (readError) throw new Error(readError);
+    if (path.includes('/tasks/') && nextTaskRead) {
+      const response = nextTaskRead;
+      nextTaskRead = null;
+      return response;
+    }
+    if (path.includes('/tasks/'))
+      return { task: tasks.find((item) => path.endsWith(`/${item.id}`)), results: [], steps: [] };
+    return { session, messages: [...messages], tasks: [...tasks] };
+  });
+  return {
+    ...state,
+    messages,
+    tasks,
+    posts,
+    cancelPosts,
+    eventCursors,
+    failRead: (error: string) => (readError = error),
+    failPost: (error: string) => (postError = error),
+    failEvents: (error: string) => (eventError = error),
+    returnEmptyEvents: () => (emptyEvents = true),
+    deferTaskRead() {
+      let resolve: (value: unknown) => void = () => {};
+      nextTaskRead = new Promise((release) => {
+        resolve = release;
+      });
+      return resolve;
+    },
+    deferSessionRead() {
+      let resolve: (value: unknown) => void = () => {};
+      nextSessionRead = new Promise((release) => {
+        resolve = release;
+      });
+      return resolve;
+    },
+    complete(content: string, status = 'completed') {
+      const currentTask = tasks.at(-1)!;
+      currentTask.status = status;
+      currentTask.summary = '任务摘要不能替代持久助手消息';
+      currentTask.summaryResultVersion = 0;
+      const assistant = {
+        id: `assistant-${messages.length}`,
+        sessionId: session.id,
+        taskId: currentTask.id,
+        role: 'assistant',
+        content,
+      };
+      messages.push(assistant);
+      return assistant;
+    },
+  };
+}
+
+describe('海图当前回复生命周期', () => {
+  it('仅关联本轮会话与任务的持久助手消息，选择旧任务保持本轮回复', async () => {
+    const fixture = replyHarness();
+    const { state } = fixture;
+    await state.initialize();
+    state.draft.value = '第一轮';
+    await state.send();
+    const first = fixture.complete('第一轮真实回复');
+    await state.poll();
+    expect(state.currentReply.value?.assistant?.id).toBe(first.id);
+    state.draft.value = '第二轮';
+    await state.send();
+    fixture.messages.push({
+      ...first,
+      id: 'wrong-session',
+      sessionId: 'session-b',
+      taskId: 'task-2',
+    });
+    fixture.messages.push({ ...first, id: 'wrong-task', taskId: 'task-1' });
+    await state.poll();
+    expect(state.currentReply.value).toMatchObject({ question: '第二轮', assistant: null });
+    const second = fixture.complete('第二轮真实回复');
+    await state.poll();
+    await state.loadTask('task-1');
+    expect(state.currentReply.value?.assistant?.id).toBe(second.id);
+    expect(state.currentReply.value?.taskId).toBe('task-2');
+    expect(state.messages.value.map((message) => message.id)).toContain(first.id);
+    expect(fixture.posts).toHaveLength(2);
+    fixture.stop();
+  });
+
+  it('关闭当前回复后轮询保持隐藏，下一轮发送重新展示且历史完整', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.draft.value = '待处理问题';
+    await fixture.state.send();
+    fixture.state.dismissCurrentReply();
+    const assistant = fixture.complete('关闭后到达的回复');
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value).toBeNull();
+    expect(fixture.state.messages.value.map((message) => message.id)).toContain(assistant.id);
+    fixture.state.draft.value = '新问题';
+    await fixture.state.send();
+    expect(fixture.state.currentReply.value).toMatchObject({
+      question: '新问题',
+      status: 'queued',
+    });
+    expect(fixture.posts).toHaveLength(2);
+    fixture.stop();
+  });
+
+  it.each([
+    'queued',
+    'running',
+    'waiting_result',
+    'awaiting_input',
+    'failed',
+    'cancelled',
+    'completed',
+  ])('没有本轮助手消息时只呈现%s状态，任务摘要不能伪造答案', async (status) => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.draft.value = '状态问题';
+    await fixture.state.send();
+    Object.assign(fixture.tasks[0]!, { status, summary: '上轮摘要', error: '执行错误' });
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value).toMatchObject({ status, assistant: null });
+    fixture.stop();
+  });
+
+  it('提交失败保留问题、草稿和错误，重试成功后替换本轮状态', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.failPost('发送连接中断');
+    fixture.state.draft.value = '请回答这个问题';
+    await fixture.state.send();
+    expect(fixture.state.currentReply.value).toMatchObject({
+      question: '请回答这个问题',
+      status: 'send_failed',
+      error: '发送连接中断',
+      assistant: null,
+    });
+    expect(fixture.state.draft.value).toBe('请回答这个问题');
+    fixture.failPost('');
+    await fixture.state.send();
+    expect(fixture.state.currentReply.value).toMatchObject({ status: 'queued', error: '' });
+    expect(fixture.posts[1]?.idempotencyKey).toBe(fixture.posts[0]?.idempotencyKey);
+    fixture.stop();
+  });
+
+  it('服务端已接受问题后刷新失败保留任务状态，恢复轮询无需再次提交', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.failRead('结果读取失败');
+    fixture.state.draft.value = '已经受理的问题';
+    await fixture.state.send();
+    expect(fixture.state.currentReply.value).toMatchObject({
+      question: '已经受理的问题',
+      taskId: 'task-1',
+      status: 'queued',
+      error: '结果读取失败',
+    });
+    expect(fixture.state.draft.value).toBe('');
+    fixture.failRead('');
+    const assistant = fixture.complete('恢复读取后的答案');
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value).toMatchObject({ assistant, error: '' });
+    expect(fixture.posts).toHaveLength(1);
+    fixture.stop();
+  });
+
+  it('轮询权限错误覆盖当前回复并隐藏缓存答案，成功读取后恢复持久消息', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.draft.value = '权限测试问题';
+    await fixture.state.send();
+    const assistant = fixture.complete('已有缓存答案');
+    await fixture.state.poll();
+    fixture.failEvents('无权访问');
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value).toMatchObject({ assistant: null, error: '无权访问' });
+    expect(fixture.state.messages.value).toEqual([]);
+    fixture.failEvents('');
+    fixture.returnEmptyEvents();
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value).toMatchObject({ assistant, error: '' });
+    fixture.stop();
+  });
+
+  it('关闭锁在轮询连接故障和空事件恢复之后继续生效', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.draft.value = '稍后到达的回答';
+    await fixture.state.send();
+    fixture.state.dismissCurrentReply();
+    fixture.failEvents('事件读取失败');
+    await fixture.state.poll();
+    fixture.complete('恢复期间形成的回答');
+    fixture.failEvents('');
+    fixture.returnEmptyEvents();
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value).toBeNull();
+    expect(fixture.state.messages.value.at(-1)?.content).toBe('恢复期间形成的回答');
+    expect(fixture.posts).toHaveLength(1);
+    fixture.stop();
+  });
+
+  it('轮询权限拒绝后挂起的旧任务读取不能回填摘要、结果或调用记录', async () => {
+    const fixture = replyHarness();
+    try {
+      await fixture.state.initialize();
+      fixture.state.draft.value = '权限变化期间的任务';
+      await fixture.state.send();
+      fixture.complete('原本可读的助手答案');
+      await fixture.state.poll();
+      const resolve = fixture.deferTaskRead();
+      const lateRead = fixture.state.loadTask('task-1');
+      fixture.failEvents('当前账号没有此操作权限');
+      await fixture.state.poll();
+      expect(fixture.state.messages.value).toEqual([]);
+      resolve({
+        task: { ...fixture.tasks[0], summary: '迟到的敏感摘要' },
+        results: [{ id: 'sensitive-result' }],
+        steps: [{ key: 'sensitive-step', name: 'read_evidence' }],
+      });
+      await lateRead;
+      expect(fixture.state.detail.value).toBeNull();
+      expect(fixture.state.detailLoading.value).toBe(false);
+      expect(fixture.state.currentReply.value).toMatchObject({
+        assistant: null,
+        error: '当前账号没有此操作权限',
+      });
+    } finally {
+      fixture.stop();
+    }
+  });
+
+  it('直接读取任务权限失败清理缓存历史和当前答案，成功空事件刷新后恢复', async () => {
+    const fixture = replyHarness();
+    try {
+      await fixture.state.initialize();
+      fixture.state.draft.value = '直接读取权限问题';
+      await fixture.state.send();
+      const assistant = fixture.complete('此前可读的回答');
+      await fixture.state.poll();
+      fixture.failRead('当前账号没有此操作权限');
+      await fixture.state.loadTask('task-1');
+      expect(fixture.state.messages.value).toEqual([]);
+      expect(fixture.state.detail.value).toBeNull();
+      expect(fixture.state.currentReply.value).toMatchObject({
+        assistant: null,
+        error: '当前账号没有此操作权限',
+      });
+      fixture.failRead('');
+      fixture.returnEmptyEvents();
+      await fixture.state.poll();
+      expect(fixture.state.currentReply.value).toMatchObject({ assistant, error: '' });
+      expect(fixture.posts).toHaveLength(1);
+    } finally {
+      fixture.stop();
+    }
+  });
+
+  it('取消请求已接受但会话刷新权限失败时隐藏缓存，空事件成功刷新后恢复', async () => {
+    const fixture = replyHarness();
+    try {
+      await fixture.state.initialize();
+      fixture.state.draft.value = '取消读取边界问题';
+      await fixture.state.send();
+      const assistant = fixture.complete('已有敏感回复', 'awaiting_input');
+      await fixture.state.poll();
+      fixture.failRead('当前账号没有此操作权限');
+      await fixture.state.cancel('task-1');
+      expect(fixture.cancelPosts).toHaveLength(1);
+      expect(fixture.state.messages.value).toEqual([]);
+      expect(fixture.state.detail.value).toBeNull();
+      expect(fixture.state.currentReply.value).toMatchObject({
+        assistant: null,
+        error: '当前账号没有此操作权限',
+      });
+      fixture.failRead('');
+      fixture.returnEmptyEvents();
+      await fixture.state.poll();
+      expect(fixture.state.currentReply.value).toMatchObject({ assistant, error: '' });
+      expect(fixture.posts).toHaveLength(1);
+      expect(fixture.cancelPosts).toHaveLength(1);
+    } finally {
+      fixture.stop();
+    }
+  });
+
+  it('权限错误之后迟到的会话刷新不回填历史任务、不清错误且不推进事件游标', async () => {
+    const fixture = replyHarness();
+    try {
+      await fixture.state.initialize();
+      fixture.state.draft.value = '旧会话读取竞争';
+      await fixture.state.send();
+      fixture.complete('旧缓存回答');
+      await fixture.state.poll();
+      const release = fixture.deferSessionRead();
+      const stalePoll = fixture.state.poll();
+      await vi.waitFor(() => expect(fixture.eventCursors).toEqual(['0', '1']));
+      fixture.failRead('当前账号没有此操作权限');
+      await fixture.state.loadTask('task-1');
+      expect(fixture.state.messages.value).toEqual([]);
+      fixture.failRead('');
+      release({
+        session,
+        messages: [...fixture.messages],
+        tasks: [
+          fixture.tasks[0],
+          { ...fixture.tasks[0], id: 'task-stale', summary: '迟到的敏感任务' },
+        ],
+      });
+      await stalePoll;
+      expect(fixture.state.messages.value).toEqual([]);
+      expect(fixture.state.tasks.value.some((item) => item.id === 'task-stale')).toBe(false);
+      expect(fixture.state.currentReply.value).toMatchObject({
+        assistant: null,
+        error: '当前账号没有此操作权限',
+      });
+      fixture.failRead('');
+      fixture.returnEmptyEvents();
+      await fixture.state.poll();
+      expect(fixture.eventCursors).toEqual(['0', '1', '1']);
+      expect(fixture.state.messages.value.at(-1)?.content).toBe('旧缓存回答');
+      expect(fixture.state.currentReply.value?.error).toBe('');
+      expect(fixture.posts).toHaveLength(1);
+    } finally {
+      fixture.stop();
+    }
+  });
+
+  it('恢复历史、切会话、新会话和账号变化清空当前卡，不重发模型请求', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.draft.value = '已存储的问题';
+    await fixture.state.send();
+    fixture.complete('已存储的回答');
+    await fixture.state.poll();
+    await fixture.state.openSession(session.id);
+    expect(fixture.state.currentReply.value).toBeNull();
+    expect(fixture.state.messages.value).toHaveLength(2);
+    fixture.state.newSession();
+    expect(fixture.state.currentReply.value).toBeNull();
+    fixture.state.draft.value = '账号切换之前';
+    await fixture.state.send();
+    fixture.identity.value = { user: { id: 'user-b', role: 'operator' } };
+    await nextTick();
+    expect(fixture.state.currentReply.value).toBeNull();
+    expect(fixture.posts).toHaveLength(2);
+    fixture.stop();
+  });
+
+  it('切换会话后迟到的发送受理响应不能重新创建旧会话当前卡', async () => {
+    let accept: ((value: unknown) => void) | undefined;
+    const { state, stop } = harness(async (path, options) => {
+      if (path.endsWith('/config')) return config;
+      if (path === '/agent/sessions') return options?.method === 'POST' ? session : { items: [] };
+      if (path.endsWith('/messages'))
+        return new Promise((resolve) => {
+          accept = resolve;
+        });
+      return { session: { ...session, id: 'session-b' }, messages: [], tasks: [] };
+    });
+    await state.initialize();
+    state.draft.value = '旧会话发送快照';
+    const sending = state.send();
+    await vi.waitFor(() => expect(accept).toBeTypeOf('function'));
+    await state.openSession('session-b');
+    accept!({
+      message: {
+        id: 'old-user',
+        content: '旧会话发送快照',
+        sessionId: session.id,
+        taskId: task.id,
+        role: 'user',
+      },
+      task,
+    });
+    await sending;
+    expect(state.currentReply.value).toBeNull();
+    expect(state.activeSession.value?.id).toBe('session-b');
+    expect(state.messages.value).toEqual([]);
+    stop();
+  });
+});
 describe('智能体会话状态', () => {
+  it('发送开始即捕获本轮问题，发送期间修改草稿不会改写当前回复', async () => {
+    let release: ((value: unknown) => void) | undefined;
+    const { state, stop } = harness(async (path, options) => {
+      if (path.endsWith('/config')) return config;
+      if (path === '/agent/sessions') return options?.method === 'POST' ? session : { items: [] };
+      if (path.endsWith('/messages'))
+        return new Promise((resolve) => {
+          release = resolve;
+        });
+      if (path.includes('/tasks/')) return { task, results: [], steps: [] };
+      return { session, messages: [], tasks: [task] };
+    });
+    try {
+      await state.initialize();
+      state.draft.value = '本轮区域问题';
+      const sending = state.send();
+      expect(state).toHaveProperty('currentReply');
+      expect(state.currentReply.value).toMatchObject({
+        question: '本轮区域问题',
+        status: 'sending',
+        assistant: null,
+      });
+      state.draft.value = '下一轮尚未发送的草稿';
+      expect(state.currentReply.value?.question).toBe('本轮区域问题');
+      await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+      release!({ message: { id: 'message-a', content: '本轮区域问题', role: 'user' }, task });
+      await sending;
+      expect(state.currentReply.value).toMatchObject({
+        sessionId: session.id,
+        taskId: task.id,
+        userMessageId: 'message-a',
+        status: 'queued',
+      });
+      expect(state.draft.value).toBe('下一轮尚未发送的草稿');
+    } finally {
+      stop();
+    }
+  });
   it('共享输入并发提交只创建一次会话和消息，保留发送期间的新草稿', async () => {
     const submitted: Record<string, unknown>[] = [];
     let creates = 0;

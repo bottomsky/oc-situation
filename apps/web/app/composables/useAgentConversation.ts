@@ -27,6 +27,17 @@ interface TaskDetail {
   results: AnalysisResult[];
   steps: AgentStep[];
 }
+export type CurrentAgentReplyStatus = AgentTask['status'] | 'sending' | 'send_failed';
+export interface CurrentAgentReply {
+  question: string;
+  sessionId: string | null;
+  taskId: string | null;
+  userMessageId: string | null;
+  assistant: AgentMessage | null;
+  status: CurrentAgentReplyStatus;
+  error: string;
+  createdAt: string;
+}
 export const agentStatusLabel: Record<AgentTask['status'], string> = {
   awaiting_input: '等待补充',
   queued: '等待执行',
@@ -85,6 +96,31 @@ export function useAgentConversation() {
   const pollingError = ref('');
   const error = computed(() => sendError.value || operationError.value || pollingError.value);
   const submittedMessageId = ref('');
+  const currentRequest = ref<Omit<CurrentAgentReply, 'assistant'> | null>(null);
+  const replyDismissed = ref(false);
+  const replyReadable = ref(true);
+  const currentReply = computed<CurrentAgentReply | null>(() => {
+    const request = currentRequest.value;
+    if (!request || replyDismissed.value) return null;
+    const task = tasks.value.find(
+      (item) => item.id === request.taskId && item.sessionId === request.sessionId,
+    );
+    const assistant =
+      replyReadable.value && request.taskId
+        ? (messages.value.findLast(
+            (item) =>
+              item.role === 'assistant' &&
+              item.sessionId === request.sessionId &&
+              item.taskId === request.taskId,
+          ) ?? null)
+        : null;
+    return {
+      ...request,
+      assistant,
+      status: task?.status ?? request.status,
+      error: request.error || pollingError.value || task?.error || '',
+    };
+  });
   const busy = ref(false);
   const loading = ref(false);
   const detailLoading = ref(false);
@@ -92,6 +128,7 @@ export function useAgentConversation() {
   const activeTask = computed(() => tasks.value.some(agentTaskActive));
   let generation = 0;
   let detailGeneration = 0;
+  let readEpoch = 0;
   let cursor = '0';
   let disposed = false;
   let polling = false;
@@ -131,6 +168,21 @@ export function useAgentConversation() {
     sendError.value = '';
     pollingError.value = '';
     submittedMessageId.value = '';
+    currentRequest.value = null;
+    replyDismissed.value = false;
+    replyReadable.value = true;
+  }
+  function dismissCurrentReply() {
+    replyDismissed.value = true;
+  }
+  function hideCachedReply(message: string) {
+    readEpoch++;
+    detailGeneration++;
+    detailLoading.value = false;
+    replyReadable.value = false;
+    messages.value = [];
+    detail.value = null;
+    pollingError.value = message;
   }
   function setDraft(value: string) {
     draft.value = value;
@@ -171,8 +223,7 @@ export function useAgentConversation() {
       )
         detail.value = response;
     } catch (e) {
-      if (current(turn) && request === detailGeneration && !propagateError)
-        operationError.value = (e as Error).message;
+      if (current(turn) && request === detailGeneration) hideCachedReply((e as Error).message);
       if (propagateError) throw e;
     } finally {
       if (current(turn) && request === detailGeneration) detailLoading.value = false;
@@ -180,14 +231,22 @@ export function useAgentConversation() {
   }
   async function refresh(turn = generation) {
     const id = activeSession.value?.id;
-    if (!id) return;
-    const response = await api<SessionDetail>(`/agent/sessions/${encodeURIComponent(id)}`);
-    if (!current(turn) || response.session.id !== id) return;
-    messages.value = response.messages;
-    tasks.value = response.tasks;
-    const selected =
-      response.tasks.find((item) => item.id === selectedTaskId.value) ?? response.tasks.at(-1);
-    if (selected) await loadTask(selected.id, true);
+    if (!id) return false;
+    const epoch = readEpoch;
+    try {
+      const response = await api<SessionDetail>(`/agent/sessions/${encodeURIComponent(id)}`);
+      if (!current(turn) || epoch !== readEpoch || response.session.id !== id) return false;
+      messages.value = response.messages;
+      tasks.value = response.tasks;
+      replyReadable.value = true;
+      const selected =
+        response.tasks.find((item) => item.id === selectedTaskId.value) ?? response.tasks.at(-1);
+      if (selected) await loadTask(selected.id, true);
+      return current(turn) && epoch === readEpoch;
+    } catch (e) {
+      if (current(turn) && epoch === readEpoch) hideCachedReply((e as Error).message);
+      return false;
+    }
   }
   async function openSession(id: string) {
     reset();
@@ -269,9 +328,22 @@ export function useAgentConversation() {
       historyHours: historyHours.value,
       ...(region.value ? { bbox: [...region.value] } : {}),
     };
+    currentRequest.value = {
+      question: content,
+      sessionId: activeSession.value?.id ?? null,
+      taskId: null,
+      userMessageId: null,
+      status: 'sending',
+      error: '',
+      createdAt: new Date().toISOString(),
+    };
+    replyDismissed.value = false;
+    replyReadable.value = true;
+    let accepted = false;
     busy.value = true;
     sendError.value = '';
     operationError.value = '';
+    pollingError.value = '';
     try {
       if (!activeSession.value) {
         const created = await api<AgentSession>('/agent/sessions', {
@@ -284,6 +356,7 @@ export function useAgentConversation() {
         remember(created.id);
       }
       const id = activeSession.value.id;
+      currentRequest.value!.sessionId = id;
       const fingerprint = JSON.stringify({ id, body });
       if (pending?.fingerprint !== fingerprint) pending = { fingerprint, key: crypto.randomUUID() };
       const response = await api<{ message: AgentMessage; task: AgentTask }>(
@@ -295,6 +368,7 @@ export function useAgentConversation() {
         },
       );
       if (!current(turn)) return;
+      accepted = true;
       pending = null;
       if (draft.value.trim() === content) draft.value = '';
       messages.value = [
@@ -304,9 +378,28 @@ export function useAgentConversation() {
       tasks.value = [...tasks.value.filter((item) => item.id !== response.task.id), response.task];
       submittedMessageId.value = response.message.id;
       selectedTaskId.value = response.task.id;
+      currentRequest.value = {
+        ...currentRequest.value!,
+        sessionId: id,
+        taskId: response.task.id,
+        userMessageId: response.message.id,
+        status: response.task.status,
+      };
       await refresh(turn);
     } catch (e) {
-      if (current(turn)) sendError.value = (e as Error).message;
+      if (current(turn)) {
+        const message = (e as Error).message;
+        if (accepted) {
+          hideCachedReply(message);
+        } else {
+          sendError.value = message;
+          currentRequest.value = {
+            ...currentRequest.value!,
+            status: 'send_failed',
+            error: message,
+          };
+        }
+      }
     } finally {
       if (current(turn)) busy.value = false;
     }
@@ -329,22 +422,22 @@ export function useAgentConversation() {
     const id = activeSession.value?.id;
     if (!id || polling || busy.value || loading.value || !config.value?.enabled) return;
     const turn = generation;
+    const epoch = readEpoch;
     polling = true;
     try {
       const response = await api<{ items: AgentEvent[]; nextCursor: string }>(
         `/agent/sessions/${encodeURIComponent(id)}/events?cursor=${encodeURIComponent(cursor)}`,
       );
-      if (!current(turn)) return;
-      if (response.items.length) await refresh(turn);
-      if (current(turn)) {
+      if (!current(turn) || epoch !== readEpoch) return;
+      if ((response.items.length || !replyReadable.value) && !(await refresh(turn))) return;
+      if (current(turn) && epoch === readEpoch) {
         cursor = response.nextCursor;
         pollingError.value = '';
       }
     } catch (e) {
-      if (current(turn)) {
-        pollingError.value = (e as Error).message;
+      if (current(turn) && epoch === readEpoch) {
         // Permission can change while a session is open. Hide cached evidence until a fresh read succeeds.
-        detail.value = null;
+        hideCachedReply((e as Error).message);
       }
     } finally {
       polling = false;
@@ -375,6 +468,8 @@ export function useAgentConversation() {
     activeSession,
     messages,
     submittedMessageId,
+    currentReply,
+    dismissCurrentReply,
     tasks,
     detail,
     selectedTaskId,

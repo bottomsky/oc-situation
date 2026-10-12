@@ -3,7 +3,7 @@ import type { AgentConversationState } from '../composables/useAgentConversation
 const props = withDefaults(defineProps<{ state: AgentConversationState; floating?: boolean }>(), {
   floating: false,
 });
-const emit = defineEmits<{ open: [] }>();
+const emit = defineEmits<{ open: []; submit: [] }>();
 const composing = ref(false);
 const inputFocused = ref(false);
 const isActive = computed(() => inputFocused.value || props.state.draft.length > 0);
@@ -58,7 +58,7 @@ const placeholder = computed(() =>
 );
 async function submit() {
   if (!canSend.value || composing.value) return;
-  emit('open');
+  emit('submit');
   await props.state.send();
 }
 function keydown(event: KeyboardEvent) {

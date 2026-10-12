@@ -81,7 +81,14 @@ function changeSession(event: Event) {
 </script>
 
 <template>
-  <section ref="panel" class="agent-panel" aria-label="区域研判智能体" data-testid="agent-panel">
+  <section
+    ref="panel"
+    class="agent-panel"
+    aria-label="区域研判智能体"
+    data-testid="agent-panel"
+    tabindex="-1"
+    @keydown.stop
+  >
     <div class="agent-intro">
       <ChartIcon name="Bot" />
       <div>
@@ -153,6 +160,9 @@ function changeSession(event: Event) {
           :key="message.id"
           class="agent-message"
           :class="message.role"
+          :data-message-id="message.id"
+          :data-task-id="message.taskId"
+          tabindex="-1"
         >
           <small>{{ message.role === 'user' ? '你' : '研判助手' }}</small>
           <p>{{ message.content }}</p>

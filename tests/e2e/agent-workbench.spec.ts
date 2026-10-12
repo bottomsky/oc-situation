@@ -11,9 +11,13 @@ async function agentFixture(
     queued?: boolean;
     messageDelayMs?: number;
     chatReplies?: Record<string, string>;
+    scriptedTasks?: Record<
+      string,
+      { status: string; reply?: string; error?: string; summary?: string; completeOnPoll?: boolean }
+    >;
   } = {},
 ) {
-  await chartFixture(page, { role: options.role ?? 'operator' });
+  const chartCalls = await chartFixture(page, { role: options.role ?? 'operator' });
   const session = {
     id: 'session-a',
     ownerId: 'fixture-user',
@@ -64,32 +68,37 @@ async function agentFixture(
       const id = `task-${tasks.length + 1}`;
       // These scripted responses exercise the browser contract; intent routing and DeepSeek run in API tests.
       const chatReply = options.chatReplies?.[body.content];
+      const script = options.scriptedTasks?.[body.content];
       const task = {
         id,
         sessionId: session.id,
         ownerId: session.ownerId,
         goal: body.content,
-        status: chatReply
-          ? 'queued'
-          : body.bbox
-            ? options.queued
-              ? 'queued'
-              : 'completed'
-            : 'awaiting_input',
+        status:
+          script?.status ??
+          (chatReply
+            ? 'queued'
+            : body.bbox
+              ? options.queued
+                ? 'queued'
+                : 'completed'
+              : 'awaiting_input'),
         bbox: body.bbox ?? null,
         historyHours: body.historyHours,
         from: chartResult.from,
         to: chartResult.to,
-        definitionId: chatReply ? null : 'area-low-speed-notice',
+        definitionId: chatReply || script ? null : 'area-low-speed-notice',
         generation: 1,
         modelCalls: 2,
         toolCalls: 3,
         resultVersion: body.bbox ? 1 : 0,
         summaryResultVersion: body.bbox ? 1 : null,
-        summary: body.bbox
-          ? '观测事实：记录到低速活动。[E1]\n规则匹配：与公告范围共现。\n推测与限制：原因仍需补充证据。'
-          : null,
-        error: null,
+        summary:
+          script?.summary ??
+          (body.bbox
+            ? '观测事实：记录到低速活动。[E1]\n规则匹配：与公告范围共现。\n推测与限制：原因仍需补充证据。'
+            : null),
+        error: script?.error ?? null,
         createdAt: session.createdAt,
         updatedAt: session.createdAt,
       };
@@ -103,7 +112,14 @@ async function agentFixture(
       };
       tasks.push(task);
       messages.push(message);
-      if (!body.bbox && !chatReply)
+      if (script?.reply && !['queued', 'running', 'waiting_result'].includes(script.status))
+        messages.push({
+          ...message,
+          id: `message-${messages.length + 1}`,
+          role: 'assistant',
+          content: script.reply,
+        });
+      else if (!body.bbox && !chatReply && !script)
         messages.push({
           ...message,
           id: `message-${messages.length + 1}`,
@@ -139,7 +155,9 @@ async function agentFixture(
     } else if (path.endsWith('/events')) {
       reads.events++;
       for (const task of tasks) {
-        const reply = options.chatReplies?.[String(task.goal)];
+        const script = options.scriptedTasks?.[String(task.goal)];
+        const reply = options.chatReplies?.[String(task.goal)] ?? script?.reply;
+        if (script?.completeOnPoll === false) continue;
         if (task.status !== 'queued' || !reply) continue;
         task.status = 'completed';
         task.summary = reply;
@@ -167,6 +185,25 @@ async function agentFixture(
   return {
     submitted,
     reads,
+    messages,
+    mapQueries: chartCalls.mapQueries,
+    setTask(id: string, status: string, reply?: string) {
+      const task = tasks.find((item) => item.id === id)!;
+      task.status = status;
+      if (reply) {
+        task.summary = reply;
+        task.summaryResultVersion = task.resultVersion;
+        messages.push({
+          id: `message-${messages.length + 1}`,
+          role: 'assistant',
+          content: reply,
+          sessionId: session.id,
+          taskId: id,
+          createdAt: session.createdAt,
+        });
+      }
+      revision++;
+    },
     appendReply(content: string) {
       messages.push({
         id: `message-${messages.length + 1}`,
@@ -261,6 +298,301 @@ test('普通问候与北京时间查询无选区完成并持久恢复助手回�
   await expect(panel.getByLabel('研判会话')).toHaveValue('session-a');
   expect(calls.reads.creates).toBe(1);
 });
+
+test('当前回复关闭后轮询保持隐藏，第二轮替换卡片并复用完整历史', async ({ page }) => {
+  const calls = await agentFixture(page, {
+    scriptedTasks: {
+      第一轮问题: { status: 'queued', completeOnPoll: false },
+      第二轮问题: { status: 'queued', completeOnPoll: false },
+    },
+  });
+  const panel = await openAgent(page);
+  const composer = page.getByTestId('chart-agent-composer');
+  const input = composer.getByLabel('分析问题或继续追问');
+  const card = page.getByTestId('chart-agent-current-reply');
+  const map = page.getByTestId('sea-map');
+  const instance = await map.getAttribute('data-map-instance');
+  await expect(card).toHaveCount(0);
+  await input.fill('第一轮问题');
+  await input.press('Enter');
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText('第一轮问题');
+  await expect(card).toContainText('等待执行');
+  await card.getByRole('button', { name: '查看完整对话', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'AI 对话', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(
+    panel.getByLabel('研判对话记录').locator('[data-message-id="message-1"]'),
+  ).toContainText('第一轮问题');
+  await card.getByRole('button', { name: '关闭当前回复', exact: true }).click();
+  await expect(card).toHaveCount(0);
+  await expect(input).toBeFocused();
+  calls.setTask('task-1', 'completed', '第一轮持久回答');
+  await expect(panel.getByLabel('研判对话记录')).toContainText('第一轮持久回答');
+  await expect(card).toHaveCount(0);
+  expect(calls.submitted).toHaveLength(1);
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+  await input.fill('第二轮问题');
+  await input.press('Enter');
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText('第二轮问题');
+  await expect(card).not.toContainText('第一轮持久回答');
+  calls.setTask('task-2', 'completed', '第二轮持久回答');
+  await expect(card).toContainText('第二轮持久回答');
+  const reply = calls.messages.find((message) => message.content === '第二轮持久回答')!;
+  await expect(card.locator(`[data-message-id="${reply.id}"]`)).toHaveText('第二轮持久回答');
+  await page.getByRole('tab', { name: /^主动推送/ }).click();
+  await card.getByRole('button', { name: '查看完整对话', exact: true }).click();
+  const historyReply = panel.getByLabel('研判对话记录').locator(`[data-message-id="${reply.id}"]`);
+  await expect(historyReply).toContainText('第二轮持久回答');
+  await expect(historyReply).toBeInViewport();
+  await panel.getByRole('button', { name: /第一轮问题.*已完成/ }).click();
+  await expect(card).toContainText('第二轮问题');
+  await expect(card).toContainText('第二轮持久回答');
+  await expect(panel.getByLabel('研判对话记录').locator('.agent-message')).toHaveCount(4);
+  expect(calls.submitted).toHaveLength(2);
+  expect(calls.reads.creates).toBe(1);
+  await page.reload();
+  await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true');
+  await expect(card).toHaveCount(0);
+  await page.getByRole('tab', { name: 'AI 对话', exact: true }).click();
+  await expect(panel.getByLabel('研判对话记录').locator('.agent-message')).toHaveCount(4);
+  await expect(panel.getByLabel('研判对话记录')).toContainText('第一轮持久回答');
+  await expect(panel.getByLabel('研判对话记录')).toContainText('第二轮持久回答');
+  expect(calls.submitted).toHaveLength(2);
+});
+
+test('发送请求失败仍保留当前问题和草稿，关闭卡片不会重复请求', async ({ page }) => {
+  await agentFixture(page);
+  let requests = 0;
+  await page.route('**/api/v1/agent/sessions/*/messages', async (route) => {
+    requests++;
+    await route.fulfill({ status: 503, json: { message: 'fixture scripted POST failure' } });
+  });
+  await page.goto('/');
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await expect(input).toBeEnabled();
+  await input.fill('发送失败保留的问题');
+  await input.press('Enter');
+  const card = page.getByTestId('chart-agent-current-reply');
+  await expect(card).toHaveAttribute('data-status', 'send_failed');
+  await expect(card).toContainText('发送失败保留的问题');
+  await expect(card.getByRole('alert')).toContainText('服务暂时无法完成请求，请重试');
+  await expect(input).toHaveValue('发送失败保留的问题');
+  await card.getByRole('button', { name: '关闭当前回复', exact: true }).click();
+  await expect(card).toHaveCount(0);
+  await expect(input).toBeFocused();
+  expect(requests).toBe(1);
+});
+
+for (const key of ['+', '-', 'Home']) {
+  test(`完整历史消息获得焦点后${key}键保持海图视野`, async ({ page }) => {
+    const calls = await agentFixture(page, {
+      scriptedTasks: { 历史键盘问题: { status: 'completed', reply: '持久历史回答' } },
+    });
+    const panel = await openAgent(page);
+    const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+    await input.fill('历史键盘问题');
+    await input.press('Enter');
+    const card = page.getByTestId('chart-agent-current-reply');
+    await expect(card).toContainText('持久历史回答');
+    await expect.poll(() => calls.mapQueries.length).toBeGreaterThan(0);
+    const originalZoom = Number(calls.mapQueries.at(-1)!.searchParams.get('zoom'));
+    await page.getByRole('button', { name: '放大海图', exact: true }).click();
+    await expect
+      .poll(() => Number(calls.mapQueries.at(-1)!.searchParams.get('zoom')))
+      .toBeGreaterThan(originalZoom);
+    await page.waitForTimeout(600);
+    await card.getByRole('button', { name: '查看完整对话', exact: true }).click();
+    const message = calls.messages.find((item) => item.content === '持久历史回答')!;
+    const historyMessage = panel
+      .getByLabel('研判对话记录')
+      .locator(`[data-message-id="${message.id}"]`);
+    await expect(historyMessage).toBeFocused();
+    const previous = calls.mapQueries.at(-1)!;
+    const viewport = {
+      bbox: previous.searchParams.get('bbox'),
+      zoom: previous.searchParams.get('zoom'),
+    };
+    await historyMessage.press(key);
+    await page.waitForTimeout(750);
+    await page.screenshot({
+      path: test
+        .info()
+        .outputPath(`history-focus-${key === '+' ? 'plus' : key === '-' ? 'minus' : 'home'}.png`),
+    });
+    const current = calls.mapQueries.at(-1)!;
+    expect({
+      bbox: current.searchParams.get('bbox'),
+      zoom: current.searchParams.get('zoom'),
+    }).toEqual(viewport);
+  });
+}
+
+for (const [status, label, error] of [
+  ['awaiting_input', '等待补充', ''],
+  ['waiting_result', '等待算法结果', ''],
+  ['failed', '执行失败', '模型服务暂时不可用'],
+  ['cancelled', '已取消', ''],
+  ['completed', '已完成', ''],
+]) {
+  test(`当前回复在${status}且无助手消息时显示真实状态`, async ({ page }) => {
+    await agentFixture(page, {
+      scriptedTasks: {
+        普通状态问题: { status: status!, error, summary: '上一轮摘要不能充当本轮答案' },
+      },
+    });
+    await page.goto('/');
+    const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+    await expect(input).toBeEnabled();
+    await input.fill('普通状态问题');
+    await input.press('Enter');
+    const card = page.getByTestId('chart-agent-current-reply');
+    await expect(card).toContainText('普通状态问题');
+    await expect(card).toContainText(label!);
+    await expect(card).not.toContainText('上一轮摘要不能充当本轮答案');
+    await expect(card.locator('[data-message-id]')).toHaveCount(0);
+    if (error) await expect(card).toContainText(error);
+  });
+}
+
+for (const viewport of [
+  { width: 1920, height: 1080 },
+  { width: 1002, height: 780 },
+  { width: 390, height: 844 },
+  { width: 390, height: 568 },
+]) {
+  test(`长回复在${viewport.width}x${viewport.height}中央滚动且输入保持可点击`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    const longReply = [
+      ...Array.from(
+        { length: 90 },
+        (_, index) => `第${index + 1}段：长回复提供完整的本轮事实与说明。`,
+      ),
+      '连续内容'.repeat(100),
+      '长回复末尾',
+    ].join('\n');
+    const calls = await agentFixture(page, {
+      scriptedTasks: { 长回复问题: { status: 'completed', reply: longReply } },
+    });
+    await page.goto('/');
+    const map = page.getByTestId('sea-map');
+    await expect(map).toHaveAttribute('data-ready', 'true');
+    const instance = await map.getAttribute('data-map-instance');
+    const sidebarWasOpen = await page.getByTestId('chart-right-panel').isVisible();
+    const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+    await input.fill('长回复问题');
+    await input.press('Enter');
+    const card = page.getByTestId('chart-agent-current-reply');
+    await expect(card).toContainText('长回复末尾');
+    await expect(page.getByTestId('chart-right-panel')).toBeVisible({ visible: sidebarWasOpen });
+    await expect(card).toBeInViewport();
+    if (!sidebarWasOpen) {
+      await card.getByRole('button', { name: '查看完整对话', exact: true }).click();
+      await expect(page.getByTestId('chart-right-panel')).toBeVisible();
+      await expect(page.getByTestId('agent-panel').getByLabel('研判对话记录')).toContainText(
+        longReply,
+      );
+      await page.getByRole('button', { name: '关闭协同面板', exact: true }).click();
+    }
+    if (viewport.width <= 1002) {
+      if (await page.getByTestId('chart-right-panel').isVisible())
+        await page.getByRole('button', { name: '关闭协同面板', exact: true }).click();
+      if (await page.getByTestId('chart-left-panel').isVisible())
+        await page.getByRole('button', { name: '折叠操作面板', exact: true }).click();
+    }
+    const bounds = (await card.boundingBox())!;
+    const mapBounds = (await map.boundingBox())!;
+    const inputBounds = (await input.boundingBox())!;
+    const replyBody = card.getByLabel('当前回复内容');
+    expect(
+      await replyBody.evaluate((element) => element.clientHeight),
+      '当前回复正文至少保留可阅读的一至两行高度',
+    ).toBeGreaterThanOrEqual(40);
+    const close = card.getByRole('button', { name: '关闭当前回复', exact: true });
+    expect(
+      await close.evaluate((button) => {
+        const bounds = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          bounds.x + bounds.width / 2,
+          bounds.y + bounds.height / 2,
+        );
+        return !!hit && button.contains(hit);
+      }),
+      '关闭当前回复按钮的中心应命中自身，保留实际点击范围',
+    ).toBe(true);
+    expect(bounds.x).toBeGreaterThanOrEqual(mapBounds.x - 1);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(mapBounds.x + mapBounds.width + 1);
+    expect(bounds.y).toBeGreaterThanOrEqual(mapBounds.y - 1);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(inputBounds.y);
+    expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(
+      true,
+    );
+    const reply = card.locator('[data-message-id]');
+    const scroller = await reply.evaluateHandle((element) => {
+      let current: HTMLElement | null = element as HTMLElement;
+      while (current && !current.matches('[data-testid="chart-agent-current-reply"]')) {
+        if (
+          current.scrollHeight > current.clientHeight &&
+          /auto|scroll/.test(getComputedStyle(current).overflowY)
+        )
+          return current;
+        current = current.parentElement;
+      }
+      return current;
+    });
+    expect(
+      await scroller.evaluate(
+        (element) => !!element && element.scrollHeight > element.clientHeight,
+      ),
+    ).toBe(true);
+    const initialScroll = await scroller.evaluate((element) => element!.scrollTop);
+    await expect.poll(() => calls.mapQueries.length).toBeGreaterThan(0);
+    const previousZoom = calls.mapQueries.at(-1)!.searchParams.get('zoom');
+    const firstObservedQuery = calls.mapQueries.length;
+    const bodyBounds = (await replyBody.boundingBox())!;
+    const wheelPoint = {
+      x: bodyBounds.x + bodyBounds.width / 2,
+      y: bodyBounds.y + bodyBounds.height / 2,
+    };
+    expect(
+      await replyBody.evaluate(
+        (body, point) => body.contains(document.elementFromPoint(point.x, point.y)),
+        wheelPoint,
+      ),
+      '滚轮指针应命中回复正文可视区域',
+    ).toBe(true);
+    await page.mouse.move(wheelPoint.x, wheelPoint.y);
+    await page.mouse.wheel(0, 400);
+    await expect
+      .poll(() => scroller.evaluate((element) => element!.scrollTop))
+      .toBeGreaterThan(initialScroll);
+    await replyBody.focus();
+    for (const key of ['Home', '+', '-']) await replyBody.press(key);
+    await page.waitForTimeout(500);
+    expect(
+      calls.mapQueries
+        .slice(firstObservedQuery)
+        .every((query) => query.searchParams.get('zoom') === previousZoom),
+      '在当前回复滚动或使用键盘时，海图查询中的缩放值保持一致',
+    ).toBe(true);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await input.click();
+    await expect(input).toBeFocused();
+    await page.screenshot({
+      path: test.info().outputPath(`current-reply-${viewport.width}x${viewport.height}.png`),
+    });
+    await card.getByRole('button', { name: '关闭当前回复', exact: true }).click();
+    await expect(card).toHaveCount(0);
+    await expect(input).toBeFocused();
+    await expect(map).toHaveAttribute('data-map-instance', instance!);
+    expect(calls.submitted).toHaveLength(1);
+  });
+}
 
 test('新增回复跟随底部，历史阅读保持位置，主动发送重新跟随', async ({ page }) => {
   const calls = await agentFixture(page, { chatReplies: { 你好: '你好，有什么可以帮助你？' } });
