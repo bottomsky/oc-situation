@@ -7,6 +7,13 @@ import type {
   AgentTask,
   AnalysisResult,
   Bbox,
+  AgentMapContext,
+  AgentInputRequest,
+  AgentInputValues,
+  AgentQueryResult,
+  AgentIntelligenceResult,
+  IntelligenceEvidence,
+  IntelligenceSourceHealth,
 } from '@ais/contracts';
 import { canOperate } from '../utils/display';
 
@@ -21,11 +28,16 @@ interface SessionDetail {
   session: AgentSession;
   messages: AgentMessage[];
   tasks: AgentTask[];
+  pendingInputRequests?: AgentInputRequest[];
+  snapshotCursor?: string;
 }
 interface TaskDetail {
   task: AgentTask;
   results: AnalysisResult[];
   steps: AgentStep[];
+  pendingInputRequests?: AgentInputRequest[];
+  queryResult?: AgentQueryResult | null;
+  intelligenceResult?: AgentIntelligenceResult | null;
 }
 export type CurrentAgentReplyStatus = AgentTask['status'] | 'sending' | 'send_failed';
 export interface CurrentAgentReply {
@@ -79,7 +91,7 @@ export function createAgentMessageFollow() {
   };
 }
 
-export function useAgentConversation() {
+export function useAgentConversation(context?: () => AgentMapContext | undefined) {
   const { api, session: identity } = usePlatform();
   const config = ref<AgentConfig | null>(null);
   const sessions = ref<AgentSession[]>([]);
@@ -87,6 +99,90 @@ export function useAgentConversation() {
   const messages = ref<AgentMessage[]>([]);
   const tasks = ref<AgentTask[]>([]);
   const detail = ref<TaskDetail | null>(null);
+  const sourceOpen = ref(false);
+  const sourceBusy = ref(false);
+  const sourceError = ref('');
+  const sourceEvidence = ref<IntelligenceEvidence | null>(null);
+  const sourceHealth = ref<IntelligenceSourceHealth[]>([]);
+  const sourceScopeNote = ref('');
+  let sourceGeneration = 0;
+  function closeSource() {
+    sourceGeneration++;
+    sourceOpen.value = false;
+    sourceBusy.value = false;
+    sourceEvidence.value = null;
+    sourceHealth.value = [];
+    sourceScopeNote.value = '';
+    sourceError.value = '';
+  }
+  async function openSource(reference: string, taskId: string, resultVersion: number) {
+    const turn = generation;
+    const sourceTurn = ++sourceGeneration;
+    sourceOpen.value = true;
+    sourceBusy.value = true;
+    sourceEvidence.value = null;
+    sourceHealth.value = [];
+    sourceScopeNote.value = '';
+    sourceError.value = '';
+    try {
+      const response = await api<TaskDetail>(
+        `/agent/tasks/${encodeURIComponent(taskId)}?resultVersion=${resultVersion}`,
+      );
+      if (!current(turn) || sourceTurn !== sourceGeneration) return;
+      const result = response.intelligenceResult;
+      if (response.task.sessionId !== activeSession.value?.id || result?.version !== resultVersion)
+        throw new Error('此引用的结果版本不可用，请重新查询。');
+      const evidence = result.evidence.find((item) => item.reference === reference);
+      if (!evidence) throw new Error('此版本中没有对应情报引用。');
+      sourceEvidence.value = evidence;
+      sourceHealth.value = result.sourceHealth;
+      sourceScopeNote.value = result.spec?.locationKeyword
+        ? `${result.spec.locationKeyword}：粗略检索范围，非官方海域界线；文字提及不代表已确认位置。`
+        : '';
+    } catch (e) {
+      if (current(turn) && sourceTurn === sourceGeneration)
+        sourceError.value = (e as Error).message;
+    } finally {
+      if (current(turn) && sourceTurn === sourceGeneration) sourceBusy.value = false;
+    }
+  }
+  const inputRequests = ref<AgentInputRequest[]>([]);
+  const openInputId = ref('');
+  const inputError = ref('');
+  const inputBusy = ref(false);
+  const seenInputs = new Set<string>();
+  const inputKeys = new Map<string, { fingerprint: string; key: string }>();
+  const retryKeys = new Map<string, string>();
+  const openInput = computed(
+    () =>
+      inputRequests.value.find(
+        (item) => item.id === openInputId.value && item.status === 'pending',
+      ) ?? null,
+  );
+  function syncInputs(items: AgentInputRequest[] | undefined, autoOpen = false, taskId?: string) {
+    if (!items) return;
+    const incoming = items.filter(
+      (item) => item.sessionId === activeSession.value?.id && item.status === 'pending',
+    );
+    inputRequests.value = taskId
+      ? [
+          ...inputRequests.value.filter((item) => item.taskId !== taskId),
+          ...incoming.filter((item) => item.taskId === taskId),
+        ]
+      : incoming;
+    if (!inputRequests.value.some((item) => item.id === openInputId.value)) openInputId.value = '';
+    for (const item of inputRequests.value) {
+      if (!seenInputs.has(item.id) && autoOpen && !openInputId.value) openInputId.value = item.id;
+      seenInputs.add(item.id);
+    }
+  }
+  function showInput(id: string) {
+    inputError.value = '';
+    openInputId.value = id;
+  }
+  function closeInput() {
+    openInputId.value = '';
+  }
   const selectedTaskId = ref('');
   const draft = ref('');
   const historyHours = ref(24);
@@ -133,7 +229,12 @@ export function useAgentConversation() {
   let disposed = false;
   let polling = false;
   let timer: ReturnType<typeof setInterval> | undefined;
-  let pending: { fingerprint: string; key: string } | null = null;
+  let pending: {
+    fingerprint: string;
+    retryFingerprint: string;
+    key: string;
+    body: { content: string; historyHours: number; bbox?: number[]; mapContext?: AgentMapContext };
+  } | null = null;
   function current(value: number) {
     return !disposed && generation === value;
   }
@@ -150,12 +251,20 @@ export function useAgentConversation() {
     }
   }
   function reset() {
+    closeSource();
     generation++;
     detailGeneration++;
     activeSession.value = null;
     messages.value = [];
     tasks.value = [];
     detail.value = null;
+    inputRequests.value = [];
+    openInputId.value = '';
+    inputError.value = '';
+    inputBusy.value = false;
+    seenInputs.clear();
+    inputKeys.clear();
+    retryKeys.clear();
     selectedTaskId.value = '';
     region.value = null;
     draft.value = '';
@@ -176,6 +285,7 @@ export function useAgentConversation() {
     replyDismissed.value = true;
   }
   function hideCachedReply(message: string) {
+    closeSource();
     readEpoch++;
     detailGeneration++;
     detailLoading.value = false;
@@ -183,6 +293,8 @@ export function useAgentConversation() {
     messages.value = [];
     detail.value = null;
     pollingError.value = message;
+    inputRequests.value = [];
+    openInputId.value = '';
   }
   function setDraft(value: string) {
     draft.value = value;
@@ -229,7 +341,7 @@ export function useAgentConversation() {
       if (current(turn) && request === detailGeneration) detailLoading.value = false;
     }
   }
-  async function refresh(turn = generation) {
+  async function refresh(turn = generation, autoOpen = true) {
     const id = activeSession.value?.id;
     if (!id) return false;
     const epoch = readEpoch;
@@ -238,6 +350,7 @@ export function useAgentConversation() {
       if (!current(turn) || epoch !== readEpoch || response.session.id !== id) return false;
       messages.value = response.messages;
       tasks.value = response.tasks;
+      syncInputs(response.pendingInputRequests, autoOpen);
       replyReadable.value = true;
       const selected =
         response.tasks.find((item) => item.id === selectedTaskId.value) ?? response.tasks.at(-1);
@@ -258,6 +371,8 @@ export function useAgentConversation() {
       activeSession.value = response.session;
       messages.value = response.messages;
       tasks.value = response.tasks;
+      syncInputs(response.pendingInputRequests);
+      if (response.snapshotCursor) cursor = response.snapshotCursor;
       const latest = response.tasks.at(-1);
       if (latest) {
         region.value = latest.bbox ? [...latest.bbox] : null;
@@ -323,10 +438,14 @@ export function useAgentConversation() {
       return;
     }
     const turn = generation;
-    const body = {
+    const mapContext = context?.();
+    let body = {
       content,
       historyHours: historyHours.value,
       ...(region.value ? { bbox: [...region.value] } : {}),
+      ...(mapContext
+        ? { mapContext: JSON.parse(JSON.stringify(mapContext)) as AgentMapContext }
+        : {}),
     };
     currentRequest.value = {
       question: content,
@@ -357,16 +476,25 @@ export function useAgentConversation() {
       }
       const id = activeSession.value.id;
       currentRequest.value!.sessionId = id;
+      const retryFingerprint = JSON.stringify({
+        id,
+        content,
+        historyHours: body.historyHours,
+        bbox: body.bbox,
+      });
+      if (pending?.retryFingerprint === retryFingerprint) body = pending.body;
       const fingerprint = JSON.stringify({ id, body });
-      if (pending?.fingerprint !== fingerprint) pending = { fingerprint, key: crypto.randomUUID() };
-      const response = await api<{ message: AgentMessage; task: AgentTask }>(
-        `/agent/sessions/${id}/messages`,
-        {
-          method: 'POST',
-          body,
-          idempotencyKey: pending.key,
-        },
-      );
+      if (pending?.fingerprint !== fingerprint)
+        pending = { fingerprint, retryFingerprint, body, key: crypto.randomUUID() };
+      const response = await api<{
+        message: AgentMessage;
+        task: AgentTask;
+        pendingInputRequests?: AgentInputRequest[];
+      }>(`/agent/sessions/${id}/messages`, {
+        method: 'POST',
+        body,
+        idempotencyKey: pending.key,
+      });
       if (!current(turn)) return;
       accepted = true;
       pending = null;
@@ -376,6 +504,7 @@ export function useAgentConversation() {
         response.message,
       ];
       tasks.value = [...tasks.value.filter((item) => item.id !== response.task.id), response.task];
+      syncInputs(response.pendingInputRequests, true, response.task.id);
       submittedMessageId.value = response.message.id;
       selectedTaskId.value = response.task.id;
       currentRequest.value = {
@@ -412,6 +541,114 @@ export function useAgentConversation() {
     try {
       await api(`/agent/tasks/${encodeURIComponent(id)}/cancel`, { method: 'POST' });
       if (current(turn)) await refresh(turn);
+    } catch (e) {
+      if (current(turn)) operationError.value = (e as Error).message;
+    } finally {
+      if (current(turn)) busy.value = false;
+    }
+  }
+  async function answerInput(request: AgentInputRequest, values?: AgentInputValues) {
+    if (
+      !canWrite.value ||
+      inputBusy.value ||
+      busy.value ||
+      request.sessionId !== activeSession.value?.id
+    )
+      return false;
+    const turn = generation;
+    const body = values
+      ? { action: 'accept' as const, inputRevision: request.inputRevision, values }
+      : { action: 'decline' as const, inputRevision: request.inputRevision };
+    const fingerprint = JSON.stringify(body);
+    if (inputKeys.get(request.id)?.fingerprint !== fingerprint)
+      inputKeys.set(request.id, { fingerprint, key: crypto.randomUUID() });
+    inputBusy.value = true;
+    busy.value = true;
+    inputError.value = '';
+    try {
+      const response = await api<{ task: AgentTask; request: AgentInputRequest }>(
+        `/agent/tasks/${encodeURIComponent(request.taskId)}/input-requests/${encodeURIComponent(request.id)}/responses`,
+        { method: 'POST', body, idempotencyKey: inputKeys.get(request.id)!.key },
+      );
+      if (!current(turn)) return false;
+      inputKeys.delete(request.id);
+      tasks.value = tasks.value.map((item) =>
+        item.id === response.task.id ? response.task : item,
+      );
+      inputRequests.value = inputRequests.value.filter((item) => item.id !== request.id);
+      selectedTaskId.value = response.task.id;
+      if (values) {
+        const userMessage = messages.value.findLast(
+          (item) => item.taskId === response.task.id && item.role === 'user',
+        );
+        currentRequest.value = {
+          question: response.task.goal,
+          sessionId: response.task.sessionId,
+          taskId: response.task.id,
+          userMessageId: userMessage?.id ?? null,
+          status: response.task.status,
+          error: '',
+          createdAt: new Date().toISOString(),
+        };
+        replyDismissed.value = false;
+        replyReadable.value = true;
+      }
+      closeInput();
+      if (values?.bbox) region.value = [...values.bbox];
+      if (values?.historyHours) historyHours.value = values.historyHours;
+      await refresh(turn);
+      return true;
+    } catch (e) {
+      if (current(turn)) {
+        const status = (e as Error & { status?: number }).status;
+        inputError.value =
+          status === 400
+            ? '所选条件无效，请检查区域、船舶和时间范围后重试。'
+            : status === 409
+              ? '此条件请求已变化或已在其他窗口处理，正在刷新任务状态。'
+              : (e as Error).message;
+        if (status === 409) await refresh(turn, false);
+        else if (status === 401 || status === 403) hideCachedReply((e as Error).message);
+      }
+      return false;
+    } finally {
+      if (current(turn)) {
+        inputBusy.value = false;
+        busy.value = false;
+      }
+    }
+  }
+  async function retryTask(id: string) {
+    if (!canWrite.value || busy.value || activeTask.value) return;
+    const turn = generation;
+    busy.value = true;
+    operationError.value = '';
+    if (!retryKeys.has(id)) retryKeys.set(id, crypto.randomUUID());
+    try {
+      const response = await api<{ task: AgentTask; message: AgentMessage }>(
+        `/agent/tasks/${encodeURIComponent(id)}/retry`,
+        { method: 'POST', body: {}, idempotencyKey: retryKeys.get(id)! },
+      );
+      if (!current(turn)) return;
+      // Keep this key for the original task while the session is open, including lost refreshes.
+      tasks.value = [...tasks.value.filter((item) => item.id !== response.task.id), response.task];
+      messages.value = [
+        ...messages.value.filter((item) => item.id !== response.message.id),
+        response.message,
+      ];
+      submittedMessageId.value = response.message.id;
+      currentRequest.value = {
+        question: response.task.goal,
+        sessionId: response.task.sessionId,
+        taskId: response.task.id,
+        userMessageId: response.message.id,
+        status: response.task.status,
+        error: '',
+        createdAt: response.message.createdAt,
+      };
+      replyDismissed.value = false;
+      selectedTaskId.value = response.task.id;
+      await refresh(turn);
     } catch (e) {
       if (current(turn)) operationError.value = (e as Error).message;
     } finally {
@@ -464,6 +701,23 @@ export function useAgentConversation() {
   });
   return {
     config,
+    sourceOpen,
+    sourceBusy,
+    sourceError,
+    sourceEvidence,
+    sourceHealth,
+    sourceScopeNote,
+    openSource,
+    closeSource,
+    inputRequests,
+    openInput,
+    openInputId,
+    inputError,
+    inputBusy,
+    showInput,
+    closeInput,
+    answerInput,
+    retryTask,
     sessions,
     activeSession,
     messages,

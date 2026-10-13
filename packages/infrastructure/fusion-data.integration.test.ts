@@ -231,6 +231,31 @@ suite('durable fusion dataset', () => {
     expect(points[0]?.raw.captureId).toBe(a.captureId);
     expect(points[0]?.shipType).toBe(70);
     expect(points[0]?.staticEvidence?.raw.eventId).toBe(staticRecord.eventId);
+    const noVessels = await queryFusionDataset(infra, {
+      from: earlier,
+      to: now,
+      bbox: [121.9, 30.9, 122.1, 31.2],
+      mmsis: [],
+    });
+    expect(noVessels.ais).toEqual([]);
+    const filtered = await queryFusionDataset(infra, {
+      from: earlier,
+      to: now,
+      bbox: [121.9, 30.9, 122.1, 31.2],
+      mmsis: [mmsi],
+      sourceId,
+    });
+    expect(filtered.ais.map((point) => point.recordId).sort()).toEqual(
+      [a.eventId, b.eventId].sort(),
+    );
+    const otherSource = await queryFusionDataset(infra, {
+      from: earlier,
+      to: now,
+      bbox: [121.9, 30.9, 122.1, 31.2],
+      mmsis: [mmsi],
+      sourceId: `${sourceId}-absent`,
+    });
+    expect(otherSource.ais).toEqual([]);
     const outside = await queryFusionDataset(infra, {
       from: earlier,
       to: now,

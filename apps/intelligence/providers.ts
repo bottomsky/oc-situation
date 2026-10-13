@@ -11,9 +11,15 @@ import {
 } from '../../packages/contracts/intelligence-spatial';
 import { safeRequest } from '../crawler/src/policy';
 import { RequestBudget } from '../crawler/src/budget';
+import {
+  MARINE_SAMPLE_POINTS,
+  MarineForecastSnapshotSchema,
+  type MarineForecastSnapshot,
+} from '../../packages/contracts/intelligence-search';
 
 export interface CapturedDocument {
   url: string;
+  requestedUrl?: string;
   body: Buffer;
   contentType: string;
 }
@@ -184,7 +190,11 @@ export function maritimeLinks(bytes: Buffer, endpoint: string, max: number): str
   return [...new Set(links)].slice(0, max);
 }
 
-export function decodeGdacs(bytes: Buffer, sourceId: string): IntelligenceInput[] {
+export function decodeGdacs(
+  bytes: Buffer,
+  sourceId: string,
+  options: Pick<IntelligenceSource, 'bbox' | 'eventTypes'> = {},
+): IntelligenceInput[] {
   const parsed = JSON.parse(bytes.toString('utf8')) as { type?: string; features?: unknown[] };
   const features = parsed.type === 'FeatureCollection' ? parsed.features : [parsed];
   if (!Array.isArray(features) || features.length > 1000)
@@ -193,13 +203,27 @@ export function decodeGdacs(bytes: Buffer, sourceId: string): IntelligenceInput[
   for (const unknownFeature of features) {
     const f = unknownFeature as { geometry?: unknown; properties?: Record<string, unknown> };
     const p = f.properties;
-    if (!p || !['TC', 'TS'].includes(String(p.eventtype))) continue;
+    if (
+      !p ||
+      !(options.eventTypes ?? ['TC', 'TS', 'FL']).includes(
+        String(p.eventtype) as 'TC' | 'TS' | 'FL',
+      )
+    )
+      continue;
     const result = GeometrySchema.safeParse(f.geometry);
     if (!result.success) continue;
     const geometry = result.data;
     if (geometry.type !== 'Point') continue;
     const [lon, lat] = geometry.coordinates;
-    if (lon < 105 || lon > 135 || lat < 3 || lat > 45) continue;
+    if (options.bbox) {
+      const [west, south, east, north] = options.bbox;
+      if (
+        lat < south ||
+        lat > north ||
+        (west <= east ? lon < west || lon > east : lon < west && lon > east)
+      )
+        continue;
+    }
     const start = parseSourceTime(p.fromdate, true),
       end = parseSourceTime(p.todate, true),
       published = parseSourceTime(p.datemodified, true);
@@ -213,10 +237,16 @@ export function decodeGdacs(bytes: Buffer, sourceId: string): IntelligenceInput[
       published,
       start,
     );
-    event.category = 'weather';
+    event.category = p.eventtype === 'FL' ? 'environment' : 'weather';
     event.effectiveTo = end && end >= start ? end : null;
     event.externalId = `${p.eventtype}:${p.eventid}`;
-    event.raw = { provider: 'GDACS', properties: p, geometry };
+    event.raw = {
+      provider: 'GDACS',
+      properties: p,
+      geometry,
+      timeBasis: 'effective',
+      publishedTimeBasis: 'provider-updated',
+    };
     event.relations = [
       {
         kind: 'occurs-at',
@@ -230,6 +260,250 @@ export function decodeGdacs(bytes: Buffer, sourceId: string): IntelligenceInput[
     events.push(event);
   }
   return events;
+}
+
+export function decodeRss(
+  bytes: Buffer,
+  sourceId: string,
+  endpoint: string,
+  observedAt = new Date().toISOString(),
+): ProviderResult {
+  const $ = load(bytes.toString('utf8'), { xmlMode: true });
+  if (!$('rss,feed').length) throw new Error('Expected RSS or Atom feed');
+  const entries = $('item,entry');
+  if (entries.length > 1000) throw new Error('RSS feed exceeds 1000 entries');
+  const result: ProviderResult = { events: [], pending: [], failures: [] };
+  entries.each((_, item) => {
+    const entry = $(item);
+    const title = clean(entry.children('title').first().text());
+    const rawLink =
+      entry.children('link[rel="alternate"]').attr('href') ??
+      entry.children('link').attr('href') ??
+      entry.children('link').first().text();
+    let url: string;
+    try {
+      const parsed = new URL(rawLink, endpoint);
+      if (
+        !rawLink ||
+        !['http:', 'https:'].includes(parsed.protocol) ||
+        parsed.username ||
+        parsed.password
+      )
+        throw new Error();
+      url = parsed.href;
+    } catch {
+      result.pending.push({
+        url: endpoint,
+        title: title || '未识别标题',
+        reason: '条目缺少有效原文链接',
+      });
+      return;
+    }
+    if (!title) {
+      result.pending.push({ url, title: '未识别标题', reason: '条目缺少标题' });
+      return;
+    }
+    const description = entry.children('description,summary,content').first().text();
+    const text = clean(load(description).text()) || title;
+    const publication = entry.children('pubDate,published,issued').first().text().trim();
+    const timestamp = publication ? Date.parse(publication) : NaN;
+    const published = Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
+    const event = base(
+      sourceId,
+      url,
+      title,
+      text,
+      published ?? observedAt,
+      published ?? observedAt,
+    );
+    event.externalId = hash(entry.children('guid,id').first().text().trim() || url);
+    event.category = /\b(?:collision|accident|grounding)\b|船舶碰撞|船舶事故|海难/i.test(
+      `${title} ${text}`,
+    )
+      ? 'incident'
+      : 'other';
+    event.raw = {
+      provider: 'RSS',
+      feedUrl: endpoint,
+      observedAt,
+      timeBasis: published ? 'publication' : 'unknown',
+      publicationTimeKnown: !!published,
+      requiresEffectiveTimeReview: true,
+      effectiveTimeBasis: 'publication-observation-only',
+    };
+    result.events.push(event);
+  });
+  return result;
+}
+
+export function decodeUsgs(bytes: Buffer, sourceId: string): IntelligenceInput[] {
+  const data = JSON.parse(bytes.toString('utf8')) as { type?: string; features?: unknown[] };
+  if (
+    data.type !== 'FeatureCollection' ||
+    !Array.isArray(data.features) ||
+    data.features.length > 1000
+  )
+    throw new Error('Invalid USGS GeoJSON feed');
+  const events: IntelligenceInput[] = [];
+  for (const item of data.features) {
+    const feature = item as {
+      id?: unknown;
+      geometry?: { type?: unknown; coordinates?: unknown[] };
+      properties?: Record<string, unknown>;
+    };
+    const p = feature.properties,
+      coordinates = feature.geometry?.coordinates;
+    if (
+      !p ||
+      typeof feature.id !== 'string' ||
+      feature.geometry?.type !== 'Point' ||
+      !Array.isArray(coordinates) ||
+      coordinates.length < 2
+    )
+      continue;
+    const geo = GeometrySchema.safeParse({ type: 'Point', coordinates: coordinates.slice(0, 2) });
+    if (
+      !geo.success ||
+      typeof p.time !== 'number' ||
+      !Number.isFinite(p.time) ||
+      typeof p.updated !== 'number' ||
+      !Number.isFinite(p.updated)
+    )
+      continue;
+    if (Math.abs(p.time) > 8.64e15 || Math.abs(p.updated) > 8.64e15) continue;
+    let url: string;
+    try {
+      const candidate = new URL(String(p.url));
+      if (candidate.protocol !== 'https:' || candidate.hostname !== 'earthquake.usgs.gov') continue;
+      url = candidate.href;
+    } catch {
+      continue;
+    }
+    const title = String(p.title ?? p.place ?? 'USGS 地震事件');
+    const event = base(
+      sourceId,
+      url,
+      title,
+      `USGS 地震事件：${title}。该位置为震中，不能据此推定海啸或船舶受影响。`,
+      new Date(p.updated).toISOString(),
+      new Date(p.time).toISOString(),
+    );
+    event.externalId = feature.id;
+    event.category = 'environment';
+    event.reviewStatus = 'confirmed';
+    event.raw = {
+      provider: 'USGS',
+      properties: p,
+      depthKm: coordinates[2] ?? null,
+      timeBasis: 'effective',
+      publishedTimeBasis: 'provider-updated',
+      tsunamiFlagIsNotWarning: true,
+    };
+    event.relations = [
+      {
+        kind: 'occurs-at',
+        geometry: geo.data,
+        basis: 'USGS震中坐标；不代表海啸覆盖范围或航行限制',
+        paragraphIds: ['p1'],
+        reviewStatus: 'confirmed',
+        origin: 'source',
+      },
+    ];
+    events.push(event);
+  }
+  return events;
+}
+
+export function decodeMarineForecasts(
+  bytes: Buffer,
+  source: IntelligenceSource,
+  archiveId: string,
+  fetchedAt: string,
+  originalUrl = source.endpoint!,
+): MarineForecastSnapshot[] {
+  const parsed: unknown = JSON.parse(bytes.toString('utf8'));
+  if (!Array.isArray(parsed) || parsed.length !== MARINE_SAMPLE_POINTS.length)
+    throw new Error('Marine response must contain six sample points');
+  const endpoint = new URL(source.endpoint!);
+  const latitudes = endpoint.searchParams.get('latitude')?.split(',').map(Number);
+  const longitudes = endpoint.searchParams.get('longitude')?.split(',').map(Number);
+  if (
+    !MARINE_SAMPLE_POINTS.every(
+      (point, index) => latitudes?.[index] === point.lat && longitudes?.[index] === point.lon,
+    )
+  )
+    throw new Error('Marine endpoint sample coordinates do not match registered points');
+  return parsed.map((raw, index) => {
+    const item = raw as {
+      latitude?: number;
+      longitude?: number;
+      hourly?: Record<string, unknown>;
+      hourly_units?: Record<string, unknown>;
+    };
+    const point = MARINE_SAMPLE_POINTS[index]!;
+    if (
+      typeof item.latitude !== 'number' ||
+      typeof item.longitude !== 'number' ||
+      Math.abs(item.latitude - point.lat) > 2 ||
+      Math.abs(item.longitude - point.lon) > 2
+    )
+      throw new Error('Marine grid coordinates differ from sample point');
+    const hourly = item.hourly;
+    const times = hourly?.time;
+    if (!Array.isArray(times) || !times.length || times.length > 384)
+      throw new Error('Invalid marine hourly series');
+    if (
+      item.hourly_units?.wave_height !== 'm' ||
+      item.hourly_units?.wave_direction !== '°' ||
+      item.hourly_units?.wave_period !== 's'
+    )
+      throw new Error('Unsupported marine forecast units');
+    const values = (field: string, min: number, max: number) => {
+      const values = hourly?.[field];
+      if (
+        !Array.isArray(values) ||
+        values.length !== times.length ||
+        values.some(
+          (value) =>
+            value !== null &&
+            (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max),
+        )
+      )
+        throw new Error('Invalid marine hourly values');
+      return values as (number | null)[];
+    };
+    const height = values('wave_height', 0, 100),
+      direction = values('wave_direction', 0, 360),
+      period = values('wave_period', 0, 200);
+    const series = times.map((time, i) => {
+      if (typeof time !== 'number' || !Number.isFinite(time) || Math.abs(time) > 8.64e12)
+        throw new Error('Expected UTC unix marine forecast times');
+      return {
+        validAt: new Date(time * 1000).toISOString(),
+        waveHeight: height[i]!,
+        waveDirection: direction[i]!,
+        wavePeriod: period[i]!,
+      };
+    });
+    if (series.some((hour, i) => i > 0 && hour.validAt <= series[i - 1]!.validAt))
+      throw new Error('Marine forecast times must increase');
+    return MarineForecastSnapshotSchema.parse({
+      id: hash(`${source.sourceId}:${point.id}:${archiveId}:${fetchedAt}`),
+      sourceId: source.sourceId,
+      samplePointId: point.id,
+      pointName: point.name,
+      point: { lon: point.lon, lat: point.lat },
+      grid: { lon: item.longitude, lat: item.latitude },
+      fetchedAt,
+      modelPublishedAt: null,
+      validFrom: series[0]!.validAt,
+      validTo: series.at(-1)!.validAt,
+      series,
+      originalArchiveId: archiveId,
+      originalUrl,
+      visibility: source.visibility,
+    });
+  });
 }
 
 export function decodeGdelt(
@@ -290,6 +564,7 @@ export async function collectProvider(
     );
     await archive({
       url: r.url,
+      requestedUrl: url,
       body: r.body,
       contentType: r.headers['content-type'] ?? 'application/octet-stream',
     });
@@ -299,11 +574,17 @@ export async function collectProvider(
   const first = await capture(source.endpoint);
   const result: ProviderResult = { events: [], pending: [], failures: [] };
   if (source.adapter === 'gdacs') {
-    result.events = decodeGdacs(first.body, source.sourceId);
+    result.events = decodeGdacs(first.body, source.sourceId, source);
     return result;
   }
   if (source.adapter === 'gdelt') {
     result.events = decodeGdelt(first.body, source.sourceId, source.endpoint);
+    return result;
+  }
+  if (source.adapter === 'rss' || source.kind === 'rss')
+    return decodeRss(first.body, source.sourceId, source.endpoint);
+  if (source.adapter === 'usgs') {
+    result.events = decodeUsgs(first.body, source.sourceId);
     return result;
   }
   for (const url of maritimeLinks(first.body, source.endpoint, source.maxDocuments ?? 5)) {
@@ -330,6 +611,8 @@ export function semanticChecksum(event: IntelligenceInput): string {
       : event.raw;
   if (raw && typeof raw === 'object')
     delete (raw as Record<string, unknown>).sourceSemanticChecksum;
+  if (raw && typeof raw === 'object' && (raw as Record<string, unknown>).provider === 'RSS')
+    delete (raw as Record<string, unknown>).observedAt;
   const fields = [
     'sourceId',
     'externalId',
@@ -349,7 +632,18 @@ export function semanticChecksum(event: IntelligenceInput): string {
   ] as const;
   return hash(
     JSON.stringify([
-      fields.map((key) => [key, key === 'raw' ? raw : event[key]]),
+      fields.map((key) => [
+        key,
+        key === 'raw'
+          ? raw
+          : raw &&
+              typeof raw === 'object' &&
+              (raw as Record<string, unknown>).provider === 'RSS' &&
+              (raw as Record<string, unknown>).publicationTimeKnown === false &&
+              ['publishedAt', 'effectiveFrom'].includes(key)
+            ? null
+            : event[key],
+      ]),
       (event.relations ?? [])
         .filter((r) => r.origin === 'source')
         .map(({ reviewStatus: _review, ...r }) => r),

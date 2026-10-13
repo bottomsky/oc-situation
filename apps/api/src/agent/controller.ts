@@ -1,6 +1,9 @@
+import { AgentIntelligenceResultSchema } from '../../../../packages/contracts/intelligence-search';
 import {
   Body,
   ConflictException,
+  BadRequestException,
+  ForbiddenException,
   Controller,
   Get,
   Headers,
@@ -24,6 +27,10 @@ import {
   AgentSessionSchema,
   AgentStepSchema,
   AgentTaskSchema,
+  AgentInputRequestSchema,
+  AgentInputResponseSchema,
+  AgentQueryResultSchema,
+  AgentRetryInputSchema,
 } from '../../../../packages/contracts/agent';
 import {
   cancelAgentTask,
@@ -33,6 +40,9 @@ import {
   listAgentSessions,
   readAgentEvents,
   submitAgentMessage,
+  respondAgentInput,
+  retryAgentTask,
+  AgentInputError,
 } from '../../../../packages/infrastructure/agent';
 import { DocumentQuery, DocumentRoute, INFRA, MinimumRole, Uuid, parse } from '../common';
 import type { AuthRequest } from '../auth/guard';
@@ -49,11 +59,17 @@ const SessionResponse = z.object({
   session: AgentSessionSchema,
   messages: z.array(AgentMessageSchema),
   tasks: z.array(AgentTaskSchema),
+  pendingInputRequests: z.array(AgentInputRequestSchema),
+  snapshotCursor: z.string(),
 });
 const TaskResponse = z.object({
   task: AgentTaskSchema,
   results: z.array(ObjectResponse),
   steps: z.array(AgentStepSchema),
+  pendingInputRequests: z.array(AgentInputRequestSchema),
+  snapshotCursor: z.string(),
+  queryResult: AgentQueryResultSchema.nullable(),
+  intelligenceResult: AgentIntelligenceResultSchema.nullable(),
 });
 const budget = (key: string, fallback: number) => {
   const value = Number(process.env[key] ?? fallback);
@@ -96,7 +112,12 @@ export class AgentController {
   )
   async createSession(@Body() body: unknown, @Req() req: AuthRequest) {
     this.assertEnabled();
-    return createAgentSession(this.infra, req.user.id, parse(AgentSessionInputSchema, body).title);
+    const input = parse(AgentSessionInputSchema, body);
+    try {
+      return await createAgentSession(this.infra, req.user.id, input.title);
+    } catch (error) {
+      return this.inputError(error);
+    }
   }
   @Get('sessions/:id')
   @DocumentRoute('Read a private conversation and its tasks', SessionResponse)
@@ -117,7 +138,11 @@ export class AgentController {
   })
   @DocumentRoute(
     'Submit an idempotent message and queue one independent analysis',
-    z.object({ message: AgentMessageSchema, task: AgentTaskSchema }),
+    z.object({
+      message: AgentMessageSchema,
+      task: AgentTaskSchema,
+      pendingInputRequests: z.array(AgentInputRequestSchema),
+    }),
     AgentMessageInputSchema,
     202,
   )
@@ -143,12 +168,95 @@ export class AgentController {
   }
   @Get('tasks/:id')
   @DocumentRoute('Read owned task, immutable results and tool ledger', TaskResponse)
-  async task(@Param('id') id: string, @Req() req: AuthRequest) {
+  async task(@Param('id') id: string, @Req() req: AuthRequest, @Query() query: unknown = {}) {
     this.assertEnabled();
     parse(Uuid, id);
-    const result = await getOwnedAgentTask(this.infra, req.user.id, id);
+    const { resultVersion } = parse(
+      z.strictObject({ resultVersion: z.coerce.number().int().positive().optional() }),
+      query,
+    );
+    const result = await getOwnedAgentTask(this.infra, req.user.id, id, resultVersion);
     if (!result) throw new NotFoundException('Task not found');
-    return { task: result.task, results: result.results, steps: result.steps };
+    return {
+      task: result.task,
+      results: result.results,
+      steps: result.steps,
+      pendingInputRequests: result.pendingInputRequests,
+      snapshotCursor: result.snapshotCursor,
+      queryResult: result.queryResult,
+      intelligenceResult: result.intelligenceResult,
+    };
+  }
+  private inputError(error: unknown): never {
+    if (error instanceof AgentInputError) {
+      const body = { code: error.code, message: error.message };
+      if (error.code === 'not_found') throw new NotFoundException(body);
+      if (error.code === 'forbidden') throw new ForbiddenException(body);
+      if (error.code === 'invalid_input') throw new BadRequestException(body);
+      throw new ConflictException(body);
+    }
+    throw error;
+  }
+  @Post('tasks/:id/input-requests/:requestId/responses')
+  @HttpCode(200)
+  @MinimumRole('operator')
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: true,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @DocumentRoute(
+    'Answer a persisted input request and resume the same task',
+    z.object({ task: AgentTaskSchema, request: AgentInputRequestSchema }),
+    AgentInputResponseSchema,
+  )
+  async respond(
+    @Param('id') id: string,
+    @Param('requestId') requestId: string,
+    @Headers('idempotency-key') key: string,
+    @Body() body: unknown,
+    @Req() req: AuthRequest,
+  ) {
+    this.assertEnabled();
+    parse(Uuid, id);
+    parse(Uuid, requestId);
+    parse(Uuid, key);
+    const input = parse(AgentInputResponseSchema, body);
+    try {
+      return await respondAgentInput(this.infra, req.user.id, id, requestId, key, input);
+    } catch (error) {
+      return this.inputError(error);
+    }
+  }
+  @Post('tasks/:id/retry')
+  @HttpCode(202)
+  @MinimumRole('operator')
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: true,
+    schema: { type: 'string', format: 'uuid' },
+  })
+  @DocumentRoute(
+    'Create a visible new attempt with confirmed inputs and an independent budget',
+    z.object({ task: AgentTaskSchema, message: AgentMessageSchema }),
+    AgentRetryInputSchema,
+    202,
+  )
+  async retry(
+    @Param('id') id: string,
+    @Headers('idempotency-key') key: string,
+    @Body() body: unknown,
+    @Req() req: AuthRequest,
+  ) {
+    this.assertEnabled();
+    parse(Uuid, id);
+    parse(Uuid, key);
+    parse(AgentRetryInputSchema, body);
+    try {
+      return await retryAgentTask(this.infra, req.user.id, id, key);
+    } catch (error) {
+      return this.inputError(error);
+    }
   }
   @Post('tasks/:id/cancel')
   @HttpCode(200)

@@ -131,7 +131,7 @@ describe('海图工作台尺寸', () => {
       centerHeight: 400,
       centerChrome: 130,
     });
-    expect(small.sizes.right).toBeLessThanOrEqual(464);
+    expect(1008 - small.sizes.right - 8).toBeGreaterThanOrEqual(480);
     expect(small.sizes.bottom).toBe(82);
     expect(resolveChartLayout(preferred, desktop).sizes).toEqual(preferred);
     const closed = resolveChartLayout(preferred, { ...desktop, leftOpen: false, rightOpen: false });

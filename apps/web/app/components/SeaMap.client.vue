@@ -60,6 +60,7 @@ const props = defineProps<{
   activeEventId?: string;
   canDraw?: boolean;
   layers?: Partial<ChartLayerVisibility>;
+  selectingRegion?: boolean;
 }>();
 const emit = defineEmits<{
   viewport: [bbox: Bbox, zoom: number];
@@ -67,10 +68,64 @@ const emit = defineEmits<{
   intelligence: [eventIds: string[]];
   object: [objectId: string];
   geometry: [geometry: unknown];
+  regionSelected: [bbox: Bbox];
+  regionCancelled: [];
 }>();
 const host = useTemplateRef<HTMLElement>('mapHost');
 const mapError = ref('');
 const ready = ref(false);
+const regionStart = ref<{ x: number; y: number } | null>(null);
+const regionEnd = ref<{ x: number; y: number } | null>(null);
+const regionBox = computed(() =>
+  regionStart.value && regionEnd.value
+    ? {
+        left: `${Math.min(regionStart.value.x, regionEnd.value.x)}px`,
+        top: `${Math.min(regionStart.value.y, regionEnd.value.y)}px`,
+        width: `${Math.abs(regionStart.value.x - regionEnd.value.x)}px`,
+        height: `${Math.abs(regionStart.value.y - regionEnd.value.y)}px`,
+      }
+    : {},
+);
+function regionPoint(event: PointerEvent) {
+  const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.min(bounds.width, event.clientX - bounds.left)),
+    y: Math.max(0, Math.min(bounds.height, event.clientY - bounds.top)),
+  };
+}
+function startRegion(event: PointerEvent) {
+  if (event.button !== 0 || !map) return;
+  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  regionStart.value = regionPoint(event);
+  regionEnd.value = regionStart.value;
+}
+function moveRegion(event: PointerEvent) {
+  if (regionStart.value) regionEnd.value = regionPoint(event);
+}
+function finishRegion(event: PointerEvent) {
+  const start = regionStart.value;
+  if (!start || !map) return;
+  const end = regionPoint(event);
+  regionStart.value = null;
+  regionEnd.value = null;
+  if (Math.abs(start.x - end.x) < 5 || Math.abs(start.y - end.y) < 5) return;
+  const nw = map.unproject([Math.min(start.x, end.x), Math.min(start.y, end.y)]);
+  const se = map.unproject([Math.max(start.x, end.x), Math.max(start.y, end.y)]);
+  const wrap = (value: number) => ((((value + 180) % 360) + 360) % 360) - 180;
+  emit(
+    'regionSelected',
+    se.lng - nw.lng >= 360
+      ? [-180, Math.max(-90, se.lat), 180, Math.min(90, nw.lat)]
+      : [wrap(nw.lng), Math.max(-90, se.lat), wrap(se.lng), Math.min(90, nw.lat)],
+  );
+}
+watch(
+  () => props.selectingRegion,
+  () => {
+    regionStart.value = null;
+    regionEnd.value = null;
+  },
+);
 let map: GLMap | undefined;
 let drawing: TerraDraw | undefined;
 const drawMode = ref('cancel');
@@ -600,6 +655,10 @@ defineExpose<ChartMapControls>({
   zoomIn: () => map?.zoomIn(),
   zoomOut: () => map?.zoomOut(),
   locateIntelligence,
+  focusGeometry: (geometry) => {
+    const bounds = intelligenceFeatureBounds([{ geometry }]);
+    if (bounds) map?.fitBounds(bounds, { padding: 70, maxZoom: 10 });
+  },
   draw,
   editGeometry,
 });
@@ -654,6 +713,35 @@ onBeforeUnmount(() => {
     :data-map-initializations="mapInitializations"
     :data-map-instance="mapInstance"
   />
+  <div
+    v-if="selectingRegion"
+    class="agent-region-overlay"
+    data-testid="agent-region-overlay"
+    tabindex="0"
+    aria-label="拖动框选分析区域"
+    @pointerdown.stop.prevent="startRegion"
+    @pointermove.stop.prevent="moveRegion"
+    @pointerup.stop.prevent="finishRegion"
+    @pointercancel="
+      regionStart = null;
+      regionEnd = null;
+    "
+    @wheel.stop.prevent
+    @keydown.stop
+    @keydown.esc.stop.prevent="emit('regionCancelled')"
+    @click.stop
+    @dblclick.stop
+  >
+    <div v-if="regionStart && regionEnd" class="agent-region-box" :style="regionBox" />
+    <div class="agent-region-note" @pointerdown.stop>
+      拖动矩形选择分析区域，完成后返回确认<button
+        type="button"
+        @click.stop="emit('regionCancelled')"
+      >
+        取消框选
+      </button>
+    </div>
+  </div>
   <div v-if="drawingError" class="map-warning" role="alert">{{ drawingError }}</div>
   <div v-if="mapError" class="map-warning" role="status">{{ mapError }}</div>
   <div
@@ -682,6 +770,34 @@ onBeforeUnmount(() => {
   </div>
 </template>
 <style scoped>
+.agent-region-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  cursor: crosshair;
+  touch-action: none;
+}
+.agent-region-box {
+  position: absolute;
+  border: 2px solid #5ce9ee;
+  background: rgb(26 187 211 / 22%);
+  pointer-events: none;
+}
+.agent-region-note {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  width: fit-content;
+  padding: 10px;
+  background: #082436;
+  color: #d8effc;
+  border: 1px solid #39b9cc;
+  cursor: default;
+}
+.agent-region-note button {
+  margin-left: 12px;
+}
 .direction-legend {
   position: absolute;
   bottom: 78px;

@@ -19,6 +19,7 @@ import {
   getAgentSession,
   getAgentTaskContext,
   readAgentEvents,
+  respondAgentInput,
   submitAgentMessage,
 } from '../../packages/infrastructure/agent';
 import {
@@ -345,6 +346,43 @@ describe('agent durable queue and real local algorithms', () => {
     expect(completed.task.definitionId).toBe('area-low-speed-notice');
     expect(completed.results).toHaveLength(1);
   });
+  it('resumes the same analysis task from a structured region answer and saves real evidence', async () => {
+    const session = await createAgentSession(infra, owner, 'Structured analysis input');
+    const first = await submitAgentMessage(infra, owner, session.id, randomUUID(), {
+      content: '分析区域低速活动',
+      historyHours: 24,
+    });
+    const input = first.pendingInputRequests[0]!;
+    expect(first.task.status).toBe('awaiting_input');
+    const idle = (
+      await infra.pool.query('SELECT worker_id,lease_until FROM agent_tasks WHERE id=$1', [
+        first.task.id,
+      ])
+    ).rows[0];
+    expect(idle).toEqual({ worker_id: null, lease_until: null });
+    const answered = await respondAgentInput(infra, owner, first.task.id, input.id, randomUUID(), {
+      action: 'accept',
+      inputRevision: input.inputRevision,
+      values: {
+        bbox,
+        mmsis: [mmsi],
+        historyHours: 24,
+        filters: { sourceId: prefix },
+        purpose: 'area-low-speed-notice',
+      },
+    });
+    expect(answered.task.id).toBe(first.task.id);
+    expect(answered.task.inputRevision).toBe(1);
+    await deliver(first.task.id, provider('area-low-speed-notice'));
+    const completed = (await getAgentTaskContext(infra, first.task.id))!;
+    expect(completed.task.status, completed.task.error ?? 'structured analysis').toBe('completed');
+    expect(completed.task.resultInputRevision).toBe(1);
+    expect(completed.task.summaryInputRevision).toBe(1);
+    expect(completed.results).toHaveLength(1);
+    expect(completed.results[0]!.mmsi).toBe(mmsi);
+    expect(completed.pendingInputRequests).toEqual([]);
+    expect((await getAgentSession(infra, owner, session.id))!.tasks).toHaveLength(1);
+  });
   it('continues the newest budget-limited result instead of an older completed algorithm', async () => {
     const session = await createAgentSession(infra, owner, 'Continue budget');
     const port = await submitAgentMessage(infra, owner, session.id, randomUUID(), {
@@ -367,7 +405,9 @@ describe('agent durable queue and real local algorithms', () => {
       maxModelCalls: 1,
     });
     const partial = (await getAgentTaskContext(infra, slow.task.id))!;
-    expect(partial.task.status).toBe('awaiting_input');
+    expect(partial.task.status).toBe('failed');
+    expect(partial.task.errorCode).toBe('budget_exhausted');
+    expect(partial.pendingInputRequests).toEqual([]);
     expect(partial.task.resultVersion).toBe(1);
     const next = await submitAgentMessage(infra, owner, session.id, randomUUID(), {
       content: '继续',

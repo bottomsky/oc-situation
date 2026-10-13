@@ -435,6 +435,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/intelligence/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search locally stored intelligence with versioned source evidence */
+    get: operations['IntelligenceController_search'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/intelligence/sources': {
     parameters: {
       query?: never;
@@ -873,6 +890,160 @@ export interface paths {
     };
     /** Replay durable analysis notifications after a cursor */
     get: operations['AnalysisController_feed'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Agent availability and bounded execution defaults */
+    get: operations['AgentController_config'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List sessions owned by the current user */
+    get: operations['AgentController_sessions'];
+    put?: never;
+    /** Create a private analysis conversation */
+    post: operations['AgentController_createSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read a private conversation and its tasks */
+    get: operations['AgentController_session'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit an idempotent message and queue one independent analysis */
+    post: operations['AgentController_message'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read owned task, immutable results and tool ledger */
+    get: operations['AgentController_task'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}/input-requests/{requestId}/responses': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Answer a persisted input request and resume the same task */
+    post: operations['AgentController_respond'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}/retry': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a visible new attempt with confirmed inputs and an independent budget */
+    post: operations['AgentController_retry'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel an owned task and fence late results */
+    post: operations['AgentController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions/{id}/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recover persisted conversation events after a cursor */
+    get: operations['AgentController_events'];
     put?: never;
     post?: never;
     delete?: never;
@@ -2955,6 +3126,239 @@ export interface operations {
       };
     };
   };
+  IntelligenceController_search: {
+    parameters: {
+      query?: {
+        keyword?: string;
+        locationKeyword?: string;
+        category?:
+          | 'port-restriction'
+          | 'notice'
+          | 'navigation-warning'
+          | 'weather'
+          | 'security'
+          | 'environment'
+          | 'incident'
+          | 'other';
+        reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+        timeMode?: 'published' | 'effective' | 'observed';
+        from?: string;
+        to?: string;
+        objectId?: string;
+        kind?: 'events' | 'marine' | 'both';
+        samplePointId?: string;
+        forecastFrom?: string;
+        forecastTo?: string;
+        bbox?: string;
+        sourceIds?: string;
+        mmsis?: string;
+        limit?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              id: string;
+              sourceId: string;
+              sourceName: string;
+              externalId: string;
+              version: number;
+              title: string;
+              summary: string;
+              snippet: string;
+              /** @enum {string} */
+              category:
+                | 'port-restriction'
+                | 'notice'
+                | 'navigation-warning'
+                | 'weather'
+                | 'security'
+                | 'environment'
+                | 'incident'
+                | 'other';
+              /** @enum {string} */
+              status: 'active' | 'revised' | 'withdrawn';
+              /** @enum {string} */
+              reviewStatus: 'candidate' | 'confirmed' | 'rejected';
+              /** @enum {string} */
+              visibility: 'public' | 'internal';
+              /** Format: date-time */
+              publishedAt: string | null;
+              /** Format: date-time */
+              observedAt: string;
+              /** Format: date-time */
+              effectiveFrom: string | null;
+              /** Format: date-time */
+              effectiveTo: string | null;
+              /** Format: date-time */
+              collectedAt: string;
+              /** @enum {string} */
+              timeBasis: 'publication' | 'index-observation' | 'effective' | 'unknown';
+              /** Format: uri */
+              originalUrl: string | null;
+              originalArchiveId: string | null;
+              geometry:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              /** @enum {string} */
+              matchBasis: 'geometry' | 'object' | 'mention' | 'keyword' | 'none';
+              locationNote: string;
+            }[];
+            forecasts: {
+              id: string;
+              sourceId: string;
+              samplePointId: string;
+              pointName: string;
+              point: {
+                lon: number;
+                lat: number;
+              };
+              grid: {
+                lon: number;
+                lat: number;
+              };
+              /** Format: date-time */
+              fetchedAt: string;
+              /** Format: date-time */
+              modelPublishedAt: string | null;
+              /** Format: date-time */
+              validFrom: string;
+              /** Format: date-time */
+              validTo: string;
+              series: {
+                /** Format: date-time */
+                validAt: string;
+                waveHeight: number | null;
+                waveDirection: number | null;
+                wavePeriod: number | null;
+              }[];
+              originalArchiveId: string;
+              /** Format: uri */
+              originalUrl: string;
+              /** @enum {string} */
+              visibility: 'public' | 'internal';
+            }[];
+            total: number;
+            nextCursor: string | null;
+            /** Format: date-time */
+            asOf: string;
+            spec: {
+              keyword?: string;
+              locationKeyword?: string;
+              sourceIds?: string[];
+              /** @enum {string} */
+              category?:
+                | 'port-restriction'
+                | 'notice'
+                | 'navigation-warning'
+                | 'weather'
+                | 'security'
+                | 'environment'
+                | 'incident'
+                | 'other';
+              /** @enum {string} */
+              reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+              /** @enum {string} */
+              timeMode?: 'published' | 'effective' | 'observed';
+              /** Format: date-time */
+              from?: string;
+              /** Format: date-time */
+              to?: string;
+              bbox?: number[];
+              objectId?: string;
+              mmsis?: string[];
+              /** @enum {string} */
+              kind?: 'events' | 'marine' | 'both';
+              samplePointId?: string;
+              /** Format: date-time */
+              forecastFrom?: string;
+              /** Format: date-time */
+              forecastTo?: string;
+            };
+            sourceHealth: {
+              sourceId: string;
+              name: string;
+              enabled: boolean;
+              /** @enum {string} */
+              visibility: 'public' | 'internal';
+              /** @enum {string} */
+              status: 'ready' | 'stale' | 'unavailable' | 'never_collected' | 'disabled';
+              /** Format: date-time */
+              lastPolledAt: string | null;
+              /** Format: date-time */
+              lastSuccessfulAt: string | null;
+              /** Format: date-time */
+              nextPollAt: string | null;
+              lastError: string | null;
+            }[];
+            coverageNotes: string[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   IntelligenceController_sources: {
     parameters: {
       query?: never;
@@ -2977,7 +3381,14 @@ export interface operations {
             /** @default true */
             enabled: boolean;
             /** @enum {string} */
-            adapter?: 'maritime-html' | 'gdacs' | 'gdelt';
+            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+            /**
+             * @default internal
+             * @enum {string}
+             */
+            visibility: 'public' | 'internal';
+            bbox?: number[];
+            eventTypes?: ('TC' | 'TS' | 'FL')[];
             /** @default 6 */
             requestsPerMinute: number;
             /** @default 5 */
@@ -3047,7 +3458,14 @@ export interface operations {
           /** @default true */
           enabled?: boolean;
           /** @enum {string} */
-          adapter?: 'maritime-html' | 'gdacs' | 'gdelt';
+          adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+          /**
+           * @default internal
+           * @enum {string}
+           */
+          visibility?: 'public' | 'internal';
+          bbox?: number[];
+          eventTypes?: ('TC' | 'TS' | 'FL')[];
           /** @default 6 */
           requestsPerMinute?: number;
           /** @default 5 */
@@ -3083,7 +3501,14 @@ export interface operations {
             /** @default true */
             enabled: boolean;
             /** @enum {string} */
-            adapter?: 'maritime-html' | 'gdacs' | 'gdelt';
+            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+            /**
+             * @default internal
+             * @enum {string}
+             */
+            visibility: 'public' | 'internal';
+            bbox?: number[];
+            eventTypes?: ('TC' | 'TS' | 'FL')[];
             /** @default 6 */
             requestsPerMinute: number;
             /** @default 5 */
@@ -3145,7 +3570,14 @@ export interface operations {
           /** @default true */
           enabled?: boolean;
           /** @enum {string} */
-          adapter?: 'maritime-html' | 'gdacs' | 'gdelt';
+          adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+          /**
+           * @default internal
+           * @enum {string}
+           */
+          visibility?: 'public' | 'internal';
+          bbox?: number[];
+          eventTypes?: ('TC' | 'TS' | 'FL')[];
           /** @default 6 */
           requestsPerMinute?: number;
           /** @default 5 */
@@ -3181,7 +3613,14 @@ export interface operations {
             /** @default true */
             enabled: boolean;
             /** @enum {string} */
-            adapter?: 'maritime-html' | 'gdacs' | 'gdelt';
+            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+            /**
+             * @default internal
+             * @enum {string}
+             */
+            visibility: 'public' | 'internal';
+            bbox?: number[];
+            eventTypes?: ('TC' | 'TS' | 'FL')[];
             /** @default 6 */
             requestsPerMinute: number;
             /** @default 5 */
@@ -4849,6 +5288,2269 @@ export interface operations {
           'application/json': {
             items: {
               [key: string]: unknown;
+            }[];
+            nextCursor: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_config: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            enabled: boolean;
+            defaultHistoryHours: number;
+            maxHistoryHours: number;
+            maxModelCalls: number;
+            maxToolCalls: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_sessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              ownerId: string;
+              title: string;
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_createSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default 区域研判 */
+          title?: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ownerId: string;
+            title: string;
+            /** Format: date-time */
+            createdAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_session: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            session: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              ownerId: string;
+              title: string;
+              /** Format: date-time */
+              createdAt: string;
+            };
+            messages: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** @enum {string} */
+              role: 'user' | 'assistant';
+              content: string;
+              /** Format: uuid */
+              taskId: string | null;
+              resultVersion?: number | null;
+              inputRevision?: number | null;
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+            tasks: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search';
+              selection?: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+            pendingInputRequests: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic';
+              prefill: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            }[];
+            snapshotCursor: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_message: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          content: string;
+          bbox?: number[];
+          /** @default 24 */
+          historyHours?: number;
+          mapContext?: {
+            sourceId?: string;
+            shipType?: number;
+            hours?: number;
+            bbox: number[];
+            /** Format: date-time */
+            capturedAt: string;
+            selectedMmsis?: string[];
+          };
+        };
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            message: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** @enum {string} */
+              role: 'user' | 'assistant';
+              content: string;
+              /** Format: uuid */
+              taskId: string | null;
+              resultVersion?: number | null;
+              inputRevision?: number | null;
+              /** Format: date-time */
+              createdAt: string;
+            };
+            task: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search';
+              selection?: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            pendingInputRequests: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic';
+              prefill: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_task: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            task: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search';
+              selection?: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            results: {
+              [key: string]: unknown;
+            }[];
+            steps: {
+              key: string;
+              name: string;
+              input: unknown;
+              output: unknown;
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+            pendingInputRequests: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic';
+              prefill: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            }[];
+            snapshotCursor: string;
+            queryResult: {
+              /** @enum {string} */
+              kind: 'vessel_list' | 'vessel_detail';
+              version: number;
+              inputRevision: number;
+              total: number;
+              truncated: boolean;
+              items: {
+                mmsi: string;
+                name: string | null;
+                imo: string | null;
+                shipType: number | null;
+                latestPosition: {
+                  lat: number;
+                  lon: number;
+                  /** Format: date-time */
+                  observedAt: string;
+                  sogKnots: number | null;
+                  sourceId: string;
+                } | null;
+              }[];
+              /** Format: date-time */
+              asOf: string;
+              selection: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+            } | null;
+            intelligenceResult: {
+              /** @enum {string} */
+              kind: 'intelligence_search';
+              version: number;
+              inputRevision: number;
+              /** Format: date-time */
+              asOf: string;
+              spec: {
+                keyword?: string;
+                locationKeyword?: string;
+                sourceIds?: string[];
+                /** @enum {string} */
+                category?:
+                  | 'port-restriction'
+                  | 'notice'
+                  | 'navigation-warning'
+                  | 'weather'
+                  | 'security'
+                  | 'environment'
+                  | 'incident'
+                  | 'other';
+                /** @enum {string} */
+                reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                /** @enum {string} */
+                timeMode?: 'published' | 'effective' | 'observed';
+                /** Format: date-time */
+                from?: string;
+                /** Format: date-time */
+                to?: string;
+                bbox?: number[];
+                objectId?: string;
+                mmsis?: string[];
+                /** @enum {string} */
+                kind?: 'events' | 'marine' | 'both';
+                samplePointId?: string;
+                /** Format: date-time */
+                forecastFrom?: string;
+                /** Format: date-time */
+                forecastTo?: string;
+              };
+              total: number;
+              truncated: boolean;
+              evidence: (
+                | {
+                    /** @enum {string} */
+                    kind: 'event';
+                    reference: string;
+                    event: {
+                      id: string;
+                      sourceId: string;
+                      sourceName: string;
+                      externalId: string;
+                      version: number;
+                      title: string;
+                      summary: string;
+                      snippet: string;
+                      /** @enum {string} */
+                      category:
+                        | 'port-restriction'
+                        | 'notice'
+                        | 'navigation-warning'
+                        | 'weather'
+                        | 'security'
+                        | 'environment'
+                        | 'incident'
+                        | 'other';
+                      /** @enum {string} */
+                      status: 'active' | 'revised' | 'withdrawn';
+                      /** @enum {string} */
+                      reviewStatus: 'candidate' | 'confirmed' | 'rejected';
+                      /** @enum {string} */
+                      visibility: 'public' | 'internal';
+                      /** Format: date-time */
+                      publishedAt: string | null;
+                      /** Format: date-time */
+                      observedAt: string;
+                      /** Format: date-time */
+                      effectiveFrom: string | null;
+                      /** Format: date-time */
+                      effectiveTo: string | null;
+                      /** Format: date-time */
+                      collectedAt: string;
+                      /** @enum {string} */
+                      timeBasis: 'publication' | 'index-observation' | 'effective' | 'unknown';
+                      /** Format: uri */
+                      originalUrl: string | null;
+                      originalArchiveId: string | null;
+                      geometry:
+                        | (
+                            | {
+                                /** @enum {string} */
+                                type: 'Point';
+                                coordinates: number[];
+                              }
+                            | {
+                                /** @enum {string} */
+                                type: 'LineString';
+                                coordinates: number[][];
+                              }
+                            | {
+                                /** @enum {string} */
+                                type: 'Polygon';
+                                coordinates: number[][][];
+                              }
+                            | {
+                                /** @enum {string} */
+                                type: 'MultiPoint';
+                                coordinates: number[][];
+                              }
+                            | {
+                                /** @enum {string} */
+                                type: 'MultiLineString';
+                                coordinates: number[][][];
+                              }
+                            | {
+                                /** @enum {string} */
+                                type: 'MultiPolygon';
+                                coordinates: number[][][][];
+                              }
+                          )
+                        | null;
+                      /** @enum {string} */
+                      matchBasis: 'geometry' | 'object' | 'mention' | 'keyword' | 'none';
+                      locationNote: string;
+                    };
+                  }
+                | {
+                    /** @enum {string} */
+                    kind: 'marine';
+                    reference: string;
+                    forecast: {
+                      id: string;
+                      sourceId: string;
+                      samplePointId: string;
+                      pointName: string;
+                      point: {
+                        lon: number;
+                        lat: number;
+                      };
+                      grid: {
+                        lon: number;
+                        lat: number;
+                      };
+                      /** Format: date-time */
+                      fetchedAt: string;
+                      /** Format: date-time */
+                      modelPublishedAt: string | null;
+                      /** Format: date-time */
+                      validFrom: string;
+                      /** Format: date-time */
+                      validTo: string;
+                      series: {
+                        /** Format: date-time */
+                        validAt: string;
+                        waveHeight: number | null;
+                        waveDirection: number | null;
+                        wavePeriod: number | null;
+                      }[];
+                      originalArchiveId: string;
+                      /** Format: uri */
+                      originalUrl: string;
+                      /** @enum {string} */
+                      visibility: 'public' | 'internal';
+                    };
+                  }
+              )[];
+              sourceHealth: {
+                sourceId: string;
+                name: string;
+                enabled: boolean;
+                /** @enum {string} */
+                visibility: 'public' | 'internal';
+                /** @enum {string} */
+                status: 'ready' | 'stale' | 'unavailable' | 'never_collected' | 'disabled';
+                /** Format: date-time */
+                lastPolledAt: string | null;
+                /** Format: date-time */
+                lastSuccessfulAt: string | null;
+                /** Format: date-time */
+                nextPollAt: string | null;
+                lastError: string | null;
+              }[];
+              coverageNotes: string[];
+            } | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_respond: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json':
+          | {
+              /** @enum {string} */
+              action: 'accept';
+              inputRevision: number;
+              values: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+                historyHours?: number;
+              };
+            }
+          | {
+              /** @enum {string} */
+              action: 'decline';
+              inputRevision: number;
+            };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            task: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search';
+              selection?: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            request: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic';
+              prefill: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_retry: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': Record<string, never>;
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            task: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search';
+              selection?: {
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            message: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** @enum {string} */
+              role: 'user' | 'assistant';
+              content: string;
+              /** Format: uuid */
+              taskId: string | null;
+              resultVersion?: number | null;
+              inputRevision?: number | null;
+              /** Format: date-time */
+              createdAt: string;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            sessionId: string;
+            /** Format: uuid */
+            ownerId: string;
+            /** @enum {string} */
+            status:
+              | 'awaiting_input'
+              | 'queued'
+              | 'running'
+              | 'waiting_result'
+              | 'completed'
+              | 'failed'
+              | 'cancelled';
+            goal: string;
+            bbox: number[] | null;
+            historyHours: number;
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            /** @enum {string|null} */
+            definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+            generation: number;
+            modelCalls: number;
+            toolCalls: number;
+            resultVersion: number;
+            summaryResultVersion: number | null;
+            summary: string | null;
+            error: string | null;
+            /** @enum {string} */
+            intent?:
+              | 'conversation'
+              | 'vessel_list'
+              | 'vessel_detail'
+              | 'analysis'
+              | 'explain'
+              | 'unresolved'
+              | 'intelligence_search';
+            selection?: {
+              bbox?: number[];
+              mmsis?: string[];
+              timeRange?: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+              };
+              filters?: {
+                sourceId?: string;
+                shipType?: number;
+                hours?: number;
+              };
+              /** @enum {string} */
+              purpose?:
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'port-restriction'
+                | 'area-low-speed-notice'
+                | 'intelligence_search';
+              intelligenceQuery?: {
+                keyword?: string;
+                locationKeyword?: string;
+                sourceIds?: string[];
+                /** @enum {string} */
+                category?:
+                  | 'port-restriction'
+                  | 'notice'
+                  | 'navigation-warning'
+                  | 'weather'
+                  | 'security'
+                  | 'environment'
+                  | 'incident'
+                  | 'other';
+                /** @enum {string} */
+                reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                /** @enum {string} */
+                timeMode?: 'published' | 'effective' | 'observed';
+                /** Format: date-time */
+                from?: string;
+                /** Format: date-time */
+                to?: string;
+                bbox?: number[];
+                objectId?: string;
+                mmsis?: string[];
+                /** @enum {string} */
+                kind?: 'events' | 'marine' | 'both';
+                samplePointId?: string;
+                /** Format: date-time */
+                forecastFrom?: string;
+                /** Format: date-time */
+                forecastTo?: string;
+              };
+              intelligenceTimeRange?: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+              };
+              intelligenceTimeUnclear?: boolean;
+              intelligenceObjectUnclear?: boolean;
+              intelligenceObjectCandidates?: {
+                id: string;
+                name: string;
+              }[];
+            };
+            inputRevision?: number;
+            resultInputRevision?: number | null;
+            summaryInputRevision?: number | null;
+            errorCode?: string | null;
+            /** Format: uuid */
+            retryOfTaskId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_events: {
+    parameters: {
+      query?: {
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string | null;
+              type: string;
+              data: {
+                [key: string]: unknown;
+              };
+              /** Format: date-time */
+              createdAt: string;
             }[];
             nextCursor: string;
           };

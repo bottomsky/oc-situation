@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { computed, effectScope, nextTick, ref, watch } from 'vue';
+import type { AgentInputRequest, AgentMapContext } from '@ais/contracts';
 import {
   agentTaskHasAnalysis,
   createAgentMessageFollow,
@@ -26,6 +27,7 @@ const task = {
 function harness(
   api: (path: string, options?: Record<string, unknown>) => Promise<unknown>,
   role = 'operator',
+  context?: () => AgentMapContext,
 ) {
   const scope = effectScope();
   const identity = ref({ user: { id: 'user-a', role } });
@@ -35,8 +37,323 @@ function harness(
   vi.stubGlobal('onMounted', () => {});
   vi.stubGlobal('onBeforeUnmount', () => {});
   vi.stubGlobal('usePlatform', () => ({ api, session: identity }));
-  return { state: scope.run(() => useAgentConversation())!, identity, stop: () => scope.stop() };
+  return {
+    state: scope.run(() => useAgentConversation(context))!,
+    identity,
+    stop: () => scope.stop(),
+  };
 }
+
+describe('结构化输入请求与同任务续作', () => {
+  it('情报引用固定读取消息版本，独立于当前选中的任务', async () => {
+    const paths: string[] = [];
+    const evidence = { kind: 'event', reference: 'I1', event: { title: '旧版来源标题' } };
+    const fixture = harness(async (path) => {
+      paths.push(path);
+      return { task, intelligenceResult: { version: 3, evidence: [evidence], sourceHealth: [] } };
+    });
+    fixture.state.activeSession.value = session;
+    fixture.state.selectedTaskId.value = 'unrelated-task';
+    await fixture.state.openSource('I1', task.id, 3);
+    expect(paths).toEqual([`/agent/tasks/${task.id}?resultVersion=3`]);
+    expect(fixture.state.sourceEvidence.value).toEqual(evidence);
+    expect(fixture.state.selectedTaskId.value).toBe('unrelated-task');
+    fixture.stop();
+  });
+  it('情报引用版本不匹配时拒绝展示当前版本来源', async () => {
+    const fixture = harness(async () => ({
+      task,
+      intelligenceResult: { version: 9, evidence: [{ reference: 'I1' }], sourceHealth: [] },
+    }));
+    fixture.state.activeSession.value = session;
+    await fixture.state.openSource('I1', task.id, 3);
+    expect(fixture.state.sourceEvidence.value).toBeNull();
+    expect(fixture.state.sourceError.value).toContain('结果版本不可用');
+    fixture.stop();
+  });
+  it('关闭来源卡后迟到读取不会恢复内容', async () => {
+    let release: ((value: unknown) => void) | undefined;
+    const fixture = harness(
+      async () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    fixture.state.activeSession.value = session;
+    const reading = fixture.state.openSource('I1', task.id, 3);
+    fixture.state.closeSource();
+    release!({
+      task,
+      intelligenceResult: { version: 3, evidence: [{ reference: 'I1' }], sourceHealth: [] },
+    });
+    await reading;
+    expect(fixture.state.sourceOpen.value).toBe(false);
+    expect(fixture.state.sourceEvidence.value).toBeNull();
+    fixture.stop();
+  });
+  const request: AgentInputRequest = {
+    id: 'request-a',
+    taskId: task.id,
+    sessionId: session.id,
+    inputRevision: 0,
+    pauseGeneration: 1,
+    fields: ['region'],
+    reason: 'missing_region',
+    prefill: {},
+    status: 'pending',
+    response: null,
+    createdAt: '2026-10-13T00:00:00Z',
+    answeredAt: null,
+  };
+  function inputHarness() {
+    let pending = [request];
+    let responseError: Error | null = null;
+    let readError = false;
+    const posts: Record<string, unknown>[] = [];
+    const currentTask = { ...task, status: 'awaiting_input', inputRevision: 0 };
+    const fixture = harness(async (path, options) => {
+      if (path.endsWith('/config')) return config;
+      if (path === '/agent/sessions') return { items: [session] };
+      if (path.endsWith('/responses')) {
+        posts.push(options!);
+        if (responseError) throw responseError;
+        pending = [];
+        currentTask.status = 'queued';
+        currentTask.inputRevision = 1;
+        return { task: currentTask, request: { ...request, status: 'answered' } };
+      }
+      if (path.includes('/events?')) return { items: [{ id: '1' }], nextCursor: '1' };
+      if (readError) throw new Error('暂时离线');
+      if (path.includes('/tasks/'))
+        return { task: currentTask, results: [], steps: [], pendingInputRequests: pending };
+      return {
+        session,
+        messages: [],
+        tasks: [currentTask],
+        pendingInputRequests: pending,
+        snapshotCursor: '0',
+      };
+    });
+    return {
+      ...fixture,
+      posts,
+      fail: (error: Error | null) => {
+        responseError = error;
+      },
+      failRead: () => {
+        readError = true;
+      },
+      setPending: (items: AgentInputRequest[]) => {
+        pending = items;
+      },
+    };
+  }
+  it('恢复不弹历史请求；新请求弹一次，收起后轮询不重弹', async () => {
+    const fixture = inputHarness();
+    await fixture.state.initialize();
+    await fixture.state.openSession(session.id);
+    expect(fixture.state.inputRequests.value).toHaveLength(1);
+    expect(fixture.state.openInput.value).toBeNull();
+    fixture.setPending([{ ...request, id: 'request-b' }]);
+    await fixture.state.poll();
+    expect(fixture.state.openInput.value?.id).toBe('request-b');
+    fixture.state.closeInput();
+    await fixture.state.poll();
+    expect(fixture.state.openInput.value).toBeNull();
+    fixture.stop();
+  });
+  it('网络重试保持幂等键，回传后同任务继续而不追加message请求', async () => {
+    const fixture = inputHarness();
+    await fixture.state.initialize();
+    await fixture.state.openSession(session.id);
+    fixture.state.showInput(request.id);
+    fixture.fail(new Error('网络失败'));
+    await fixture.state.answerInput(request, { bbox: [1, 2, 3, 4] });
+    expect(fixture.state.openInput.value?.id).toBe(request.id);
+    expect(fixture.state.inputError.value).toBe('网络失败');
+    fixture.fail(null);
+    await fixture.state.answerInput(request, { bbox: [1, 2, 3, 4] });
+    expect(fixture.posts[0]!.idempotencyKey).toBe(fixture.posts[1]!.idempotencyKey);
+    expect(fixture.state.tasks.value[0]).toMatchObject({ id: task.id, status: 'queued' });
+    expect(fixture.state.inputRequests.value).toEqual([]);
+    fixture.stop();
+  });
+  it('回答已接受后读取失败不会提示重新回答', async () => {
+    const fixture = inputHarness();
+    await fixture.state.initialize();
+    await fixture.state.openSession(session.id);
+    fixture.state.showInput(request.id);
+    fixture.failRead();
+    expect(await fixture.state.answerInput(request, { bbox: [1, 2, 3, 4] })).toBe(true);
+    expect(fixture.state.openInput.value).toBeNull();
+    expect(fixture.state.inputError.value).toBe('');
+    expect(fixture.posts).toHaveLength(1);
+    fixture.stop();
+  });
+  it('另一窗口已回答时刷新清理过期弹窗', async () => {
+    const fixture = inputHarness();
+    await fixture.state.initialize();
+    await fixture.state.openSession(session.id);
+    fixture.state.showInput(request.id);
+    fixture.setPending([]);
+    fixture.fail(Object.assign(new Error('冲突'), { status: 409 }));
+    await fixture.state.answerInput(request, { bbox: [1, 2, 3, 4] });
+    expect(fixture.state.openInput.value).toBeNull();
+    expect(fixture.state.inputRequests.value).toEqual([]);
+    fixture.stop();
+  });
+  it('发送时复制视野与筛选快照，不受发送后的地图变化影响', async () => {
+    const context: AgentMapContext = {
+      bbox: [1, 2, 3, 4],
+      capturedAt: '2026-10-13T00:00:00Z',
+      hours: 6,
+      sourceId: 'source-a',
+      selectedMmsis: ['123456789'],
+    };
+    let submitted: Record<string, unknown> | undefined;
+    const fixture = harness(
+      async (path, options) => {
+        if (path.endsWith('/config')) return config;
+        if (path === '/agent/sessions') return options?.method === 'POST' ? session : { items: [] };
+        if (path.endsWith('/messages')) {
+          submitted = options!.body as Record<string, unknown>;
+          context.bbox[0] = 100;
+          return { task, message: { id: 'message-a' } };
+        }
+        if (path.includes('/tasks/')) return { task, results: [], steps: [] };
+        return { session, tasks: [task], messages: [] };
+      },
+      'operator',
+      () => context,
+    );
+    await fixture.state.initialize();
+    fixture.state.draft.value = '当前视野有哪些船舶';
+    await fixture.state.send();
+    expect(submitted!.mapContext).toMatchObject({
+      bbox: [1, 2, 3, 4],
+      hours: 6,
+      selectedMmsis: ['123456789'],
+    });
+    fixture.stop();
+  });
+  it('发送重试沿用第一次的视野快照和幂等键', async () => {
+    const context: AgentMapContext = {
+      bbox: [1, 2, 3, 4],
+      capturedAt: '2026-10-13T00:00:00Z',
+      hours: 6,
+    };
+    const posts: Record<string, unknown>[] = [];
+    const fixture = harness(
+      async (path, options) => {
+        if (path.endsWith('/config')) return config;
+        if (path === '/agent/sessions') return options?.method === 'POST' ? session : { items: [] };
+        if (path.endsWith('/messages')) {
+          posts.push(options!);
+          if (posts.length === 1) throw new Error('响应丢失');
+          return { task, message: { id: 'message-a' } };
+        }
+        if (path.includes('/tasks/')) return { task, results: [], steps: [] };
+        return { session, tasks: [task], messages: [] };
+      },
+      'operator',
+      () => context,
+    );
+    await fixture.state.initialize();
+    fixture.state.draft.value = '当前视野有哪些船舶';
+    await fixture.state.send();
+    context.bbox = [10, 20, 30, 40];
+    context.capturedAt = '2026-10-13T01:00:00Z';
+    await fixture.state.send();
+    expect(posts[0]!.idempotencyKey).toBe(posts[1]!.idempotencyKey);
+    expect(posts[0]!.body).toEqual(posts[1]!.body);
+    expect((posts[1]!.body as { mapContext: AgentMapContext }).mapContext.bbox).toEqual([
+      1, 2, 3, 4,
+    ]);
+    fixture.stop();
+  });
+  it('重试已受理但刷新失败时保留新任务，旧按钮不能创建第二次尝试', async () => {
+    let accepted = false;
+    const posts: Record<string, unknown>[] = [];
+    const original = { ...task, status: 'failed', inputRevision: 0 };
+    const retried = { ...task, id: 'task-retry', status: 'queued', inputRevision: 0 };
+    const fixture = harness(async (path, options) => {
+      if (path.endsWith('/config')) return config;
+      if (path === '/agent/sessions') return { items: [session] };
+      if (path.endsWith('/retry')) {
+        posts.push(options!);
+        accepted = true;
+        return {
+          task: retried,
+          message: {
+            id: 'retry-message',
+            sessionId: session.id,
+            taskId: retried.id,
+            content: '再次尝试',
+            role: 'user',
+            createdAt: '2026-10-13T00:00:00Z',
+          },
+        };
+      }
+      if (accepted) throw new Error('受理后读取失败');
+      if (path.includes('/tasks/')) return { task: original, results: [], steps: [] };
+      return { session, messages: [], tasks: [original], pendingInputRequests: [] };
+    });
+    await fixture.state.initialize();
+    await fixture.state.openSession(session.id);
+    await fixture.state.retryTask(task.id);
+    expect(fixture.state.activeTask.value).toBe(true);
+    expect(fixture.state.tasks.value).toContainEqual(retried);
+    expect(fixture.state.currentReply.value).toMatchObject({
+      taskId: retried.id,
+      userMessageId: 'retry-message',
+      status: 'queued',
+    });
+    expect(fixture.state.submittedMessageId.value).toBe('retry-message');
+    await fixture.state.retryTask(task.id);
+    expect(posts).toHaveLength(1);
+    fixture.stop();
+  });
+  it('另一任务的消息回执仅更新该任务输入请求，保留正在编辑的旧请求', async () => {
+    let posted = false;
+    let releaseSnapshot: ((value: unknown) => void) | undefined;
+    const oldTask = { ...task, status: 'awaiting_input' };
+    const newTask = { ...task, id: 'task-new', status: 'completed' };
+    const fixture = harness(async (path) => {
+      if (path.endsWith('/config')) return config;
+      if (path === '/agent/sessions') return { items: [session] };
+      if (path.endsWith('/messages')) {
+        posted = true;
+        return { task: newTask, message: { id: 'new-message' }, pendingInputRequests: [] };
+      }
+      if (path.includes('/tasks/'))
+        return { task: path.endsWith(newTask.id) ? newTask : oldTask, results: [], steps: [] };
+      if (posted)
+        return new Promise((resolve) => {
+          releaseSnapshot = resolve;
+        });
+      return { session, messages: [], tasks: [oldTask], pendingInputRequests: [request] };
+    });
+    await fixture.state.initialize();
+    await fixture.state.openSession(session.id);
+    fixture.state.showInput(request.id);
+    fixture.state.draft.value = '你好';
+    const sending = fixture.state.send();
+    await vi.waitFor(() => expect(releaseSnapshot).toBeDefined());
+    expect(fixture.state.inputRequests.value).toEqual([request]);
+    expect(fixture.state.openInput.value?.id).toBe(request.id);
+    releaseSnapshot!({
+      session,
+      messages: [],
+      tasks: [oldTask, newTask],
+      pendingInputRequests: [request],
+    });
+    await sending;
+    expect(fixture.state.openInput.value?.id).toBe(request.id);
+    fixture.state.closeInput();
+    expect(fixture.state.openInput.value).toBeNull();
+    fixture.stop();
+  });
+});
 
 function replyHarness() {
   const messages: Record<string, unknown>[] = [];

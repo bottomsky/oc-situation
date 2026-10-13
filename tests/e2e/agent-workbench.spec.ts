@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
 import { chartResult } from './fixtures/chart-data';
 import { openLeftPanel } from './chart-helpers';
+import type { AgentInputRequest, AgentIntelligenceResult, AgentSelection } from '@ais/contracts';
 
 async function agentFixture(
   page: Page,
@@ -9,6 +10,9 @@ async function agentFixture(
     enabled?: boolean;
     role?: string;
     queued?: boolean;
+    interactive?: boolean;
+    inputFields?: AgentInputRequest['fields'];
+    inputPrefill?: AgentSelection;
     messageDelayMs?: number;
     chatReplies?: Record<string, string>;
     scriptedTasks?: Record<
@@ -34,6 +38,8 @@ async function agentFixture(
   }[] = [];
   const tasks: Record<string, unknown>[] = [];
   const submitted: { body: Record<string, unknown>; headers: Record<string, string> }[] = [];
+  let inputRequests: AgentInputRequest[] = [];
+  const answers: { body: Record<string, unknown>; headers: Record<string, string> }[] = [];
   let created = false;
   let revision = 0;
   const reads = { config: 0, sessions: 0, creates: 0, events: 0 };
@@ -111,6 +117,27 @@ async function agentFixture(
         createdAt: session.createdAt,
       };
       tasks.push(task);
+      if (options.interactive) {
+        Object.assign(task, { inputRevision: 0 });
+        inputRequests = [
+          {
+            id: `request-${tasks.length}`,
+            taskId: id,
+            sessionId: session.id,
+            inputRevision: 0,
+            pauseGeneration: 1,
+            fields: options.inputFields ?? ['region'],
+            reason: options.inputFields?.includes('goal') ? 'missing_goal' : 'missing_region',
+            prefill:
+              options.inputPrefill ??
+              (options.inputFields?.includes('goal') ? {} : { purpose: 'vessel_list' }),
+            status: 'pending',
+            response: null,
+            createdAt: session.createdAt,
+            answeredAt: null,
+          },
+        ];
+      }
       messages.push(message);
       if (script?.reply && !['queued', 'running', 'waiting_result'].includes(script.status))
         messages.push({
@@ -126,7 +153,37 @@ async function agentFixture(
           role: 'assistant',
           content: '请在海图确认需要分析的区域。',
         });
-      json = { message, task };
+      json = {
+        message,
+        task,
+        ...(options.interactive ? { pendingInputRequests: inputRequests } : {}),
+      };
+      revision++;
+    } else if (path.endsWith('/responses')) {
+      const body = req.postDataJSON();
+      answers.push({ body, headers: req.headers() });
+      const request = inputRequests[0]!;
+      const task = tasks.find((item) => item.id === request.taskId)!;
+      Object.assign(task, {
+        status: 'completed',
+        inputRevision: 1,
+        resultInputRevision: 1,
+        summaryInputRevision: 1,
+        resultVersion: 1,
+        summaryResultVersion: 1,
+        summary: '已找到 1 艘船舶',
+        definitionId: null,
+      });
+      messages.push({
+        id: 'answer-a',
+        role: 'assistant',
+        content: '已找到 1 艘船舶',
+        sessionId: session.id,
+        taskId: String(task.id),
+        createdAt: session.createdAt,
+      });
+      json = { task, request: { ...request, status: 'answered', response: body.values } };
+      inputRequests = [];
       revision++;
     } else if (path.endsWith('/cancel')) {
       const id = path.split('/').at(-2);
@@ -138,7 +195,36 @@ async function agentFixture(
       const task = tasks.find((item) => item.id === path.split('/').at(-1));
       json = {
         task,
-        results: task?.status === 'completed' && task.resultVersion === 1 ? [chartResult] : [],
+        ...(options.interactive
+          ? {
+              pendingInputRequests: inputRequests,
+              queryResult:
+                task?.status === 'completed'
+                  ? {
+                      kind: 'vessel_list',
+                      version: 1,
+                      inputRevision: 1,
+                      total: 1,
+                      truncated: false,
+                      asOf: session.createdAt,
+                      selection: {},
+                      items: [
+                        {
+                          mmsi: '123456789',
+                          name: '示例船舶',
+                          imo: null,
+                          shipType: 70,
+                          latestPosition: null,
+                        },
+                      ],
+                    }
+                  : null,
+            }
+          : {}),
+        results:
+          !options.interactive && task?.status === 'completed' && task.resultVersion === 1
+            ? [chartResult]
+            : [],
         steps:
           task?.status === 'completed' && task.resultVersion === 1
             ? [
@@ -179,11 +265,20 @@ async function agentFixture(
             : [],
         nextCursor: String(revision),
       };
-    } else json = { session, messages, tasks };
+    } else
+      json = {
+        session,
+        messages,
+        tasks,
+        ...(options.interactive
+          ? { pendingInputRequests: inputRequests, snapshotCursor: String(revision) }
+          : {}),
+      };
     await route.fulfill({ json });
   });
   return {
     submitted,
+    answers,
     reads,
     messages,
     mapQueries: chartCalls.mapQueries,
@@ -224,6 +319,506 @@ async function openAgent(page: Page) {
   await page.getByRole('tab', { name: 'AI 对话' }).click();
   return page.getByTestId('agent-panel');
 }
+
+test('结构化补问收起不重弹，确认后原任务自动继续展示船舶', async ({ page }) => {
+  const calls = await agentFixture(page, { interactive: true });
+  await openAgent(page);
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('查询某区域有哪些船');
+  await input.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: '收起', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  const previous = calls.reads.events;
+  await expect.poll(() => calls.reads.events).toBeGreaterThan(previous);
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole('button', { name: '继续选择', exact: true }).click();
+  await dialog.getByRole('button', { name: '使用当前视野', exact: true }).click();
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByLabel('船舶查询结果')).toContainText('示例船舶');
+  expect(calls.submitted).toHaveLength(1);
+  expect(calls.answers).toHaveLength(1);
+  expect(calls.answers[0]!.body).toMatchObject({
+    action: 'accept',
+    inputRevision: 0,
+    values: { bbox: expect.any(Array) },
+  });
+  expect(calls.answers[0]!.headers['idempotency-key']).toBeTruthy();
+  expect(calls.submitted[0]!.body.mapContext).toMatchObject({ bbox: expect.any(Array), hours: 24 });
+});
+
+test('待补充请求刷新仅恢复卡片，矩形框选返回弹窗且保持地图实例', async ({ page }) => {
+  const calls = await agentFixture(page, { interactive: true });
+  await openAgent(page);
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('分析这个范围');
+  await input.press('Enter');
+  await expect(page.getByRole('dialog', { name: '补充任务条件' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: '继续选择', exact: true })).toBeVisible();
+  const dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole('button', { name: '继续选择', exact: true }).click();
+  const map = page.getByTestId('sea-map');
+  const instance = await map.getAttribute('data-map-instance');
+  await dialog.getByRole('button', { name: '地图矩形框选', exact: true }).click();
+  const overlay = page.getByTestId('agent-region-overlay');
+  await expect(overlay).toBeVisible();
+  await expect(dialog).not.toBeVisible();
+  const bounds = (await overlay.boundingBox())!;
+  await page.mouse.move(bounds.x + 100, bounds.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + 300, bounds.y + 250);
+  await page.mouse.up();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId('agent-region-preview')).toBeVisible();
+  await expect(overlay).toHaveCount(0);
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+  expect(calls.answers).toHaveLength(0);
+});
+
+test('选择船舶目标动态显示选船控件，收起重开保留选择', async ({ page }) => {
+  const calls = await agentFixture(page, { interactive: true, inputFields: ['goal'] });
+  await openAgent(page);
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('帮我查询信息');
+  await input.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await dialog.getByLabel('任务目标', { exact: true }).selectOption('vessel_detail');
+  await expect(dialog.getByLabel('搜索船舶', { exact: true })).toBeVisible();
+  await dialog.getByLabel('搜索船舶', { exact: true }).fill('测试船');
+  await dialog.getByRole('button', { name: '搜索', exact: true }).click();
+  await dialog.getByRole('checkbox').check();
+  await dialog.getByRole('button', { name: '收起', exact: true }).click();
+  await page.getByRole('button', { name: '继续选择', exact: true }).click();
+  await expect(dialog.getByRole('checkbox')).toBeChecked();
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  expect(calls.answers[0]!.body.values).toMatchObject({
+    purpose: 'vessel_detail',
+    mmsis: expect.any(Array),
+  });
+  expect(calls.submitted).toHaveLength(1);
+});
+
+test('分析目标动态显示区域时间，越界自定义时间保留草稿不提交', async ({ page }) => {
+  const calls = await agentFixture(page, { interactive: true, inputFields: ['goal'] });
+  await openAgent(page);
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('帮我研判');
+  await input.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await dialog.getByLabel('任务目标', { exact: true }).selectOption('port-restriction');
+  await dialog.getByRole('button', { name: '使用当前视野', exact: true }).click();
+  await dialog.getByLabel('分析时间范围').selectOption('custom');
+  await dialog.getByLabel('开始时间（北京时间）').fill('2020-01-01T00:00');
+  await dialog.getByLabel('结束时间（北京时间）').fill('2020-01-02T00:00');
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('最近 30 天');
+  await expect(dialog.getByLabel('开始时间（北京时间）')).toHaveValue('2020-01-01T00:00');
+  expect(calls.answers).toHaveLength(0);
+});
+
+test('情报检索支持超过168小时历史，海况选择未来72小时独立参数', async ({ page }) => {
+  const calls = await agentFixture(page, {
+    interactive: true,
+    inputFields: ['topic', 'time'],
+    inputPrefill: {
+      purpose: 'intelligence_search',
+      intelligenceQuery: {
+        kind: 'marine',
+        forecastFrom: '2026-10-13T00:00:00Z',
+        forecastTo: '2026-10-14T00:00:00Z',
+      },
+    },
+  });
+  await openAgent(page);
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('检索历史公告');
+  await input.press('Enter');
+  let dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await dialog.getByLabel('情报检索类型').selectOption('events');
+  await dialog.getByLabel('情报检索主题', { exact: true }).fill('航行警告');
+  await dialog.getByLabel('情报检索时间范围').selectOption('custom');
+  await dialog.getByLabel('情报开始时间（北京时间）').fill('2024-01-01T00:00');
+  await dialog.getByLabel('情报结束时间（北京时间）').fill('2025-01-01T00:00');
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  expect(calls.answers[0]!.body.values).toMatchObject({
+    purpose: 'intelligence_search',
+    intelligenceTimeRange: { from: '2023-12-31T16:00:00.000Z', to: '2024-12-31T16:00:00.000Z' },
+    intelligenceQuery: { keyword: '航行警告' },
+  });
+  expect(calls.answers[0]!.body.values).not.toHaveProperty('historyHours');
+  expect((calls.answers[0]!.body.values as AgentSelection).intelligenceQuery).not.toHaveProperty(
+    'forecastFrom',
+  );
+  expect((calls.answers[0]!.body.values as AgentSelection).intelligenceQuery).not.toHaveProperty(
+    'forecastTo',
+  );
+  await input.fill('检索未来海况');
+  await input.press('Enter');
+  dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await dialog.getByLabel('情报检索类型').selectOption('marine');
+  await dialog.getByLabel('情报检索主题').fill('香港港');
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  await expect(dialog).toContainText('海况仅覆盖六个代表点，请选择代表点');
+  expect(calls.answers).toHaveLength(1);
+  await dialog.getByLabel('海况代表点').selectOption('bohai');
+  await dialog.getByLabel('情报检索时间范围').selectOption('72');
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  await expect.poll(() => calls.answers.length).toBe(2);
+  const values = calls.answers[1]!.body.values as AgentSelection;
+  expect(values.intelligenceQuery?.samplePointId).toBe('bohai');
+  expect(
+    Date.parse(values.intelligenceQuery!.forecastTo!) -
+      Date.parse(values.intelligenceQuery!.forecastFrom!),
+  ).toBe(72 * 3600000);
+  expect(values).not.toHaveProperty('timeRange');
+});
+
+test('命名对象歧义必须选固定候选，允许空关键词且不改变地图', async ({ page }) => {
+  const calls = await agentFixture(page, {
+    interactive: true,
+    inputFields: ['topic'],
+    inputPrefill: {
+      purpose: 'intelligence_search',
+      intelligenceObjectUnclear: true,
+      intelligenceObjectCandidates: [
+        { id: 'port-east', name: '东港（甲）' },
+        { id: 'port-west', name: '东港（乙）' },
+      ],
+      intelligenceQuery: { kind: 'events' },
+    },
+  });
+  await openAgent(page);
+  const map = page.getByTestId('sea-map');
+  const instance = await map.getAttribute('data-map-instance');
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('查询东港情报');
+  await input.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  await expect(dialog).toContainText('请选择本次检索对应的对象');
+  expect(calls.answers).toHaveLength(0);
+  await dialog.getByLabel('选择情报检索对象').selectOption('port-west');
+  await dialog.getByRole('button', { name: '收起', exact: true }).click();
+  await page.getByRole('button', { name: '继续选择', exact: true }).click();
+  await expect(dialog.getByLabel('选择情报检索对象')).toHaveValue('port-west');
+  await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
+  await expect.poll(() => calls.answers.length).toBe(1);
+  expect(calls.answers[0]!.body.values).toMatchObject({
+    intelligenceQuery: { kind: 'events', objectId: 'port-west' },
+  });
+  expect(calls.answers[0]!.body.values).not.toHaveProperty('bbox');
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+});
+
+test('历史与浮卡情报引用绑定版本，归档按文本展示且仅已知位置可定位', async ({ page }) => {
+  await chartFixture(page);
+  const session = {
+    id: 'intel-session',
+    ownerId: 'fixture-user',
+    title: '情报检索',
+    createdAt: '2026-10-13T00:00:00Z',
+  };
+  const task = {
+    id: 'intel-task',
+    sessionId: session.id,
+    ownerId: session.ownerId,
+    goal: '查询公告',
+    status: 'completed',
+    bbox: null,
+    historyHours: 24,
+    from: session.createdAt,
+    to: session.createdAt,
+    definitionId: null,
+    generation: 1,
+    modelCalls: 0,
+    toolCalls: 1,
+    resultVersion: 2,
+    summaryResultVersion: 2,
+    inputRevision: 0,
+    resultInputRevision: 0,
+    summaryInputRevision: 0,
+    intent: 'intelligence_search',
+    summary: '当前公告[I1]',
+    error: null,
+    createdAt: session.createdAt,
+    updatedAt: session.createdAt,
+  };
+  const messages = [
+    {
+      id: 'old-intel-message',
+      role: 'assistant',
+      content: '旧版来源[I1]',
+      taskId: task.id,
+      sessionId: session.id,
+      resultVersion: 1,
+      inputRevision: 0,
+      createdAt: session.createdAt,
+    },
+  ];
+  const versions: string[] = [];
+  function result(version: number): AgentIntelligenceResult {
+    return {
+      kind: 'intelligence_search',
+      version,
+      inputRevision: 0,
+      asOf: session.createdAt,
+      spec: { keyword: '公告' },
+      total: 1,
+      truncated: false,
+      sourceHealth: [
+        {
+          sourceId: 'public-news',
+          name: '公开资讯源',
+          enabled: true,
+          visibility: 'public',
+          status: 'stale',
+          lastPolledAt: session.createdAt,
+          lastSuccessfulAt: session.createdAt,
+          nextPollAt: null,
+          lastError: null,
+        },
+      ],
+      coverageNotes: ['这是已入库资料快照'],
+      evidence: [
+        {
+          kind: 'event',
+          reference: 'I1',
+          event: {
+            id: `event-${version}`,
+            sourceId: 'public-news',
+            sourceName: '公开资讯源',
+            externalId: 'external-news',
+            version,
+            title: version === 1 ? '历史来源标题' : '当前来源标题',
+            summary: '公开来源摘要',
+            snippet: '<script>window.injected=true</script>',
+            category: 'notice',
+            status: 'active',
+            reviewStatus: 'candidate',
+            visibility: 'public',
+            publishedAt: null,
+            observedAt: session.createdAt,
+            collectedAt: session.createdAt,
+            effectiveFrom: null,
+            effectiveTo: null,
+            timeBasis: version === 1 ? 'index-observation' : 'effective',
+            originalUrl: 'https://example.com/news',
+            originalArchiveId: 'archive-news',
+            geometry: version === 1 ? null : { type: 'Point', coordinates: [122, 32] },
+            matchBasis: 'keyword',
+            locationNote: version === 1 ? '地名提及，未确认位置' : '已登记位置',
+          },
+        },
+      ],
+    };
+  }
+  await page.addInitScript(() =>
+    localStorage.setItem('ais-agent-session:fixture-user', 'intel-session'),
+  );
+  await page.route('**/api/v1/agent/**', async (route) => {
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+    if (path.endsWith('/config'))
+      return route.fulfill({
+        json: {
+          enabled: true,
+          defaultHistoryHours: 24,
+          maxHistoryHours: 168,
+          maxModelCalls: 12,
+          maxToolCalls: 24,
+        },
+      });
+    if (path.endsWith('/sessions')) return route.fulfill({ json: { items: [session] } });
+    if (path.endsWith('/messages')) {
+      const message = {
+        id: 'new-intel-message',
+        role: 'user',
+        content: route.request().postDataJSON().content,
+        taskId: task.id,
+        sessionId: session.id,
+        resultVersion: 2,
+        inputRevision: 0,
+        createdAt: session.createdAt,
+      };
+      messages.push(message, {
+        ...message,
+        id: 'new-intel-answer',
+        role: 'assistant',
+        content: '当前公告[I1]',
+      });
+      return route.fulfill({ json: { task, message, pendingInputRequests: [] } });
+    }
+    if (path.includes('/tasks/')) {
+      const version = url.searchParams.get('resultVersion') ?? '2';
+      versions.push(version);
+      return route.fulfill({
+        json: { task, results: [], steps: [], intelligenceResult: result(Number(version)) },
+      });
+    }
+    if (path.endsWith('/events')) return route.fulfill({ json: { items: [], nextCursor: '0' } });
+    return route.fulfill({ json: { session, messages, tasks: [task], pendingInputRequests: [] } });
+  });
+  await page.route('**/api/v1/intelligence/archives/archive-news', (route) =>
+    route.fulfill({ json: { content: '<script>window.injected=true</script>归档正文' } }),
+  );
+  await openAgent(page);
+  await page
+    .locator('[data-message-id="old-intel-message"]')
+    .getByRole('button', { name: '查看情报来源 [I1]', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog', { name: '查看情报引用' });
+  await expect(dialog).toContainText('历史来源标题');
+  await expect(dialog).toContainText('候选情报 · 待核实');
+  await expect(dialog).toContainText('索引观测时间');
+  await expect(dialog).toContainText('数据过期');
+  await expect(dialog.getByRole('button', { name: '定位已知位置' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: '查看归档原文' }).click();
+  await expect(dialog.getByLabel('情报归档原文')).toContainText(
+    '<script>window.injected=true</script>',
+  );
+  expect(
+    await page.evaluate(() => (window as unknown as { injected?: boolean }).injected),
+  ).toBeUndefined();
+  await expect(dialog.getByRole('link', { name: '查看来源原文' })).toHaveAttribute(
+    'href',
+    'https://example.com/news',
+  );
+  await dialog.getByRole('button', { name: '关闭来源卡' }).click();
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('再查当前公告');
+  await input.press('Enter');
+  await page
+    .getByTestId('chart-agent-current-reply')
+    .getByRole('button', { name: '查看情报来源 [I1]', exact: true })
+    .click();
+  await expect(dialog).toContainText('当前来源标题');
+  await expect(dialog).toContainText('来源观测 / 更新');
+  await expect(dialog).toContainText('发生 / 适用时间');
+  const map = page.getByTestId('sea-map');
+  const instance = await map.getAttribute('data-map-instance');
+  await dialog.getByRole('button', { name: '定位已知位置' }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+  expect(versions).toContain('1');
+  expect(versions).toContain('2');
+});
+
+test('情报工作台只读检索与来源登记保留公开属性及适配器', async ({ page }) => {
+  await chartFixture(page);
+  const writes: { path: string; body: Record<string, unknown> }[] = [];
+  const searches: URL[] = [];
+  const source = {
+    sourceId: 'rss-public',
+    name: '公开资讯订阅',
+    kind: 'rss',
+    adapter: 'rss',
+    visibility: 'public',
+    enabled: true,
+    endpoint: 'https://example.com/feed.xml',
+    allowedHosts: ['example.com'],
+    authorizationConfirmed: true,
+    pollSeconds: 300,
+    timeoutSeconds: 30,
+    requestsPerMinute: 6,
+    maxDocuments: 5,
+    trust: 'aggregator',
+    lastSuccessfulAt: '2026-10-13T00:00:00Z',
+  };
+  await page.route('**/api/v1/intelligence/**', async (route) => {
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+    if (route.request().method() !== 'GET') {
+      writes.push({ path, body: route.request().postDataJSON() });
+      return route.fulfill({ json: {} });
+    }
+    if (path.endsWith('/sources')) return route.fulfill({ json: [source] });
+    if (path.endsWith('/plot-set'))
+      return route.fulfill({ json: { eventIds: [], hiddenEventIds: [] } });
+    if (path.endsWith('/search')) {
+      searches.push(url);
+      return route.fulfill({
+        json: {
+          items: [],
+          forecasts:
+            url.searchParams.get('kind') === 'marine'
+              ? [
+                  {
+                    id: 'marine-test',
+                    sourceId: 'marine-public',
+                    samplePointId: 'bohai',
+                    pointName: '渤海代表点',
+                    point: { lon: 120, lat: 39 },
+                    grid: { lon: 120, lat: 39 },
+                    fetchedAt: '2026-10-13T00:00:00Z',
+                    modelPublishedAt: null,
+                    validFrom: '2026-10-13T00:00:00Z',
+                    validTo: '2026-10-14T00:00:00Z',
+                    series: [],
+                    originalArchiveId: null,
+                    originalUrl: null,
+                    visibility: 'public',
+                  },
+                ]
+              : [],
+          total: 0,
+          nextCursor: null,
+          asOf: '2026-10-13T00:00:00Z',
+          spec: {},
+          sourceHealth: [],
+          coverageNotes: ['未连接的来源不会在提问时临时采集'],
+        },
+      });
+    }
+    return route.fulfill({ json: { items: [], nextCursor: null } });
+  });
+  await page.goto('/intelligence');
+  const search = page.getByRole('region', { name: '本地情报检索' });
+  await search.getByLabel('检索情报主题').fill('航行警告');
+  await search.getByRole('button', { name: '检索情报', exact: true }).click();
+  await expect(search).toContainText('未找到匹配结果');
+  await expect(search).toContainText('事件 0 条 · 海况 0 组');
+  expect(searches[0]!.searchParams.get('keyword')).toBe('航行警告');
+  await search.getByLabel('本地情报类型').selectOption('marine');
+  await search.getByRole('button', { name: '检索情报', exact: true }).click();
+  await expect(search).toContainText('事件 0 条 · 海况 1 组');
+  await expect(search.getByText('渤海代表点 · 海况预报', { exact: true })).toBeVisible();
+  expect(writes.filter((item) => !item.path.endsWith('/plot'))).toHaveLength(0);
+  await page.getByText('已登记情报来源（1）', { exact: true }).click();
+  await expect(page.getByRole('link', { name: '查看来源接口' })).toHaveAttribute(
+    'href',
+    source.endpoint,
+  );
+  await page.getByRole('button', { name: '停用来源', exact: true }).click();
+  await expect
+    .poll(() => writes.filter((item) => item.path.endsWith('/rss-public')).length)
+    .toBe(1);
+  expect(writes.find((item) => item.path.endsWith('/rss-public'))!.body).toMatchObject({
+    visibility: 'public',
+    adapter: 'rss',
+    enabled: false,
+  });
+  await page.getByText('登记情报来源', { exact: true }).click();
+  const form = page.locator('form').filter({ has: page.getByLabel('来源名称', { exact: true }) });
+  await form.getByLabel('来源标识', { exact: true }).fill('marine-new');
+  await form.getByLabel('来源名称', { exact: true }).fill('新海况源');
+  await form.getByLabel('来源类型').selectOption('api');
+  await form.getByLabel('来源可见性').selectOption('public');
+  await form.getByLabel('采集适配器').selectOption('marine');
+  await form.getByLabel('来源接口地址').fill('https://example.com/marine');
+  await form.getByRole('checkbox').check();
+  await form.getByRole('button', { name: '登记来源', exact: true }).click();
+  await expect.poll(() => writes.filter((item) => item.path.endsWith('/sources')).length).toBe(1);
+  expect(writes.find((item) => item.path.endsWith('/sources'))!.body).toMatchObject({
+    visibility: 'public',
+    adapter: 'marine',
+    kind: 'api',
+  });
+});
 
 test('区域补问、明确选区、结果证据及恢复会话', async ({ page }) => {
   const errors: string[] = [];
@@ -771,6 +1366,7 @@ test('悬浮输入随左右栏和窗口居中且保留海图控件点击范围',
     await expect(composer).toBeVisible();
     await checkGeometry();
     if (width === 1920) {
+      await openLeftPanel(page);
       await page.getByRole('button', { name: '折叠操作面板', exact: true }).click();
       await checkGeometry();
       await openLeftPanel(page);

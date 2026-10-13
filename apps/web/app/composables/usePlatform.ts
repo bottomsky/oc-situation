@@ -39,7 +39,9 @@ export function usePlatform() {
         session.value = null;
         if (path !== '/auth/login') await navigateTo('/login');
       }
-      throw new Error(errorLabel(response.status, path));
+      throw Object.assign(new Error(errorLabel(response.status, path)), {
+        status: response.status,
+      });
     }
     return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>);
   }

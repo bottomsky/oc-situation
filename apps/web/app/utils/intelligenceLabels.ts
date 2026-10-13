@@ -52,3 +52,16 @@ export function safeOriginalUrl(value?: string) {
 export function intelligenceSampleLabel(synthetic: unknown): string {
   return synthetic === true ? '样例数据' : '';
 }
+
+export function intelligencePublishedTimeLabel(raw: unknown): string {
+  if (raw && typeof raw === 'object' && (raw as Record<string, unknown>).provider === 'GDACS')
+    return '来源更新';
+  const basis =
+    raw && typeof raw === 'object'
+      ? (raw as Record<string, unknown>).publishedTimeBasis
+      : undefined;
+  if (basis === 'provider-updated') return '来源更新';
+  if (basis === 'provider-index') return '索引观测';
+  if (basis === 'unknown') return '来源观测';
+  return '发布';
+}

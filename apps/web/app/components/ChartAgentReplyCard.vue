@@ -7,7 +7,11 @@ import { agentStatusLabel } from '../composables/useAgentConversation';
 import { dateLabel } from '../utils/display';
 
 const props = defineProps<{ reply: CurrentAgentReply }>();
-const emit = defineEmits<{ close: []; open: [] }>();
+const emit = defineEmits<{
+  close: [];
+  open: [];
+  reference: [reference: string, taskId: string, resultVersion: number];
+}>();
 const labels: Record<CurrentAgentReplyStatus, string> = {
   ...agentStatusLabel,
   sending: '正在发送问题',
@@ -67,7 +71,10 @@ const waitingText = computed(() => {
     <div class="reply-card-body" tabindex="0" aria-label="当前回复内容">
       <p class="reply-card-question" :title="reply.question">{{ reply.question }}</p>
       <p v-if="reply.assistant" class="reply-card-answer" :data-message-id="reply.assistant.id">
-        {{ reply.assistant.content }}
+        <AgentMessageText
+          :message="reply.assistant"
+          @reference="(reference, taskId, version) => emit('reference', reference, taskId, version)"
+        />
       </p>
       <p v-else-if="waitingText" class="reply-card-pending" role="status">{{ waitingText }}</p>
       <p v-if="reply.error" class="reply-card-error" role="alert">

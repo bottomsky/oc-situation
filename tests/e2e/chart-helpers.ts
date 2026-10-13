@@ -23,8 +23,6 @@ export async function openConsolePage(page: Page, label: string) {
 }
 export async function openLeftPanel(page: Page) {
   if (await page.getByTestId('chart-left-panel').isVisible()) return;
-  const expand = page.getByRole('button', { name: '展开操作面板', exact: true });
-  if (await expand.isVisible()) await expand.click();
-  else await page.getByRole('button', { name: '操作面板', exact: true }).click();
+  await page.getByRole('button', { name: '打开人工操控面板', exact: true }).click();
   await expect(page.getByTestId('chart-left-panel')).toBeVisible();
 }

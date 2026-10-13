@@ -11,6 +11,7 @@ import {
   Req,
   BadRequestException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { createHash } from 'node:crypto';
@@ -53,6 +54,14 @@ import {
   audit,
 } from '../common';
 import type { AuthRequest } from '../auth/guard';
+import {
+  IntelligenceSearchQuerySchema,
+  IntelligenceSearchResultSchema,
+} from '../../../../packages/contracts/intelligence-search';
+import {
+  searchIntelligence,
+  IntelligenceSearchError,
+} from '../../../../packages/infrastructure/intelligence-search';
 
 export const IntelligenceSourceStatusSchema = IntelligenceSourceSchema.safeExtend({
   lastPolledAt: z.iso.datetime().nullable(),
@@ -64,6 +73,24 @@ export const IntelligenceSourceStatusSchema = IntelligenceSourceSchema.safeExten
 @Controller('intelligence')
 export class IntelligenceController {
   constructor(@Inject(INFRA) private readonly infra: Infrastructure) {}
+
+  @Get('search')
+  @DocumentQuery(IntelligenceSearchQuerySchema)
+  @DocumentRoute(
+    'Search locally stored intelligence with versioned source evidence',
+    IntelligenceSearchResultSchema,
+  )
+  async search(@Query() query: unknown) {
+    const { limit, cursor, ...spec } = parse(IntelligenceSearchQuerySchema, query);
+    try {
+      return await searchIntelligence(this.infra, spec, { limit, cursor });
+    } catch (error) {
+      if (error instanceof IntelligenceSearchError) throw new BadRequestException(error.message);
+      if ((error as { code?: string }).code === '57014')
+        throw new ServiceUnavailableException('情报检索超时，请缩小条件后重试');
+      throw error;
+    }
+  }
 
   @Get('sources')
   @DocumentRoute(
@@ -121,7 +148,7 @@ export class IntelligenceController {
     if (source.sourceId !== id) throw new BadRequestException('Source id mismatch');
     await this.validateSource(source);
     const result = await this.infra.pool.query(
-      'UPDATE intelligence_sources SET config=$2::jsonb,last_polled_at=NULL WHERE id=$1',
+      'UPDATE intelligence_sources SET config=$2::jsonb,last_polled_at=NULL,next_poll_at=NULL,consecutive_failures=0 WHERE id=$1',
       [id, JSON.stringify(source)],
     );
     if (!result.rowCount) throw new NotFoundException('Source not found');

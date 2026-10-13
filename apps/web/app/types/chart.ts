@@ -11,5 +11,6 @@ export interface ChartMapControls {
   zoomIn(): void;
   zoomOut(): void;
   locateIntelligence(eventId?: string): void;
+  focusGeometry(geometry: IntelligenceGeometry): void;
   draw(mode: 'point' | 'linestring' | 'polygon' | 'select' | 'cancel'): void;
 }

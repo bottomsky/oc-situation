@@ -1,3 +1,8 @@
+import { executeIntelligence } from './intelligence-runtime';
+import type {
+  AgentIntelligenceResult,
+  IntelligenceSourceHealth,
+} from '../../packages/contracts/intelligence-search';
 import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
 import { Type, createModels, createInitialSystemMessage } from '@earendil-works/pi-ai';
 import { deepseekProvider } from '@earendil-works/pi-ai/providers/deepseek';
@@ -5,7 +10,19 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
-import type { AgentTask, AgentStep } from '../../packages/contracts/agent';
+import {
+  AgentInputSpecSchema,
+  type AgentTask,
+  type AgentStep,
+  type AgentInputSpec,
+  type AgentQueryResult,
+  type AgentSelection,
+} from '../../packages/contracts/agent';
+import {
+  deriveAgentIntent,
+  derivePurposeIntent,
+  requiredAgentInputFields,
+} from '../../packages/domain/agent-intents';
 import {
   AnalysisResultSchema,
   TopicConfigSchema,
@@ -36,11 +53,21 @@ export interface RuntimePorts {
   saveStep(key: string, name: string, output: unknown): Promise<boolean>;
   query(): Promise<TopicDataset>;
   saveResults(results: AnalysisResult[]): Promise<number | null>;
+  requestInput?(spec: AgentInputSpec): Promise<boolean>;
+  queryVessels?(
+    kind: 'vessel_list' | 'vessel_detail',
+    selection: AgentSelection,
+  ): Promise<AgentQueryResult>;
+  saveQueryResult?(result: AgentQueryResult): Promise<number | null>;
+  searchIntelligence?(selection: AgentSelection): Promise<AgentIntelligenceResult>;
+  saveIntelligenceResult?(result: AgentIntelligenceResult): Promise<number | null>;
+  intelligenceSourceHealth?(): Promise<IntelligenceSourceHealth[]>;
   finish(outcome: {
     status: 'completed' | 'failed' | 'awaiting_input';
     summary?: string;
     summaryResultVersion?: number;
     error?: string;
+    errorCode?: string;
   }): Promise<boolean>;
 }
 export interface RuntimeOptions {
@@ -58,7 +85,82 @@ export interface RuntimeContext {
   task: AgentTask;
   results: AnalysisResult[];
   steps: AgentStep[];
+  queryResult?: AgentQueryResult | null;
+  intelligenceResult?: AgentIntelligenceResult | null;
   previous?: RuntimeContext | null;
+}
+
+async function requestInput(ports: RuntimePorts, spec: AgentInputSpec, summary: string) {
+  if (ports.requestInput) return ports.requestInput(spec);
+  // Legacy standalone runtime integrations retain their text-only callback.
+  return ports.finish({ status: 'awaiting_input', summary });
+}
+
+function querySummary(result: AgentQueryResult, historical = false): string {
+  const scope = result.selection.bbox ? '所选区域' : '所选船舶';
+  const prefix = historical ? '以下说明基于上次已保存的查询快照。' : '';
+  const coverage = result.total
+    ? `${scope}共查询到 ${result.total} 艘船舶${result.truncated ? '，列表展示前 100 艘' : ''}。`
+    : `${scope}没有符合条件的船舶。`;
+  const missing = result.items.filter((item) => !item.latestPosition).length;
+  return `${prefix}${coverage}${missing ? `其中 ${missing} 艘在所选最新报告窗口内没有船位。` : ''}查询时间：${new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', dateStyle: 'short', timeStyle: 'medium' }).format(new Date(result.asOf))}（北京时间）。这是最新船位快照；船舶基本信息与船位见下方结果。`;
+}
+
+async function executeVesselQuery(
+  context: RuntimeContext,
+  kind: 'vessel_list' | 'vessel_detail',
+  selection: AgentSelection,
+  ports: RuntimePorts,
+  options: RuntimeOptions,
+  previous?: AgentQueryResult,
+) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options.signal?.addEventListener('abort', abort, { once: true });
+  if (options.signal?.aborted) abort();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    abort();
+  }, options.runtimeTimeoutMs ?? 180_000);
+  const revision = context.task.inputRevision ?? 0;
+  try {
+    if (!ports.saveQueryResult || !ports.queryVessels) throw new RuntimeStop('configuration');
+    let result = context.queryResult?.inputRevision === revision ? context.queryResult : null;
+    if (!result) {
+      if (!(await ports.reserve('tool', options.maxToolCalls ?? 24)))
+        throw new RuntimeStop('budget');
+      result = previous
+        ? { ...previous, version: 0, inputRevision: revision }
+        : await abortable(ports.queryVessels(kind, selection), controller.signal);
+      if (controller.signal.aborted || !(await ports.active())) throw new RuntimeStop('fenced');
+      const version = await ports.saveQueryResult(result);
+      if (version === null) throw new RuntimeStop('fenced');
+      result = { ...result, version };
+    }
+    if (controller.signal.aborted || !(await ports.active())) throw new RuntimeStop('fenced');
+    await ports.finish({
+      status: 'completed',
+      summary: querySummary(result, !!previous),
+      summaryResultVersion: result.version,
+    });
+  } catch (error) {
+    const code = timedOut ? 'timeout' : error instanceof RuntimeStop ? error.code : 'provider';
+    if (code === 'fenced') return;
+    await ports.finish({
+      status: 'failed',
+      errorCode: code === 'budget' ? 'budget_exhausted' : code,
+      error:
+        code === 'budget'
+          ? '本任务调用预算已用尽，请重试为新任务。'
+          : code === 'timeout'
+            ? '船舶查询超时，请重试。'
+            : '船舶查询暂不可用，请稍后重试。',
+    });
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', abort);
+  }
 }
 
 const overviewSchema = z.strictObject({
@@ -67,7 +169,7 @@ const overviewSchema = z.strictObject({
   notices: z.number().int().nonnegative(),
   coverage: z.enum(['no_ais', 'no_notices', 'insufficient_observations', 'available']),
 });
-class RuntimeStop extends Error {
+export class RuntimeStop extends Error {
   constructor(
     readonly code:
       | 'fenced'
@@ -84,7 +186,7 @@ class RuntimeStop extends Error {
     super(code);
   }
 }
-function abortable<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+export function abortable<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
     const abort = () => reject(new RuntimeStop('fenced'));
     if (signal.aborted) {
@@ -98,7 +200,7 @@ function abortable<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
 const algorithms = ['port-restriction', 'area-low-speed-notice'] as const;
 
 /** The only transport boundary. Every retry is charged and only official DeepSeek is reachable. */
-function guardedFetch(
+export function guardedFetch(
   ports: RuntimePorts,
   options: RuntimeOptions,
   signal: AbortSignal,
@@ -113,7 +215,7 @@ function guardedFetch(
       if (signal.aborted || !(await ports.active())) throw new RuntimeStop('fenced');
       if (!(await ports.reserve('model', options.maxModelCalls ?? 12)))
         throw new RuntimeStop('budget');
-      const response = await fetcher(input, { ...init, signal });
+      const response = await fetcher(input, { ...init, signal, redirect: 'error' });
       if (response.status !== 429 && response.status < 500) return response;
       if (attempt === 2) return response;
       await response.body?.cancel();
@@ -125,7 +227,7 @@ function guardedFetch(
 
 const CONVERSATION_PROMPT = `你是海上多元情报分析系统的中文助手。根据固定语义意图简短自然地回复。
 greeting：礼貌问候，可以简要介绍系统。
-capabilities：只介绍所列平台能力：港口限制船舶识别、区域低速活动与公告关联，以及已有结果和证据的解释。分析任务需要海图选区。
+capabilities：只介绍所列平台能力：区域船舶列表、指定船舶基本信息、港口限制船舶识别、区域低速活动与公告关联，以及已有结果和证据的解释。条件不足时可使用选择框补充区域、船舶和时间，确认后继续同一任务。
 current_time：回复中必须出现且只出现一次独立的 CURRENT_TIME 语义标记。平台会读取服务器时钟，并规范呈现北京时间和时区。你只负责确认时间查询意图；具体时间、日期与星期由平台提供。
 只输出助手回复文本，不调用工具，不声称已执行分析，不生成船舶或证据数据。`;
 
@@ -161,7 +263,7 @@ async function executeConversation(
     const transport = guardedFetch(ports, options, controller.signal);
     const prompt = JSON.stringify({
       intent,
-      capabilities: algorithms,
+      capabilities: [...algorithms, 'vessel_list', 'vessel_detail', 'request_input'],
       ...(intent === 'current_time'
         ? { timeSource: 'platform_clock', placeholder: 'CURRENT_TIME' }
         : {}),
@@ -264,7 +366,8 @@ async function executeConversation(
                 ? '模型回复格式无效，请稍后重试。'
                 : '模型服务暂不可用，请稍后重试。';
     await ports.finish({
-      status: code === 'budget' ? 'awaiting_input' : 'failed',
+      status: 'failed',
+      errorCode: code === 'budget' ? 'budget_exhausted' : code,
       error: message,
       ...(code === 'budget' ? { summary: message } : {}),
     });
@@ -281,8 +384,78 @@ export async function executeAgent(
 ): Promise<void> {
   let task = context.task;
   if (!(await ports.active())) return;
+  const revision = task.inputRevision ?? 0;
+  const currentResults = (task.resultInputRevision ?? 0) === revision;
+  if (!currentResults)
+    context = { ...context, results: [], queryResult: null, intelligenceResult: null };
+  const selectedPurpose = task.selection?.purpose;
+  const resolvedIntent = selectedPurpose
+    ? derivePurposeIntent(selectedPurpose)
+    : (task.intent ?? deriveAgentIntent(task.goal).intent);
+  const selection = task.selection ?? {
+    ...(task.bbox ? { bbox: task.bbox } : {}),
+    timeRange: { from: task.from, to: task.to },
+    ...(deriveAgentIntent(task.goal).purpose
+      ? { purpose: deriveAgentIntent(task.goal).purpose }
+      : {}),
+  };
+  if (
+    resolvedIntent === 'intelligence_search' ||
+    (resolvedIntent === 'explain' &&
+      (context.intelligenceResult || context.previous?.intelligenceResult))
+  ) {
+    const prior =
+      resolvedIntent === 'explain'
+        ? (context.intelligenceResult ??
+          (context.previous?.intelligenceResult?.inputRevision ===
+          (context.previous?.task.inputRevision ?? 0)
+            ? context.previous?.intelligenceResult
+            : undefined))
+        : undefined;
+    const fields = prior ? [] : requiredAgentInputFields(selection, 'intelligence_search');
+    if (fields.length)
+      await requestInput(
+        ports,
+        { fields, reason: fields.includes('topic') ? 'missing_topic' : 'missing_time' },
+        selection.intelligenceQuery?.kind === 'marine' && !selection.intelligenceQuery.samplePointId
+          ? '海况仅覆盖六个代表点，无法提供任意港口海况；所选代表点不能替代港口海况。请选择代表点后继续。'
+          : '请选择情报主题后继续。',
+      );
+    else await executeIntelligence(context, selection, ports, options, prior ?? undefined);
+    return;
+  }
+  if (resolvedIntent === 'explain' && context.queryResult?.inputRevision === revision) {
+    const saved = context.queryResult;
+    await executeVesselQuery(context, saved.kind, saved.selection, ports, options, saved);
+    return;
+  }
+  if (resolvedIntent === 'explain' && context.previous?.queryResult) {
+    const previous = context.previous.queryResult;
+    if (previous.inputRevision === (context.previous.task.inputRevision ?? 0)) {
+      await executeVesselQuery(
+        context,
+        previous.kind,
+        previous.selection,
+        ports,
+        options,
+        previous,
+      );
+      return;
+    }
+  }
+  if (resolvedIntent === 'vessel_list' || resolvedIntent === 'vessel_detail') {
+    const fields = requiredAgentInputFields(selection, resolvedIntent);
+    if (fields.length) {
+      await requestInput(
+        ports,
+        { fields, reason: fields[0] === 'region' ? 'missing_region' : 'missing_vessels' },
+        '请补充查询范围或船舶后继续。',
+      );
+    } else await executeVesselQuery(context, resolvedIntent, selection, ports, options);
+    return;
+  }
   const conversation = classifyConversationIntent(task.goal);
-  if (conversation) {
+  if (conversation && !selectedPurpose) {
     await executeConversation(conversation, ports, options);
     return;
   }
@@ -300,6 +473,12 @@ export async function executeAgent(
     '继续分析',
   ].includes(task.goal.replace(/[，,。！!\s]/g, ''));
   const request =
+    (selectedPurpose &&
+    selectedPurpose !== 'vessel_list' &&
+    selectedPurpose !== 'vessel_detail' &&
+    selectedPurpose !== 'intelligence_search'
+      ? { action: 'analyze' as const, algorithm: selectedPurpose }
+      : null) ??
     classifyRequest(task.goal, context.previous?.task.resultVersion ? previousDefinition : null) ??
     (context.previous?.task.status === 'awaiting_input' &&
     !context.previous.task.resultVersion &&
@@ -307,16 +486,23 @@ export async function executeAgent(
     continuation
       ? { action: 'analyze' as const, algorithm: previousDefinition }
       : null);
-  if (request && request.action !== 'analyze' && context.previous && !task.resultVersion) {
+  if (
+    request &&
+    request.action !== 'analyze' &&
+    context.previous &&
+    !task.resultVersion &&
+    revision === 0
+  ) {
     const scopeChanged =
       !isDeepStrictEqual(task.bbox, context.previous.task.bbox) ||
       task.historyHours !== context.previous.task.historyHours;
     const inherited = await ports.reusePrevious(context.previous.task.id);
     if (!inherited) {
-      await ports.finish({
-        status: 'awaiting_input',
-        summary: '上次结果的可用状态已变化，请明确新的分析目标后重试。',
-      });
+      await requestInput(
+        ports,
+        { fields: ['goal'], reason: 'missing_goal' },
+        '上次结果的可用状态已变化，请明确新的分析目标后重试。',
+      );
       return;
     }
     if (scopeChanged) {
@@ -327,11 +513,11 @@ export async function executeAgent(
         }))
       )
         return;
-      await ports.finish({
-        status: 'awaiting_input',
-        summary:
-          '已保留上次结果及原分析范围。当前选区或分析时长已变化；请恢复原选区与时长继续解释，或明确分析目标按新选区重算。',
-      });
+      await requestInput(
+        ports,
+        { fields: ['goal', 'region', 'time'], reason: 'scope_changed' },
+        '已保留上次结果及原分析范围。当前选区或分析时长已变化；请恢复原选区与时长继续解释，或明确分析目标按新选区重算。',
+      );
       return;
     }
     task = inherited;
@@ -343,17 +529,19 @@ export async function executeAgent(
     };
   }
   if (!task.bbox) {
-    await ports.finish({
-      status: 'awaiting_input',
-      summary: '请先在海图选择分析区域，再描述希望研判的目标。',
-    });
+    await requestInput(
+      ports,
+      { fields: ['region', ...(!request ? ['goal' as const] : [])], reason: 'missing_region' },
+      '请先在海图选择分析区域，再描述希望研判的目标。',
+    );
     return;
   }
   if (!request) {
-    await ports.finish({
-      status: 'awaiting_input',
-      summary: '当前支持港口限制船舶识别、区域低速活动与公告关联。请说明需要分析哪一类情况。',
-    });
+    await requestInput(
+      ports,
+      { fields: ['goal'], reason: 'missing_goal' },
+      '请选择船舶查询或需要研判的目标。',
+    );
     return;
   }
   const intent = request.algorithm;
@@ -378,7 +566,8 @@ export async function executeAgent(
   let dataset = context.steps.find((s) => s.key === 'input_snapshot')?.output as
     TopicDataset | undefined;
   let results = context.results;
-  let version = task.resultVersion;
+  let version =
+    (task.resultInputRevision ?? 0) === (task.inputRevision ?? 0) ? task.resultVersion : 0;
   let definition = task.definitionId;
   let asked = false;
   let stop: RuntimeStop | undefined;
@@ -458,7 +647,7 @@ export async function executeAgent(
           'run_analysis_first',
         ].includes(String(status));
         if (rejected) toolStatuses[name] = String(status);
-        else {
+        else if (!asked) {
           delete toolStatuses[name];
           done.add(name);
           if (!(await ports.saveStep(`tool:${name}`, name, { completed: true })))
@@ -560,10 +749,37 @@ export async function executeAgent(
     tool('read_evidence', '读取去标识证据摘要', async () =>
       version ? projectResults(results, version) : { status: 'run_analysis_first' },
     ),
-    tool('ask_user', '请用户补充任务目标', async () => {
-      asked = true;
-      return { status: 'awaiting_input' };
-    }),
+    tool(
+      'request_input',
+      '请用户通过选择框补充条件',
+      async (args) => {
+        const spec = AgentInputSpecSchema.parse(args);
+        if (!(await requestInput(ports, spec, '请补充所需条件后继续。')))
+          throw new RuntimeStop('fenced');
+        asked = true;
+        return { status: 'awaiting_input' };
+      },
+      Type.Object(
+        {
+          fields: Type.Array(
+            Type.Union(['region', 'vessels', 'time', 'goal'].map((v) => Type.Literal(v))),
+            { minItems: 1, maxItems: 4 },
+          ),
+          reason: Type.Union(
+            [
+              'missing_region',
+              'missing_vessels',
+              'missing_time',
+              'missing_goal',
+              'data_limit',
+              'retention',
+              'scope_changed',
+            ].map((v) => Type.Literal(v)),
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
   ];
   const models = createModels();
   models.setProvider(deepseekProvider());
@@ -588,7 +804,8 @@ export async function executeAgent(
             : ['list_algorithms', 'region_overview', 'related_notices'];
     if (version > 0 && stage.every((name) => done.has(name))) return [];
     return tools.filter(
-      (item) => item.name === 'ask_user' || (stage.includes(item.name) && !done.has(item.name)),
+      (item) =>
+        item.name === 'request_input' || (stage.includes(item.name) && !done.has(item.name)),
     );
   };
   const agent = new Agent({
@@ -648,15 +865,9 @@ export async function executeAgent(
   });
   try {
     await abortable(agent.prompt(safePrompt(intent, true)), controller.signal);
+    if (asked) return; // request_input already committed the wait and released the lease.
     await checkActive();
     if (stop) throw stop;
-    if (asked) {
-      await ports.finish({
-        status: 'awaiting_input',
-        summary: '请补充需要关注的行为或公告类型；已完成步骤已保存。',
-      });
-      return;
-    }
     const final = [...agent.state.messages].reverse().find((m) => m.role === 'assistant');
     if (
       !final ||
@@ -686,8 +897,20 @@ export async function executeAgent(
       invalid_time: '模型时间回复格式无效。',
       invalid_conversation: '模型回复格式无效。',
     };
+    if (code === 'limit' || code === 'retention') {
+      await requestInput(
+        ports,
+        {
+          fields: code === 'limit' ? ['region', 'time', 'vessels'] : ['time'],
+          reason: code === 'limit' ? 'data_limit' : 'retention',
+        },
+        messages[code],
+      );
+      return;
+    }
     await ports.finish({
-      status: ['budget', 'limit', 'retention'].includes(code) ? 'awaiting_input' : 'failed',
+      status: 'failed',
+      errorCode: code === 'budget' ? 'budget_exhausted' : code,
       error: messages[code],
       ...(code === 'budget' ? { summary: messages.budget } : {}),
     });

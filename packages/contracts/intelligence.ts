@@ -23,7 +23,13 @@ export const IntelligenceSourceSchema = z
     name: z.string().min(1).max(200),
     kind: z.enum(['manual', 'api', 'json', 'rss', 'file', 'fixture']),
     enabled: z.boolean().default(true),
-    adapter: z.enum(['maritime-html', 'gdacs', 'gdelt']).optional(),
+    adapter: z.enum(['maritime-html', 'gdacs', 'gdelt', 'rss', 'usgs', 'marine']).optional(),
+    visibility: z.enum(['public', 'internal']).default('internal'),
+    bbox: BboxSchema.optional(),
+    eventTypes: z
+      .array(z.enum(['TC', 'TS', 'FL']))
+      .max(3)
+      .optional(),
     requestsPerMinute: z.number().int().min(1).max(60).default(6),
     maxDocuments: z.number().int().min(1).max(100).default(5),
     trust: z.enum(['official', 'aggregator']).default('aggregator'),

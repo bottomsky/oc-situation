@@ -1,8 +1,42 @@
 import { describe, expect, it } from 'vitest';
 import { IntelligenceInputSchema, IntelligenceSourceSchema } from '../contracts/intelligence';
-import { boxesOverlap, readyEventId, intelligenceEventId } from './fusion-data';
+import { boxesOverlap, readyEventId, intelligenceEventId, queryFusionDataset } from './fusion-data';
+import type { Infrastructure } from './clients';
 
 describe('fusion data boundaries', () => {
+  it.each([['413123456'], []])(
+    'filters vessel intersection %j before the history limit',
+    async (...args) => {
+      const selected = args as string[];
+      let sql = '';
+      let params: Record<string, unknown> = {};
+      const infra = {
+        clickhouse: {
+          query: async (input: { query: string; query_params: Record<string, unknown> }) => {
+            sql = input.query;
+            params = input.query_params;
+            return { json: async () => [] };
+          },
+        },
+        pool: { query: async () => ({ rows: [] }) },
+      } as unknown as Infrastructure;
+      const now = Date.now();
+      const result = await queryFusionDataset(infra, {
+        from: new Date(now - 3600_000).toISOString(),
+        to: new Date(now).toISOString(),
+        mmsis: selected,
+        sourceId: 'chosen-source',
+        maxRecords: 1,
+      });
+      expect(params.selectedMmsis).toEqual(selected);
+      expect(params.sourceId).toBe('chosen-source');
+      expect(sql).toContain('sourceId={sourceId:String}');
+      expect(sql.indexOf('mmsi IN {selectedMmsis:Array(String)}')).toBeLessThan(
+        sql.indexOf('LIMIT'),
+      );
+      expect(result.ais).toEqual([]);
+    },
+  );
   const event = {
     sourceId: 'port',
     externalId: 'notice-1',

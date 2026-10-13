@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 export * from './topics';
 export * from './agent-conversation';
+export * from './agent-intents';
 import {
   MmsiSchema,
   PartialEtaSchema,

@@ -296,13 +296,25 @@ const WindowSchema = z
     to: z.iso.datetime(),
     maxRecords: z.number().int().min(1).max(100000).default(50000),
     bbox: BboxSchema.optional(),
+    mmsis: z
+      .array(z.string().regex(/^\d{9}$/))
+      .max(100000)
+      .optional(),
+    sourceId: z.string().min(1).max(200).optional(),
   })
   .refine((v) => Date.parse(v.from) <= Date.parse(v.to), 'Reversed window');
 export async function queryFusionDataset(
   infra: Infrastructure,
-  input: { from: string; to: string; bbox?: Bbox; maxRecords?: number },
+  input: {
+    from: string;
+    to: string;
+    bbox?: Bbox;
+    maxRecords?: number;
+    mmsis?: string[];
+    sourceId?: string;
+  },
 ): Promise<FusionDataset> {
-  const { from, to, maxRecords, bbox } = WindowSchema.parse(input);
+  const { from, to, maxRecords, bbox, mmsis: selectedMmsis, sourceId } = WindowSchema.parse(input);
   if (Date.parse(from) < Date.now() - 30 * 86400000)
     throw new Error(
       'Requested AIS history precedes the 30-day online retention; restore the raw archive before recomputation',
@@ -311,11 +323,13 @@ export async function queryFusionDataset(
     ? ` AND latitude BETWEEN {south:Float64} AND {north:Float64} AND (longitude >= {west:Float64} ${bbox[0] <= bbox[2] ? 'AND' : 'OR'} longitude <= {east:Float64})`
     : '';
   const response = await infra.clickhouse.query({
-    query: `SELECT observation FROM positions FINAL WHERE observedAt>=parseDateTime64BestEffort({from:String}) AND observedAt<=parseDateTime64BestEffort({to:String})${spatial} ORDER BY observedAt,eventId LIMIT {limit:UInt32}`,
+    query: `SELECT observation FROM positions FINAL WHERE observedAt>=parseDateTime64BestEffort({from:String}) AND observedAt<=parseDateTime64BestEffort({to:String})${spatial}${selectedMmsis !== undefined ? ' AND mmsi IN {selectedMmsis:Array(String)}' : ''}${sourceId ? ' AND sourceId={sourceId:String}' : ''} ORDER BY observedAt,eventId LIMIT {limit:UInt32}`,
     query_params: {
       from,
       to,
       limit: maxRecords + 1,
+      ...(selectedMmsis !== undefined ? { selectedMmsis } : {}),
+      ...(sourceId ? { sourceId } : {}),
       ...(bbox ? { west: bbox[0], south: bbox[1], east: bbox[2], north: bbox[3] } : {}),
     },
     format: 'JSONEachRow',

@@ -1,4 +1,5 @@
 import { IntelligenceSourceSchema } from '../../packages/contracts/intelligence';
+import { MARINE_SAMPLE_POINTS } from '../../packages/contracts/intelligence-search';
 
 // 用户已授权公开资料检索与接入；每个来源仍显式登记域名、用途和适度频率。
 export const publicIntelligenceSources = [
@@ -24,13 +25,14 @@ export const publicIntelligenceSources = [
   },
   {
     sourceId: 'gdacs-near-china',
-    name: 'GDACS 中国近海TC/TS事件中心',
+    name: 'GDACS 全球TC/TS/FL事件中心',
     kind: 'api',
     adapter: 'gdacs',
     endpoint: 'https://www.gdacs.org/gdacsapi/api/Events/geteventlist/EVENTS4APP',
     allowedHosts: ['www.gdacs.org'],
     trust: 'official',
-    pollSeconds: 3600,
+    pollSeconds: 1800,
+    eventTypes: ['TC', 'TS', 'FL'],
   },
   {
     sourceId: 'gdelt-maritime-news',
@@ -43,10 +45,41 @@ export const publicIntelligenceSources = [
     trust: 'aggregator',
     pollSeconds: 3600,
   },
+  {
+    sourceId: 'gcaptain-maritime-news',
+    name: 'gCaptain 全球航运新闻候选',
+    kind: 'rss',
+    adapter: 'rss',
+    endpoint: 'https://gcaptain.com/feed/',
+    allowedHosts: ['gcaptain.com'],
+    trust: 'aggregator',
+    pollSeconds: 900,
+  },
+  {
+    sourceId: 'usgs-earthquakes',
+    name: 'USGS 全球M4.5+地震事件',
+    kind: 'api',
+    adapter: 'usgs',
+    endpoint: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson',
+    allowedHosts: ['earthquake.usgs.gov'],
+    trust: 'official',
+    pollSeconds: 600,
+  },
+  {
+    sourceId: 'open-meteo-marine',
+    name: 'Open-Meteo 六个海域代表点海浪预报',
+    kind: 'api',
+    adapter: 'marine',
+    endpoint: `https://marine-api.open-meteo.com/v1/marine?latitude=${MARINE_SAMPLE_POINTS.map((p) => p.lat).join(',')}&longitude=${MARINE_SAMPLE_POINTS.map((p) => p.lon).join(',')}&hourly=wave_height,wave_direction,wave_period&forecast_hours=72&timezone=GMT&timeformat=unixtime`,
+    allowedHosts: ['marine-api.open-meteo.com'],
+    trust: 'aggregator',
+    pollSeconds: 3600,
+  },
 ].map((s) =>
   IntelligenceSourceSchema.parse({
     ...s,
     enabled: true,
+    visibility: 'public',
     authorizationConfirmed: true,
     requestsPerMinute: 6,
     maxDocuments: 5,

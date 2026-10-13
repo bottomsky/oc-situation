@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { executeAgent, type RuntimePorts } from './runtime';
-import type { AgentTask } from '../../packages/contracts/agent';
+import { executeAgent, guardedFetch, type RuntimePorts } from './runtime';
+import type { AgentTask, AgentQueryResult, AgentInputSpec } from '../../packages/contracts/agent';
 import type { AnalysisResult, TopicDataset } from '../../packages/contracts/topics';
 
 export const task = {
@@ -26,6 +26,7 @@ export function memoryPorts(dataset?: TopicDataset) {
     status: '',
     summary: '',
     error: '',
+    errorCode: '',
     queries: 0,
     reuseCalls: 0,
     definitions: [] as string[],
@@ -66,6 +67,7 @@ export function memoryPorts(dataset?: TopicDataset) {
       state.status = outcome.status;
       state.summary = outcome.summary ?? '';
       state.error = outcome.error ?? '';
+      state.errorCode = outcome.errorCode ?? '';
       return true;
     },
   };
@@ -86,6 +88,294 @@ export function sse(content: Record<string, unknown>, finish: string) {
     { headers: { 'content-type': 'text/event-stream' } },
   );
 }
+
+describe('结构化补充与只读查询续作', () => {
+  const queryResult: AgentQueryResult = {
+    kind: 'vessel_list',
+    version: 0,
+    inputRevision: 1,
+    total: 1,
+    truncated: false,
+    asOf: '2026-10-13T01:00:00.000Z',
+    selection: { bbox: [120, 30, 122, 32], purpose: 'vessel_list' },
+    items: [
+      { mmsi: '413123456', name: '本地秘密船名', imo: null, shipType: 70, latestPosition: null },
+    ],
+  };
+  it('同任务补充后查询不调用模型，提交结果版本后才完成', async () => {
+    const { ports, state } = memoryPorts();
+    const calls: string[] = [];
+    ports.queryVessels = async () => {
+      calls.push('query');
+      return queryResult;
+    };
+    ports.saveQueryResult = async () => {
+      calls.push('save');
+      return 2;
+    };
+    const finish = ports.finish;
+    ports.finish = async (outcome) => {
+      calls.push('finish');
+      expect(outcome.summaryResultVersion).toBe(2);
+      return finish(outcome);
+    };
+    await executeAgent(
+      {
+        task: {
+          ...task,
+          goal: '当前视野有哪些船舶',
+          intent: 'vessel_list',
+          inputRevision: 1,
+          selection: queryResult.selection,
+        },
+        steps: [],
+        results: [],
+      },
+      ports,
+      {
+        apiKey: '',
+        fetch: async () => {
+          throw new Error('must stay local');
+        },
+      },
+    );
+    expect(calls).toEqual(['query', 'save', 'finish']);
+    expect(state.status).toBe('completed');
+    expect(state.modelCalls).toBe(0);
+    expect(state.summary).toContain('1 艘');
+  });
+  it('缺区域用requestInput原子挂起，不再调用finish', async () => {
+    const { ports } = memoryPorts();
+    const requests: AgentInputSpec[] = [];
+    ports.requestInput = async (spec) => {
+      requests.push(spec);
+      return true;
+    };
+    ports.finish = async () => {
+      throw new Error('lease already released');
+    };
+    await executeAgent(
+      {
+        task: {
+          ...task,
+          goal: '有哪些船舶',
+          bbox: null,
+          intent: 'vessel_list',
+          selection: { purpose: 'vessel_list' },
+        },
+        steps: [],
+        results: [],
+      },
+      ports,
+      { apiKey: '' },
+    );
+    expect(requests).toEqual([{ fields: ['region'], reason: 'missing_region' }]);
+  });
+  it('模型补问持久化后立即结束，不再保存步骤或调用模型', async () => {
+    const { ports } = memoryPorts();
+    let paused = false;
+    ports.requestInput = async () => {
+      paused = true;
+      return true;
+    };
+    ports.active = async () => !paused;
+    ports.finish = async () => {
+      throw new Error('must not finish after pause');
+    };
+    ports.saveStep = async () => {
+      throw new Error('must not save after pause');
+    };
+    let calls = 0;
+    await executeAgent({ task, steps: [], results: [] }, ports, {
+      apiKey: 'synthetic',
+      fetch: async () => {
+        calls++;
+        return sse(
+          {
+            role: 'assistant',
+            tool_calls: [
+              {
+                index: 0,
+                id: 'request',
+                type: 'function',
+                function: {
+                  name: 'request_input',
+                  arguments: JSON.stringify({ fields: ['time'], reason: 'missing_time' }),
+                },
+              },
+            ],
+          },
+          'tool_calls',
+        );
+      },
+    });
+    expect(paused).toBe(true);
+    expect(calls).toBe(1);
+  });
+  it.each([0, 1])('只恢复相同输入修订的查询快照：已有修订 %s', async (resultRevision) => {
+    const { ports, state } = memoryPorts();
+    let queries = 0;
+    ports.queryVessels = async () => {
+      queries++;
+      return queryResult;
+    };
+    ports.saveQueryResult = async () => 3;
+    await executeAgent(
+      {
+        task: {
+          ...task,
+          intent: 'vessel_list',
+          selection: queryResult.selection,
+          inputRevision: 1,
+          resultInputRevision: resultRevision,
+          resultVersion: 2,
+        },
+        steps: [],
+        results: [],
+        queryResult: { ...queryResult, inputRevision: resultRevision, version: 2 },
+      },
+      ports,
+      { apiKey: '' },
+    );
+    expect(queries).toBe(resultRevision === 1 ? 0 : 1);
+    expect(state.status).toBe('completed');
+  });
+  it('查询预算耗尽是终态失败，不创建补充请求', async () => {
+    const { ports, state } = memoryPorts();
+    ports.reserve = async () => false;
+    ports.queryVessels = async () => {
+      throw new Error('must not query');
+    };
+    ports.saveQueryResult = async () => 1;
+    ports.requestInput = async () => {
+      throw new Error('budget cannot be fixed by input');
+    };
+    await executeAgent(
+      {
+        task: { ...task, intent: 'vessel_list', selection: queryResult.selection },
+        steps: [],
+        results: [],
+      },
+      ports,
+      { apiKey: '' },
+    );
+    expect(state.status).toBe('failed');
+    expect(state.errorCode).toBe('budget_exhausted');
+  });
+  it('查询追问绑定已保存的快照，不重新查询或向模型外发船舶资料', async () => {
+    const { ports, state } = memoryPorts();
+    let saved: AgentQueryResult | undefined;
+    ports.queryVessels = async () => {
+      throw new Error('must not refresh snapshot');
+    };
+    ports.saveQueryResult = async (result) => {
+      saved = result;
+      return 1;
+    };
+    await executeAgent(
+      {
+        task: { ...task, goal: '解释上次查询结果', intent: 'explain', inputRevision: 0 },
+        steps: [],
+        results: [],
+        previous: {
+          task: { ...task, inputRevision: 1, resultInputRevision: 1, resultVersion: 4 },
+          steps: [],
+          results: [],
+          queryResult: { ...queryResult, version: 4 },
+        },
+      },
+      ports,
+      {
+        apiKey: '',
+        fetch: async () => {
+          throw new Error('private query stays local');
+        },
+      },
+    );
+    expect(saved?.asOf).toBe(queryResult.asOf);
+    expect(saved?.inputRevision).toBe(0);
+    expect(state.summary).toContain('上次已保存的查询快照');
+    expect(state.status).toBe('completed');
+    expect(state.modelCalls).toBe(0);
+  });
+  it('解释任务重试或恢复时优先当前修订快照，无需原父任务', async () => {
+    const { ports, state } = memoryPorts();
+    ports.queryVessels = async () => {
+      throw new Error('snapshot must not be refreshed');
+    };
+    ports.saveQueryResult = async () => {
+      throw new Error('already persisted');
+    };
+    await executeAgent(
+      {
+        task: {
+          ...task,
+          goal: '解释上次查询结果',
+          intent: 'explain',
+          inputRevision: 0,
+          resultInputRevision: 0,
+          resultVersion: 1,
+        },
+        steps: [],
+        results: [],
+        queryResult: { ...queryResult, version: 1, inputRevision: 0 },
+      },
+      ports,
+      {
+        apiKey: '',
+        fetch: async () => {
+          throw new Error('must not call supplier');
+        },
+      },
+    );
+    expect(state.status).toBe('completed');
+    expect(state.summary).toContain('上次已保存的查询快照');
+    expect(state.modelCalls).toBe(0);
+  });
+  it.each([false, true])('视野变化：明确重查=%s时决定执行新查询或解释原快照', async (rerun) => {
+    const { ports, state } = memoryPorts();
+    let calls = 0;
+    let saved: AgentQueryResult | undefined;
+    const bbox: [number, number, number, number] = [130, 35, 140, 40];
+    ports.queryVessels = async (_kind, selection) => {
+      calls++;
+      return { ...queryResult, selection, inputRevision: 0 };
+    };
+    ports.saveQueryResult = async (result) => {
+      saved = result;
+      return 1;
+    };
+    await executeAgent(
+      {
+        task: {
+          ...task,
+          goal: rerun ? '解释上次结果，然后按当前视野再查一次' : '解释上次查询结果，当前范围变了',
+          bbox,
+          inputRevision: 0,
+        },
+        steps: [],
+        results: [],
+        previous: {
+          task: { ...task, resultVersion: 1, inputRevision: 1, resultInputRevision: 1 },
+          steps: [],
+          results: [],
+          queryResult,
+        },
+      },
+      ports,
+      {
+        apiKey: '',
+        fetch: async () => {
+          throw new Error('must not call supplier');
+        },
+      },
+    );
+    expect(calls).toBe(rerun ? 1 : 0);
+    expect(saved!.selection.bbox).toEqual(rerun ? bbox : queryResult.selection.bbox);
+    expect(state.status).toBe('completed');
+    expect(state.modelCalls).toBe(0);
+  });
+});
 
 describe('真实 Pi 循环与外发请求', () => {
   it.each([{ bbox: null }, { bbox: task.bbox }])(
@@ -232,7 +522,8 @@ describe('真实 Pi 循环与外发请求', () => {
       },
     );
     expect(requests).toBe(0);
-    expect(state.status).toBe('awaiting_input');
+    expect(state.status).toBe('failed');
+    expect(state.errorCode).toBe('budget_exhausted');
     expect(state.error).toContain('预算');
   });
   it('普通对话取消后拒绝迟到回复，且不写成功状态', async () => {
@@ -405,7 +696,7 @@ describe('真实 Pi 循环与外发请求', () => {
     }
     expect(
       JSON.parse(bodies[0]!).tools.map((t: { function: { name: string } }) => t.function.name),
-    ).toEqual(['list_algorithms', 'region_overview', 'related_notices', 'ask_user']);
+    ).toEqual(['list_algorithms', 'region_overview', 'related_notices', 'request_input']);
     for (const body of bodies)
       for (const secret of [
         '413123456',
@@ -455,7 +746,8 @@ describe('真实 Pi 循环与外发请求', () => {
       },
     });
     expect(calls).toBe(1);
-    expect(state.status).toBe('awaiting_input');
+    expect(state.status).toBe('failed');
+    expect(state.errorCode).toBe('budget_exhausted');
   });
   it('取消或失去租约后停止所有计算及模型请求', async () => {
     const { ports, state } = memoryPorts();
@@ -516,7 +808,8 @@ describe('真实 Pi 循环与外发请求', () => {
     });
     expect(bodies).toHaveLength(2);
     expect(bodies.every((b) => !b.includes('private provider error'))).toBe(true);
-    expect(state.status).toBe('awaiting_input');
+    expect(state.status).toBe('failed');
+    expect(state.errorCode).toBe('budget_exhausted');
   });
   it('内部超时落入失败状态，释放任务而不冒充租约失效', async () => {
     const { ports, state } = memoryPorts();
@@ -643,7 +936,8 @@ describe('真实 Pi 循环与外发请求', () => {
     expect(state.definitions).toEqual([]);
     expect(state.queries).toBe(0);
     expect(state.version).toBe(0);
-    expect(state.status).toBe('awaiting_input');
+    expect(state.status).toBe('failed');
+    expect(state.errorCode).toBe('budget_exhausted');
   });
   it('输入快照保存后崩溃可重建公告概况，不再查询数据', async () => {
     const { ports, state } = memoryPorts();
@@ -746,7 +1040,7 @@ describe('真实 Pi 循环与外发请求', () => {
         const payload = JSON.parse(String(init?.body));
         const names = (payload.tools ?? [])
           .map((t: { function: { name: string } }) => t.function.name)
-          .filter((name: string) => name !== 'ask_user');
+          .filter((name: string) => name !== 'request_input');
         batches.push(names);
         return names.length
           ? sse(
@@ -934,4 +1228,25 @@ describe('真实 Pi 循环与外发请求', () => {
     expect(state.reuseCalls).toBe(1);
     expect(state.queries).toBe(0);
   });
+});
+
+it('provider transport disables redirects even when the serializer asks to follow them', async () => {
+  const { ports } = memoryPorts();
+  let redirected: 'error' | 'follow' | 'manual' | undefined;
+  const transport = guardedFetch(
+    ports,
+    {
+      apiKey: 'test',
+      fetch: async (_url, init) => {
+        redirected = init?.redirect;
+        return new Response(null, {
+          status: 302,
+          headers: { location: 'https://untrusted.example' },
+        });
+      },
+    },
+    new AbortController().signal,
+  );
+  await transport('https://api.deepseek.com/chat/completions', { redirect: 'follow' });
+  expect(redirected).toBe('error');
 });

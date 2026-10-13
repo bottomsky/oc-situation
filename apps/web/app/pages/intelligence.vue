@@ -2,6 +2,7 @@
 import type { IntelligenceEvent, IntelligenceSource, IntelligenceRelation } from '@ais/contracts';
 import { IntelligenceInputSchema, IntelligenceCategorySchema } from '@ais/contracts';
 import { categoryLabels } from '../utils/intelligenceLabels';
+import { safeOriginalUrl } from '../utils/intelligenceLabels';
 import { createIntelligenceInput, parseIntelligenceGeoJSON } from '../utils/intelligenceForm';
 const intelligence = reactive(useIntelligenceWorkspace());
 const route = useRoute();
@@ -110,7 +111,11 @@ const archiveContent = ref('');
 const archiveId = ref('');
 const archiveError = ref('');
 const archiveBusy = ref(false);
-const sourceKind = ref<'manual' | 'json' | 'rss'>('manual');
+const sourceKind = ref<'manual' | 'json' | 'rss' | 'api'>('manual');
+const sourceVisibility = ref<'public' | 'internal'>('internal');
+const sourceAdapter = ref<NonNullable<IntelligenceSource['adapter']> | ''>('');
+const sourceBbox = ref('');
+const sourceEventTypes = ref<('TC' | 'TS' | 'FL')[]>([]);
 const endpoint = ref('');
 const authorizationConfirmed = ref(false);
 async function loadArchives(more = false) {
@@ -159,6 +164,9 @@ async function toggleSource(source: IntelligenceSource) {
         pollSeconds: source.pollSeconds,
         timeoutSeconds: source.timeoutSeconds,
         adapter: source.adapter,
+        visibility: source.visibility ?? 'internal',
+        ...(source.bbox ? { bbox: source.bbox } : {}),
+        ...(source.eventTypes ? { eventTypes: source.eventTypes } : {}),
         requestsPerMinute: source.requestsPerMinute,
         maxDocuments: source.maxDocuments,
         trust: source.trust,
@@ -244,12 +252,36 @@ async function createSource() {
   busy.value = true;
   error.value = '';
   try {
+    const bounds = sourceBbox.value.trim()
+      ? sourceBbox.value.split(',').map((value) => Number(value.trim()))
+      : undefined;
+    if (
+      bounds &&
+      (bounds.length !== 4 ||
+        !bounds.every(Number.isFinite) ||
+        bounds[0]! < -180 ||
+        bounds[0]! > 180 ||
+        bounds[2]! < -180 ||
+        bounds[2]! > 180 ||
+        bounds[1]! < -90 ||
+        bounds[3]! > 90 ||
+        bounds[1]! >= bounds[3]!)
+    )
+      throw new Error('来源范围应为有效的西、南、东、北坐标，使用英文逗号分隔。');
     await api('/intelligence/sources', {
       method: 'POST',
       body: {
         sourceId: sourceId.value,
         name: sourceName.value,
         kind: sourceKind.value,
+        visibility: sourceVisibility.value,
+        ...(sourceAdapter.value && sourceKind.value !== 'manual'
+          ? { adapter: sourceAdapter.value }
+          : {}),
+        ...(bounds ? { bbox: bounds } : {}),
+        ...(sourceAdapter.value === 'gdacs' && sourceEventTypes.value.length
+          ? { eventTypes: [...sourceEventTypes.value] }
+          : {}),
         enabled: true,
         authorizationConfirmed: sourceKind.value === 'manual' || authorizationConfirmed.value,
         ...(sourceKind.value !== 'manual'
@@ -259,6 +291,8 @@ async function createSource() {
     });
     sourceId.value = '';
     sourceName.value = '';
+    sourceBbox.value = '';
+    sourceEventTypes.value = [];
     notice.value = '情报来源已登记';
     await load();
   } catch (e) {
@@ -287,6 +321,7 @@ onMounted(() => {
       <button :disabled="busy" @click="load()">刷新公告</button>
     </div>
     <FetchState :busy="busy" :error="error" @retry="load()" />
+    <IntelligenceSearchPanel :sources="sources" />
     <details v-if="canAdmin" class="panel">
       <summary>登记情报来源</summary>
       <form class="editor-grid" @submit.prevent="createSource">
@@ -297,8 +332,35 @@ onMounted(() => {
             <option value="manual">手工结构化导入</option>
             <option value="json">JSON 公告接口</option>
             <option value="rss">RSS 原文归档</option>
+            <option value="api">公开 API 接口</option>
           </select></label
         >
+        <label
+          >来源可见性<select v-model="sourceVisibility" aria-label="来源可见性">
+            <option value="internal">内部资料</option>
+            <option value="public">公开资料</option>
+          </select></label
+        >
+        <label v-if="sourceKind !== 'manual'"
+          >采集适配器<select v-model="sourceAdapter" aria-label="采集适配器">
+            <option value="">通用结构化接口</option>
+            <option value="maritime-html">海事网页</option>
+            <option value="gdacs">GDACS 灾害</option>
+            <option value="gdelt">GDELT 新闻</option>
+            <option value="rss">RSS 资讯</option>
+            <option value="usgs">USGS 地震</option>
+            <option value="marine">海况预报</option>
+          </select></label
+        >
+        <label v-if="sourceKind !== 'manual'"
+          >采集范围（可选）<input v-model="sourceBbox" placeholder="西,南,东,北，例如 100,0,140,45"
+        /></label>
+        <fieldset v-if="sourceAdapter === 'gdacs'">
+          <legend>灾害类型（不选则使用来源默认）</legend>
+          <label><input v-model="sourceEventTypes" type="checkbox" value="TC" />热带气旋</label
+          ><label><input v-model="sourceEventTypes" type="checkbox" value="TS" />海啸</label
+          ><label><input v-model="sourceEventTypes" type="checkbox" value="FL" />洪水</label>
+        </fieldset>
         <template v-if="sourceKind !== 'manual'"
           ><label
             >来源接口地址<input
@@ -416,6 +478,26 @@ onMounted(() => {
         <p v-if="source.lastPolledAt" class="detail-time">
           最近尝试采集：{{ dateLabel(source.lastPolledAt) }}
         </p>
+        <p class="detail-time">
+          {{ source.visibility === 'public' ? '公开资料' : '内部资料' }} ·
+          {{ source.adapter || '通用接口' }} ·
+          {{
+            !source.enabled
+              ? '已停用'
+              : source.lastError
+                ? '采集异常'
+                : source.lastSuccessfulAt
+                  ? '已有采集记录'
+                  : '尚未成功采集'
+          }}
+        </p>
+        <a
+          v-if="safeOriginalUrl(source.endpoint)"
+          :href="safeOriginalUrl(source.endpoint)"
+          target="_blank"
+          rel="noopener noreferrer"
+          >查看来源接口</a
+        >
         <p class="detail-time">
           最后成功采集：{{
             source.lastSuccessfulAt ? dateLabel(source.lastSuccessfulAt) : '暂无成功记录'

@@ -1,3 +1,7 @@
+import {
+  searchAgentIntelligence,
+  getIntelligenceSourceHealth,
+} from '../../packages/infrastructure/intelligence-search';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
@@ -12,6 +16,10 @@ import { z } from 'zod';
 import type { Infrastructure } from '../../packages/infrastructure/clients';
 import { queryFusionDataset } from '../../packages/infrastructure/fusion-data';
 import {
+  queryAgentVessels,
+  resolveAgentAnalysisMmsis,
+} from '../../packages/infrastructure/agent-query';
+import {
   claimAgentTask,
   finishAgentTask,
   getAgentTaskContext,
@@ -23,6 +31,9 @@ import {
   saveAgentResults,
   saveAgentStep,
   setAgentDefinition,
+  requestAgentInput,
+  saveAgentQueryResult,
+  saveAgentIntelligenceResult,
 } from '../../packages/infrastructure/agent';
 import { executeAgent, type RuntimeOptions } from './runtime';
 
@@ -200,13 +211,31 @@ export async function processAgentTask(
         },
         saveStep: (key, name, output) =>
           saveAgentStep(...fence, { key, name, input: null, output }),
+        requestInput: (spec) => requestAgentInput(...fence, spec),
+        queryVessels: (kind, selection) =>
+          queryAgentVessels(infra, {
+            kind,
+            selection,
+            inputRevision: boundTask.inputRevision ?? 0,
+          }),
+        searchIntelligence: (selection) => searchAgentIntelligence(infra, selection),
+        intelligenceSourceHealth: () => getIntelligenceSourceHealth(infra),
+        saveIntelligenceResult: (result) => saveAgentIntelligenceResult(...fence, result),
+        saveQueryResult: (result) => saveAgentQueryResult(...fence, result),
         query: async () => {
           if (!boundTask.bbox) throw new Error('region_required');
+          const mmsis = await resolveAgentAnalysisMmsis(
+            infra,
+            boundTask.selection ?? {},
+            options.maxRecords ?? 50000,
+          );
           const dataset = await queryFusionDataset(infra, {
             from: boundTask.from,
             to: boundTask.to,
             bbox: boundTask.bbox,
             maxRecords: options.maxRecords ?? 50000,
+            mmsis,
+            sourceId: boundTask.selection?.filters?.sourceId,
           });
           return {
             ...dataset,
@@ -236,26 +265,43 @@ export async function runAgentWorker(
   try {
     await ensureAgentBus(infra);
     stage = 'consumer';
-    const consumer = await infra.js.consumers.get(AGENT_STREAM, AGENT_CONSUMER);
+    let consumer = await infra.js.consumers.get(AGENT_STREAM, AGENT_CONSUMER);
+    let heartbeatFailures = 0;
     const workerId = randomUUID();
     while (!signal.aborted) {
       stage = 'publish';
       await publishRunnableAgentTasks(infra);
       stage = 'fetch';
-      const messages = await consumer.fetch({ max_messages: 1, expires: 1000 });
-      const close = () => {
-        void messages.close();
-      };
-      signal.addEventListener('abort', close, { once: true });
-      if (signal.aborted) close();
       const batch: JsMsg[] = [];
       try {
-        // Drain the pull iterator before slow work, allowing NATS's queued stop callback
-        // to close the NATS heartbeat monitor as soon as the one-message batch is received.
-        for await (const message of messages) batch.push(message);
-      } finally {
-        signal.removeEventListener('abort', close);
-        await messages.close();
+        const messages = await consumer.fetch({ max_messages: 1, expires: 1000 });
+        const close = () => {
+          void Promise.resolve(messages.close()).catch(() => {});
+        };
+        signal.addEventListener('abort', close, { once: true });
+        if (signal.aborted) close();
+        try {
+          // Drain before task work so the iterator's heartbeat monitor can stop immediately.
+          for await (const message of messages) batch.push(message);
+        } finally {
+          signal.removeEventListener('abort', close);
+          await messages.close();
+        }
+        heartbeatFailures = 0;
+      } catch (error) {
+        // An interrupted iterator may already have yielded one job. Release it for redelivery;
+        // PostgreSQL leases/fences and the runnable-task outbox remain the source of truth.
+        for (const message of batch) message.nak(5000);
+        if (signal.aborted) return;
+        if (agentWorkerFailure(error, 'fetch').kind !== 'nats_heartbeat') throw error;
+        const backoffMs = Math.min(5000, 250 * 2 ** Math.min(heartbeatFailures++, 5));
+        await delay(backoffMs, undefined, { signal }).catch((error: unknown) => {
+          if (!signal.aborted) throw error;
+        });
+        if (signal.aborted) return;
+        stage = 'consumer';
+        consumer = await infra.js.consumers.get(AGENT_STREAM, AGENT_CONSUMER);
+        continue;
       }
       stage = 'task';
       for (const message of batch) {

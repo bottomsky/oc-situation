@@ -14,6 +14,7 @@ test('面板拖动、键盘调整、持久化与窗口缩放保留同一海图',
   const map = page.getByTestId('sea-map');
   await expect(map).toHaveAttribute('data-ready', 'true');
   await expect.poll(() => calls.liveConnections).toBe(1);
+  await openLeftPanel(page);
   const instance = await map.getAttribute('data-map-instance');
   const connections = calls.liveConnections;
   const left = page.getByRole('separator', { name: '调整操作面板宽度' });
@@ -90,6 +91,7 @@ test('面板拖动、键盘调整、持久化与窗口缩放保留同一海图',
     document.documentElement.style.cursor = styles.cursor;
   }, originalStyles);
   await page.reload();
+  await openLeftPanel(page);
   await expect(left).toHaveAttribute('aria-valuenow', '360');
   await expect(right).toHaveAttribute('aria-valuenow', '420');
   await expect(composer).toBeVisible();

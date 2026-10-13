@@ -1,7 +1,6 @@
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { load } from 'cheerio';
 import {
   IntelligenceInputSchema,
   type IntelligenceSource,
@@ -13,7 +12,8 @@ import {
 import type { Infrastructure } from '@ais/infrastructure';
 import { safeRequest } from '../crawler/src/policy';
 import { RequestBudget } from '../crawler/src/budget';
-import { collectProvider, nextRevision } from './providers';
+import { collectProvider, nextRevision, decodeMarineForecasts } from './providers';
+import { saveMarineForecasts } from '../../packages/infrastructure/intelligence-weather';
 import { suggestObjectRelations } from './suggestions';
 
 export function decodeStructuredEvents(bytes: Buffer, sourceId: string) {
@@ -49,7 +49,47 @@ export async function ingestSource(
   signal?: AbortSignal,
 ) {
   if (source.kind === 'manual') throw new Error('Manual sources use the structured ingestion API');
-  if (source.adapter) {
+  if (source.adapter === 'marine') {
+    if (!source.endpoint || !source.authorizationConfirmed)
+      throw new Error('Authorized marine endpoint required');
+    const response = await safeRequest(
+      source.endpoint,
+      {
+        allowedHosts: source.allowedHosts,
+        timeoutSeconds: source.timeoutSeconds,
+        budget: new RequestBudget(source.requestsPerMinute, 1),
+      },
+      signal,
+    );
+    const stored = await archiveIntelligenceRaw(
+      infra,
+      source.sourceId,
+      response.body,
+      response.headers['content-type'] ?? 'application/json',
+    );
+    await infra.pool.query(
+      'UPDATE intelligence_archives SET source_urls=ARRAY(SELECT DISTINCT unnest(source_urls || ARRAY[$2]::text[])) WHERE id=$1',
+      [stored.archiveId, response.url],
+    );
+    if (response.status !== 200) throw new Error(`Marine provider HTTP ${response.status}`);
+    // Collection and GC both hold the source lock. A confirmed re-upload can revive a raw hash.
+    await infra.pool.query('DELETE FROM intelligence_weather_archive_gc WHERE archive_id=$1', [
+      stored.archiveId,
+    ]);
+    const snapshots = decodeMarineForecasts(
+      response.body,
+      source,
+      stored.archiveId,
+      new Date().toISOString(),
+      response.url,
+    );
+    return {
+      ...(await saveMarineForecasts(infra, snapshots)),
+      requiresStructuring: false,
+      snapshots: snapshots.length,
+    };
+  }
+  if (source.adapter || source.kind === 'rss') {
     const archives = new Map<string, string>();
     const result = await collectProvider(
       source,
@@ -65,31 +105,45 @@ export async function ingestSource(
           [stored.archiveId, document.url],
         );
         archives.set(document.url, stored.archiveId);
+        if (document.requestedUrl) archives.set(document.requestedUrl, stored.archiveId);
       },
       signal,
     );
     let imported = 0;
+    let unchanged = 0;
     for (const incoming of result.events) {
-      const rows = await infra.pool.query<{
-        event: import('../../packages/contracts/intelligence').IntelligenceEvent;
-      }>(
-        'SELECT event FROM intelligence_events WHERE source_id=$1 AND external_id=$2 ORDER BY version DESC LIMIT 1',
-        [source.sourceId, incoming.externalId],
-      );
-      const revision = nextRevision(incoming, rows.rows[0]?.event);
-      if (!revision) continue;
-      revision.relations = [
-        ...(revision.relations ?? []),
-        ...(await suggestObjectRelations(infra, revision)),
-      ];
-      const originalArchiveId =
-        archives.get(incoming.originalUrl ?? '') ?? archives.get(source.endpoint!);
-      await saveIntelligenceEvent(infra, { ...revision, originalArchiveId });
-      imported++;
+      try {
+        const rows = await infra.pool.query<{
+          event: import('../../packages/contracts/intelligence').IntelligenceEvent;
+        }>(
+          'SELECT event FROM intelligence_events WHERE source_id=$1 AND external_id=$2 ORDER BY version DESC LIMIT 1',
+          [source.sourceId, incoming.externalId],
+        );
+        const revision = nextRevision(incoming, rows.rows[0]?.event);
+        if (!revision) {
+          unchanged++;
+          continue;
+        }
+        revision.relations = [
+          ...(revision.relations ?? []),
+          ...(await suggestObjectRelations(infra, revision)),
+        ];
+        const originalArchiveId =
+          archives.get(incoming.originalUrl ?? '') ?? archives.get(source.endpoint!);
+        if (!originalArchiveId) throw new Error('Original provider bytes were not archived');
+        await saveIntelligenceEvent(infra, { ...revision, originalArchiveId });
+        imported++;
+      } catch (error) {
+        result.failures.push({
+          url: incoming.originalUrl ?? source.endpoint!,
+          reason:
+            error instanceof Error ? error.message.slice(0, 1000) : 'Event persistence failed',
+        });
+      }
     }
     return {
       imported,
-      unchanged: result.events.length - imported,
+      unchanged,
       requiresStructuring: result.pending.length > 0,
       pending: result.pending,
       failures: result.failures,
@@ -121,19 +175,7 @@ export async function ingestSource(
     bytes = response.body;
   }
   // Preserve the response byte-for-byte before interpreting the structured representation.
-  const archived = await archiveIntelligenceRaw(
-    infra,
-    source.sourceId,
-    bytes,
-    source.kind === 'rss' ? 'application/xml' : 'application/json',
-  );
-  if (source.kind === 'rss') {
-    const document = load(bytes.toString('utf8'), { xmlMode: true });
-    const count = document('item,entry').length;
-    if (count > 1000) throw new Error('RSS feed exceeds 1000 entries');
-    // RSS is raw evidence for operator structuring; no inferred applicability enters topic rules.
-    return { imported: 0, requiresStructuring: true, entries: count, ...archived };
-  }
+  const archived = await archiveIntelligenceRaw(infra, source.sourceId, bytes, 'application/json');
   const events = decodeStructuredEvents(bytes, source.sourceId);
   for (const event of events)
     await saveIntelligenceEvent(infra, { ...event, originalArchiveId: archived.archiveId });

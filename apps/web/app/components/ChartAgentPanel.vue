@@ -14,7 +14,12 @@ const emit = defineEmits<{ locate: [result: AnalysisResult] }>();
 const state = props.state;
 const selectedTask = computed(() => state.detail?.task);
 const hasAnalysis = computed(
-  () => !!selectedTask.value && agentTaskHasAnalysis(selectedTask.value, state.detail?.steps ?? []),
+  () =>
+    !!selectedTask.value &&
+    !['intelligence_search', 'vessel_list', 'vessel_detail'].includes(
+      selectedTask.value.intent ?? '',
+    ) &&
+    agentTaskHasAnalysis(selectedTask.value, state.detail?.steps ?? []),
 );
 const panel = useTemplateRef<HTMLElement>('panel');
 const messageFollow = createAgentMessageFollow();
@@ -61,7 +66,25 @@ const regionChanged = computed(
 const summaryCurrent = computed(
   () =>
     selectedTask.value?.summary &&
-    selectedTask.value.summaryResultVersion === selectedTask.value.resultVersion,
+    selectedTask.value.summaryResultVersion === selectedTask.value.resultVersion &&
+    (selectedTask.value.inputRevision === undefined ||
+      selectedTask.value.summaryInputRevision === selectedTask.value.inputRevision),
+);
+const currentResults = computed(
+  () =>
+    selectedTask.value?.inputRevision === undefined ||
+    selectedTask.value.resultInputRevision === selectedTask.value.inputRevision,
+);
+const queryResult = computed(() =>
+  state.detail?.queryResult &&
+  state.detail.queryResult.inputRevision === selectedTask.value?.inputRevision
+    ? state.detail.queryResult
+    : null,
+);
+const intelligenceResult = computed(() =>
+  state.detail?.intelligenceResult?.inputRevision === selectedTask.value?.inputRevision
+    ? state.detail?.intelligenceResult
+    : null,
 );
 const tools: Record<string, string> = {
   list_algorithms: '查询可用算法',
@@ -72,6 +95,9 @@ const tools: Record<string, string> = {
   read_results: '读取分析结果',
   read_evidence: '读取证据摘要',
   ask_user: '补充分析条件',
+  request_input: '补充任务条件',
+  query_vessels: '查询船舶',
+  search_intelligence: '检索本地情报',
 };
 function changeSession(event: Event) {
   const id = (event.target as HTMLSelectElement).value;
@@ -165,12 +191,25 @@ function changeSession(event: Event) {
           tabindex="-1"
         >
           <small>{{ message.role === 'user' ? '你' : '研判助手' }}</small>
-          <p>{{ message.content }}</p>
+          <p><AgentMessageText :message="message" @reference="state.openSource" /></p>
         </article>
       </div>
       <small
         >在海图下方输入问题或继续追问。区域研判的坐标与船舶标识由本地平台处理，模型接收脱敏摘要和证据引用。</small
       >
+      <article
+        v-for="request in state.inputRequests"
+        :key="request.id"
+        class="agent-summary"
+        aria-label="待补充条件"
+        :data-request-id="request.id"
+      >
+        <strong>等待补充任务条件</strong>
+        <p>选择区域、对象或时间后，将继续原任务。</p>
+        <button :disabled="!state.canWrite || state.busy" @click="state.showInput(request.id)">
+          继续选择
+        </button>
+      </article>
       <section v-if="state.tasks.length" class="agent-tasks" aria-label="智能体任务">
         <h4>本会话任务</h4>
         <div v-for="task in [...state.tasks].reverse()" :key="task.id" class="agent-task-row">
@@ -190,6 +229,13 @@ function changeSession(event: Event) {
           >
             取消
           </button>
+          <button
+            v-if="state.canWrite && task.status === 'failed' && task.inputRevision !== undefined"
+            :disabled="state.busy || state.activeTask"
+            @click="state.retryTask(task.id)"
+          >
+            重试任务
+          </button>
         </div>
       </section>
       <p v-if="state.detailLoading" role="status">正在读取任务证据…</p>
@@ -199,8 +245,21 @@ function changeSession(event: Event) {
           <small>结果版本 {{ selectedTask.resultVersion }}</small>
         </div>
         <p v-if="selectedTask.error" class="agent-error">{{ selectedTask.error }}</p>
-        <p v-if="selectedTask.status === 'awaiting_input'" class="agent-note">
+        <p
+          v-if="
+            selectedTask.status === 'awaiting_input' &&
+            !state.inputRequests.some((item) => item.taskId === selectedTask?.id)
+          "
+          class="agent-note"
+        >
           请按助手提示补充本次分析所需条件后继续发送；区域分析可在上方确认范围。
+          <button
+            v-if="state.canWrite"
+            :disabled="state.busy || state.activeTask"
+            @click="state.retryTask(selectedTask.id)"
+          >
+            按原条件重新开始
+          </button>
         </p>
         <details>
           <summary>任务参数与调用记录</summary>
@@ -239,8 +298,72 @@ function changeSession(event: Event) {
         >
           本次算法未形成匹配结果，请结合数据覆盖说明调整范围。
         </p>
+        <section v-if="intelligenceResult" class="agent-summary" aria-label="情报检索结果">
+          <h4>情报检索结果</h4>
+          <p>共 {{ intelligenceResult.total }} 条 · {{ dateLabel(intelligenceResult.asOf) }}</p>
+          <p v-if="intelligenceResult.spec.locationKeyword" class="agent-note">
+            {{
+              intelligenceResult.spec.locationKeyword
+            }}：粗略检索范围，非官方海域界线；文字提及不代表已确认位置。
+          </p>
+          <p v-for="note in intelligenceResult.coverageNotes" :key="note" class="agent-note">
+            {{ note }}
+          </p>
+          <p v-if="intelligenceResult.truncated" class="agent-note">
+            当前展示部分结果，请缩小主题或时间范围。
+          </p>
+          <p v-if="!intelligenceResult.evidence.length">
+            未找到匹配的已入库情报，请结合来源覆盖与采集状态调整条件。
+          </p>
+          <IntelligenceSourceHealth :sources="intelligenceResult.sourceHealth" />
+          <button
+            v-for="item in intelligenceResult.evidence"
+            :key="item.reference"
+            @click="state.openSource(item.reference, selectedTask.id, intelligenceResult.version)"
+          >
+            [{{ item.reference }}]
+            {{ item.kind === 'event' ? item.event.title : item.forecast.pointName + ' · 海况预报' }}
+          </button>
+        </section>
+        <section v-if="queryResult" class="agent-summary" aria-label="船舶查询结果">
+          <h4>{{ queryResult.kind === 'vessel_detail' ? '船舶基本信息' : '区域船舶列表' }}</h4>
+          <p>共 {{ queryResult.total }} 艘 · {{ dateLabel(queryResult.asOf) }}</p>
+          <p v-if="queryResult.selection.bbox">
+            范围：{{ queryResult.selection.bbox.map((value) => value.toFixed(3)).join('，') }}
+          </p>
+          <p v-if="queryResult.selection.filters?.hours">
+            最新报告：最近 {{ queryResult.selection.filters.hours }} 小时
+          </p>
+          <p v-if="queryResult.truncated" class="agent-note">
+            仅展示前 {{ queryResult.items.length }} 艘，请缩小范围查看其余船舶。
+          </p>
+          <p v-if="queryResult.selection.filters?.sourceId">
+            数据来源：{{ queryResult.selection.filters.sourceId }}
+          </p>
+          <p v-if="queryResult.selection.filters?.shipType">
+            船型筛选：{{ queryResult.selection.filters.shipType }}
+          </p>
+          <p v-if="!queryResult.items.length">所选范围和条件内没有匹配船舶。</p>
+          <article v-for="vessel in queryResult.items" :key="vessel.mmsi" class="agent-result">
+            <strong>{{ vessel.name || '未命名船舶' }}</strong>
+            <p>
+              MMSI {{ vessel.mmsi }} · IMO {{ vessel.imo || '—' }} · 船型
+              {{ vessel.shipType ?? '—' }}
+            </p>
+            <p v-if="vessel.latestPosition">
+              {{ vessel.latestPosition.lon.toFixed(4) }}°，{{
+                vessel.latestPosition.lat.toFixed(4)
+              }}° · {{ vessel.latestPosition.sogKnots ?? '—' }} kn<br />最新报告
+              {{ dateLabel(vessel.latestPosition.observedAt) }}
+            </p>
+            <p v-else>暂无船位报告</p>
+          </article>
+        </section>
+        <p v-if="!currentResults && state.detail.results.length" class="agent-note">
+          分析条件已更新，等待新的结果。
+        </p>
         <article
-          v-for="(result, resultIndex) in state.detail.results"
+          v-for="(result, resultIndex) in currentResults ? state.detail.results : []"
           :key="result.id"
           class="agent-result"
         >

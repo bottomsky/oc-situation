@@ -87,11 +87,11 @@ export function resolveChartLayout(preferred: ChartLayoutSizes, viewport: ChartL
     left: desktop && viewport.leftOpen,
     right: !mobile && viewport.rightOpen,
   };
-  // The two panel gaps consume 16px. A collapsed left rail consumes 48px.
+  // Closed panels leave the map available without a persistent tool rail.
   const sideBudget = viewport.workspaceWidth - 482 - (viewport.rightOpen ? 16 : 8);
   const leftMax = Math.max(240, Math.min(440, sideBudget - (enabled.right ? 280 : 0)));
   const left = enabled.left ? clampChartSize(preferred.left, 240, leftMax) : 300;
-  const leftOccupied = mobile ? 0 : enabled.left ? left : 48;
+  const leftOccupied = enabled.left ? left : 0;
   const rightMax = Math.max(280, Math.min(480, sideBudget - leftOccupied));
   const right = enabled.right ? clampChartSize(preferred.right, 280, rightMax) : 340;
   const leftDragMax = Math.max(240, Math.min(leftMax, sideBudget - (enabled.right ? right : 0)));

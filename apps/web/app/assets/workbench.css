@@ -278,19 +278,6 @@
 .chart-section p {
   margin: 6px 0;
 }
-.chart-collapsed-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  padding: 8px 4px;
-  border: 1px solid #177290;
-  height: 100%;
-  background: #071f32;
-  border-radius: 5px;
-}
-.chart-collapsed-rail button {
-  padding: 9px 6px;
-}
 .chart-filters {
   display: grid;
   gap: 8px;
@@ -574,11 +561,17 @@
 .chart-map-notices button {
   pointer-events: auto;
 }
+.chart-reopen-left,
 .chart-reopen-right {
   position: absolute;
   top: 12px;
-  right: 8px;
   z-index: 6;
+}
+.chart-reopen-left {
+  left: 8px;
+}
+.chart-reopen-right {
+  right: 8px;
 }
 .chart-bottom {
   flex-shrink: 0;

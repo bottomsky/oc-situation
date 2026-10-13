@@ -15,6 +15,7 @@ import { ApiParam } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Infrastructure } from '@ais/infrastructure';
+import { revokeAgentOwnerExecution } from '../../../../packages/infrastructure/agent';
 import { UserRoleSchema } from '@ais/contracts';
 import { DocumentRoute, INFRA, MinimumRole, Uuid, parse, audit } from '../common';
 import type { AuthRequest } from './guard';
@@ -79,6 +80,7 @@ export class UsersController {
         [id, q.role, q.disabled, q.password ? await hashPassword(q.password) : null],
       );
       if (!result.rows[0]) throw new NotFoundException('User not found');
+      if (q.disabled || q.role === 'viewer') await revokeAgentOwnerExecution(client, id);
       await client.query('DELETE FROM sessions WHERE user_id=$1', [id]);
       await client.query('COMMIT');
       await audit(this.infra, req.user.id, 'user.update', 'user', id, q);

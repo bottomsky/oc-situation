@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { Infrastructure } from './clients';
 import type { IntelligenceEvent } from '../contracts/intelligence';
+import { intelligenceTextPredicate } from './intelligence-search';
 import {
   GeoObjectInputSchema,
   RelationInputSchema,
@@ -277,10 +278,7 @@ export async function queryIntelligenceEvents(infra: Infrastructure, q: Intellig
       'e.version=(SELECT max(x.version) FROM intelligence_events x WHERE x.source_id=e.source_id AND x.external_id=e.external_id)',
     );
   if (q.cursor) conditions.push(`e.id>${add(q.cursor)}`);
-  if (q.keyword)
-    conditions.push(
-      `(e.event->>'title' ILIKE ${add('%' + q.keyword + '%')} OR e.event->>'summary' ILIKE $${params.length} OR EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(e.event->'paragraphs','[]'::jsonb)) p WHERE p->>'text' ILIKE $${params.length}))`,
-    );
+  if (q.keyword) conditions.push(intelligenceTextPredicate(q.keyword, add, false));
   if (q.sourceId) conditions.push(`e.source_id=${add(q.sourceId)}`);
   if (q.category) conditions.push(`e.event->>'category'=${add(q.category)}`);
   if (q.reviewStatus)

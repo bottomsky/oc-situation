@@ -18,38 +18,7 @@ export const SafeResultsSchema = z.strictObject({
 });
 export type SafeResults = z.infer<typeof SafeResultsSchema>;
 
-/** Local intent extraction is deliberately finite: user prose never becomes a model prompt. */
-export function classifyGoal(goal: string): TopicDefinitionId | null {
-  const port = /港口|限制|禁航|port|restriction/i.test(goal);
-  const slow = /低速|low.speed/i.test(goal);
-  if (port && slow) return null;
-  if (port) return 'port-restriction';
-  if (slow || /区域.{0,6}(研判|公告关联)|公告关联|area.notice/i.test(goal))
-    return 'area-low-speed-notice';
-  return null;
-}
-
-export function classifyRequest(goal: string, previous: TopicDefinitionId | null) {
-  const algorithm = classifyGoal(goal);
-  const explanation = /^(?:请|帮我|请帮我)?(?:解释|说明|查看|解读|explain)/i.test(goal.trim());
-  const summary = /^(?:请|帮我|请帮我)?(?:总结|概括|summari[sz]e)/i.test(goal.trim());
-  const newRun = /重新|重跑|重算|新分析|(?:并|然后|再)(?:请)?(?:分析|研判|识别|检测)/.test(goal);
-  // “上次低速分析” names a prior result; the noun 分析 is not an instruction to recompute.
-  if ((explanation || summary) && !newRun) {
-    if (!previous || (algorithm && algorithm !== previous)) return null;
-    return { action: explanation ? 'explain_evidence' : 'summarize', algorithm: previous } as const;
-  }
-  if (algorithm && /分析|研判|识别|检测|关联|重新|重跑|analy[sz]e/i.test(goal))
-    return { action: 'analyze', algorithm } as const;
-  if (/重新|重跑|新分析|分析|研判/.test(goal) && !algorithm) return null;
-  if (previous && !/重新|重跑|新分析/.test(goal)) {
-    if (/证据|解释|为何|为什么|explain/i.test(goal))
-      return { action: 'explain_evidence', algorithm: previous } as const;
-    if (/总结|摘要|继续|summari[sz]e|continue/i.test(goal))
-      return { action: 'summarize', algorithm: previous } as const;
-  }
-  return algorithm ? ({ action: 'analyze', algorithm } as const) : null;
-}
+export { classifyGoal, classifyRequest } from '../../packages/domain/agent-intents';
 
 export function safePrompt(definition: TopicDefinitionId | null, regionBound: boolean) {
   return JSON.stringify({
@@ -104,4 +73,4 @@ completedTools 是已经成功执行的步骤，结果已折叠到 overview 和 
 每条发现使用 [E1] 格式引用真实证据编号。低速与公告的时空共现只能说明观测关系，原因需要更多证据；涉及违法事实或船舶意图的判断需要人工核验。
 规则匹配只描述满足的时间、空间和观测阈值；事件性质保持待证状态，不使用“匹配成立但性质待人工核验”等暗示性结论。
 没有匹配结果时，分别说明“没有 AIS 数据”“没有相关公告”或“已有数据未匹配”，同时交代覆盖局限。limited=true 时说明仅总结前一百条证据。
-需要条件时调用 ask_user。遇到错误使用工具的固定状态，不编造结论。`;
+需要条件时调用 request_input，使用固定字段和原因枚举。遇到错误使用工具的固定状态，不编造结论。`;

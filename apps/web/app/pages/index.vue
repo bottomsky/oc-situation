@@ -1,12 +1,33 @@
 <script setup lang="ts">
-import type { AnalysisResult } from '@ais/contracts';
+import type { AnalysisResult, AgentMapContext, Bbox } from '@ais/contracts';
 import type { ChartLayerVisibility, ChartMapControls } from '../types/chart';
 import { readChartPreference, writeChartPreference } from '../utils/chartWorkspace';
 import { chartLayoutDefaults } from '../utils/chartLayout';
 import { defaultChartVisibility } from '../utils/chartLayers';
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
-const agent = reactive(useAgentConversation());
+function mapContext(): AgentMapContext {
+  const shipType = Number(workspace.shipType);
+  return {
+    bbox: [...workspace.bbox],
+    capturedAt: new Date().toISOString(),
+    hours: workspace.hours,
+    ...(workspace.detail ? { selectedMmsis: [workspace.detail.mmsi] } : {}),
+    ...(workspace.sourceId ? { sourceId: workspace.sourceId } : {}),
+    ...(Number.isInteger(shipType) && shipType >= 1 && shipType <= 99 ? { shipType } : {}),
+  };
+}
+const agent = reactive(useAgentConversation(mapContext));
+const selectingAgentRegion = ref(false);
+const agentDrawnRegion = ref<Bbox | null>(null);
+function beginAgentRegion() {
+  agentDrawnRegion.value = null;
+  selectingAgentRegion.value = true;
+}
+function finishAgentRegion(bbox: Bbox) {
+  agentDrawnRegion.value = bbox;
+  selectingAgentRegion.value = false;
+}
 const rightTab = ref<'chat' | 'push' | 'tasks'>('chat');
 const rightContent = ref<'collaboration' | 'intelligence'>('collaboration');
 function openAgent() {
@@ -69,7 +90,7 @@ const route = useRoute();
 const seaMap = useTemplateRef<ChartMapControls>('seaMap');
 const center = useTemplateRef<HTMLElement>('center');
 const workspaceElement = useTemplateRef<HTMLElement>('workspaceElement');
-const leftOpen = ref(true);
+const leftOpen = ref(false);
 const rightOpen = ref(true);
 const {
   layout,
@@ -112,6 +133,10 @@ function updateFullscreen() {
   fullscreen.value = !!document.fullscreenElement;
 }
 function keydown(event: KeyboardEvent) {
+  if (selectingAgentRegion.value) {
+    if (event.key === 'Escape') selectingAgentRegion.value = false;
+    return;
+  }
   if (document.querySelector('dialog:modal')) return;
   const target = event.target as HTMLElement | null;
   if (
@@ -130,12 +155,7 @@ function keydown(event: KeyboardEvent) {
 }
 function restorePrefs() {
   if (!session.value) return;
-  leftOpen.value = readChartPreference(
-    localStorage,
-    session.value.user.id,
-    'left',
-    window.innerWidth >= 1440,
-  );
+  leftOpen.value = false;
   rightOpen.value = readChartPreference(
     localStorage,
     session.value.user.id,
@@ -166,9 +186,8 @@ watch(
     if (import.meta.client) restorePrefs();
   },
 );
-watch([leftOpen, rightOpen], ([left, right]) => {
+watch(rightOpen, (right) => {
   if (!import.meta.client || !session.value) return;
-  writeChartPreference(localStorage, session.value.user.id, 'left', left);
   writeChartPreference(localStorage, session.value.user.id, 'right', right);
 });
 watch(
@@ -202,7 +221,7 @@ watch(
         rightOpen = false;
       "
     />
-    <div id="chart-left-slot" class="chart-left-slot" :class="{ open: leftOpen }">
+    <div v-if="leftOpen" id="chart-left-slot" class="chart-left-slot open">
       <ChartLeftPanel
         v-if="leftOpen"
         v-model:workspace="workspace"
@@ -215,34 +234,6 @@ watch(
             @select="selectIntelligence"
             @locate="locateIntelligence" /></template
       ></ChartLeftPanel>
-      <nav v-else class="chart-collapsed-rail" aria-label="操作面板快捷入口">
-        <button aria-label="展开操作面板" @click="leftOpen = true"><ChartIcon name="Menu" /></button
-        ><button
-          aria-label="打开船舶搜索"
-          @click="
-            leftOpen = true;
-            workspace.leftTab = 'search';
-          "
-        >
-          <ChartIcon name="Search" /></button
-        ><button
-          aria-label="打开图层控制"
-          @click="
-            leftOpen = true;
-            workspace.leftTab = 'layers';
-          "
-        >
-          <ChartIcon name="Layers" /></button
-        ><button
-          aria-label="打开时间回放"
-          @click="
-            leftOpen = true;
-            workspace.leftTab = 'playback';
-          "
-        >
-          <ChartIcon name="History" />
-        </button>
-      </nav>
       <ChartResizeHandle
         v-if="layout.enabled.left"
         panel="left"
@@ -292,6 +283,9 @@ watch(
           ><SeaMap
             ref="seaMap"
             :data="workspace.data"
+            :selecting-region="selectingAgentRegion"
+            @region-selected="finishAgentRegion"
+            @region-cancelled="selectingAgentRegion = false"
             :track="workspace.track"
             :frame="workspace.track ? workspace.frame : null"
             :evidence="topics.mapEvidence"
@@ -332,10 +326,20 @@ watch(
             船位已超过 15 秒未更新，显示上次成功结果。
           </p>
         </div>
+        <ChartAgentInputDialog
+          :state="agent"
+          :context="mapContext()"
+          :drawing="selectingAgentRegion"
+          :drawn-region="agentDrawnRegion"
+          @draw="beginAgentRegion"
+          @stop-drawing="selectingAgentRegion = false"
+        />
+        <AgentIntelligenceSourcesDialog :state="agent" @locate="seaMap?.focusGeometry($event)" />
         <div ref="agentDock" class="chart-agent-dock">
           <ChartAgentReplyCard
             v-if="agent.currentReply"
             :reply="agent.currentReply"
+            @reference="agent.openSource"
             @close="closeCurrentReply"
             @open="openCurrentConversation"
           />
@@ -354,6 +358,16 @@ watch(
           }}<span v-if="workspace.data?.truncated"> · 已达 5,000 元素上限，请放大视窗</span
           ><span> · UTC</span>
         </div>
+        <button
+          v-if="!leftOpen"
+          class="chart-reopen-left"
+          aria-label="打开人工操控面板"
+          aria-controls="chart-left-slot"
+          :aria-expanded="leftOpen"
+          @click="leftOpen = true"
+        >
+          <ChartIcon name="Menu" />人工操控
+        </button>
         <button
           v-if="!rightOpen && !agent.currentReply"
           class="chart-reopen-right"

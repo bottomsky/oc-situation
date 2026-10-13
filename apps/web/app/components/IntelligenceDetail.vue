@@ -14,6 +14,7 @@ import {
   originLabels,
   objectLabels,
   safeOriginalUrl,
+  intelligencePublishedTimeLabel,
 } from '../utils/intelligenceLabels';
 import { intelligenceTimePending } from '../utils/intelligenceForm';
 import { dateLabel } from '../utils/display';
@@ -232,8 +233,8 @@ onMounted(async () => {
       实际有效 / 发生时间待确认；当前时间为来源观测时间。完成修订并填写实际有效期后审核。
     </p>
     <p class="detail-time">
-      发布 {{ dateLabel(detail.event.publishedAt) }}<br />有效
-      {{ dateLabel(detail.event.effectiveFrom) }} →
+      {{ intelligencePublishedTimeLabel(detail.event.raw) }} {{ dateLabel(detail.event.publishedAt)
+      }}<br />发生 / 适用 {{ dateLabel(detail.event.effectiveFrom) }} →
       {{
         timePending
           ? '有效期待确认'
