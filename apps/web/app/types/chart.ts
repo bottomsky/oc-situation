@@ -1,4 +1,4 @@
-import type { IntelligenceGeometry } from '@ais/contracts';
+import type { IntelligenceGeometry, Bbox } from '@ais/contracts';
 export interface ChartLayerVisibility {
   ais: boolean;
   tracks: boolean;
@@ -6,6 +6,7 @@ export interface ChartLayerVisibility {
 }
 
 export interface ChartMapControls {
+  currentBounds(): Bbox | null;
   editGeometry(geometry: IntelligenceGeometry): void;
   resetView(): void;
   zoomIn(): void;

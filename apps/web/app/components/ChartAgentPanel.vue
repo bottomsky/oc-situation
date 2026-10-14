@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AnalysisResult, Bbox } from '@ais/contracts';
+import type { AnalysisResult, Bbox, AgentHeatmapResult } from '@ais/contracts';
 import type { AgentConversationState } from '../composables/useAgentConversation';
 import {
   agentStatusLabel,
@@ -7,16 +7,19 @@ import {
   agentTaskHasAnalysis,
   createAgentMessageFollow,
 } from '../composables/useAgentConversation';
-import { dateLabel } from '../utils/display';
+import { dateLabel, heatmapDateLabel } from '../utils/display';
 
 const props = defineProps<{ bbox: Bbox; state: AgentConversationState }>();
-const emit = defineEmits<{ locate: [result: AnalysisResult] }>();
+const emit = defineEmits<{
+  locate: [result: AnalysisResult];
+  heatmap: [result: AgentHeatmapResult];
+}>();
 const state = props.state;
 const selectedTask = computed(() => state.detail?.task);
 const hasAnalysis = computed(
   () =>
     !!selectedTask.value &&
-    !['intelligence_search', 'vessel_list', 'vessel_detail'].includes(
+    !['intelligence_search', 'vessel_list', 'vessel_detail', 'ais_heatmap'].includes(
       selectedTask.value.intent ?? '',
     ) &&
     agentTaskHasAnalysis(selectedTask.value, state.detail?.steps ?? []),
@@ -86,7 +89,16 @@ const intelligenceResult = computed(() =>
     ? state.detail?.intelligenceResult
     : null,
 );
+const heatmapResult = computed(() => {
+  const result = state.detail?.heatmapResult;
+  return result &&
+    result.inputRevision === selectedTask.value?.inputRevision &&
+    result.version === selectedTask.value.resultVersion
+    ? result
+    : null;
+});
 const tools: Record<string, string> = {
+  render_ais_heatmap: '计算 AIS 热力图',
   list_algorithms: '查询可用算法',
   region_overview: '查询区域概况',
   related_notices: '查询相关公告',
@@ -324,6 +336,21 @@ function changeSession(event: Event) {
             [{{ item.reference }}]
             {{ item.kind === 'event' ? item.event.title : item.forecast.pointName + ' · 海况预报' }}
           </button>
+        </section>
+        <section v-if="heatmapResult" class="agent-summary" aria-label="AIS 热力图结果">
+          <h4>AIS 热力图计算完成</h4>
+          <p>
+            {{ heatmapResult.totalVessels }} 艘去重船舶 ·
+            {{ heatmapResult.cells.length }} 个非空网格
+          </p>
+          <p>
+            {{ heatmapDateLabel(heatmapResult.query.from) }} ～
+            {{ heatmapDateLabel(heatmapResult.query.to) }}
+          </p>
+          <p>每格去重船数；全区总数独立去重，船型按当前资料筛选。地图绘制状态请查看海图图例。</p>
+          <p>生成于 {{ heatmapDateLabel(heatmapResult.generatedAt) }}</p>
+          <p v-if="!heatmapResult.cells.length">所选区域和时段没有符合条件的观测。</p>
+          <button @click="emit('heatmap', heatmapResult)">在海图展示此快照</button>
         </section>
         <section v-if="queryResult" class="agent-summary" aria-label="船舶查询结果">
           <h4>{{ queryResult.kind === 'vessel_detail' ? '船舶基本信息' : '区域船舶列表' }}</h4>

@@ -1,9 +1,12 @@
-import { Controller, Get, Inject, Query } from '@nestjs/common';
-import type { Infrastructure } from '@ais/infrastructure';
+import { Controller, Get, HttpException, Inject, Query, Req } from '@nestjs/common';
+import { HeatmapQueryError, queryAisHeatmap, type Infrastructure } from '@ais/infrastructure';
 import { z } from 'zod';
 import type { MapResponse } from '@ais/contracts';
 import { DocumentQuery, DocumentRoute, INFRA } from '../common';
 import { bounds, MapQuerySchema, parseMapQuery } from './query';
+import { HeatmapResultSchema } from '../../../../packages/contracts/heatmap';
+import type { AuthRequest } from '../auth/guard';
+import { HeatmapHttpQuerySchema, parseHeatmapQuery } from './heatmap-query';
 export const MapResponseSchema = z.object({
   items: z.array(
     z.discriminatedUnion('kind', [
@@ -37,6 +40,40 @@ export const MapResponseSchema = z.object({
 @Controller('map')
 export class MapController {
   constructor(@Inject(INFRA) private readonly infra: Infrastructure) {}
+  @Get('heatmap')
+  @DocumentQuery(HeatmapHttpQuerySchema)
+  @DocumentRoute('Historical AIS unique-vessel heatmap', HeatmapResultSchema)
+  async heatmap(@Query() query: unknown, @Req() req: AuthRequest) {
+    const input = parseHeatmapQuery(query);
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    const responseClosed = () => {
+      if (!req.res?.writableEnded) abort();
+    };
+    req.once('aborted', abort);
+    req.res?.once('close', responseClosed);
+    if (req.aborted) abort();
+    try {
+      return await queryAisHeatmap(this.infra, input, {
+        ownerId: req.user.id,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (!(error instanceof HeatmapQueryError)) throw error;
+      const status = {
+        invalid_input: 400,
+        retention: 400,
+        data_limit: 413,
+        busy: 429,
+        cancelled: 499,
+        unavailable: 503,
+      }[error.category];
+      throw new HttpException(error.message, status);
+    } finally {
+      req.removeListener('aborted', abort);
+      req.res?.removeListener('close', responseClosed);
+    }
+  }
   @Get()
   @DocumentQuery(MapQuerySchema)
   @DocumentRoute('Current vessel positions or server side spatial grid', MapResponseSchema)

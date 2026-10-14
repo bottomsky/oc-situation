@@ -14,6 +14,7 @@ import type { AgentConversationState } from '../composables/useAgentConversation
 const props = defineProps<{
   state: AgentConversationState;
   context: AgentMapContext;
+  currentBounds?: () => Bbox;
   drawing: boolean;
   drawnRegion?: Bbox | null;
 }>();
@@ -76,11 +77,16 @@ function required(field: AgentInputField) {
   if (field === 'region')
     return (
       purpose === 'vessel_list' ||
+      purpose === 'ais_heatmap' ||
       purpose === 'port-restriction' ||
       purpose === 'area-low-speed-notice'
     );
   if (field === 'time')
-    return purpose === 'port-restriction' || purpose === 'area-low-speed-notice';
+    return (
+      purpose === 'ais_heatmap' ||
+      purpose === 'port-restriction' ||
+      purpose === 'area-low-speed-notice'
+    );
   return false;
 }
 function visible(field: AgentInputField) {
@@ -165,11 +171,12 @@ function close() {
   returnFocus?.focus({ preventScroll: true });
 }
 function currentRegion() {
-  values.value.bbox = [...props.context.bbox];
+  const bbox = props.currentBounds?.() ?? props.context.bbox;
+  values.value.bbox = [...bbox];
   if (isIntelligence.value) {
     values.value.intelligenceQuery = {
       ...values.value.intelligenceQuery,
-      bbox: [...props.context.bbox],
+      bbox: [...bbox],
       locationKeyword: undefined,
     };
     return;
@@ -354,6 +361,7 @@ onBeforeUnmount(() => {
           <option disabled value="">请选择</option>
           <option value="vessel_list">区域船舶列表</option>
           <option value="vessel_detail">船舶基本信息</option>
+          <option value="ais_heatmap">AIS 历史船舶热力图</option>
           <option value="port-restriction">港口限制船舶识别</option>
           <option value="area-low-speed-notice">区域低速活动与公告关联</option>
           <option value="intelligence_search">本地情报与海况检索</option>

@@ -4,6 +4,8 @@ export * from './intelligence-spatial';
 export * from './topics';
 export * from './agent';
 export * from './intelligence-search';
+export * from './heatmap';
+export * from './agent-capabilities';
 
 export const MAX_INLINE_BYTES = 1_048_576;
 export const EXPORT_INLINE_THRESHOLD_BYTES = 262_144;

@@ -15,6 +15,8 @@ export function usePlatform() {
       body?: unknown;
       idempotent?: boolean;
       idempotencyKey?: string;
+      signal?: AbortSignal;
+      timeoutMs?: 15000 | 30000;
     } = {},
   ): Promise<T> {
     const headers: Record<string, string> = {};
@@ -22,8 +24,9 @@ export function usePlatform() {
       headers['X-CSRF-Token'] = session.value?.csrfToken ?? '';
     if (options.idempotencyKey || options.idempotent)
       headers['Idempotency-Key'] = options.idempotencyKey ?? crypto.randomUUID();
+    const timeout = AbortSignal.timeout(options.timeoutMs ?? 15000);
     const response = await fetch(`/api/v1${path}`, {
-      signal: AbortSignal.timeout(15000),
+      signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout,
       method: options.method ?? 'GET',
       credentials: 'same-origin',
       headers: {

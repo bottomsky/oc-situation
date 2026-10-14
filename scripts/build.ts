@@ -3,6 +3,7 @@ import { readFile, mkdir, cp, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { buildPlan } from './build-plan';
+import { syncAgentSkillAssets } from './build-skill-assets';
 
 const root = resolve(import.meta.dirname, '..');
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')) as {
@@ -48,6 +49,7 @@ for (const name of names) {
     sourcemap: true,
     external: [...external, '@earendil-works/pi-agent-core', '@earendil-works/pi-ai', 'typebox'],
     tsconfig: join(root, 'tsconfig.base.json'),
+    define: name === 'agent' ? { __AGENT_SKILLS_BUNDLED__: 'true' } : {},
     logLevel: 'warning',
   });
   if (plan.migrations)
@@ -56,6 +58,21 @@ for (const name of names) {
     });
   if (name === 'intelligence')
     await cp(join(directory, 'fixtures'), join(directory, 'dist/fixtures'), { recursive: true });
+  if (name === 'agent') {
+    await syncAgentSkillAssets(root);
+    await build({
+      entryPoints: [join(directory, 'capabilities/check-skills.ts')],
+      outfile: join(directory, 'dist/check-skills.mjs'),
+      bundle: true,
+      platform: 'node',
+      format: 'esm',
+      target: 'node24',
+      external,
+      tsconfig: join(root, 'tsconfig.base.json'),
+      define: { __AGENT_SKILLS_BUNDLED__: 'true' },
+      logLevel: 'warning',
+    });
+  }
   console.log(`构建 ${group}/${name}/${plan.output}`);
 }
 if (!selected) {

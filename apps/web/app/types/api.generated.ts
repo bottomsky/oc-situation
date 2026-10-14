@@ -141,6 +141,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/map/heatmap': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Historical AIS unique-vessel heatmap */
+    get: operations['MapController_heatmap'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/map': {
     parameters: {
       query?: never;
@@ -1639,6 +1656,83 @@ export interface operations {
             truncated: boolean;
             total: number;
             returned: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MapController_heatmap: {
+    parameters: {
+      query: {
+        bbox: string;
+        from: string;
+        to: string;
+        sourceId?: string;
+        shipType?: number;
+        mmsis?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            query: {
+              bbox: number[];
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              sourceId?: string;
+              shipType?: number;
+              mmsis?: string[];
+            };
+            grid: {
+              level: number;
+              cellDegrees: number;
+            };
+            cells: {
+              id: string;
+              x: number;
+              y: number;
+              lon: number;
+              lat: number;
+              vesselCount: number;
+            }[];
+            totalVessels: number;
+            /** Format: date-time */
+            generatedAt: string;
+            /** @enum {string} */
+            metric: 'unique_vessels';
+            /** @enum {string} */
+            shipTypeBasis: 'current_profile';
           };
         };
       };
@@ -5546,7 +5640,8 @@ export interface operations {
                 | 'analysis'
                 | 'explain'
                 | 'unresolved'
-                | 'intelligence_search';
+                | 'intelligence_search'
+                | 'ais_heatmap';
               selection?: {
                 bbox?: number[];
                 mmsis?: string[];
@@ -5567,7 +5662,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -5608,6 +5704,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -5665,7 +5762,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -5706,6 +5804,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -5734,7 +5833,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -5775,6 +5875,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -5903,7 +6004,8 @@ export interface operations {
                 | 'analysis'
                 | 'explain'
                 | 'unresolved'
-                | 'intelligence_search';
+                | 'intelligence_search'
+                | 'ais_heatmap';
               selection?: {
                 bbox?: number[];
                 mmsis?: string[];
@@ -5924,7 +6026,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -5965,6 +6068,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6022,7 +6126,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6063,6 +6168,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6091,7 +6197,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6132,6 +6239,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6224,7 +6332,8 @@ export interface operations {
                 | 'analysis'
                 | 'explain'
                 | 'unresolved'
-                | 'intelligence_search';
+                | 'intelligence_search'
+                | 'ais_heatmap';
               selection?: {
                 bbox?: number[];
                 mmsis?: string[];
@@ -6245,7 +6354,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6286,6 +6396,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6354,7 +6465,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6395,6 +6507,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6423,7 +6536,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6464,6 +6578,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6519,7 +6634,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6560,6 +6676,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6751,6 +6868,41 @@ export interface operations {
               }[];
               coverageNotes: string[];
             } | null;
+            heatmapResult: {
+              query: {
+                bbox: number[];
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+                sourceId?: string;
+                shipType?: number;
+                mmsis?: string[];
+              };
+              grid: {
+                level: number;
+                cellDegrees: number;
+              };
+              cells: {
+                id: string;
+                x: number;
+                y: number;
+                lon: number;
+                lat: number;
+                vesselCount: number;
+              }[];
+              totalVessels: number;
+              /** Format: date-time */
+              generatedAt: string;
+              /** @enum {string} */
+              metric: 'unique_vessels';
+              /** @enum {string} */
+              shipTypeBasis: 'current_profile';
+              /** @enum {string} */
+              kind: 'ais_heatmap';
+              version: number;
+              inputRevision: number;
+            } | null;
           };
         };
       };
@@ -6813,7 +6965,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6854,6 +7007,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -6916,7 +7070,8 @@ export interface operations {
                 | 'analysis'
                 | 'explain'
                 | 'unresolved'
-                | 'intelligence_search';
+                | 'intelligence_search'
+                | 'ais_heatmap';
               selection?: {
                 bbox?: number[];
                 mmsis?: string[];
@@ -6937,7 +7092,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -6978,6 +7134,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -7035,7 +7192,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -7076,6 +7234,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -7104,7 +7263,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -7145,6 +7305,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -7243,7 +7404,8 @@ export interface operations {
                 | 'analysis'
                 | 'explain'
                 | 'unresolved'
-                | 'intelligence_search';
+                | 'intelligence_search'
+                | 'ais_heatmap';
               selection?: {
                 bbox?: number[];
                 mmsis?: string[];
@@ -7264,7 +7426,8 @@ export interface operations {
                   | 'vessel_detail'
                   | 'port-restriction'
                   | 'area-low-speed-notice'
-                  | 'intelligence_search';
+                  | 'intelligence_search'
+                  | 'ais_heatmap';
                 intelligenceQuery?: {
                   keyword?: string;
                   locationKeyword?: string;
@@ -7305,6 +7468,7 @@ export interface operations {
                   to: string;
                 };
                 intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
                 intelligenceObjectUnclear?: boolean;
                 intelligenceObjectCandidates?: {
                   id: string;
@@ -7417,7 +7581,8 @@ export interface operations {
               | 'analysis'
               | 'explain'
               | 'unresolved'
-              | 'intelligence_search';
+              | 'intelligence_search'
+              | 'ais_heatmap';
             selection?: {
               bbox?: number[];
               mmsis?: string[];
@@ -7438,7 +7603,8 @@ export interface operations {
                 | 'vessel_detail'
                 | 'port-restriction'
                 | 'area-low-speed-notice'
-                | 'intelligence_search';
+                | 'intelligence_search'
+                | 'ais_heatmap';
               intelligenceQuery?: {
                 keyword?: string;
                 locationKeyword?: string;
@@ -7479,6 +7645,7 @@ export interface operations {
                 to: string;
               };
               intelligenceTimeUnclear?: boolean;
+              heatmapTimeUnclear?: boolean;
               intelligenceObjectUnclear?: boolean;
               intelligenceObjectCandidates?: {
                 id: string;

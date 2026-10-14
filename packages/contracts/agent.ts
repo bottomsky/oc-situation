@@ -22,6 +22,7 @@ export const AgentIntentSchema = z.enum([
   'explain',
   'unresolved',
   'intelligence_search',
+  'ais_heatmap',
 ]);
 export type AgentIntent = z.infer<typeof AgentIntentSchema>;
 export const AgentPurposeSchema = z.enum([
@@ -30,6 +31,7 @@ export const AgentPurposeSchema = z.enum([
   'port-restriction',
   'area-low-speed-notice',
   'intelligence_search',
+  'ais_heatmap',
 ]);
 export type AgentPurpose = z.infer<typeof AgentPurposeSchema>;
 export const AgentTimeRangeSchema = z
@@ -57,6 +59,7 @@ export const AgentSelectionSchema = z.strictObject({
   intelligenceQuery: IntelligenceSearchSpecSchema.optional(),
   intelligenceTimeRange: IntelligenceTimeRangeSchema.optional(),
   intelligenceTimeUnclear: z.boolean().optional(),
+  heatmapTimeUnclear: z.boolean().optional(),
   intelligenceObjectUnclear: z.boolean().optional(),
   intelligenceObjectCandidates: z
     .array(

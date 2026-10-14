@@ -1,0 +1,320 @@
+{
+  "success": true,
+  "methodology": {
+    "query": "{ bbox: [west,south,east,north], from: ISO UTC, to: ISO UTC, sourceId: string }",
+    "timeInterval": "[from,to)",
+    "metric": "uniqExact(mmsi) per cell and independently across the full region",
+    "data": "10000 MMSIs; deterministic worldwide longitude/latitude; observations uniformly distributed across seven days; unique source and event IDs; one cleaning version and priority 10",
+    "cache": "ownerId omitted; application cache and coalescing disabled for every sample",
+    "responseBytes": "Exact UTF-8 byte length of JSON.stringify(result), excluding HTTP headers and transport compression; null for failed queries",
+    "limits": {
+      "seconds": 20,
+      "memoryBytes": 536870912,
+      "readRows": 50000000,
+      "readBytes": 4294967296,
+      "resultCells": 4096
+    },
+    "p95": "nearest-rank P95 of successful requests only; null when all attempts fail; five repeats by default",
+    "capacity": "data_limit reports a resource cap; narrow the time or ship selection; spatial bounds are applied after preferred observations are selected"
+  },
+  "rows": 100000,
+  "distinctVessels": 10000,
+  "repeats": 5,
+  "sourceId": "heatmap-benchmark-4bf63c35-50f1-4381-924c-c0835e0ff807",
+  "generatedAt": "2026-10-14T16:08:04.133Z",
+  "scenarios": [
+    {
+      "hours": 24,
+      "region": "local",
+      "bbox": [100, 0, 130, 40],
+      "samples": [
+        {
+          "queryId": "heatmap-646290cb-30c2-4ba7-889f-fbba9f6309fc",
+          "latencyMs": 39.03,
+          "cells": 268,
+          "totalVessels": 268,
+          "responseBytes": 23320,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 13243515,
+          "serverDurationMs": 16
+        },
+        {
+          "queryId": "heatmap-1ab575b5-006c-47de-8b32-dc76477d2ffc",
+          "latencyMs": 39.64,
+          "cells": 268,
+          "totalVessels": 268,
+          "responseBytes": 23320,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 11830489,
+          "serverDurationMs": 15
+        },
+        {
+          "queryId": "heatmap-55b43e2d-db12-4850-a777-9001aea6153c",
+          "latencyMs": 28.89,
+          "cells": 268,
+          "totalVessels": 268,
+          "responseBytes": 23320,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 13243339,
+          "serverDurationMs": 15
+        },
+        {
+          "queryId": "heatmap-7ef2c3e0-130d-4345-ba14-f0bcb3dc56c1",
+          "latencyMs": 31.67,
+          "cells": 268,
+          "totalVessels": 268,
+          "responseBytes": 23320,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 11830921,
+          "serverDurationMs": 16
+        },
+        {
+          "queryId": "heatmap-e4330b08-124a-4ad5-a5f1-2ee5b17cf8f5",
+          "latencyMs": 31.59,
+          "cells": 268,
+          "totalVessels": 268,
+          "responseBytes": 23320,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 11830921,
+          "serverDurationMs": 16
+        }
+      ],
+      "p95Ms": 39.64
+    },
+    {
+      "hours": 24,
+      "region": "global",
+      "bbox": [-180, -90, 180, 90],
+      "samples": [
+        {
+          "queryId": "heatmap-efbc04dc-a217-4365-a607-2b4b5a124fbe",
+          "latencyMs": 37.9,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 154591,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 13239483,
+          "serverDurationMs": 18
+        },
+        {
+          "queryId": "heatmap-7c40f5b9-e50d-4870-b406-7b6bc9b0c204",
+          "latencyMs": 42.54,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 154591,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 13239483,
+          "serverDurationMs": 15
+        },
+        {
+          "queryId": "heatmap-b034cf14-6bed-4c90-acfa-995a70c5c6a1",
+          "latencyMs": 29.16,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 154591,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 11827497,
+          "serverDurationMs": 16
+        },
+        {
+          "queryId": "heatmap-0b6817d4-9d07-49b5-abb1-0da02805b197",
+          "latencyMs": 31.81,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 154591,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 11827497,
+          "serverDurationMs": 17
+        },
+        {
+          "queryId": "heatmap-5d09326d-9c89-408a-b0c3-646ef4a471da",
+          "latencyMs": 29.59,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 154591,
+          "status": "success",
+          "success": true,
+          "readRows": 23892,
+          "readBytes": 4181010,
+          "peakMemoryBytes": 13239483,
+          "serverDurationMs": 15
+        }
+      ],
+      "p95Ms": 42.54
+    },
+    {
+      "hours": 168,
+      "region": "local",
+      "bbox": [100, 0, 130, 40],
+      "samples": [
+        {
+          "queryId": "heatmap-bdb4c59d-a7c0-4f9f-8f74-82b095e39fef",
+          "latencyMs": 44.61,
+          "cells": 1456,
+          "totalVessels": 1852,
+          "responseBytes": 125194,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 88230965,
+          "serverDurationMs": 32
+        },
+        {
+          "queryId": "heatmap-3e4ac717-2d9d-4adf-8a93-56ca623ed03d",
+          "latencyMs": 64.89,
+          "cells": 1456,
+          "totalVessels": 1852,
+          "responseBytes": 125194,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 80285643,
+          "serverDurationMs": 36
+        },
+        {
+          "queryId": "heatmap-03387f9b-c76b-460a-ae4c-eea0e4b5dcb9",
+          "latencyMs": 70.34,
+          "cells": 1456,
+          "totalVessels": 1852,
+          "responseBytes": 125194,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 87844313,
+          "serverDurationMs": 42
+        },
+        {
+          "queryId": "heatmap-146bc0f7-a6b7-4a6e-a016-2cadf000392f",
+          "latencyMs": 63.48,
+          "cells": 1456,
+          "totalVessels": 1852,
+          "responseBytes": 125194,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 84016227,
+          "serverDurationMs": 33
+        },
+        {
+          "queryId": "heatmap-a3477979-25bc-40ca-a30c-f19a50e9933f",
+          "latencyMs": 60.06,
+          "cells": 1456,
+          "totalVessels": 1852,
+          "responseBytes": 125194,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 87686841,
+          "serverDurationMs": 30
+        }
+      ],
+      "p95Ms": 70.34
+    },
+    {
+      "hours": 168,
+      "region": "global",
+      "bbox": [-180, -90, 180, 90],
+      "samples": [
+        {
+          "queryId": "heatmap-36221b6c-68b6-4608-9740-dbc54d8691cf",
+          "latencyMs": 52.13,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 86303215,
+          "serverDurationMs": 35
+        },
+        {
+          "queryId": "heatmap-c29e8d60-ee94-4d3f-a096-f24b82e64c56",
+          "latencyMs": 70.27,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 96467247,
+          "serverDurationMs": 41
+        },
+        {
+          "queryId": "heatmap-bd170c0c-4662-489d-9405-1eac988cf5f4",
+          "latencyMs": 68.29,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 87165049,
+          "serverDurationMs": 49
+        },
+        {
+          "queryId": "heatmap-ed4a77f1-639c-4213-8a03-21ba5b24f489",
+          "latencyMs": 83.49,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 88391279,
+          "serverDurationMs": 55
+        },
+        {
+          "queryId": "heatmap-fea23545-6c73-4c3d-91da-0b46b0f47203",
+          "latencyMs": 69.11,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 100003,
+          "readBytes": 17489325,
+          "peakMemoryBytes": 92634575,
+          "serverDurationMs": 48
+        }
+      ],
+      "p95Ms": 83.49
+    }
+  ],
+  "metricsStatus": "complete"
+}

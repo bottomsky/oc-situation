@@ -30,6 +30,8 @@
     "dev:topics": "node --import tsx scripts/workspace.ts dev @ais/topics",
     "dev:agent": "node --import tsx scripts/workspace.ts dev @ais/agent",
     "agent:smoke": "node --import tsx apps/agent/smoke.ts",
+    "agent:skills:check": "node apps/agent/dist/check-skills.mjs",
+    "heatmap:smoke": "node --import tsx scripts/heatmap-build-smoke.ts",
     "infra:up": "node --import tsx scripts/workspace.ts infra:up",
     "migrate": "node --import tsx scripts/workspace.ts migrate",
     "seed": "node --import tsx scripts/workspace.ts seed",
@@ -59,6 +61,7 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "ws": "8.22.0",
+    "yaml": "2.9.1",
     "zod": "4.6.5"
   },
   "devDependencies": {

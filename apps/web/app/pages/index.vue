@@ -4,12 +4,13 @@ import type { ChartLayerVisibility, ChartMapControls } from '../types/chart';
 import { readChartPreference, writeChartPreference } from '../utils/chartWorkspace';
 import { chartLayoutDefaults } from '../utils/chartLayout';
 import { defaultChartVisibility } from '../utils/chartLayers';
+import { heatmapDateLabel } from '../utils/display';
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
 function mapContext(): AgentMapContext {
   const shipType = Number(workspace.shipType);
   return {
-    bbox: [...workspace.bbox],
+    bbox: [...currentMapBounds()],
     capturedAt: new Date().toISOString(),
     hours: workspace.hours,
     ...(workspace.detail ? { selectedMmsis: [workspace.detail.mmsi] } : {}),
@@ -17,10 +18,26 @@ function mapContext(): AgentMapContext {
     ...(Number.isInteger(shipType) && shipType >= 1 && shipType <= 99 ? { shipType } : {}),
   };
 }
-const agent = reactive(useAgentConversation(mapContext));
+const heatmap = reactive(useAisHeatmap());
+const agent = reactive(
+  useAgentConversation(mapContext, {
+    begin: heatmap.beginAgent,
+    accept: heatmap.acceptAgent,
+    reset: heatmap.close,
+  }),
+);
+const selectingHeatmapRegion = ref(false);
+const heatmapRegion = ref<Bbox | null>(null);
+function finishRegion(bbox: Bbox) {
+  if (selectingHeatmapRegion.value) {
+    heatmapRegion.value = [...bbox];
+    selectingHeatmapRegion.value = false;
+  } else finishAgentRegion(bbox);
+}
 const selectingAgentRegion = ref(false);
 const agentDrawnRegion = ref<Bbox | null>(null);
 function beginAgentRegion() {
+  selectingHeatmapRegion.value = false;
   agentDrawnRegion.value = null;
   selectingAgentRegion.value = true;
 }
@@ -88,6 +105,9 @@ function selectMapIntelligence(ids: string[]) {
 const { session } = usePlatform();
 const route = useRoute();
 const seaMap = useTemplateRef<ChartMapControls>('seaMap');
+function currentMapBounds(): Bbox {
+  return seaMap.value?.currentBounds() ?? workspace.bbox;
+}
 const center = useTemplateRef<HTMLElement>('center');
 const workspaceElement = useTemplateRef<HTMLElement>('workspaceElement');
 const leftOpen = ref(false);
@@ -133,6 +153,10 @@ function updateFullscreen() {
   fullscreen.value = !!document.fullscreenElement;
 }
 function keydown(event: KeyboardEvent) {
+  if (selectingHeatmapRegion.value) {
+    if (event.key === 'Escape') selectingHeatmapRegion.value = false;
+    return;
+  }
   if (selectingAgentRegion.value) {
     if (event.key === 'Escape') selectingAgentRegion.value = false;
     return;
@@ -232,8 +256,25 @@ watch(
           ><IntelligenceList
             v-model:state="intelligence"
             @select="selectIntelligence"
-            @locate="locateIntelligence" /></template
-      ></ChartLeftPanel>
+            @locate="locateIntelligence"
+        /></template>
+        <template #heatmap
+          ><ChartHeatmapPanel
+            :state="heatmap"
+            :current-bounds="currentMapBounds"
+            :bbox="workspace.bbox"
+            :region="heatmapRegion"
+            :drawing="selectingHeatmapRegion"
+            :source-id="workspace.sourceId"
+            :ship-type="workspace.shipType"
+            @region="heatmapRegion = $event"
+            @draw="
+              selectingAgentRegion = false;
+              selectingHeatmapRegion = true;
+            "
+            @stop="selectingHeatmapRegion = false"
+        /></template>
+      </ChartLeftPanel>
       <ChartResizeHandle
         v-if="layout.enabled.left"
         panel="left"
@@ -283,9 +324,14 @@ watch(
           ><SeaMap
             ref="seaMap"
             :data="workspace.data"
-            :selecting-region="selectingAgentRegion"
-            @region-selected="finishAgentRegion"
-            @region-cancelled="selectingAgentRegion = false"
+            :selecting-region="selectingAgentRegion || selectingHeatmapRegion"
+            @region-selected="finishRegion"
+            @region-cancelled="
+              selectingAgentRegion = false;
+              selectingHeatmapRegion = false;
+            "
+            :heatmap="heatmap.result"
+            @heatmap-displayed="if (heatmap.result === $event) heatmap.displayed = true;"
             :track="workspace.track"
             :frame="workspace.track ? workspace.frame : null"
             :evidence="topics.mapEvidence"
@@ -318,6 +364,37 @@ watch(
           ><button @click="mapChoices = []">关闭</button>
         </div>
         <div class="chart-map-notices">
+          <section
+            v-if="heatmap.result"
+            class="heatmap-legend"
+            aria-label="热图统计图例"
+            data-testid="heatmap-legend"
+          >
+            <strong>AIS 热力图 · 每格去重船数</strong>
+            <span
+              >{{ heatmap.displayed ? '海图已展示' : '计算完成，等待地图绘制' }} · 全区
+              {{ heatmap.result.totalVessels }} 艘</span
+            >
+            <span
+              >{{ heatmapDateLabel(heatmap.result.query.from) }} ～
+              {{ heatmapDateLabel(heatmap.result.query.to) }}</span
+            >
+            <span>生成于 {{ heatmapDateLabel(heatmap.result.generatedAt) }}</span>
+            <span
+              >范围 {{ heatmap.result.query.bbox.map((n) => n.toFixed(2)).join('，') }} · 格宽
+              {{ heatmap.result.grid.cellDegrees }}°</span
+            >
+            <span>色彩为平滑强度，非单位面积密度；点击网格查看实际船数。</span>
+            <span v-if="heatmap.result.query.shipType"
+              >船型 {{ heatmap.result.query.shipType }}（当前资料）</span
+            >
+            <span v-if="heatmap.result.query.sourceId"
+              >来源 {{ heatmap.result.query.sourceId }}</span
+            >
+            <span v-if="!heatmap.result.cells.length">该范围和时段内无匹配观测</span>
+            <button @click="heatmap.close">关闭热力图</button>
+          </section>
+          <p v-if="heatmap.error" class="error" role="alert">{{ heatmap.error }}</p>
           <FetchState :error="workspace.error" @retry="workspace.refresh" />
           <p v-if="workspace.liveError" class="error" role="status">
             专题事件补取失败：{{ workspace.liveError }}
@@ -327,6 +404,7 @@ watch(
           </p>
         </div>
         <ChartAgentInputDialog
+          :current-bounds="currentMapBounds"
           :state="agent"
           :context="mapContext()"
           :drawing="selectingAgentRegion"
@@ -424,6 +502,7 @@ watch(
         v-else
         v-model:tab="rightTab"
         :agent="agent"
+        @heatmap="heatmap.showSnapshot($event)"
         :bbox="workspace.bbox"
         :items="topics.items"
         :busy="topics.busy"
@@ -443,6 +522,27 @@ watch(
 </template>
 
 <style scoped>
+.heatmap-legend {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  max-width: 420px;
+  color: #d8effc;
+  background: #09273ce8;
+  border: 1px solid #31718b;
+  font-size: 11px;
+  pointer-events: auto;
+}
+.heatmap-legend strong::after {
+  content: '';
+  display: block;
+  margin-top: 5px;
+  height: 5px;
+  background: linear-gradient(90deg, #206ca5, #23c5bc, #f2d666, #e56244);
+}
+.chart-workspace:not(.left-open) .heatmap-legend {
+  margin-top: 42px;
+}
 .chart-agent-dock {
   --reply-dock-bottom: 40px;
   display: flex;

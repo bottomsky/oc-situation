@@ -2,6 +2,9 @@ import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
 import { Type, createModels, createInitialSystemMessage } from '@earendil-works/pi-ai';
 import { deepseekProvider } from '@earendil-works/pi-ai/providers/deepseek';
 import { z } from 'zod';
+import { CapabilityError, defineTool } from './capabilities';
+import { bindBusinessCapability } from './business-capabilities';
+import { AgentIntelligenceResultSchema } from '../../packages/contracts/intelligence-search';
 import type {
   AgentIntelligenceResult,
   IntelligenceSourceHealth,
@@ -166,7 +169,7 @@ export async function executeIntelligence(
     timedOut = true;
     abort();
   }, options.runtimeTimeoutMs ?? 180_000);
-  let stop: RuntimeStop | undefined;
+  let stop: RuntimeStop | CapabilityError | undefined;
   const check = async () => {
     if (timedOut) throw new RuntimeStop('timeout');
     if (controller.signal.aborted || !(await ports.active())) throw new RuntimeStop('fenced');
@@ -179,15 +182,31 @@ export async function executeIntelligence(
     )
       throw new RuntimeStop('configuration');
     const revision = context.task.inputRevision ?? 0;
+    const capability = await bindBusinessCapability('intelligence-search', context, ports, {
+      ...options,
+      signal: controller.signal,
+    });
+    const skillReferences: Record<string, string> = {};
     let snapshot =
       context.intelligenceResult?.inputRevision === revision ? context.intelligenceResult : null;
     if (!snapshot) {
       await check();
-      if (!(await ports.reserve('tool', options.maxToolCalls ?? 24)))
-        throw new RuntimeStop('budget');
-      snapshot = previous
-        ? { ...previous, inputRevision: revision, version: 0 }
-        : await abortable(ports.searchIntelligence(selection), controller.signal);
+      if (previous) snapshot = { ...previous, inputRevision: revision, version: 0 };
+      else {
+        const search = capability.executor([
+          defineTool({
+            id: 'search_intelligence',
+            description: '检索本地情报快照',
+            allowedPhases: ['query'],
+            inputSchema: z.strictObject({}),
+            outputSchema: AgentIntelligenceResultSchema,
+            handler: () => ports.searchIntelligence!(selection),
+            project: (output) => ({ total: output.total, truncated: output.truncated }),
+          }),
+        ]);
+        snapshot = (await abortable(search('search_intelligence', 'query', {}), controller.signal))
+          .local as AgentIntelligenceResult;
+      }
       await check();
       const version = await ports.saveIntelligenceResult(snapshot);
       if (version === null) throw new RuntimeStop('fenced');
@@ -239,9 +258,6 @@ export async function executeIntelligence(
             }
           : { coverage: 'representative_point_forecast' }),
       }));
-    let toolOrdinal = context.steps.filter((step) =>
-      step.key.startsWith('tool:intelligence:'),
-    ).length;
     const sourceStatuses = () => [
       ...new Set(
         result.sourceHealth
@@ -275,36 +291,44 @@ export async function executeIntelligence(
       execute: async (_id, args) => {
         try {
           await check();
-          if (!(await ports.reserve('tool', options.maxToolCalls ?? 24)))
-            throw new RuntimeStop('budget');
-          publicEvidence = await project();
+          if (!remainingTools().some((entry) => entry.name === name))
+            throw new CapabilityError('invalid_phase');
           const ref = reference
             ? referenceSchema.parse(args).reference
             : (z.strictObject({}).parse(args), undefined);
-          const item = ref ? publicEvidence.find((e) => e.reference === ref) : undefined;
-          const readable =
-            !!item &&
-            completed.has('search_intelligence') &&
-            (name === 'read_marine_forecast' ? item.kind === 'marine' : item.kind === 'event');
-          const output = reference
-            ? readable
-              ? item
-              : {
-                  status: completed.has('search_intelligence')
-                    ? 'unavailable_reference'
-                    : 'search_first',
-                }
-            : name === 'get_intelligence_source_status'
-              ? { statuses: sourceStatuses() }
-              : { publicEvidence: catalogue() };
-          if (
-            !(await ports.saveStep(
-              `tool:intelligence:${++toolOrdinal}:${name}:${ref ?? 'all'}`,
-              name,
-              output,
-            ))
-          )
-            throw new RuntimeStop('fenced');
+          let readable = false;
+          const execute = capability.executor([
+            defineTool({
+              id: name,
+              description: '读取冻结情报投影',
+              allowedPhases: [reference ? 'read' : 'catalogue'],
+              inputSchema: reference ? referenceSchema : z.strictObject({}),
+              outputSchema: z.record(z.string(), z.unknown()),
+              handler: async () => {
+                publicEvidence = await project();
+                const item = ref ? publicEvidence.find((e) => e.reference === ref) : undefined;
+                readable =
+                  !!item &&
+                  completed.has('search_intelligence') &&
+                  (name === 'read_marine_forecast'
+                    ? item.kind === 'marine'
+                    : item.kind === 'event');
+                return reference
+                  ? readable
+                    ? item!
+                    : {
+                        status: completed.has('search_intelligence')
+                          ? 'unavailable_reference'
+                          : 'search_first',
+                      }
+                  : name === 'get_intelligence_source_status'
+                    ? { statuses: sourceStatuses() }
+                    : { publicEvidence: catalogue() };
+              },
+              project: (output) => output,
+            }),
+          ]);
+          const output = (await execute(name, reference ? 'read' : 'catalogue', args)).model;
           if (!reference || readable) completed.add(name);
           if (reference && readable && ref) completedReadReferences.add(ref);
           toolStatuses[name] =
@@ -315,7 +339,10 @@ export async function executeIntelligence(
                 : 'search_first';
           return { content: [{ type: 'text', text: JSON.stringify(output) }], details: undefined };
         } catch (error) {
-          stop = error instanceof RuntimeStop ? error : new RuntimeStop('provider');
+          stop =
+            error instanceof RuntimeStop || error instanceof CapabilityError
+              ? error
+              : new RuntimeStop('provider');
           return {
             content: [{ type: 'text', text: '{"status":"unavailable"}' }],
             details: undefined,
@@ -324,16 +351,45 @@ export async function executeIntelligence(
         }
       },
     });
+    const referenceTool: AgentTool = {
+      name: 'read_skill_reference',
+      label: '读取技能参考',
+      description: '读取已激活技能的固定参考资料。',
+      parameters: Type.Object(
+        { path: Type.Literal('references/intelligence.md') },
+        { additionalProperties: false },
+      ),
+      execute: async (_id, args) => {
+        try {
+          const { path } = z
+            .strictObject({ path: z.literal('references/intelligence.md') })
+            .parse(args);
+          const body = await capability.session.readReference('intelligence-search', path);
+          skillReferences[path] = body;
+          return { content: [{ type: 'text', text: body }], details: undefined };
+        } catch (error) {
+          stop = error instanceof CapabilityError ? error : new RuntimeStop('configuration');
+          return {
+            content: [{ type: 'text', text: '{"status":"unavailable"}' }],
+            details: undefined,
+            terminate: true,
+          };
+        }
+      },
+    };
     const tools = [
       tool('search_intelligence'),
       tool('read_intelligence', true),
       tool('read_marine_forecast', true),
       tool('get_intelligence_source_status'),
-    ];
+    ].filter((entry) => capability.allowedTools.includes(entry.name));
     const remainingTools = (): AgentTool[] => {
       if (!completed.has('search_intelligence'))
-        return tools.filter((entry) => entry.name === 'search_intelligence');
-      return tools.flatMap((entry) => {
+        return [
+          ...tools.filter((entry) => entry.name === 'search_intelligence'),
+          ...(!skillReferences['references/intelligence.md'] ? [referenceTool] : []),
+        ];
+      const next = tools.flatMap((entry) => {
         if (entry.name === 'search_intelligence') return [];
         if (entry.name === 'get_intelligence_source_status')
           return completed.has(entry.name) ? [] : [entry];
@@ -353,6 +409,10 @@ export async function executeIntelligence(
             ]
           : [];
       });
+      return [
+        ...next,
+        ...(next.length && !skillReferences['references/intelligence.md'] ? [referenceTool] : []),
+      ];
     };
     const models = createModels();
     models.setProvider(deepseekProvider());
@@ -373,7 +433,12 @@ export async function executeIntelligence(
       controller.signal,
     );
     const agent = new Agent({
-      initialState: { model, systemPrompt: SYSTEM, tools, thinkingLevel: 'off' },
+      initialState: {
+        model,
+        systemPrompt: SYSTEM + '\n' + capability.body,
+        tools: [...tools, referenceTool],
+        thinkingLevel: 'off',
+      },
       toolExecution: 'sequential',
       streamFn: (m, c, o) =>
         models.streamSimple(m, c, {
@@ -400,12 +465,13 @@ export async function executeIntelligence(
           context: {
             ...current,
             messages: [
-              createInitialSystemMessage(SYSTEM, remainingTools())!,
+              createInitialSystemMessage(SYSTEM + '\n' + capability.body, remainingTools())!,
               {
                 role: 'user',
                 content: JSON.stringify({
                   action: previous ? 'explain_saved_snapshot' : 'summarize_local_search',
                   replyMode,
+                  skillReferences,
                   queryKind: result.spec.kind ?? 'events',
                   category: result.spec.category ?? null,
                   searchWindow:
@@ -566,15 +632,21 @@ export async function executeIntelligence(
       summaryResultVersion: result.version,
     });
   } catch (error) {
-    const code = timedOut ? 'timeout' : error instanceof RuntimeStop ? error.code : 'provider';
+    const code = timedOut
+      ? 'timeout'
+      : error instanceof RuntimeStop || error instanceof CapabilityError
+        ? error.code
+        : 'provider';
     if (code === 'fenced') return;
     await ports.finish({
       status: 'failed',
       errorCode: code === 'budget' ? 'budget_exhausted' : code,
       error:
-        code === 'budget'
-          ? '本任务调用预算已用尽，检索快照已保存，请重试为新任务。'
-          : '情报摘要暂不可用；已保存的本地证据可以继续查看或重试。',
+        code === 'skill_changed'
+          ? '本次任务绑定的技能内容已更新，请创建新的尝试；已保存的本地证据仍可查看。'
+          : code === 'budget'
+            ? '本任务调用预算已用尽，检索快照已保存，请重试为新任务。'
+            : '情报摘要暂不可用；已保存的本地证据可以继续查看或重试。',
     });
   } finally {
     clearTimeout(timer);

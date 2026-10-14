@@ -1,4 +1,22 @@
 import { executeIntelligence } from './intelligence-runtime';
+import { executeHeatmap } from './heatmap-runtime';
+import type {
+  AgentHeatmapResult,
+  HeatmapQuery,
+  HeatmapResult,
+} from '../../packages/contracts/heatmap';
+import { AgentQueryResultSchema } from '../../packages/contracts/agent';
+import {
+  CapabilityError,
+  defineTool,
+  buildCapabilityDirectory,
+  type SkillCatalog,
+} from './capabilities';
+import {
+  bindBusinessCapability,
+  getBusinessSkillCatalog,
+  validateRestoredSkill,
+} from './business-capabilities';
 import type {
   AgentIntelligenceResult,
   IntelligenceSourceHealth,
@@ -59,6 +77,8 @@ export interface RuntimePorts {
     selection: AgentSelection,
   ): Promise<AgentQueryResult>;
   saveQueryResult?(result: AgentQueryResult): Promise<number | null>;
+  queryHeatmap?(query: HeatmapQuery, signal?: AbortSignal): Promise<HeatmapResult>;
+  saveHeatmapResult?(result: AgentHeatmapResult): Promise<number | null>;
   searchIntelligence?(selection: AgentSelection): Promise<AgentIntelligenceResult>;
   saveIntelligenceResult?(result: AgentIntelligenceResult): Promise<number | null>;
   intelligenceSourceHealth?(): Promise<IntelligenceSourceHealth[]>;
@@ -80,6 +100,7 @@ export interface RuntimeOptions {
   onTextDelta?: (text: string) => void;
   runtimeTimeoutMs?: number;
   now?: () => Date;
+  skillCatalog?: SkillCatalog;
 }
 export interface RuntimeContext {
   task: AgentTask;
@@ -87,6 +108,7 @@ export interface RuntimeContext {
   steps: AgentStep[];
   queryResult?: AgentQueryResult | null;
   intelligenceResult?: AgentIntelligenceResult | null;
+  heatmapResult?: AgentHeatmapResult | null;
   previous?: RuntimeContext | null;
 }
 
@@ -127,12 +149,33 @@ async function executeVesselQuery(
   try {
     if (!ports.saveQueryResult || !ports.queryVessels) throw new RuntimeStop('configuration');
     let result = context.queryResult?.inputRevision === revision ? context.queryResult : null;
+    if (result && !previous)
+      await validateRestoredSkill('vessel-query', context, ports, {
+        ...options,
+        signal: controller.signal,
+      });
     if (!result) {
-      if (!(await ports.reserve('tool', options.maxToolCalls ?? 24)))
-        throw new RuntimeStop('budget');
-      result = previous
-        ? { ...previous, version: 0, inputRevision: revision }
-        : await abortable(ports.queryVessels(kind, selection), controller.signal);
+      if (previous) result = { ...previous, version: 0, inputRevision: revision };
+      else {
+        const capability = await bindBusinessCapability('vessel-query', context, ports, {
+          ...options,
+          signal: controller.signal,
+        });
+        await capability.session.readReference('vessel-query', 'references/vessels.md');
+        const execute = capability.executor([
+          defineTool({
+            id: 'query_vessels',
+            description: '查询船舶快照',
+            allowedPhases: ['query'],
+            inputSchema: z.strictObject({}),
+            outputSchema: AgentQueryResultSchema,
+            handler: () => ports.queryVessels!(kind, selection),
+            project: (output) => ({ total: output.total, truncated: output.truncated }),
+          }),
+        ]);
+        result = (await abortable(execute('query_vessels', 'query', {}), controller.signal))
+          .local as AgentQueryResult;
+      }
       if (controller.signal.aborted || !(await ports.active())) throw new RuntimeStop('fenced');
       const version = await ports.saveQueryResult(result);
       if (version === null) throw new RuntimeStop('fenced');
@@ -145,17 +188,23 @@ async function executeVesselQuery(
       summaryResultVersion: result.version,
     });
   } catch (error) {
-    const code = timedOut ? 'timeout' : error instanceof RuntimeStop ? error.code : 'provider';
+    const code = timedOut
+      ? 'timeout'
+      : error instanceof RuntimeStop || error instanceof CapabilityError
+        ? error.code
+        : 'provider';
     if (code === 'fenced') return;
     await ports.finish({
       status: 'failed',
       errorCode: code === 'budget' ? 'budget_exhausted' : code,
       error:
-        code === 'budget'
-          ? '本任务调用预算已用尽，请重试为新任务。'
-          : code === 'timeout'
-            ? '船舶查询超时，请重试。'
-            : '船舶查询暂不可用，请稍后重试。',
+        code === 'skill_changed'
+          ? '本次任务绑定的技能内容已更新，请创建新的尝试；已保存结果仍可查看。'
+          : code === 'budget'
+            ? '本任务调用预算已用尽，请重试为新任务。'
+            : code === 'timeout'
+              ? '船舶查询超时，请重试。'
+              : '船舶查询暂不可用，请稍后重试。',
     });
   } finally {
     clearTimeout(timer);
@@ -227,7 +276,7 @@ export function guardedFetch(
 
 const CONVERSATION_PROMPT = `你是海上多元情报分析系统的中文助手。根据固定语义意图简短自然地回复。
 greeting：礼貌问候，可以简要介绍系统。
-capabilities：只介绍所列平台能力：区域船舶列表、指定船舶基本信息、港口限制船舶识别、区域低速活动与公告关联，以及已有结果和证据的解释。条件不足时可使用选择框补充区域、船舶和时间，确认后继续同一任务。
+capabilities：依据请求中 capabilities 目录的 description 介绍平台能力，以及已有结果和证据的解释。条件不足时可使用选择框补充区域、船舶和时间，确认后继续同一任务。
 current_time：回复中必须出现且只出现一次独立的 CURRENT_TIME 语义标记。平台会读取服务器时钟，并规范呈现北京时间和时区。你只负责确认时间查询意图；具体时间、日期与星期由平台提供。
 只输出助手回复文本，不调用工具，不声称已执行分析，不生成船舶或证据数据。`;
 
@@ -263,7 +312,9 @@ async function executeConversation(
     const transport = guardedFetch(ports, options, controller.signal);
     const prompt = JSON.stringify({
       intent,
-      capabilities: [...algorithms, 'vessel_list', 'vessel_detail', 'request_input'],
+      capabilities: buildCapabilityDirectory(
+        options.skillCatalog ?? (await getBusinessSkillCatalog()),
+      ),
       ...(intent === 'current_time'
         ? { timeSource: 'platform_clock', placeholder: 'CURRENT_TIME' }
         : {}),
@@ -387,7 +438,13 @@ export async function executeAgent(
   const revision = task.inputRevision ?? 0;
   const currentResults = (task.resultInputRevision ?? 0) === revision;
   if (!currentResults)
-    context = { ...context, results: [], queryResult: null, intelligenceResult: null };
+    context = {
+      ...context,
+      results: [],
+      queryResult: null,
+      intelligenceResult: null,
+      heatmapResult: null,
+    };
   const selectedPurpose = task.selection?.purpose;
   const resolvedIntent = selectedPurpose
     ? derivePurposeIntent(selectedPurpose)
@@ -399,6 +456,28 @@ export async function executeAgent(
       ? { purpose: deriveAgentIntent(task.goal).purpose }
       : {}),
   };
+  if (
+    resolvedIntent === 'ais_heatmap' ||
+    (resolvedIntent === 'explain' && (context.heatmapResult || context.previous?.heatmapResult))
+  ) {
+    const prior =
+      resolvedIntent === 'explain'
+        ? (context.heatmapResult ??
+          (context.previous?.heatmapResult?.inputRevision ===
+          (context.previous?.task.inputRevision ?? 0)
+            ? context.previous?.heatmapResult
+            : undefined))
+        : undefined;
+    const fields = prior ? [] : requiredAgentInputFields(selection, 'ais_heatmap');
+    if (fields.length)
+      await requestInput(
+        ports,
+        { fields, reason: fields.includes('region') ? 'missing_region' : 'missing_time' },
+        '请补充热力图区域和明确的时间范围。',
+      );
+    else await executeHeatmap(context, selection, ports, options, prior ?? undefined);
+    return;
+  }
   if (
     resolvedIntent === 'intelligence_search' ||
     (resolvedIntent === 'explain' &&
@@ -476,7 +555,8 @@ export async function executeAgent(
     (selectedPurpose &&
     selectedPurpose !== 'vessel_list' &&
     selectedPurpose !== 'vessel_detail' &&
-    selectedPurpose !== 'intelligence_search'
+    selectedPurpose !== 'intelligence_search' &&
+    selectedPurpose !== 'ais_heatmap'
       ? { action: 'analyze' as const, algorithm: selectedPurpose }
       : null) ??
     classifyRequest(task.goal, context.previous?.task.resultVersion ? previousDefinition : null) ??
