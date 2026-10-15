@@ -16,7 +16,7 @@ export type ChartSource = SourceConfig & {
 export function useChartWorkspace() {
   const { api } = usePlatform();
   const route = useRoute();
-  const leftTab = ref<'search' | 'layers' | 'playback' | 'intelligence'>('search');
+  const leftTab = ref<'search' | 'layers' | 'playback' | 'intelligence' | 'heatmap'>('search');
   const nameCache = ref(new Map<string, string>());
   const rows = computed(() => visibleVesselRows(data.value?.items ?? [], nameCache.value));
   const searchRequests = createRequestGeneration();

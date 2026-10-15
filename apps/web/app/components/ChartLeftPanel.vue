@@ -36,6 +36,7 @@ const layerNames: Record<keyof ChartLayerVisibility, string> = {
           { id: 'intelligence', name: '情报标绘' },
           { id: 'layers', name: '图层控制' },
           { id: 'playback', name: '时间回放' },
+          { id: 'heatmap', name: 'AIS 热力图' },
         ] as const"
         :key="tab.id"
         role="tab"
@@ -47,6 +48,7 @@ const layerNames: Record<keyof ChartLayerVisibility, string> = {
     </div>
     <div class="chart-panel-scroll">
       <slot v-if="workspace.leftTab === 'intelligence'" name="intelligence" />
+      <slot v-if="workspace.leftTab === 'heatmap'" name="heatmap" />
       <section v-show="workspace.leftTab === 'search'" class="chart-section">
         <h2>船舶搜索</h2>
         <form class="search-row" @submit.prevent="workspace.find(false)">

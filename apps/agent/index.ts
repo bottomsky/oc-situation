@@ -3,6 +3,8 @@ import {
   getIntelligenceSourceHealth,
 } from '../../packages/infrastructure/intelligence-search';
 import { randomUUID } from 'node:crypto';
+import { queryAisHeatmap } from '../../packages/infrastructure/heatmap';
+import { getBusinessSkillCatalog } from './business-capabilities';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
   AckPolicy,
@@ -34,6 +36,7 @@ import {
   requestAgentInput,
   saveAgentQueryResult,
   saveAgentIntelligenceResult,
+  saveAgentHeatmapResult,
 } from '../../packages/infrastructure/agent';
 import { executeAgent, type RuntimeOptions } from './runtime';
 
@@ -222,6 +225,9 @@ export async function processAgentTask(
         intelligenceSourceHealth: () => getIntelligenceSourceHealth(infra),
         saveIntelligenceResult: (result) => saveAgentIntelligenceResult(...fence, result),
         saveQueryResult: (result) => saveAgentQueryResult(...fence, result),
+        queryHeatmap: (query, signal) =>
+          queryAisHeatmap(infra, query, { ownerId: task.ownerId, signal }),
+        saveHeatmapResult: (result) => saveAgentHeatmapResult(...fence, result),
         query: async () => {
           if (!boundTask.bbox) throw new Error('region_required');
           const mmsis = await resolveAgentAnalysisMmsis(
@@ -260,6 +266,7 @@ export async function runAgentWorker(
   options = agentEnvironment(),
 ): Promise<void> {
   if (!options.enabled) return;
+  const skillCatalog = options.skillCatalog ?? (await getBusinessSkillCatalog());
   if (!options.apiKey) throw new Error('DEEPSEEK_API_KEY is required when AGENT_ENABLED=true');
   let stage: WorkerStage = 'bus';
   try {
@@ -311,7 +318,7 @@ export async function runAgentWorker(
         }
         try {
           const job = JobSchema.parse(message.json());
-          await processAgentTask(infra, job.taskId, { ...options, signal }, workerId);
+          await processAgentTask(infra, job.taskId, { ...options, skillCatalog, signal }, workerId);
           message.ack();
         } catch (error) {
           if (error instanceof z.ZodError) message.term('invalid task envelope');

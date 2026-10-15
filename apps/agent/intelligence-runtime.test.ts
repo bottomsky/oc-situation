@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { executeAgent } from './runtime';
+import { getBusinessSkillCatalog } from './business-capabilities';
+import { SkillCatalog } from './capabilities';
 import { memoryPorts, task, sse } from './runtime.test';
 import {
   projectIntelligence,
@@ -124,6 +126,123 @@ function intelligenceFlow(content: string, reference = 'I1', name = 'read_intell
         : sse({ content }, 'stop');
 }
 describe('frozen intelligence tools and privacy gate', () => {
+  it('每轮携带已激活技能正文，技能参考只能通过受控路径读取', async () => {
+    const m = setup();
+    const sent: string[] = [];
+    let call = 0;
+    await executeAgent(m.context, m.ports, {
+      apiKey: 'test',
+      fetch: async (_url, init) => {
+        sent.push(String(init?.body));
+        return ++call <= 2
+          ? toolReply('read_skill_reference', { path: 'references/intelligence.md' })
+          : call === 3
+            ? toolReply('search_intelligence')
+            : call === 4
+              ? toolReply('read_intelligence', { reference: 'I1' })
+              : sse({ content: '来源称存在候选公告 [I1]。' }, 'stop');
+      },
+    });
+    expect(m.state.status).toBe('completed');
+    expect(sent.every((body) => body.includes('公开海事情报检索'))).toBe(true);
+    expect(
+      sent.every(
+        (body) =>
+          !body.includes('确认用户请求为区域船舶清单') && !body.includes('# AIS 船舶热力图'),
+      ),
+    ).toBe(true);
+    expect(
+      [...m.state.steps.keys()].some((key) => key.includes('references/intelligence.md')),
+    ).toBe(true);
+    expect(m.state.toolCalls).toBe(5); // activation, query, reference once, catalogue, evidence read
+  });
+  it('受信目录的正文改动进入每轮实际请求，能力描述进入普通问答', async () => {
+    const catalog = await getBusinessSkillCatalog();
+    const skillCatalog = new SkillCatalog(
+      catalog.list().map((metadata) => {
+        const skill = catalog.get(metadata.skillId);
+        return metadata.skillId === 'intelligence-search'
+          ? {
+              ...skill,
+              body: skill.body + '\n已审阅目录正文测试标记',
+              metadata: { ...skill.metadata, description: '目录描述测试标记' },
+            }
+          : skill;
+      }),
+    );
+    const m = setup();
+    const sent: string[] = [];
+    const flow = intelligenceFlow('来源称存在候选公告 [I1]。');
+    await executeAgent(m.context, m.ports, {
+      apiKey: 'test',
+      skillCatalog,
+      fetch: async (_url, init) => {
+        sent.push(String(init?.body));
+        return flow();
+      },
+    });
+    expect(m.state.status).toBe('completed');
+    expect(sent.every((body) => body.includes('已审阅目录正文测试标记'))).toBe(true);
+    const question = setup();
+    const questionContext = {
+      ...question.context,
+      task: {
+        ...question.context.task,
+        goal: '你能做什么',
+        intent: 'conversation' as const,
+        selection: {},
+      },
+    };
+    const introductions: string[] = [];
+    await executeAgent(questionContext, question.ports, {
+      apiKey: 'test',
+      skillCatalog,
+      fetch: async (_url, init) => {
+        introductions.push(String(init?.body));
+        return sse({ content: '可以进行情报检索。' }, 'stop');
+      },
+    });
+    expect(introductions[0]).toContain('目录描述测试标记');
+    expect(introductions[0]).not.toContain('已审阅目录正文测试标记');
+  });
+  it('技能声明收窄工具时，本地查询也受执行器许可约束', async () => {
+    const catalog = await getBusinessSkillCatalog();
+    const skillCatalog = new SkillCatalog(
+      catalog.list().map((metadata) => {
+        const skill = catalog.get(metadata.skillId);
+        return metadata.skillId === 'intelligence-search'
+          ? { ...skill, metadata: { ...skill.metadata, toolIds: ['read_intelligence'] } }
+          : skill;
+      }),
+    );
+    const m = setup();
+    await executeAgent(m.context, m.ports, {
+      apiKey: 'test',
+      skillCatalog,
+      fetch: async () => {
+        throw new Error('not authorized');
+      },
+    });
+    expect(m.searches()).toBe(0);
+    expect(m.state.status).toBe('failed');
+    expect(m.state.modelCalls).toBe(0);
+  });
+  it('拒绝任意技能参考路径，原始路径不进入后续请求', async () => {
+    const m = setup();
+    const sent: string[] = [];
+    await executeAgent(m.context, m.ports, {
+      apiKey: 'test',
+      fetch: async (_url, init) => {
+        sent.push(String(init?.body));
+        return toolReply('read_skill_reference', { path: '../../private.txt' });
+      },
+    });
+    expect(m.state.status).toBe('failed');
+    expect(sent.length).toBeLessThanOrEqual(12);
+    expect(sent.every((body) => !body.includes('private.txt'))).toBe(true);
+    expect(m.state.toolCalls).toBe(2);
+    expect(JSON.stringify([...m.state.steps.values()])).not.toContain('private.txt');
+  });
   it('pauses unsupported-port marine requests without searching or calling a model, then resumes the same task with a selected point', async () => {
     const m = setup({ ...snapshot, evidence: [], total: 0 });
     const context = {
@@ -341,7 +460,7 @@ describe('frozen intelligence tools and privacy gate', () => {
       JSON.parse(payloads[0]!).tools.map(
         (item: { function: { name: string } }) => item.function.name,
       ),
-    ).toEqual(['search_intelligence']);
+    ).toEqual(['search_intelligence', 'read_skill_reference']);
     expect(JSON.parse(payloads[4]!).tools ?? []).toEqual([]);
     expect(m.state.summary).toContain('尚待审核');
     expect(m.state.summary).toContain('索引观测时间不等于事件发生时间');

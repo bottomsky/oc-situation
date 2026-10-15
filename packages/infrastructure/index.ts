@@ -16,6 +16,7 @@ export * from './fusion-data';
 export * from './topics';
 export * from './agent';
 export * from './agent-query';
+export * from './heatmap';
 export * from './intelligence-search';
 export * from './intelligence-weather';
 export * from './intelligence-ingestion';

@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { getBusinessSkillCatalog } from './business-capabilities';
 import { AckPolicy, RetentionPolicy, StorageType } from '@nats-io/jetstream';
 import type { Infrastructure } from '../../packages/infrastructure/clients';
 import * as worker from './index';
@@ -49,6 +50,9 @@ describe('worker 安全故障分类', () => {
 });
 
 describe('worker pull heartbeat recovery', () => {
+  beforeAll(async () => {
+    await getBusinessSkillCatalog();
+  });
   afterEach(() => vi.useRealTimers());
   const heartbeat = () => Object.assign(new Error('heartbeats missed'), { name: 'JetStreamError' });
   function infrastructure(fetch: ReturnType<typeof vi.fn>) {

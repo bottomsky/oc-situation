@@ -4,8 +4,8 @@ import type { AgentTask, AgentQueryResult, AgentInputSpec } from '../../packages
 import type { AnalysisResult, TopicDataset } from '../../packages/contracts/topics';
 
 export const task = {
-  id: 'local-task',
-  ownerId: 'local-owner',
+  id: '11111111-1111-4111-8111-111111111111',
+  ownerId: '22222222-2222-4222-8222-222222222222',
   goal: '分析低速 413123456 秘密名称 121.5,31.2 api_key=secret',
   bbox: [120, 30, 122, 32],
   from: new Date(Date.now() - 24 * 3600_000).toISOString(),

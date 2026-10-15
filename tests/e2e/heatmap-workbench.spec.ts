@@ -1,0 +1,255 @@
+import { test, expect, type Page } from '@playwright/test';
+import { chartFixture } from './fixtures/chart-fixture';
+import { openLeftPanel } from './chart-helpers';
+
+function result() {
+  const to = new Date().toISOString();
+  return {
+    query: { bbox: [110, 10, 130, 40], from: new Date(Date.now() - 86400000).toISOString(), to },
+    grid: { level: 7, cellDegrees: 2.8125 },
+    cells: [{ id: '7:107:43', x: 107, y: 43, lon: 122.34375, lat: 32.34375, vesselCount: 3 }],
+    totalVessels: 3,
+    generatedAt: to,
+    metric: 'unique_vessels',
+    shipTypeBasis: 'current_profile',
+  };
+}
+async function heatmapFixture(page: Page, delayed = false) {
+  await chartFixture(page);
+  const requests: URL[] = [];
+  let complete = !delayed;
+  let created = false;
+  const snapshot = result();
+  const session = {
+    id: 'heat-session',
+    ownerId: 'fixture-user',
+    title: '热图会话',
+    createdAt: snapshot.generatedAt,
+  };
+  const task = {
+    id: 'heat-task',
+    sessionId: session.id,
+    goal: '生成热图',
+    status: 'completed',
+    intent: 'ais_heatmap',
+    inputRevision: 1,
+    resultInputRevision: 1,
+    resultVersion: 1,
+    historyHours: 24,
+    createdAt: snapshot.generatedAt,
+    updatedAt: snapshot.generatedAt,
+  };
+  await page.route('**/api/v1/map/heatmap?**', async (route) => {
+    const url = new URL(route.request().url());
+    requests.push(url);
+    const query = {
+      ...snapshot.query,
+      bbox: url.searchParams.get('bbox')!.split(',').map(Number),
+      from: url.searchParams.get('from'),
+      to: url.searchParams.get('to'),
+    };
+    await route.fulfill({ json: { ...snapshot, query } });
+  });
+  await page.route('**/api/v1/agent/**', async (route) => {
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+    let json: unknown;
+    const current = { ...task, status: complete ? 'completed' : 'running' };
+    if (path.endsWith('/config'))
+      json = {
+        enabled: true,
+        defaultHistoryHours: 24,
+        maxHistoryHours: 168,
+        maxModelCalls: 12,
+        maxToolCalls: 24,
+      };
+    else if (path.endsWith('/sessions')) {
+      if (route.request().method() === 'POST') {
+        created = true;
+        json = session;
+      } else json = { items: created ? [session] : [] };
+    } else if (path.endsWith('/messages'))
+      json = {
+        task: current,
+        message: {
+          id: 'heat-message',
+          sessionId: session.id,
+          taskId: task.id,
+          role: 'user',
+          content: '生成热图',
+          createdAt: snapshot.generatedAt,
+        },
+      };
+    else if (path.includes('/events')) json = { items: [{ id: 'event' }], nextCursor: '1' };
+    else if (path.includes('/tasks/'))
+      json = {
+        task: current,
+        results: [],
+        steps: [],
+        heatmapResult: complete
+          ? { ...snapshot, kind: 'ais_heatmap', version: 1, inputRevision: 1 }
+          : null,
+      };
+    else json = { session, tasks: [current], messages: [], snapshotCursor: '0' };
+    await route.fulfill({ json });
+  });
+  return {
+    requests,
+    complete: () => {
+      complete = true;
+    },
+  };
+}
+async function openHeatmap(page: Page) {
+  await openLeftPanel(page);
+  await page.getByRole('tab', { name: 'AIS 热力图' }).click();
+}
+test('人工生成锁定范围，缩放不重查，关闭移除图层', async ({ page }) => {
+  await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));
+  const fixture = await heatmapFixture(page);
+  await page.goto('/');
+  await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true', {
+    timeout: 45000,
+  });
+  await page.evaluate(async () => {
+    const url = performance
+      .getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .find((name) => /\/maplibre[-_]gl.*\.js/.test(name) && !name.includes('worker'));
+    if (!url)
+      throw new Error(
+        'MapLibre module was not loaded: ' +
+          performance
+            .getEntriesByType('resource')
+            .map((entry) => entry.name)
+            .filter((name) => name.includes('maplibre'))
+            .join(','),
+      );
+    const library = await import(url);
+    const prototype = library.Map.prototype;
+    const original = prototype.getSource;
+    prototype.getSource = function (id: string) {
+      if (id === 'ais-heatmap') {
+        Object.assign(globalThis, { heatmapTestMap: this });
+        prototype.getSource = original;
+      }
+      return original.call(this, id);
+    };
+  });
+  await openHeatmap(page);
+  await page.getByRole('button', { name: '生成热力图', exact: true }).click();
+  const legend = page.getByTestId('heatmap-legend');
+  await expect(legend).toContainText('海图已展示');
+  await expect(legend).toContainText('全区 3 艘');
+  expect(fixture.requests[0]!.searchParams.get('bbox')).not.toBe('-180,-85,180,85');
+  const before = await legend.textContent();
+  await page.getByRole('button', { name: '放大海图', exact: true }).click();
+  await expect(legend).toHaveText(before!);
+  expect(fixture.requests).toHaveLength(1);
+  const cellPoint = await page.evaluate(() => {
+    const map = (globalThis as typeof globalThis & { heatmapTestMap: import('maplibre-gl').Map })
+      .heatmapTestMap;
+    const point = map.project([122.34375, 32.34375]);
+    const rect = map.getCanvas().getBoundingClientRect();
+    return { x: point.x + rect.x, y: point.y + rect.y };
+  });
+  await page.mouse.click(cellPoint.x, cellPoint.y);
+  await expect(page.locator('.maplibregl-popup')).toContainText('3 艘去重船舶');
+  const style = await page.evaluate(async () => {
+    const map = (globalThis as typeof globalThis & { heatmapTestMap: import('maplibre-gl').Map })
+      .heatmapTestMap;
+    const original = map.getStyle();
+    await new Promise<void>((resolve) => {
+      map.once('idle', () => resolve());
+      map.setStyle(original, { diff: false });
+    });
+    const source = map.getSource('ais-heatmap') as import('maplibre-gl').GeoJSONSource;
+    const data = await source.getData();
+    return {
+      count: data.type === 'FeatureCollection' ? data.features.length : -1,
+      layers: map.getStyle().layers.map((layer) => layer.id),
+    };
+  });
+  expect(style.count).toBe(1);
+  expect(style.layers.indexOf('ais-heatmap')).toBeLessThan(style.layers.indexOf('vessels'));
+  expect(fixture.requests).toHaveLength(1);
+  await page.screenshot({
+    path: '.data/heatmap-browser-results/manual-heatmap.png',
+    fullPage: true,
+  });
+  await legend.getByRole('button', { name: '关闭热力图' }).click();
+  await expect(legend).toHaveCount(0);
+});
+test('主动任务自动展示，刷新历史需手动点击快照', async ({ page }) => {
+  await heatmapFixture(page);
+  await page.goto('/');
+  const composer = page.getByTestId('chart-agent-composer');
+  await composer.locator('textarea').fill('生成热图');
+  await composer.getByRole('button', { name: '发送分析问题' }).click();
+  await expect(page.getByTestId('heatmap-legend')).toContainText('海图已展示');
+  await page.screenshot({
+    path: '.data/heatmap-browser-results/agent-heatmap.png',
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(page.getByRole('button', { name: '在海图展示此快照' })).toBeVisible();
+  await expect(page.getByTestId('heatmap-legend')).toHaveCount(0);
+  await page.getByRole('button', { name: '在海图展示此快照' }).click();
+  await expect(page.getByTestId('heatmap-legend')).toContainText('海图已展示');
+});
+test('矩形选区固定查询范围，零结果和超限均明确反馈', async ({ page }) => {
+  const fixture = await heatmapFixture(page);
+  await page.goto('/');
+  await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true', {
+    timeout: 45000,
+  });
+  await openHeatmap(page);
+  await page.getByRole('button', { name: '热图矩形框选' }).click();
+  const overlay = page.getByTestId('agent-region-overlay');
+  const bounds = await overlay.boundingBox();
+  await page.mouse.move(bounds!.x + 80, bounds!.y + 80);
+  await page.mouse.down();
+  await page.mouse.move(bounds!.x + 300, bounds!.y + 250);
+  await page.mouse.up();
+  await expect(overlay).toHaveCount(0);
+  await page.getByRole('button', { name: '生成热力图', exact: true }).click();
+  await expect(page.getByTestId('heatmap-legend')).toContainText('海图已展示');
+  const first = fixture.requests[0]!.searchParams.get('bbox');
+  await page.getByRole('button', { name: '放大海图', exact: true }).click();
+  await page.route('**/api/v1/map/heatmap?**', async (route) => {
+    const url = new URL(route.request().url());
+    fixture.requests.push(url);
+    await route.fulfill({
+      json: {
+        ...result(),
+        query: { ...result().query, bbox: url.searchParams.get('bbox')!.split(',').map(Number) },
+        cells: [],
+        totalVessels: 0,
+      },
+    });
+  });
+  await page.getByRole('button', { name: '更新热力图' }).click();
+  await expect(page.getByTestId('heatmap-legend')).toContainText('无匹配观测');
+  expect(fixture.requests[1]!.searchParams.get('bbox')).toBe(first);
+  await page.route('**/api/v1/map/heatmap?**', (route) =>
+    route.fulfill({ status: 413, json: { message: '数据超限' } }),
+  );
+  await page.getByRole('button', { name: '更新热力图' }).click();
+  await expect(
+    page.getByRole('region', { name: 'AIS 热力图', exact: true }).getByRole('alert'),
+  ).toContainText('缩小区域');
+});
+test('等待智能体期间手动生成并关闭，迟到任务结果不恢复热图', async ({ page }) => {
+  const fixture = await heatmapFixture(page, true);
+  await page.goto('/');
+  const composer = page.getByTestId('chart-agent-composer');
+  await composer.locator('textarea').fill('生成热图');
+  await composer.getByRole('button', { name: '发送分析问题' }).click();
+  await openHeatmap(page);
+  await page.getByRole('button', { name: '生成热力图', exact: true }).click();
+  await expect(page.getByTestId('heatmap-legend')).toContainText('海图已展示');
+  await page.getByTestId('heatmap-legend').getByRole('button', { name: '关闭热力图' }).click();
+  fixture.complete();
+  await expect(page.getByRole('button', { name: '在海图展示此快照' })).toBeVisible();
+  await expect(page.getByTestId('heatmap-legend')).toHaveCount(0);
+});

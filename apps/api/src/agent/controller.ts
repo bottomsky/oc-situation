@@ -1,4 +1,5 @@
 import { AgentIntelligenceResultSchema } from '../../../../packages/contracts/intelligence-search';
+import { AgentHeatmapResultSchema } from '../../../../packages/contracts/heatmap';
 import {
   Body,
   ConflictException,
@@ -70,6 +71,7 @@ const TaskResponse = z.object({
   snapshotCursor: z.string(),
   queryResult: AgentQueryResultSchema.nullable(),
   intelligenceResult: AgentIntelligenceResultSchema.nullable(),
+  heatmapResult: AgentHeatmapResultSchema.nullable(),
 });
 const budget = (key: string, fallback: number) => {
   const value = Number(process.env[key] ?? fallback);
@@ -163,7 +165,7 @@ export class AgentController {
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('Idempotency'))
         throw new ConflictException(error.message);
-      throw error;
+      return this.inputError(error);
     }
   }
   @Get('tasks/:id')
@@ -185,6 +187,7 @@ export class AgentController {
       snapshotCursor: result.snapshotCursor,
       queryResult: result.queryResult,
       intelligenceResult: result.intelligenceResult,
+      heatmapResult: result.heatmapResult,
     };
   }
   private inputError(error: unknown): never {

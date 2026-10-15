@@ -25,6 +25,9 @@ export function dateLabel(value: string | null | undefined) {
     ? new Date(value).toLocaleString('zh-CN', { hour12: false, timeZone: 'UTC' }) + ' UTC'
     : '—';
 }
+export function heatmapDateLabel(value: string) {
+  return `${new Date(value).toLocaleString('zh-CN', { hour12: false, timeZone: 'Asia/Shanghai' })} 北京时间`;
+}
 export const roleLabel = { admin: '管理员', operator: '操作员', viewer: '只读用户' };
 export const statusLabel: Record<string, string> = {
   enabled: '已启用',

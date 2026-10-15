@@ -1,0 +1,151 @@
+# AIS 历史热力图
+
+热力图展示指定区域和历史时段内的去重船舶分布。海图面板和智能体共用 `queryAisHeatmap` 查询，返回固定网格、每格去重船数、全区域去重船数及查询条件快照。
+
+## 海图使用
+
+在“AIS 热力图”面板选择最近 24 小时、3 天、7 天，或填写自定义时间。自定义输入按北京时间（UTC+08:00）解释，发送到 API 时转换为 UTC ISO 时间。当前数据来源和船型筛选会随查询一并提交。
+
+点击“热图使用当前视野”或“热图矩形框选”确定范围，再生成热力图。直接生成时使用当时的地图视野。生成后的区域、时段和筛选条件保存在快照中；平移和缩放只改变显示视野。需要调整统计条件时，重新选择范围并点击“更新热力图”。
+
+“取消加载”撤销当前请求；“关闭热力图”清除当前热图与范围快照。智能体生成的热图也使用同一展示组件，历史结果保留计算时的条件和版本。重新计算时仍需满足在线保留范围。
+
+## 统计口径
+
+指标 `metric` 固定为 `unique_vessels`。同一 MMSI 在一个网格内出现多次，只计一艘；同一船经过多个网格，会分别计入这些网格。`totalVessels` 对整个查询区域独立去重，因此各格船数之和可以大于总船数。
+
+统计依据是保留的 AIS 位置观测。接收覆盖、来源可用性和报文频率会影响观测分布，业务解读应结合这些条件。船型筛选使用 PostgreSQL 中的当前船舶资料，并与显式选择的 MMSI 取交集；结果以 `shipTypeBasis: current_profile` 标明该口径。
+
+查询按以下顺序处理数据：
+
+1. 使用 ClickHouse `FINAL`，按位置表的逻辑记录键合并清洗版本，保留最高 `cleaningVersion`。
+2. 在指定时段、来源和船舶范围内，按 `(mmsi, observedAt)` 分组，以 `sourcePriority` 较大者优先；优先级相同时取 `eventId` 较大者。
+3. 对选定的观测点执行区域过滤，再分别计算每格和全区域的 `uniqExact(mmsi)`。
+
+例如，同一船同一时刻的低优先级位置在区域内、高优先级位置在区域外，合并结果采用区域外的位置。如果查询明确指定低优先级来源，则在该来源范围内重新优选。查询直接对完整匹配范围聚合，资源超限返回错误。
+
+## 时间与固定网格
+
+执行范围为最近 30 天，单次时长大于 0 且最多 168 小时，结束时间须早于或等于执行时刻。区间采用 `[from, to)`：起点包含、终点排除。API 接收 UTC ISO 时间，前端负责北京时间输入转换。
+
+网格原点固定为经度 −180°、纬度 −90°，边长为 `360 / 2^level` 度，层级范围为 0 至 20。服务选择覆盖查询矩形且格数最多为 4096 的最高层级，返回非空格。单元标识为 `level:x:y`，中心点由固定网格计算，同一层级的同一单元在不同查询中具有相同标识和中心。
+
+区域支持跨日界线：`west > east` 表示从西边界跨过 ±180° 到东边界。经度 180° 归入 −180° 所在单元；区域边界包含端点，南北极归入各自有效单元。层级 0 的中心纬度为 0°。网格按经纬度划分，各纬度的实际地表面积不同，单元船数用于比较观测分布。
+
+## API 与共享查询
+
+`GET /api/v1/map/heatmap` 使用现有会话鉴权，viewer 及以上角色可读取。
+
+| 参数         | 格式与范围                                                |
+| ------------ | --------------------------------------------------------- |
+| `bbox`       | `west,south,east,north`，经度 −180 至 180，纬度 −90 至 90 |
+| `from`、`to` | UTC ISO 时间，满足在线保留和时长限制                      |
+| `sourceId`   | 可选，单个来源 ID                                         |
+| `shipType`   | 可选，1 至 99 的整数，按当前船舶资料筛选                  |
+| `mmsis`      | 可选，逗号分隔，最多 100 个互异的有效九位 MMSI            |
+
+已登录页面可按如下方式读取最近一天的热图：
+
+```typescript
+const to = new Date();
+const params = new URLSearchParams({
+  bbox: '100,0,130,40',
+  from: new Date(to.getTime() - 24 * 3_600_000).toISOString(),
+  to: to.toISOString(),
+});
+const response = await fetch(`/api/v1/map/heatmap?${params}`, {
+  credentials: 'same-origin',
+});
+const result = await response.json();
+```
+
+后端通过 `packages/infrastructure` 导出的 `queryAisHeatmap(infra, query, { ownerId, signal })` 调用。调用方在每次请求前完成鉴权，传入用户标识和取消信号。返回值包含 `query`、`grid`、`cells`、`totalVessels`、`generatedAt`、`metric` 和 `shipTypeBasis`。
+
+| 错误类别                     | HTTP 状态 | 处理方式                             |
+| ---------------------------- | --------- | ------------------------------------ |
+| `invalid_input`、`retention` | 400       | 修正区域或改为近 30 天内的有效时间   |
+| `data_limit`                 | 413       | 优先缩短时段或限定来源、船舶，再提交 |
+| `busy`                       | 429       | 稍后重试                             |
+| `cancelled`                  | 499       | 当前请求已取消，由用户重新发起       |
+| `unavailable`                | 503       | 检查依赖服务状态后重试               |
+
+API 统一异常封装保留可读消息；内部调用通过 `HeatmapQueryError.category` 识别上述类别。缩小区域主要减少最终网格和结果，时间、来源、船舶条件在位置优选前生效，对扫描和聚合规模的影响更直接。
+
+## 查询保护与部署条件
+
+| 限制                      | 当前值                             |
+| ------------------------- | ---------------------------------- |
+| 每个进程的活动热图查询    | 1 个；其他独立请求立即返回 `busy`  |
+| ClickHouse 执行时间       | 20 秒                              |
+| 单次查询内存              | 512 MiB                            |
+| 扫描行数／字节            | 5000 万行／4 GiB                   |
+| ClickHouse 结果行数／字节 | 4097 行／2 MiB，其中一行为全域合计 |
+| 返回网格                  | 最多 4096 个                       |
+| 当前船型展开范围          | 最多 10 万 MMSI                    |
+| PostgreSQL 船型查询       | 只读事务，服务端语句超时 5 秒      |
+| 应用请求截止时间          | 25 秒                              |
+
+相同用户的规范化查询在执行中合并，成功结果缓存 30 秒，进程内最多保留 32 项，按最近访问顺序淘汰。每次返回独立副本。省略 `ownerId` 时关闭缓存与合并，适用于容量测试。缓存命中仍执行调用方鉴权；用户停用后，已有缓存也受到权限校验约束。
+
+取消一个订阅只撤销该订阅；最后一个订阅取消后向共享查询发送中止信号。调用方立即结束等待，查询名额在实际数据库执行结束后释放；驱动尚未响应取消时，新请求继续收到 `busy`。PostgreSQL 船型筛选通过只读事务和服务端语句超时约束工作，事务结束后归还连接。ClickHouse 使用连接关闭取消设置及服务端执行时限。重试应保留退避间隔。
+
+API 与 Agent worker 各自持有进程内名额。**多副本部署前，应完成数据库侧总查询额度配置与联合压测**：为热力查询分配可审计的 ClickHouse 用户或工作负载，设置跨 API、worker 和所有副本的总并发、总内存与执行预算，并验证采集写入和其他查询的资源余量。运维容量规划按全部进程叠加计算；当前进程内限制仅覆盖各自实例。
+
+## 容量基准与已知边界
+
+基准使用隔离的 ClickHouse 25.8，构造 1 万个 MMSI、跨 7 天均匀分布的位置时间、确定性的全球经纬度、唯一来源和事件标识，分别测试 10 万与 100 万条观测。每种数据规模包含 24 小时／7 天、局部矩形 `[100,0,130,40]`／全球四个场景，各执行 5 次，关闭应用缓存和请求合并。
+
+完整结果见 [10 万条报告](reports/heatmap-benchmark-100000.json)和 [100 万条报告](reports/heatmap-benchmark-1000000.json)。报告包含 P95、非空格数、船数、序列化响应体字节、扫描行数／字节、查询内存和服务端耗时。`responseBytes` 按 `Buffer.byteLength(JSON.stringify(result), 'utf8')` 计量，排除 HTTP 头和传输压缩；失败时记为 `null`。P95 只统计成功请求；全部失败的场景为 `null`，并标明 `success: false`。
+
+现有实测中，10 万条四个场景均成功；100 万条的 24 小时场景成功，7 天的局部与全球查询触发 512 MiB 上限并返回 `data_limit`。这组数据用于复现当前实现的容量边界。生产容量验收需采用实际来源数量、版本重复比例、MMSI 分布和并发负载重新测试。
+
+### 运行方式
+
+使用已完成迁移的 `infra/compose.test.yaml` 隔离环境，确认当前没有其他集成测试使用这些端口。脚本校验显式开关及本机隔离端口；禁止将基准指向生产或 demo 数据库。
+
+```powershell
+$env:DATABASE_URL = 'postgresql://ais:ais-local-only@127.0.0.1:15433/ais'
+$env:CLICKHOUSE_URL = 'http://127.0.0.1:18124'
+$env:CLICKHOUSE_USER = 'ais'
+$env:CLICKHOUSE_PASSWORD = 'ais-local-only'
+$env:CLICKHOUSE_DATABASE = 'ais'
+$env:NATS_URL = 'nats://127.0.0.1:14223'
+$env:S3_ENDPOINT = 'http://127.0.0.1:19001'
+$env:S3_REGION = 'us-east-1'
+$env:S3_BUCKET = 'ais-raw'
+$env:S3_ACCESS_KEY_ID = 'ais-local'
+$env:S3_SECRET_ACCESS_KEY = 'ais-local-only-secret'
+$env:AIS_HEATMAP_BENCH = '1'
+$env:AIS_HEATMAP_BENCH_REPEATS = '5'
+foreach ($rows in @(100000, 1000000)) {
+  $env:AIS_HEATMAP_BENCH_ROWS = [string]$rows
+  bun --no-env-file scripts/heatmap-benchmark.ts `
+    > "docs/reports/heatmap-benchmark-$rows.json" `
+    2> ".data/heatmap-benchmark-$rows.stderr.log"
+}
+```
+
+脚本接受 10 万至 100 万行、每场景 3 至 30 次重复，默认 10 万行与 5 次。每次使用独立 `sourceId`，退出时仅删除该来源的合成位置记录。若进程被强制终止，按该次报告或日志中的来源 ID 清理遗留测试数据。ClickHouse 查询日志可用时补齐资源指标，权限不足时通过 `metricsStatus` 标明缺项。
+
+## 后续预聚合评估
+
+当实际业务需要稳定查询百万级以上的多日历史，或联合压测持续出现 `data_limit`、`busy`、延迟超出业务验收目标时，启动预聚合方案评估。评估应覆盖固定网格与时间桶的去重状态、清洗修订和多源优选引起的重算、当前船型资料变更、跨格全域去重以及来源筛选。
+
+预聚合的准入条件是与原始查询保持相同统计语义，并通过重复版本、同船同刻跨区域优选、时间端点和跨日界线回归测试。容量收益通过相同数据与并发场景对照验证，再决定存储预算、更新延迟和上线范围。
+
+## 编译产物闭环验证
+
+完成 `bun run build` 后，独占使用上述 `infra/compose.test.yaml` 隔离环境，并沿用“运行方式”中的数据库、ClickHouse、NATS 和 S3 环境变量。准备仓库已有的 Playwright 浏览器后执行：
+
+```powershell
+$env:AIS_HEATMAP_SMOKE = '1'
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Get-Location) '.data/playwright'
+$env:TSX_TSCONFIG_PATH = Join-Path (Get-Location) 'tsconfig.base.json'
+bun --no-env-file run heatmap:smoke
+```
+
+脚本通过 Node 启动编译后的 API、Agent worker 和 Nuxt，并复用同源转发网关连接真实浏览器。API、Web、网关分别使用 13230、13231、13232 端口，健康检查使用 13238、13239。验证范围为本地 HTTP 编译产物：会话采用开发模式 Cookie；TLS 与生产 Cookie 策略按部署环境另行验收。
+
+验证包括三个内置技能的编译产物、真实登录、手动与智能体热图数据一致、任务零模型调用和三次本地工具调用，以及浏览器发送“生成当前视野过去24小时的 AIS 热力图”后的结果卡、图例自动展示。刷新页面后，历史快照通过用户点击恢复。成功截图保存为 `.data/heatmap-production.png`。
+
+启动前校验显式开关、隔离服务端口、浏览器安装、服务端口空闲状态，以及现存可调度采集任务、待发布 outbox 和活动 Agent 任务。存在这些任务时，先由隔离环境维护者处理，再执行验证。脚本创建独立账号、来源和观测，阻止 worker 向外部模型发起请求；退出时关闭浏览器与服务进程，并按本次账号、来源和记录 ID 清理任务、会话、位置、质量事件及登录审计。运行期间应保持数据库独占，以便准确记录本次登录审计。

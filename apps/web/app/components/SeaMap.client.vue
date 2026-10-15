@@ -42,6 +42,8 @@ import type {
 } from '@ais/contracts';
 import { vesselMarkerProperties } from '../utils/vesselMarkers';
 import { registerChartBusinessLayers } from '../utils/chartBusinessLayers';
+import { heatmapGeoJson, registerHeatmapLayers, heatmapViewportBounds } from '../utils/heatmapMap';
+import type { HeatmapResult } from '@ais/contracts';
 import type { ChartLayerVisibility, ChartMapControls } from '../types/chart';
 import {
   applyChartBusinessVisibility,
@@ -61,6 +63,7 @@ const props = defineProps<{
   canDraw?: boolean;
   layers?: Partial<ChartLayerVisibility>;
   selectingRegion?: boolean;
+  heatmap?: HeatmapResult | null;
 }>();
 const emit = defineEmits<{
   viewport: [bbox: Bbox, zoom: number];
@@ -70,6 +73,7 @@ const emit = defineEmits<{
   geometry: [geometry: unknown];
   regionSelected: [bbox: Bbox];
   regionCancelled: [];
+  heatmapDisplayed: [result: HeatmapResult];
 }>();
 const host = useTemplateRef<HTMLElement>('mapHost');
 const mapError = ref('');
@@ -127,6 +131,7 @@ watch(
   },
 );
 let map: GLMap | undefined;
+let heatmapPopup: maplibregl.Popup | undefined;
 let drawing: TerraDraw | undefined;
 const drawMode = ref('cancel');
 const drawingError = ref('');
@@ -491,6 +496,8 @@ function updateEvidence() {
 }
 function registerBusinessLayers() {
   if (!map) return;
+  registerHeatmapLayers(map);
+  updateHeatmap();
   registerChartBusinessLayers(map, grid);
   applyChartBusinessVisibility(map, props.layers);
   registerIntelligenceLayers(map);
@@ -498,6 +505,18 @@ function registerBusinessLayers() {
   update();
   ready.value = true;
   scheduling?.viewport();
+}
+function updateHeatmap() {
+  heatmapPopup?.remove();
+  const source = map?.getSource('ais-heatmap') as GeoJSONSource | undefined;
+  if (!source) return;
+  const snapshot = props.heatmap;
+  source.setData(heatmapGeoJson(snapshot ?? null));
+  if (snapshot)
+    map?.once('idle', () => {
+      if (props.heatmap === snapshot && map?.getLayer('ais-heatmap'))
+        emit('heatmapDisplayed', snapshot);
+    });
 }
 onMounted(async () => {
   await nextTick();
@@ -568,6 +587,24 @@ onMounted(async () => {
           (f) => f.layer.id.startsWith('intelligence-object-directory') && f.properties?.objectId,
         );
       if (reference) emit('object', String(reference.properties.objectId));
+      else if (
+        props.heatmap &&
+        !map!.queryRenderedFeatures(e.point, { layers: ['vessels', 'clusters'] }).length
+      ) {
+        const cell = props.heatmap.cells.find((item) => {
+          const half = props.heatmap!.grid.cellDegrees / 2;
+          return (
+            Math.abs(e.lngLat.wrap().lng - item.lon) <= half &&
+            Math.abs(e.lngLat.lat - item.lat) <= half
+          );
+        });
+        if (cell) {
+          const content = document.createElement('div');
+          content.textContent = `网格 ${cell.id}：${cell.vesselCount} 艘去重船舶`;
+          heatmapPopup ??= new maplibregl.Popup({ closeButton: false, closeOnClick: true });
+          heatmapPopup.setLngLat(e.lngLat).setDOMContent(content).addTo(map!);
+        }
+      }
     });
     map.on('webglcontextlost', () => {
       ready.value = false;
@@ -622,20 +659,15 @@ onMounted(async () => {
 });
 function viewport() {
   if (!map) return;
+  emit('viewport', currentBounds()!, map.getZoom());
+}
+function currentBounds(): Bbox | null {
+  if (!map) return null;
   const b = map.getBounds();
-  const wrap = (v: number) => ((((v + 180) % 360) + 360) % 360) - 180;
-  const bbox: Bbox =
-    b.getEast() - b.getWest() >= 360
-      ? [-180, Math.max(-90, b.getSouth()), 180, Math.min(90, b.getNorth())]
-      : [
-          wrap(b.getWest()),
-          Math.max(-90, b.getSouth()),
-          wrap(b.getEast()),
-          Math.min(90, b.getNorth()),
-        ];
-  emit('viewport', bbox, map.getZoom());
+  return heatmapViewportBounds(b.getWest(), b.getSouth(), b.getEast(), b.getNorth());
 }
 watch(() => [props.data, props.track, props.frame], update, { deep: true });
+watch(() => props.heatmap, updateHeatmap);
 watch(
   () => [props.intelligence, props.activeEventId, props.objects, props.intelligenceLayers],
   updateIntelligence,
@@ -651,6 +683,7 @@ watch(
   { deep: true },
 );
 defineExpose<ChartMapControls>({
+  currentBounds,
   resetView: () => map?.fitBounds(chartHomeBounds, { padding: 30, maxZoom: 8 }),
   zoomIn: () => map?.zoomIn(),
   zoomOut: () => map?.zoomOut(),
@@ -699,6 +732,7 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   scheduling?.dispose();
   directionPopup?.remove();
+  heatmapPopup?.remove();
   map?.remove();
   map = undefined;
 });

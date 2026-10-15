@@ -1,0 +1,320 @@
+{
+  "success": false,
+  "methodology": {
+    "query": "{ bbox: [west,south,east,north], from: ISO UTC, to: ISO UTC, sourceId: string }",
+    "timeInterval": "[from,to)",
+    "metric": "uniqExact(mmsi) per cell and independently across the full region",
+    "data": "10000 MMSIs; deterministic worldwide longitude/latitude; observations uniformly distributed across seven days; unique source and event IDs; one cleaning version and priority 10",
+    "cache": "ownerId omitted; application cache and coalescing disabled for every sample",
+    "responseBytes": "Exact UTF-8 byte length of JSON.stringify(result), excluding HTTP headers and transport compression; null for failed queries",
+    "limits": {
+      "seconds": 20,
+      "memoryBytes": 536870912,
+      "readRows": 50000000,
+      "readBytes": 4294967296,
+      "resultCells": 4096
+    },
+    "p95": "nearest-rank P95 of successful requests only; null when all attempts fail; five repeats by default",
+    "capacity": "data_limit reports a resource cap; narrow the time or ship selection; spatial bounds are applied after preferred observations are selected"
+  },
+  "rows": 1000000,
+  "distinctVessels": 10000,
+  "repeats": 5,
+  "sourceId": "heatmap-benchmark-e087437b-7bcc-495b-b301-f2943c6238fc",
+  "generatedAt": "2026-10-14T16:08:05.861Z",
+  "scenarios": [
+    {
+      "hours": 24,
+      "region": "local",
+      "bbox": [100, 0, 130, 40],
+      "samples": [
+        {
+          "queryId": "heatmap-b28f03d4-f9ce-4694-b176-57049b52929d",
+          "latencyMs": 151.68,
+          "cells": 1989,
+          "totalVessels": 2647,
+          "responseBytes": 170899,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 107421277,
+          "serverDurationMs": 99
+        },
+        {
+          "queryId": "heatmap-0a65b8de-b45c-46f0-b688-bcb24cc6d932",
+          "latencyMs": 163.61,
+          "cells": 1989,
+          "totalVessels": 2647,
+          "responseBytes": 170899,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 108136186,
+          "serverDurationMs": 124
+        },
+        {
+          "queryId": "heatmap-3ac53fb0-ce82-42d8-aa32-3a9b78d8e2c5",
+          "latencyMs": 142.43,
+          "cells": 1989,
+          "totalVessels": 2647,
+          "responseBytes": 170899,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 104534743,
+          "serverDurationMs": 119
+        },
+        {
+          "queryId": "heatmap-7a43352a-c31c-46cd-82ac-57f7dbdca421",
+          "latencyMs": 117.7,
+          "cells": 1989,
+          "totalVessels": 2647,
+          "responseBytes": 170899,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 112399490,
+          "serverDurationMs": 88
+        },
+        {
+          "queryId": "heatmap-9bf48738-3162-417d-a610-0d06c05bf9ac",
+          "latencyMs": 122.85,
+          "cells": 1989,
+          "totalVessels": 2647,
+          "responseBytes": 170899,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 113403939,
+          "serverDurationMs": 85
+        }
+      ],
+      "p95Ms": 163.61
+    },
+    {
+      "hours": 24,
+      "region": "global",
+      "bbox": [-180, -90, 180, 90],
+      "samples": [
+        {
+          "queryId": "heatmap-e683bf50-07c3-4d60-b376-8162aad9e896",
+          "latencyMs": 108.98,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 110997183,
+          "serverDurationMs": 89
+        },
+        {
+          "queryId": "heatmap-b17c397e-d7aa-47a6-af34-7d0ddb01e76a",
+          "latencyMs": 112.99,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 113180132,
+          "serverDurationMs": 92
+        },
+        {
+          "queryId": "heatmap-97dbceaf-8b4f-4bb7-8eb9-d5e99981d64b",
+          "latencyMs": 118.34,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 118881479,
+          "serverDurationMs": 86
+        },
+        {
+          "queryId": "heatmap-993859b5-0a85-471a-9f6d-37692ceea369",
+          "latencyMs": 113.35,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 115137988,
+          "serverDurationMs": 88
+        },
+        {
+          "queryId": "heatmap-3711b552-a6cc-40db-82bf-62ee13739448",
+          "latencyMs": 101.72,
+          "cells": 2048,
+          "totalVessels": 10000,
+          "responseBytes": 156629,
+          "status": "success",
+          "success": true,
+          "readRows": 288267,
+          "readBytes": 51316527,
+          "peakMemoryBytes": 114187513,
+          "serverDurationMs": 85
+        }
+      ],
+      "p95Ms": 118.34
+    },
+    {
+      "hours": 168,
+      "region": "local",
+      "bbox": [100, 0, 130, 40],
+      "samples": [
+        {
+          "queryId": "heatmap-8e73daac-e937-4da4-a82c-177cab883b3a",
+          "latencyMs": 263.47,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 863972,
+          "readBytes": 152544169,
+          "peakMemoryBytes": 533594782,
+          "serverDurationMs": 106
+        },
+        {
+          "queryId": "heatmap-b1b17621-38ea-47da-93b8-97523469f2e4",
+          "latencyMs": 286.48,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 880356,
+          "readBytes": 155421199,
+          "peakMemoryBytes": 536467951,
+          "serverDurationMs": 102
+        },
+        {
+          "queryId": "heatmap-089742d3-716b-4199-bef2-e04ec51b3448",
+          "latencyMs": 257.34,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 708324,
+          "readBytes": 125153399,
+          "peakMemoryBytes": 423289550,
+          "serverDurationMs": 58
+        },
+        {
+          "queryId": "heatmap-692ac907-6d19-4135-a42f-22a33a84b8eb",
+          "latencyMs": 201.42,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 497666,
+          "readBytes": 88125519,
+          "peakMemoryBytes": 307271815,
+          "serverDurationMs": 41
+        },
+        {
+          "queryId": "heatmap-e43334d3-21ee-4196-a5e3-f92e799d12d2",
+          "latencyMs": 244.35,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 880356,
+          "readBytes": 155427753,
+          "peakMemoryBytes": 527468637,
+          "serverDurationMs": 111
+        }
+      ],
+      "p95Ms": null
+    },
+    {
+      "hours": 168,
+      "region": "global",
+      "bbox": [-180, -90, 180, 90],
+      "samples": [
+        {
+          "queryId": "heatmap-3a7fa42b-08b7-4cb6-bbc9-b6404768bf8c",
+          "latencyMs": 281.71,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 872164,
+          "readBytes": 153982683,
+          "peakMemoryBytes": 536020668,
+          "serverDurationMs": 107
+        },
+        {
+          "queryId": "heatmap-dab697d6-798a-40b2-a700-27ad66c923ab",
+          "latencyMs": 254.64,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 880356,
+          "readBytes": 155421199,
+          "peakMemoryBytes": 529458947,
+          "serverDurationMs": 108
+        },
+        {
+          "queryId": "heatmap-16c8bd15-abf9-4c92-9a4c-2323d36c5d2f",
+          "latencyMs": 235.72,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 880356,
+          "readBytes": 155421199,
+          "peakMemoryBytes": 536203107,
+          "serverDurationMs": 99
+        },
+        {
+          "queryId": "heatmap-90efb459-bb31-440a-a24f-0b3c0e724695",
+          "latencyMs": 232.43,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 904932,
+          "readBytes": 159753129,
+          "peakMemoryBytes": 536622739,
+          "serverDurationMs": 100
+        },
+        {
+          "queryId": "heatmap-c2967915-45c6-4965-be6f-1cc8b85cfd7e",
+          "latencyMs": 259.3,
+          "cells": null,
+          "totalVessels": null,
+          "responseBytes": null,
+          "status": "data_limit",
+          "success": false,
+          "readRows": 782052,
+          "readBytes": 138135499,
+          "peakMemoryBytes": 484435494,
+          "serverDurationMs": 68
+        }
+      ],
+      "p95Ms": null
+    }
+  ],
+  "metricsStatus": "complete"
+}

@@ -44,6 +44,7 @@ export function classifyRequest(goal: string, previous: TopicDefinitionId | null
 export function derivePurposeIntent(purpose: AgentPurpose): AgentIntent {
   return purpose === 'vessel_list' ||
     purpose === 'vessel_detail' ||
+    purpose === 'ais_heatmap' ||
     purpose === 'intelligence_search'
     ? purpose
     : 'analysis';
@@ -51,8 +52,11 @@ export function derivePurposeIntent(purpose: AgentPurpose): AgentIntent {
 export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?: AgentPurpose } {
   if (classifyConversationIntent(goal)) return { intent: 'conversation' };
   const text = goal.replace(/\s/g, '');
-  if (/定位|保存|删除|绘制|画区域/.test(text)) return { intent: 'unresolved' };
+  const heatmap = /热力图|热度图|(?:AIS|船舶|船流).*密度图|heatmap/i.test(text);
+  if (/定位|保存|删除|画区域/.test(text) || (/绘制/.test(text) && !heatmap))
+    return { intent: 'unresolved' };
   const queryAgain = /重新(?:查询|查看|查)|再查(?:询)?|刷新(?:船舶|列表|查询|结果)/.test(text);
+  if (heatmap && queryAgain) return { intent: 'ais_heatmap', purpose: 'ais_heatmap' };
   if (queryAgain && isIntelligenceQuestion(text))
     return { intent: 'intelligence_search', purpose: 'intelligence_search' };
   if (queryAgain && !/分析|研判|识别|检测/.test(text)) {
@@ -69,6 +73,7 @@ export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?
     !/重跑|重算|重新|新分析/.test(text)
   )
     return { intent: 'explain' };
+  if (heatmap) return { intent: 'ais_heatmap', purpose: 'ais_heatmap' };
   if (
     !queryAgain &&
     /(?:这条|该|上条|上述|刚才|上次).*(?:公告|情报|结果|预报|新闻).*(?:依据|来源|证据|为什么)/.test(
@@ -109,8 +114,14 @@ export function requiredAgentInputFields(
     fields.push('topic');
   if (actual === 'intelligence_search' && selection.intelligenceTimeUnclear) fields.push('time');
   if (actual === 'unresolved' || (actual === 'analysis' && !selection.purpose)) fields.push('goal');
-  if ((actual === 'vessel_list' || actual === 'analysis') && !selection.bbox) fields.push('region');
+  if (
+    (actual === 'vessel_list' || actual === 'analysis' || actual === 'ais_heatmap') &&
+    !selection.bbox
+  )
+    fields.push('region');
   if (actual === 'vessel_detail' && !selection.mmsis?.length) fields.push('vessels');
   if (actual === 'analysis' && !selection.timeRange) fields.push('time');
+  if (actual === 'ais_heatmap' && (!selection.timeRange || selection.heatmapTimeUnclear))
+    fields.push('time');
   return fields;
 }

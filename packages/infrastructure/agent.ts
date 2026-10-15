@@ -3,6 +3,8 @@ import {
   type AgentIntelligenceResult,
 } from '../contracts/intelligence-search';
 import { intelligenceSelection } from '../domain/intelligence-intent';
+import { heatmapSelection } from '../domain/heatmap-intent';
+import { AgentHeatmapResultSchema, type AgentHeatmapResult } from '../contracts/heatmap';
 import { createHash, randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type {
@@ -430,6 +432,24 @@ export async function submitAgentMessage(
       /当前.*(?:视野|视图|地图|海图)|(?:视野|视图)内|所选区域|这个区域|当前区域/.test(
         input.content,
       );
+    if (derived.intent === 'ais_heatmap') {
+      delete selection.timeRange;
+      Object.assign(selection, heatmapSelection(input.content, now));
+      const explicit = input.content.match(/\b[1-9]\d{8}\b/g);
+      if (explicit) {
+        const mmsis = [...new Set(explicit)];
+        if (mmsis.length > 100)
+          throw new AgentInputError(
+            'invalid_input',
+            '热力图一次最多筛选 100 艘船舶，请缩小船舶范围后重试。',
+          );
+        selection.mmsis = mmsis;
+      } else if (
+        input.mapContext?.selectedMmsis?.length &&
+        /选中|选定|这艘|该船|当前船舶/.test(input.content)
+      )
+        selection.mmsis = input.mapContext.selectedMmsis;
+    }
     if (derived.intent === 'intelligence_search') {
       Object.assign(selection, intelligenceSelection(input.content, now));
       delete selection.bbox;
@@ -509,8 +529,9 @@ export async function submitAgentMessage(
         input.content,
         JSON.stringify(selection.bbox ?? null),
         input.historyHours,
-        selection.timeRange!.from,
-        selection.timeRange!.to,
+        selection.timeRange?.from ??
+          new Date(now.getTime() - input.historyHours * 3_600_000).toISOString(),
+        selection.timeRange?.to ?? now.toISOString(),
         parent,
         derived.intent,
         JSON.stringify(selection),
@@ -554,7 +575,7 @@ async function readTaskContext(
     [taskId, task.input_revision],
   );
   const result = await client.query(
-    'SELECT results,query_result,intelligence_result FROM agent_results WHERE task_id=$1 AND version=$2',
+    'SELECT results,query_result,intelligence_result,heatmap_result FROM agent_results WHERE task_id=$1 AND version=$2',
     [taskId, resultVersion ?? task.result_version],
   );
   if (resultVersion !== undefined && !result.rowCount) return null;
@@ -572,6 +593,7 @@ async function readTaskContext(
     queryResult: (result.rows[0]?.query_result ?? null) as AgentQueryResult | null,
     intelligenceResult: (result.rows[0]?.intelligence_result ??
       null) as AgentIntelligenceResult | null,
+    heatmapResult: (result.rows[0]?.heatmap_result ?? null) as AgentHeatmapResult | null,
     pendingInputRequests: await pendingRequests(client, String(task.session_id), taskId),
     snapshotCursor: await snapshotCursor(client, String(task.session_id)),
   };
@@ -628,7 +650,7 @@ export async function reusePreviousAgentTask(
       return taskRow(current);
     const nextVersion = Number(current.result_version) + 1;
     await client.query(
-      "INSERT INTO agent_results(task_id,version,results,input_revision,kind,query_result,intelligence_result) SELECT $1,$4,results,$5,kind,CASE WHEN query_result IS NULL THEN NULL ELSE query_result || jsonb_build_object('version',$4::int,'inputRevision',$5::int) END,CASE WHEN intelligence_result IS NULL THEN NULL ELSE intelligence_result || jsonb_build_object('version',$4::int,'inputRevision',$5::int) END FROM agent_results WHERE task_id=$2 AND version=$3",
+      "INSERT INTO agent_results(task_id,version,results,input_revision,kind,query_result,intelligence_result,heatmap_result) SELECT $1,$4,results,$5,kind,CASE WHEN query_result IS NULL THEN NULL ELSE query_result || jsonb_build_object('version',$4::int,'inputRevision',$5::int) END,CASE WHEN intelligence_result IS NULL THEN NULL ELSE intelligence_result || jsonb_build_object('version',$4::int,'inputRevision',$5::int) END,CASE WHEN heatmap_result IS NULL THEN NULL ELSE heatmap_result || jsonb_build_object('version',$4::int,'inputRevision',$5::int) END FROM agent_results WHERE task_id=$2 AND version=$3",
       [taskId, previousTaskId, previous.result_version, nextVersion, current.input_revision],
     );
     await client.query(
@@ -860,7 +882,7 @@ export async function finishAgentTask(
       return false;
     if (
       outcome.status === 'completed' &&
-      ['analysis', 'vessel_list', 'vessel_detail', 'intelligence_search'].includes(
+      ['analysis', 'vessel_list', 'vessel_detail', 'intelligence_search', 'ais_heatmap'].includes(
         String(row.intent),
       ) &&
       (!Number(row.result_version) || row.result_input_revision !== row.input_revision)
@@ -932,6 +954,42 @@ export async function requestAgentInput(
     await insertInputRequest(client, row, parsed);
     await event(client, String(row.session_id), taskId, 'task.awaiting_input');
     return true;
+  });
+}
+
+export async function saveAgentHeatmapResult(
+  infra: Infrastructure,
+  taskId: string,
+  workerId: string,
+  generation: number,
+  result: AgentHeatmapResult,
+): Promise<number | null> {
+  return transaction(infra, async (client) => {
+    const row = await fenced(client, taskId, workerId, generation);
+    if (!row || result.inputRevision !== Number(row.input_revision)) return null;
+    if (Number(row.result_version) > 0 && row.result_input_revision === row.input_revision)
+      return Number(row.result_version);
+    const version = Number(row.result_version) + 1;
+    const stored = AgentHeatmapResultSchema.parse({
+      ...result,
+      version,
+      inputRevision: Number(row.input_revision),
+    });
+    await client.query(
+      "INSERT INTO agent_results(task_id,version,results,input_revision,kind,heatmap_result) VALUES($1,$2,'[]',$3,'ais_heatmap',$4::jsonb)",
+      [taskId, version, row.input_revision, JSON.stringify(stored)],
+    );
+    await client.query(
+      'UPDATE agent_tasks SET result_version=$2,result_input_revision=input_revision,updated_at=now() WHERE id=$1',
+      [taskId, version],
+    );
+    await event(client, String(row.session_id), taskId, 'results.saved', {
+      version,
+      inputRevision: row.input_revision,
+      kind: stored.kind,
+      count: stored.totalVessels,
+    });
+    return version;
   });
 }
 
@@ -1144,6 +1202,11 @@ export async function respondAgentInput(
           to: now.toISOString(),
         };
       }
+      if (selection.purpose === 'ais_heatmap') {
+        if (values.timeRange || historyHours !== undefined) delete selection.heatmapTimeUnclear;
+        else if ((task.selection as AgentSelection).heatmapTimeUnclear)
+          selection.heatmapTimeUnclear = true;
+      }
       if (selection.purpose === 'intelligence_search') {
         const query = values.intelligenceQuery;
         const persisted = task.selection as AgentSelection;
@@ -1221,10 +1284,10 @@ export async function respondAgentInput(
         ? derivePurposeIntent(selection.purpose)
         : (task.intent as NonNullable<AgentTask['intent']>);
       if (
-        intent === 'analysis' &&
+        (intent === 'analysis' || intent === 'ais_heatmap') &&
         selection.timeRange &&
         (Date.parse(selection.timeRange.from) < Date.now() - 30 * 86400_000 ||
-          Date.parse(selection.timeRange.to) > Date.now() + 60_000)
+          Date.parse(selection.timeRange.to) > Date.now() + (intent === 'ais_heatmap' ? 0 : 60_000))
       )
         throw new AgentInputError('invalid_input', '请选择最近 30 天内的有效时间范围');
       const missing = requiredAgentInputFields(selection, intent);
@@ -1281,6 +1344,7 @@ export async function respondAgentInput(
         ).rows[0],
       );
       const labels = {
+        ais_heatmap: 'AIS 船舶热力图',
         intelligence_search: '本地情报检索',
         vessel_list: '区域船舶查询',
         vessel_detail: '船舶基本信息',
@@ -1288,7 +1352,7 @@ export async function respondAgentInput(
         'area-low-speed-notice': '区域低速活动与公告关联',
       };
       const timeSummary =
-        intent === 'analysis' && selection.timeRange
+        (intent === 'analysis' || intent === 'ais_heatmap') && selection.timeRange
           ? `；时间 ${selection.timeRange.from} 至 ${selection.timeRange.to}`
           : (intent === 'vessel_list' || intent === 'vessel_detail') && selection.filters?.hours
             ? `；最新报告：最近 ${selection.filters.hours} 小时`
@@ -1402,7 +1466,7 @@ export async function retryAgentTask(
       source.result_input_revision === source.input_revision
     ) {
       await client.query(
-        `INSERT INTO agent_results(task_id,version,input_revision,kind,results,query_result,intelligence_result) SELECT $1,1,0,kind,results,CASE WHEN query_result IS NULL THEN NULL ELSE query_result || '{"version":1,"inputRevision":0}'::jsonb END,CASE WHEN intelligence_result IS NULL THEN NULL ELSE intelligence_result || '{"version":1,"inputRevision":0}'::jsonb END FROM agent_results WHERE task_id=$2 AND version=$3`,
+        `INSERT INTO agent_results(task_id,version,input_revision,kind,results,query_result,intelligence_result,heatmap_result) SELECT $1,1,0,kind,results,CASE WHEN query_result IS NULL THEN NULL ELSE query_result || '{"version":1,"inputRevision":0}'::jsonb END,CASE WHEN intelligence_result IS NULL THEN NULL ELSE intelligence_result || '{"version":1,"inputRevision":0}'::jsonb END,CASE WHEN heatmap_result IS NULL THEN NULL ELSE heatmap_result || '{"version":1,"inputRevision":0}'::jsonb END FROM agent_results WHERE task_id=$2 AND version=$3`,
         [id, taskId, source.result_version],
       );
       await copyIntelligencePins(client, taskId, Number(source.result_version), id, 0);

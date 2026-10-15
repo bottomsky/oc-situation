@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { computed, effectScope, nextTick, ref, watch } from 'vue';
 import type { AgentInputRequest, AgentMapContext } from '@ais/contracts';
+import type { AgentHeatmapDisplay } from './app/composables/useAgentConversation';
 import {
   agentTaskHasAnalysis,
   createAgentMessageFollow,
@@ -28,6 +29,7 @@ function harness(
   api: (path: string, options?: Record<string, unknown>) => Promise<unknown>,
   role = 'operator',
   context?: () => AgentMapContext,
+  heatmap?: AgentHeatmapDisplay,
 ) {
   const scope = effectScope();
   const identity = ref({ user: { id: 'user-a', role } });
@@ -38,7 +40,7 @@ function harness(
   vi.stubGlobal('onBeforeUnmount', () => {});
   vi.stubGlobal('usePlatform', () => ({ api, session: identity }));
   return {
-    state: scope.run(() => useAgentConversation(context))!,
+    state: scope.run(() => useAgentConversation(context, heatmap))!,
     identity,
     stop: () => scope.stop(),
   };
@@ -1083,5 +1085,56 @@ describe('智能体任务展示语义', () => {
     expect(
       agentTaskHasAnalysis({ definitionId: null, resultVersion: 0 }, [{ name: 'ask_user' }]),
     ).toBe(false);
+  });
+});
+
+describe('智能体热图自动展示授权', () => {
+  it('仅当前页面主动任务的当前revision/version触发展示；历史读取不触发', async () => {
+    const completed = {
+      ...task,
+      intent: 'ais_heatmap',
+      status: 'completed',
+      inputRevision: 2,
+      resultInputRevision: 2,
+      resultVersion: 3,
+    };
+    const result = { kind: 'ais_heatmap', version: 3, inputRevision: 2 };
+    const display = { begin: vi.fn(() => 7), accept: vi.fn(), reset: vi.fn() };
+    const fixture = harness(
+      async (path) => {
+        if (path.endsWith('/config')) return config;
+        if (path === '/agent/sessions') return { items: [session] };
+        if (path.endsWith('/messages'))
+          return {
+            task: completed,
+            message: {
+              id: 'm',
+              role: 'user',
+              content: '热图',
+              sessionId: session.id,
+              taskId: task.id,
+            },
+          };
+        if (path.includes('/tasks/'))
+          return { task: completed, results: [], steps: [], heatmapResult: result };
+        return { session, tasks: [completed], messages: [] };
+      },
+      'operator',
+      undefined,
+      display,
+    );
+    await fixture.state.initialize();
+    await fixture.state.openSession(session.id);
+    expect(display.accept).not.toHaveBeenCalled();
+    fixture.state.draft.value = '生成热图';
+    await fixture.state.send();
+    expect(display.accept).toHaveBeenCalledWith(result, 'session-a:task-a', 7);
+    display.accept.mockClear();
+    result.inputRevision = 1;
+    await fixture.state.loadTask(task.id);
+    expect(display.accept).not.toHaveBeenCalled();
+    fixture.state.newSession();
+    expect(display.reset).toHaveBeenCalled();
+    fixture.stop();
   });
 });
