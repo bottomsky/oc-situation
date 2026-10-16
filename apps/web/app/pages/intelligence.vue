@@ -309,6 +309,16 @@ onMounted(() => {
       if (intelligence.detail) revise(intelligence.detail.event, 'revised');
     });
 });
+useUiComponent('page.list', { read: () => uiProjection(true, [], { loading: busy.value }) });
+useUiReadOnlyEditor(
+  () => session.value?.user.role !== 'viewer',
+  () => ({ form, document: document.value }),
+  () => busy.value,
+);
+useUiComponent('page.detail', { read: () => uiProjection(!!intelligence.detail, []) });
+useUiComponent('page.archive', {
+  read: () => uiProjection(!!archiveId.value, [], { loading: archiveBusy.value }),
+});
 </script>
 <template>
   <section class="page">

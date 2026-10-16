@@ -9,11 +9,13 @@ import {
   type JsMsg,
 } from '@nats-io/jetstream';
 import {
+  TaskCommandSchema,
   parseRawEnvelope,
   parseNormalizedObservation,
   type RawEnvelope,
   type NormalizedObservation,
 } from '@ais/contracts';
+import type { PoolClient } from 'pg';
 import type { Infrastructure } from './clients';
 import { busPressure } from './recovery';
 
@@ -124,7 +126,71 @@ function isMissing(error: unknown): boolean {
       (error.name === 'StreamNotFoundError' || error.name === 'ConsumerNotFoundError'))
   );
 }
-export async function busHealth(infra: Infrastructure) {
+type HealthDatabase = Pick<PoolClient, 'query'>;
+
+/** A retained streaming command is execution, not queued work, while its worker owns a live lease. */
+async function commandBacklogAge(
+  infra: Infrastructure,
+  database: HealthDatabase,
+  state: { first_seq: number; last_seq: number; messages: number },
+  retainedAgeMs: number,
+): Promise<{ pendingAgeMs: number; activeStreamingCommands: number }> {
+  const unchanged = { pendingAgeMs: retainedAgeMs, activeStreamingCommands: 0 };
+  if (retainedAgeMs < 3_600_000) return unchanged;
+  try {
+    const collector = await infra.jsm.consumers.info('AIS_COMMANDS', 'collector');
+    if (!collector.num_ack_pending) return unchanged;
+    let sequence = state.first_seq;
+    let active = 0;
+    // A collector has at most eight unacknowledged actors. Inspect the next queued message too.
+    while (sequence <= state.last_seq && active <= 8) {
+      const query = { seq: sequence, next_by_subj: 'ais.commands.*' };
+      const message = await infra.jsm.streams.getMessage('AIS_COMMANDS', query);
+      if (!message || message.seq < sequence || message.seq > state.last_seq) return unchanged;
+      const age = Math.max(0, Date.now() - message.time.getTime());
+      if (!Number.isFinite(age)) return unchanged;
+      const pending = { pendingAgeMs: age, activeStreamingCommands: active };
+      if (
+        active === 8 ||
+        message.subject !== 'ais.commands.collect' ||
+        message.seq > collector.delivered.stream_seq
+      )
+        return pending;
+      const parsed = TaskCommandSchema.safeParse(message.json());
+      if (!parsed.success || parsed.data.mode !== 'collect') return pending;
+      const command = parsed.data;
+      const owned = await database.query(
+        `SELECT r.id FROM runs r
+         JOIN sources s ON s.id=r.source_id JOIN jobs j ON j.id=r.job_id AND j.source_id=r.source_id
+         JOIN leases l ON l.name='source:'||s.id AND l.expires_at>now()
+         WHERE r.id::text=$1 AND r.source_id=$2 AND r.job_id::text=$3
+           AND r.idempotency_key=$4 AND r.requested_at=$5::timestamptz
+           AND r.mode='collect' AND r.status='running' AND s.kind='aisstream'
+           AND s.enabled AND s.status='enabled' AND j.enabled AND j.status='enabled' AND j.mode='collect'
+           AND NOT EXISTS(SELECT 1 FROM runs other WHERE other.source_id=r.source_id
+             AND other.id<>r.id AND other.status='running')`,
+        [
+          command.runId,
+          command.sourceId,
+          command.jobId,
+          command.idempotencyKey,
+          command.requestedAt,
+        ],
+      );
+      if (owned.rowCount !== 1) return pending;
+      active++;
+      // last_seq includes acknowledged/deleted tail messages; retained count is authoritative.
+      if (active === state.messages) return { pendingAgeMs: 0, activeStreamingCommands: active };
+      sequence = message.seq + 1;
+    }
+    return unchanged;
+  } catch {
+    // Unavailable metadata must never turn a genuinely stalled command into a healthy queue.
+    return unchanged;
+  }
+}
+
+export async function busHealth(infra: Infrastructure, database: HealthDatabase = infra.pool) {
   const reasons: string[] = [];
   let status: 'ready' | 'warning' | 'paused' = 'ready';
   const streams: {
@@ -133,6 +199,8 @@ export async function busHealth(infra: Infrastructure) {
     limit: number;
     oldestAgeMs: number;
     messages: number;
+    pendingAgeMs: number;
+    activeStreamingCommands: number;
   }[] = [];
   for (const expected of Object.values(STREAMS)) {
     try {
@@ -151,14 +219,21 @@ export async function busHealth(infra: Infrastructure) {
       const oldestAgeMs = info.state.messages
         ? Math.max(0, Date.now() - Date.parse(info.state.first_ts))
         : 0;
+      const backlog =
+        expected.name === 'AIS_COMMANDS' &&
+        info.state.messages &&
+        info.state.bytes < expected.maxBytes * 0.85
+          ? await commandBacklogAge(infra, database, info.state, oldestAgeMs)
+          : { pendingAgeMs: oldestAgeMs, activeStreamingCommands: 0 };
       streams.push({
         name: expected.name,
         bytes: info.state.bytes,
         limit: expected.maxBytes,
         oldestAgeMs,
         messages: info.state.messages,
+        ...backlog,
       });
-      const pressure = busPressure(info.state.bytes, expected.maxBytes, oldestAgeMs);
+      const pressure = busPressure(info.state.bytes, expected.maxBytes, backlog.pendingAgeMs);
       if (pressure === 'paused') {
         status = 'paused';
         reasons.push(`pressure:${expected.name}`);
@@ -199,15 +274,21 @@ export function invalidateBusHealth(infra: Infrastructure): void {
   healthCache.delete(infra);
   normalizedTopologyCache.delete(infra);
 }
-export async function cachedBusHealth(infra: Infrastructure) {
+export async function cachedBusHealth(
+  infra: Infrastructure,
+  database: HealthDatabase = infra.pool,
+) {
   const cached = healthCache.get(infra);
   if (cached && Date.now() - cached.at < 1000) return cached.value;
-  const value = await busHealth(infra);
+  const value = await busHealth(infra, database);
   healthCache.set(infra, { at: Date.now(), value });
   return value;
 }
-export async function assertCollectionReady(infra: Infrastructure): Promise<void> {
-  const health = await cachedBusHealth(infra);
+export async function assertCollectionReady(
+  infra: Infrastructure,
+  database: HealthDatabase = infra.pool,
+): Promise<void> {
+  const health = await cachedBusHealth(infra, database);
   if (!health.ready) throw new Error(`Collection paused: ${health.reasons.join(', ')}`);
 }
 /** In-flight acquisition must publish RAW to finish commands and drain their queue. */

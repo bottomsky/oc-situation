@@ -56,6 +56,12 @@ async function run(job: JobConfig) {
     await navigateTo('/runs?runId=' + result.runId);
   }
 }
+useUiComponent('page.list', { read: () => uiProjection(true, [], { loading: busy.value }) });
+useUiReadOnlyEditor(
+  () => editor.value,
+  () => ({ form: form.value, schedule: schedule.value, scheduled: scheduled.value }),
+  () => busy.value,
+);
 </script>
 <template>
   <section class="page">

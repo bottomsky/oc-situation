@@ -83,6 +83,12 @@ async function toggle(s: Source) {
     status: s.status === 'enabled' ? 'disabled' : 'enabled',
   });
 }
+useUiComponent('page.list', { read: () => uiProjection(true, [], { loading: busy.value }) });
+useUiReadOnlyEditor(
+  () => editor.value,
+  () => ({ form: form.value, hosts: hosts.value }),
+  () => busy.value,
+);
 </script>
 <template>
   <section class="page">

@@ -4,7746 +4,8029 @@
  */
 
 export interface paths {
-  '/api/v1/auth/login': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an eight hour session; Origin required */
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Create an eight hour session; Origin required */
-    post: operations['AuthController_login'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read current session and CSRF token */
+        get: operations["AuthController_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read current session and CSRF token */
-    get: operations['AuthController_me'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/auth/logout': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke current session */
+        post: operations["AuthController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Revoke current session */
-    post: operations['AuthController_logout'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/users': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Administrative user directory */
+        get: operations["UsersController_list"];
+        put?: never;
+        /** Create an account with Argon2id password hashing */
+        post: operations["UsersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Administrative user directory */
-    get: operations['UsersController_list'];
-    put?: never;
-    /** Create an account with Argon2id password hashing */
-    post: operations['UsersController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/users/{userId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change role, disable account or rotate password and revoke sessions */
+        put: operations["UsersController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Change role, disable account or rotate password and revoke sessions */
-    put: operations['UsersController_update'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/vessels': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/vessels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search vessel static fields with MMSI cursor */
+        get: operations["VesselsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Search vessel static fields with MMSI cursor */
-    get: operations['VesselsController_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/vessels/{mmsi}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/vessels/{mmsi}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest position, static fields and field provenance */
+        get: operations["VesselsController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Latest position, static fields and field provenance */
-    get: operations['VesselsController_detail'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/vessels/{mmsi}/track': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/vessels/{mmsi}/track": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bounded native observations grouped by gaps and date line */
+        get: operations["VesselsController_track"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Bounded native observations grouped by gaps and date line */
-    get: operations['VesselsController_track'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/map/heatmap': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/map/heatmap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historical AIS unique-vessel heatmap */
+        get: operations["MapController_heatmap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Historical AIS unique-vessel heatmap */
-    get: operations['MapController_heatmap'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/map': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current vessel positions or server side spatial grid */
+        get: operations["MapController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Current vessel positions or server side spatial grid */
-    get: operations['MapController_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Source configurations and receipt health */
+        get: operations["SourcesController_list"];
+        put?: never;
+        /** Create authorized source configuration */
+        post: operations["SourcesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Source configurations and receipt health */
-    get: operations['SourcesController_list'];
-    put?: never;
-    /** Create authorized source configuration */
-    post: operations['SourcesController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/sources/{sourceId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/sources/{sourceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace source configuration */
+        put: operations["SourcesController_update"];
+        post?: never;
+        /** Delete a source with no referenced jobs or runs */
+        delete: operations["SourcesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Replace source configuration */
-    put: operations['SourcesController_update'];
-    post?: never;
-    /** Delete a source with no referenced jobs or runs */
-    delete: operations['SourcesController_remove'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/jobs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scheduled and manual job configurations */
+        get: operations["JobsController_list"];
+        put?: never;
+        /** Create a job; null schedule means manual dispatch */
+        post: operations["JobsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Scheduled and manual job configurations */
-    get: operations['JobsController_list'];
-    put?: never;
-    /** Create a job; null schedule means manual dispatch */
-    post: operations['JobsController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/jobs/{jobId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace job configuration */
+        put: operations["JobsController_update"];
+        post?: never;
+        /** Delete job without referenced run history */
+        delete: operations["JobsController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Replace job configuration */
-    put: operations['JobsController_update'];
-    post?: never;
-    /** Delete job without referenced run history */
-    delete: operations['JobsController_remove'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/jobs/{jobId}/run': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/jobs/{jobId}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue durable run and outbox command */
+        post: operations["JobsController_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Queue durable run and outbox command */
-    post: operations['JobsController_run'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/jobs/{jobId}/pause': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/jobs/{jobId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause future job scheduling */
+        post: operations["JobsController_pause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Pause future job scheduling */
-    post: operations['JobsController_pause'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/jobs/{jobId}/resume': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/jobs/{jobId}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume future job scheduling */
+        post: operations["JobsController_resume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Resume future job scheduling */
-    post: operations['JobsController_resume'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read durable worker run states */
+        get: operations["RunsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read durable worker run states */
-    get: operations['RunsController_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/runs/{runId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/runs/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one worker run state */
+        get: operations["RunsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read one worker run state */
-    get: operations['RunsController_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/quality': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Committed raw archive minute bucket counts (up to 60s lag) and independent normalized event counts */
+        get: operations["QualityController_quality"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Committed raw archive minute bucket counts (up to 60s lag) and independent normalized event counts */
-    get: operations['QualityController_quality'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/quarantine': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/quarantine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paged rejected normalized events for a bounded reception range */
+        get: operations["QualityController_quarantine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Paged rejected normalized events for a bounded reception range */
-    get: operations['QualityController_quarantine'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/captures/{captureId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/captures/{captureId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read retained raw capture safely as JSON; source/time locates archive */
+        get: operations["QualityController_capture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read retained raw capture safely as JSON; source/time locates archive */
-    get: operations['QualityController_capture'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/replays': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/replays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read archive replay records with associated runId */
+        get: operations["ReplayController_list"];
+        put?: never;
+        /** Queue a retained archive replay using cleaning version 1 */
+        post: operations["ReplayController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read archive replay records with associated runId */
-    get: operations['ReplayController_list'];
-    put?: never;
-    /** Queue a retained archive replay using cleaning version 1 */
-    post: operations['ReplayController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/system/health': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/system/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Real dependency and source health */
+        get: operations["SystemController_health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Real dependency and source health */
-    get: operations['SystemController_health'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/system/ready': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/system/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness returns 503 when a dependency is unavailable */
+        get: operations["SystemController_ready"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Readiness returns 503 when a dependency is unavailable */
-    get: operations['SystemController_ready'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/system/metrics': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/system/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prometheus process metrics with no credentials or session labels */
+        get: operations["SystemController_getMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Prometheus process metrics with no credentials or session labels */
-    get: operations['SystemController_getMetrics'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/search': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search locally stored intelligence with versioned source evidence */
+        get: operations["IntelligenceController_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Search locally stored intelligence with versioned source evidence */
-    get: operations['IntelligenceController_search'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/sources': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Intelligence source configurations and polling status */
+        get: operations["IntelligenceController_sources"];
+        put?: never;
+        /** Register authorized intelligence source */
+        post: operations["IntelligenceController_createSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Intelligence source configurations and polling status */
-    get: operations['IntelligenceController_sources'];
-    put?: never;
-    /** Register authorized intelligence source */
-    post: operations['IntelligenceController_createSource'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/sources/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/sources/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace intelligence source configuration */
+        put: operations["IntelligenceController_updateSource"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Replace intelligence source configuration */
-    put: operations['IntelligenceController_updateSource'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/archives': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/archives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Raw intelligence archives awaiting operator structuring */
+        get: operations["IntelligenceController_archives"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Raw intelligence archives awaiting operator structuring */
-    get: operations['IntelligenceController_archives'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/archives/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/archives/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read immutable raw intelligence as inert text */
+        get: operations["IntelligenceController_archive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read immutable raw intelligence as inert text */
-    get: operations['IntelligenceController_archive'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/events': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Versioned intelligence evidence */
+        get: operations["IntelligenceController_events"];
+        put?: never;
+        /** Ingest structured intelligence with immutable raw archive */
+        post: operations["IntelligenceController_createEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Versioned intelligence evidence */
-    get: operations['IntelligenceController_events'];
-    put?: never;
-    /** Ingest structured intelligence with immutable raw archive */
-    post: operations['IntelligenceController_createEvent'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/events/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read immutable evidence, current relations and audit history */
+        get: operations["IntelligenceController_eventDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read immutable evidence, current relations and audit history */
-    get: operations['IntelligenceController_eventDetail'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/events/{id}/review': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/events/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record evidence review without altering source text */
+        post: operations["IntelligenceController_reviewEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Record evidence review without altering source text */
-    post: operations['IntelligenceController_reviewEvent'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/events/{id}/relations': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/events/{id}/relations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append evidence relation */
+        post: operations["IntelligenceController_addRelation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Append evidence relation */
-    post: operations['IntelligenceController_addRelation'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/relations/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/relations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Append relation revision */
+        put: operations["IntelligenceController_editRelation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Append relation revision */
-    put: operations['IntelligenceController_editRelation'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/relations/{id}/review': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/relations/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record relation confirmation or rejection */
+        post: operations["IntelligenceController_reviewRelation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Record relation confirmation or rejection */
-    post: operations['IntelligenceController_reviewRelation'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/objects': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/objects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search geographical objects and aliases */
+        get: operations["IntelligenceController_objects"];
+        put?: never;
+        /** Create geographical object */
+        post: operations["IntelligenceController_createObject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Search geographical objects and aliases */
-    get: operations['IntelligenceController_objects'];
-    put?: never;
-    /** Create geographical object */
-    post: operations['IntelligenceController_createObject'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/objects/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/objects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update geographical object */
+        put: operations["IntelligenceController_editObject"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Update geographical object */
-    put: operations['IntelligenceController_editObject'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/objects/import': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/objects/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Atomically import GeoJSON objects */
+        post: operations["IntelligenceController_importObjects"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Atomically import GeoJSON objects */
-    post: operations['IntelligenceController_importObjects'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/plot': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/plot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Plot selected evidence versions */
+        post: operations["IntelligenceController_plot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Plot selected evidence versions */
-    post: operations['IntelligenceController_plot'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/intelligence/plot-set': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/intelligence/plot-set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read personal plot version references */
+        get: operations["IntelligenceController_plotSet"];
+        /** Save personal plot version references */
+        put: operations["IntelligenceController_savePlotSet"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read personal plot version references */
-    get: operations['IntelligenceController_plotSet'];
-    /** Save personal plot version references */
-    put: operations['IntelligenceController_savePlotSet'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/topics': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Registered analysis definitions and independently managed instances */
+        get: operations["TopicsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Registered analysis definitions and independently managed instances */
-    get: operations['TopicsController_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/topics/instances': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/topics/instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a durable topic instance; enabling schedules historical warmup */
+        post: operations["TopicsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Create a durable topic instance; enabling schedules historical warmup */
-    post: operations['TopicsController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/topics/instances/{id}/state': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/topics/instances/{id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Enable or disable a topic and fence earlier generation work */
+        put: operations["TopicsController_state"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Enable or disable a topic and fence earlier generation work */
-    put: operations['TopicsController_state'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/topics/instances/{id}/run': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/topics/instances/{id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue an idempotent durable manual analysis run */
+        post: operations["TopicsController_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Queue an idempotent durable manual analysis run */
-    post: operations['TopicsController_run'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/topics/instances/{id}/runs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/topics/instances/{id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent topic execution history */
+        get: operations["TopicsController_runs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Recent topic execution history */
-    get: operations['TopicsController_runs'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/topics/runs/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/topics/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Run snapshot including exact input dataset and algorithm configuration */
+        get: operations["TopicsController_runDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Run snapshot including exact input dataset and algorithm configuration */
-    get: operations['TopicsController_runDetail'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/topics/instances/{id}/config': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/topics/instances/{id}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update configuration and restart historical warmup with a fenced generation */
+        put: operations["TopicsController_config"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    /** Update configuration and restart historical warmup with a fenced generation */
-    put: operations['TopicsController_config'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analysis/results': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analysis/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest analysis results including revisions and withdrawals */
+        get: operations["AnalysisController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Latest analysis results including revisions and withdrawals */
-    get: operations['AnalysisController_list'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analysis/results/{id}/revisions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analysis/results/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Immutable result revisions with original AIS and document evidence */
+        get: operations["AnalysisController_revisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Immutable result revisions with original AIS and document evidence */
-    get: operations['AnalysisController_revisions'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analysis/results/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analysis/results/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Result with immutable evidence snapshots, rules and limitations */
+        get: operations["AnalysisController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Result with immutable evidence snapshots, rules and limitations */
-    get: operations['AnalysisController_detail'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/analysis/feed': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/analysis/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Replay durable analysis notifications after a cursor */
+        get: operations["AnalysisController_feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Replay durable analysis notifications after a cursor */
-    get: operations['AnalysisController_feed'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/config': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Agent availability and bounded execution defaults */
+        get: operations["AgentController_config"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Agent availability and bounded execution defaults */
-    get: operations['AgentController_config'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/sessions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List sessions owned by the current user */
+        get: operations["AgentController_sessions"];
+        put?: never;
+        /** Create a private analysis conversation */
+        post: operations["AgentController_createSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List sessions owned by the current user */
-    get: operations['AgentController_sessions'];
-    put?: never;
-    /** Create a private analysis conversation */
-    post: operations['AgentController_createSession'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/sessions/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a private conversation and its tasks */
+        get: operations["AgentController_session"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read a private conversation and its tasks */
-    get: operations['AgentController_session'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/sessions/{id}/messages': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/sessions/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit an idempotent message and queue one independent analysis */
+        post: operations["AgentController_message"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Submit an idempotent message and queue one independent analysis */
-    post: operations['AgentController_message'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/tasks/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read owned task, immutable results and tool ledger */
+        get: operations["AgentController_task"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Read owned task, immutable results and tool ledger */
-    get: operations['AgentController_task'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/tasks/{id}/input-requests/{requestId}/responses': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/tasks/{id}/input-requests/{requestId}/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer a persisted input request and resume the same task */
+        post: operations["AgentController_respond"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Answer a persisted input request and resume the same task */
-    post: operations['AgentController_respond'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/tasks/{id}/retry': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/tasks/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a visible new attempt with confirmed inputs and an independent budget */
+        post: operations["AgentController_retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Create a visible new attempt with confirmed inputs and an independent budget */
-    post: operations['AgentController_retry'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/tasks/{id}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/tasks/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an owned task and fence late results */
+        post: operations["AgentController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Cancel an owned task and fence late results */
-    post: operations['AgentController_cancel'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/agent/sessions/{id}/events': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/agent/sessions/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recover persisted conversation events after a cursor */
+        get: operations["AgentController_events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Recover persisted conversation events after a cursor */
-    get: operations['AgentController_events'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/v1/agent/ui/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register this browser instance for semantic UI control */
+        post: operations["AgentUiController_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/ui/clients/{id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Publish semantic state and renew the current page lease */
+        put: operations["AgentUiController_state"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/ui/clients/{id}/commands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discover pending UI commands for this page only */
+        get: operations["AgentUiController_commands"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/ui/commands/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Atomically claim a UI command */
+        post: operations["AgentUiController_claim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/ui/commands/{id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Persist execution acknowledgement and verified postcondition */
+        post: operations["AgentUiController_receipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: never;
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    schemas: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  AuthController_login: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          username: string;
-          password: string;
+    AuthController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            user: {
-              /** Format: uuid */
-              id: string;
-              username: string;
-              /** @enum {string} */
-              role: 'viewer' | 'operator' | 'admin';
+        requestBody: {
+            content: {
+                "application/json": {
+                    username: string;
+                    password: string;
+                };
             };
-            csrfToken: string;
-            /** Format: date-time */
-            expiresAt: string;
-          };
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AuthController_me: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            user: {
-              /** Format: uuid */
-              id: string;
-              username: string;
-              /** @enum {string} */
-              role: 'viewer' | 'operator' | 'admin';
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            username: string;
+                            /** @enum {string} */
+                            role: "viewer" | "operator" | "admin";
+                        };
+                        csrfToken: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
             };
-            csrfToken: string;
-            /** Format: date-time */
-            expiresAt: string;
-          };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
-  AuthController_logout: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    AuthController_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            username: string;
+                            /** @enum {string} */
+                            role: "viewer" | "operator" | "admin";
+                        };
+                        csrfToken: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      204: {
-        headers: {
-          [name: string]: unknown;
+    AuthController_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': null;
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
-  UsersController_list: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    UsersController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        username: string;
+                        /** @enum {string} */
+                        role: "viewer" | "operator" | "admin";
+                        disabled: boolean;
+                    }[];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    UsersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            username: string;
-            /** @enum {string} */
-            role: 'viewer' | 'operator' | 'admin';
-            disabled: boolean;
-          }[];
+        requestBody: {
+            content: {
+                "application/json": {
+                    username: string;
+                    password: string;
+                    /** @enum {string} */
+                    role: "viewer" | "operator" | "admin";
+                };
+            };
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        username: string;
+                        /** @enum {string} */
+                        role: "viewer" | "operator" | "admin";
+                        disabled: boolean;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
-  UsersController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    UsersController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    role: "viewer" | "operator" | "admin";
+                    disabled: boolean;
+                    password?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        username: string;
+                        /** @enum {string} */
+                        role: "viewer" | "operator" | "admin";
+                        disabled: boolean;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
     };
-    requestBody: {
-      content: {
-        'application/json': {
-          username: string;
-          password: string;
-          /** @enum {string} */
-          role: 'viewer' | 'operator' | 'admin';
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            username: string;
-            /** @enum {string} */
-            role: 'viewer' | 'operator' | 'admin';
-            disabled: boolean;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  UsersController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        userId: unknown;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          role: 'viewer' | 'operator' | 'admin';
-          disabled: boolean;
-          password?: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            username: string;
-            /** @enum {string} */
-            role: 'viewer' | 'operator' | 'admin';
-            disabled: boolean;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  VesselsController_list: {
-    parameters: {
-      query?: {
-        limit?: number;
-        cursor?: string;
-        query?: string;
-        mmsi?: string;
-        name?: string;
-        imo?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              mmsi: string;
-              latestPosition: {
-                /** @enum {number} */
-                schemaVersion: 1;
-                /** @enum {number} */
-                cleaningVersion: 1;
-                eventId: string;
-                captureId: string;
-                sourceId: string;
-                /** @enum {string} */
-                sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-                sourcePriority: number;
-                runId: string | null;
-                /** Format: date-time */
-                receivedAt: string;
-                quality: string[];
-                /** @enum {string} */
-                kind: 'position';
-                /** Format: date-time */
-                observedAt: string;
-                mmsi: string;
-                lat: number;
-                lon: number;
-                sogKnots: number | null;
-                cogDegrees: number | null;
-                headingDegrees: number | null;
-                rotDegPerMinute: number | null;
-                navigationStatus: number | null;
-                /** @enum {string} */
-                receptionType: 'TER' | 'SAT' | 'ROAM' | 'UNKNOWN';
-              } | null;
-              staticFields: {
+    VesselsController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                query?: string;
+                mmsi?: string;
                 name?: string;
                 imo?: string;
-                callsign?: string;
-                shipType?: number;
-                length?: number;
-                width?: number;
-                draught?: number;
-                destination?: string;
-                eta?: {
-                  year?: number;
-                  month?: number;
-                  day?: number;
-                  hour?: number;
-                  minute?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
                 };
-              };
-            }[];
-            nextCursor: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  VesselsController_detail: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        mmsi: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            mmsi: string;
-            latestPosition: {
-              /** @enum {number} */
-              schemaVersion: 1;
-              /** @enum {number} */
-              cleaningVersion: 1;
-              eventId: string;
-              captureId: string;
-              sourceId: string;
-              /** @enum {string} */
-              sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-              sourcePriority: number;
-              runId: string | null;
-              /** Format: date-time */
-              receivedAt: string;
-              quality: string[];
-              /** @enum {string} */
-              kind: 'position';
-              /** Format: date-time */
-              observedAt: string;
-              mmsi: string;
-              lat: number;
-              lon: number;
-              sogKnots: number | null;
-              cogDegrees: number | null;
-              headingDegrees: number | null;
-              rotDegPerMinute: number | null;
-              navigationStatus: number | null;
-              /** @enum {string} */
-              receptionType: 'TER' | 'SAT' | 'ROAM' | 'UNKNOWN';
-            } | null;
-            staticFields: {
-              name?: string;
-              imo?: string;
-              callsign?: string;
-              shipType?: number;
-              length?: number;
-              width?: number;
-              draught?: number;
-              destination?: string;
-              eta?: {
-                year?: number;
-                month?: number;
-                day?: number;
-                hour?: number;
-                minute?: number;
-              };
+                content: {
+                    "application/json": {
+                        items: {
+                            mmsi: string;
+                            latestPosition: {
+                                /** @enum {number} */
+                                schemaVersion: 1;
+                                /** @enum {number} */
+                                cleaningVersion: 1;
+                                eventId: string;
+                                captureId: string;
+                                sourceId: string;
+                                /** @enum {string} */
+                                sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                                sourcePriority: number;
+                                runId: string | null;
+                                /** Format: date-time */
+                                receivedAt: string;
+                                quality: string[];
+                                /** @enum {string} */
+                                kind: "position";
+                                /** Format: date-time */
+                                observedAt: string;
+                                mmsi: string;
+                                lat: number;
+                                lon: number;
+                                sogKnots: number | null;
+                                cogDegrees: number | null;
+                                headingDegrees: number | null;
+                                rotDegPerMinute: number | null;
+                                navigationStatus: number | null;
+                                /** @enum {string} */
+                                receptionType: "TER" | "SAT" | "ROAM" | "UNKNOWN";
+                            } | null;
+                            staticFields: {
+                                name?: string;
+                                imo?: string;
+                                callsign?: string;
+                                shipType?: number;
+                                length?: number;
+                                width?: number;
+                                draught?: number;
+                                destination?: string;
+                                eta?: {
+                                    year?: number;
+                                    month?: number;
+                                    day?: number;
+                                    hour?: number;
+                                    minute?: number;
+                                };
+                            };
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
             };
-            provenance: {
-              [key: string]: {
-                sourceId: string;
-                /** @enum {string} */
-                sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-                sourcePriority: number;
-                eventId: string;
-                /** Format: date-time */
-                observedAt: string | null;
-                /** Format: date-time */
-                receivedAt: string;
-              };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
-          };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
-  VesselsController_track: {
-    parameters: {
-      query: {
-        maxPoints?: number;
-        to: string;
-        from: string;
-      };
-      header?: never;
-      path: {
-        mmsi: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            mmsi: string;
-            /** Format: date-time */
-            from: string;
-            /** Format: date-time */
-            to: string;
-            segments: {
-              points: {
-                /** @enum {number} */
-                schemaVersion: 1;
-                /** @enum {number} */
-                cleaningVersion: 1;
-                eventId: string;
-                captureId: string;
-                sourceId: string;
-                /** @enum {string} */
-                sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-                sourcePriority: number;
-                runId: string | null;
-                /** Format: date-time */
-                receivedAt: string;
-                quality: string[];
-                /** @enum {string} */
-                kind: 'position';
-                /** Format: date-time */
-                observedAt: string;
+    VesselsController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
                 mmsi: string;
-                lat: number;
-                lon: number;
-                sogKnots: number | null;
-                cogDegrees: number | null;
-                headingDegrees: number | null;
-                rotDegPerMinute: number | null;
-                navigationStatus: number | null;
-                /** @enum {string} */
-                receptionType: 'TER' | 'SAT' | 'ROAM' | 'UNKNOWN';
-              }[];
-            }[];
-            sampled: boolean;
-            truncated: boolean;
-            total: number;
-            returned: number;
-          };
+            };
+            cookie?: never;
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        mmsi: string;
+                        latestPosition: {
+                            /** @enum {number} */
+                            schemaVersion: 1;
+                            /** @enum {number} */
+                            cleaningVersion: 1;
+                            eventId: string;
+                            captureId: string;
+                            sourceId: string;
+                            /** @enum {string} */
+                            sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                            sourcePriority: number;
+                            runId: string | null;
+                            /** Format: date-time */
+                            receivedAt: string;
+                            quality: string[];
+                            /** @enum {string} */
+                            kind: "position";
+                            /** Format: date-time */
+                            observedAt: string;
+                            mmsi: string;
+                            lat: number;
+                            lon: number;
+                            sogKnots: number | null;
+                            cogDegrees: number | null;
+                            headingDegrees: number | null;
+                            rotDegPerMinute: number | null;
+                            navigationStatus: number | null;
+                            /** @enum {string} */
+                            receptionType: "TER" | "SAT" | "ROAM" | "UNKNOWN";
+                        } | null;
+                        staticFields: {
+                            name?: string;
+                            imo?: string;
+                            callsign?: string;
+                            shipType?: number;
+                            length?: number;
+                            width?: number;
+                            draught?: number;
+                            destination?: string;
+                            eta?: {
+                                year?: number;
+                                month?: number;
+                                day?: number;
+                                hour?: number;
+                                minute?: number;
+                            };
+                        };
+                        provenance: {
+                            [key: string]: {
+                                sourceId: string;
+                                /** @enum {string} */
+                                sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                                sourcePriority: number;
+                                eventId: string;
+                                /** Format: date-time */
+                                observedAt: string | null;
+                                /** Format: date-time */
+                                receivedAt: string;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
-  MapController_heatmap: {
-    parameters: {
-      query: {
-        bbox: string;
-        from: string;
-        to: string;
-        sourceId?: string;
-        shipType?: number;
-        mmsis?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
+    VesselsController_track: {
+        parameters: {
             query: {
-              bbox: number[];
-              /** Format: date-time */
-              from: string;
-              /** Format: date-time */
-              to: string;
-              sourceId?: string;
-              shipType?: number;
-              mmsis?: string[];
+                maxPoints?: number;
+                to: string;
+                from: string;
             };
-            grid: {
-              level: number;
-              cellDegrees: number;
-            };
-            cells: {
-              id: string;
-              x: number;
-              y: number;
-              lon: number;
-              lat: number;
-              vesselCount: number;
-            }[];
-            totalVessels: number;
-            /** Format: date-time */
-            generatedAt: string;
-            /** @enum {string} */
-            metric: 'unique_vessels';
-            /** @enum {string} */
-            shipTypeBasis: 'current_profile';
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  MapController_get: {
-    parameters: {
-      query: {
-        bbox: string;
-        zoom?: number;
-        hours?: number;
-        sourceId?: string;
-        shipType?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: (
-              | {
-                  /** @enum {string} */
-                  kind: 'point';
-                  mmsi: string;
-                  lat: number;
-                  lon: number;
-                  observedAt: string;
-                  sourceId: string;
-                  sogKnots: number | null;
-                  cogDegrees: number | null;
-                  headingDegrees: number | null;
-                  quality: string[];
-                }
-              | {
-                  /** @enum {string} */
-                  kind: 'cluster';
-                  clusterId: string;
-                  lat: number;
-                  lon: number;
-                  count: number;
-                  bbox: number[];
-                }
-            )[];
-            sampled: boolean;
-            truncated: boolean;
-            total: number;
-            /** Format: date-time */
-            generatedAt: string;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SourcesController_list: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            sourceId: string;
-            /** @enum {string} */
-            sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-            name: string;
-            /** @enum {string} */
-            status: 'enabled' | 'disabled' | 'error';
-            secretRef: string | null;
-            priority: number;
-            /** Format: uri */
-            endpoint?: string;
-            bbox?: number[];
-            settings?: {
-              /** @default [] */
-              allowedHosts: string[];
-              /** @default 30 */
-              requestsPerMinute: number;
-              /** @default 100 */
-              maxPages: number;
-              /** @default 2 */
-              httpConcurrency: number;
-              /** @default 1 */
-              browserConcurrency: number;
-              /** @default 30 */
-              timeoutSeconds: number;
-              /** @default 5 */
-              timespanMinutes: number;
-              /** @default 2000 */
-              pageLimit: number;
-              /** @default false */
-              authorizationConfirmed: boolean;
-            };
-            /** Format: date-time */
-            lastReceivedAt: string | null;
-            lastError: string | null;
-          }[];
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SourcesController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          sourceId: string;
-          /** @enum {string} */
-          sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-          name: string;
-          /** @enum {string} */
-          status: 'enabled' | 'disabled' | 'error';
-          secretRef: string | null;
-          priority: number;
-          /** Format: uri */
-          endpoint?: string;
-          bbox?: number[];
-          settings?: {
-            /** @default [] */
-            allowedHosts?: string[];
-            /** @default 30 */
-            requestsPerMinute?: number;
-            /** @default 100 */
-            maxPages?: number;
-            /** @default 2 */
-            httpConcurrency?: number;
-            /** @default 1 */
-            browserConcurrency?: number;
-            /** @default 30 */
-            timeoutSeconds?: number;
-            /** @default 5 */
-            timespanMinutes?: number;
-            /** @default 2000 */
-            pageLimit?: number;
-            /** @default false */
-            authorizationConfirmed?: boolean;
-          };
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            sourceId: string;
-            /** @enum {string} */
-            sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-            name: string;
-            /** @enum {string} */
-            status: 'enabled' | 'disabled' | 'error';
-            secretRef: string | null;
-            priority: number;
-            /** Format: uri */
-            endpoint?: string;
-            bbox?: number[];
-            settings?: {
-              /** @default [] */
-              allowedHosts: string[];
-              /** @default 30 */
-              requestsPerMinute: number;
-              /** @default 100 */
-              maxPages: number;
-              /** @default 2 */
-              httpConcurrency: number;
-              /** @default 1 */
-              browserConcurrency: number;
-              /** @default 30 */
-              timeoutSeconds: number;
-              /** @default 5 */
-              timespanMinutes: number;
-              /** @default 2000 */
-              pageLimit: number;
-              /** @default false */
-              authorizationConfirmed: boolean;
-            };
-            /** Format: date-time */
-            lastReceivedAt: string | null;
-            lastError: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SourcesController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        sourceId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          sourceId: string;
-          /** @enum {string} */
-          sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-          name: string;
-          /** @enum {string} */
-          status: 'enabled' | 'disabled' | 'error';
-          secretRef: string | null;
-          priority: number;
-          /** Format: uri */
-          endpoint?: string;
-          bbox?: number[];
-          settings?: {
-            /** @default [] */
-            allowedHosts?: string[];
-            /** @default 30 */
-            requestsPerMinute?: number;
-            /** @default 100 */
-            maxPages?: number;
-            /** @default 2 */
-            httpConcurrency?: number;
-            /** @default 1 */
-            browserConcurrency?: number;
-            /** @default 30 */
-            timeoutSeconds?: number;
-            /** @default 5 */
-            timespanMinutes?: number;
-            /** @default 2000 */
-            pageLimit?: number;
-            /** @default false */
-            authorizationConfirmed?: boolean;
-          };
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            sourceId: string;
-            /** @enum {string} */
-            sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-            name: string;
-            /** @enum {string} */
-            status: 'enabled' | 'disabled' | 'error';
-            secretRef: string | null;
-            priority: number;
-            /** Format: uri */
-            endpoint?: string;
-            bbox?: number[];
-            settings?: {
-              /** @default [] */
-              allowedHosts: string[];
-              /** @default 30 */
-              requestsPerMinute: number;
-              /** @default 100 */
-              maxPages: number;
-              /** @default 2 */
-              httpConcurrency: number;
-              /** @default 1 */
-              browserConcurrency: number;
-              /** @default 30 */
-              timeoutSeconds: number;
-              /** @default 5 */
-              timespanMinutes: number;
-              /** @default 2000 */
-              pageLimit: number;
-              /** @default false */
-              authorizationConfirmed: boolean;
-            };
-            /** Format: date-time */
-            lastReceivedAt: string | null;
-            lastError: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SourcesController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        sourceId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': null;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  JobsController_list: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            jobId: string;
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'enabled' | 'paused';
-            scheduleSeconds: number | null;
-          }[];
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  JobsController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: uuid */
-          jobId?: string;
-          sourceId: string;
-          name: string;
-          /** @enum {string} */
-          mode: 'crawl' | 'collect' | 'replay';
-          /** @enum {string} */
-          status: 'enabled' | 'paused';
-          scheduleSeconds?: number | null;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            jobId: string;
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'enabled' | 'paused';
-            scheduleSeconds: number | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  JobsController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        jobId: unknown;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: uuid */
-          jobId: string;
-          sourceId: string;
-          name: string;
-          /** @enum {string} */
-          mode: 'crawl' | 'collect' | 'replay';
-          /** @enum {string} */
-          status: 'enabled' | 'paused';
-          scheduleSeconds: number | null;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            jobId: string;
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'enabled' | 'paused';
-            scheduleSeconds: number | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  JobsController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        jobId: unknown;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': null;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  JobsController_run: {
-    parameters: {
-      query?: never;
-      header: {
-        'Idempotency-Key': string;
-      };
-      path: {
-        jobId: unknown;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            runId: string;
-            /** Format: uuid */
-            jobId: string | null;
-            sourceId: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
-            /** Format: date-time */
-            requestedAt: string;
-            /** Format: date-time */
-            startedAt: string | null;
-            /** Format: date-time */
-            finishedAt: string | null;
-            captures: number;
-            positions: number;
-            statics: number;
-            quarantined: number;
-            records: number;
-            normalizedCaptures: number;
-            /** @enum {string} */
-            counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
-            error: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  JobsController_pause: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        jobId: unknown;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            jobId: string;
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'enabled' | 'paused';
-            scheduleSeconds: number | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  JobsController_resume: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        jobId: unknown;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            jobId: string;
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'enabled' | 'paused';
-            scheduleSeconds: number | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  RunsController_list: {
-    parameters: {
-      query?: {
-        limit?: number;
-        cursor?: string;
-        status?: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
-        sourceId?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              /** Format: uuid */
-              runId: string;
-              /** Format: uuid */
-              jobId: string | null;
-              sourceId: string;
-              /** @enum {string} */
-              mode: 'crawl' | 'collect' | 'replay';
-              /** @enum {string} */
-              status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
-              /** Format: date-time */
-              requestedAt: string;
-              /** Format: date-time */
-              startedAt: string | null;
-              /** Format: date-time */
-              finishedAt: string | null;
-              captures: number;
-              positions: number;
-              statics: number;
-              quarantined: number;
-              records: number;
-              normalizedCaptures: number;
-              /** @enum {string} */
-              counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
-              error: string | null;
-            }[];
-            nextCursor: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  RunsController_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        runId: unknown;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            runId: string;
-            /** Format: uuid */
-            jobId: string | null;
-            sourceId: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
-            /** Format: date-time */
-            requestedAt: string;
-            /** Format: date-time */
-            startedAt: string | null;
-            /** Format: date-time */
-            finishedAt: string | null;
-            captures: number;
-            positions: number;
-            statics: number;
-            quarantined: number;
-            records: number;
-            normalizedCaptures: number;
-            /** @enum {string} */
-            counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
-            error: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  QualityController_quality: {
-    parameters: {
-      query?: {
-        sourceId?: string;
-        to?: string;
-        from?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: date-time */
-            from: string;
-            /** Format: date-time */
-            to: string;
-            receivedCaptures: number;
-            /** @enum {string} */
-            receivedCapturesLabel: '归档确认响应数';
-            /** @enum {string} */
-            receivedCapturesScope: 'committed archive minute buckets';
-            /** @enum {number} */
-            archiveLagSeconds: 60;
-            normalizedPositions: number;
-            normalizedStatic: number;
-            quarantinedEvents: number;
-            latestPositionJumpFlags: number;
-            /** @enum {string} */
-            latestPositionJumpLabel: '最新位置跳跃标记';
-            qualityFlags: {
-              flag: string;
-              events: number;
-            }[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  QualityController_quarantine: {
-    parameters: {
-      query?: {
-        cursor?: string;
-        limit?: number;
-        reason?: string;
-        sourceId?: string;
-        to?: string;
-        from?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              /** @enum {number} */
-              schemaVersion: 1;
-              /** @enum {number} */
-              cleaningVersion: 1;
-              eventId: string;
-              captureId: string;
-              sourceId: string;
-              /** @enum {string} */
-              sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
-              sourcePriority: number;
-              runId: string | null;
-              /** Format: date-time */
-              receivedAt: string;
-              quality: string[];
-              /** @enum {string} */
-              kind: 'quarantine';
-              /** Format: date-time */
-              observedAt: string | null;
-              mmsi: string | null;
-              reasons: string[];
-            }[];
-            nextCursor: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  QualityController_capture: {
-    parameters: {
-      query: {
-        receivedAt: string;
-        sourceId: string;
-      };
-      header?: never;
-      path: {
-        captureId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-          'text/plain': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ReplayController_list: {
-    parameters: {
-      query?: {
-        limit?: number;
-        cursor?: string;
-        sourceId?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              /** Format: uuid */
-              replayId: string;
-              /** Format: uuid */
-              runId: string;
-              sourceId: string;
-              /** Format: date-time */
-              from: string;
-              /** Format: date-time */
-              to: string;
-              /** @enum {number} */
-              cleaningVersion: 1;
-              /** @enum {string} */
-              targetDataset: 'current';
-              status: string;
-              /** Format: date-time */
-              createdAt: string;
-              counters: {
-                [key: string]: number;
-              };
-            }[];
-            nextCursor: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  ReplayController_create: {
-    parameters: {
-      query?: never;
-      header: {
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          sourceId: string;
-          /** Format: date-time */
-          from: string;
-          /** Format: date-time */
-          to: string;
-          /**
-           * @default 1
-           * @enum {number}
-           */
-          cleaningVersion?: 1;
-          /**
-           * @default current
-           * @enum {string}
-           */
-          targetDataset?: 'current';
-        };
-      };
-    };
-    responses: {
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            runId: string;
-            /** Format: uuid */
-            jobId: string | null;
-            sourceId: string;
-            /** @enum {string} */
-            mode: 'crawl' | 'collect' | 'replay';
-            /** @enum {string} */
-            status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
-            /** Format: date-time */
-            requestedAt: string;
-            /** Format: date-time */
-            startedAt: string | null;
-            /** Format: date-time */
-            finishedAt: string | null;
-            captures: number;
-            positions: number;
-            statics: number;
-            quarantined: number;
-            records: number;
-            normalizedCaptures: number;
-            /** @enum {string} */
-            counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
-            error: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SystemController_health: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            status: 'ready' | 'degraded';
-            services: {
-              postgres: boolean;
-              clickhouse: boolean;
-              nats: boolean;
-              s3: boolean;
-            };
-            sources: {
-              enabled: number;
-              latestReceivedAt: string | null;
-              empty: boolean;
-            };
-            bus: {
-              status: string;
-              ready: boolean;
-              reasons: string[];
-              streams: {
-                name: string;
-                bytes: number;
-                limit: number;
-                oldestAgeMs: number;
-                messages: number;
-              }[];
-            };
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SystemController_ready: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            status: 'ready' | 'degraded';
-            services: {
-              postgres: boolean;
-              clickhouse: boolean;
-              nats: boolean;
-              s3: boolean;
-            };
-            sources: {
-              enabled: number;
-              latestReceivedAt: string | null;
-              empty: boolean;
-            };
-            bus: {
-              status: string;
-              ready: boolean;
-              reasons: string[];
-              streams: {
-                name: string;
-                bytes: number;
-                limit: number;
-                oldestAgeMs: number;
-                messages: number;
-              }[];
-            };
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  SystemController_getMetrics: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': string;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_search: {
-    parameters: {
-      query?: {
-        keyword?: string;
-        locationKeyword?: string;
-        category?:
-          | 'port-restriction'
-          | 'notice'
-          | 'navigation-warning'
-          | 'weather'
-          | 'security'
-          | 'environment'
-          | 'incident'
-          | 'other';
-        reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-        timeMode?: 'published' | 'effective' | 'observed';
-        from?: string;
-        to?: string;
-        objectId?: string;
-        kind?: 'events' | 'marine' | 'both';
-        samplePointId?: string;
-        forecastFrom?: string;
-        forecastTo?: string;
-        bbox?: string;
-        sourceIds?: string;
-        mmsis?: string;
-        limit?: number;
-        cursor?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              id: string;
-              sourceId: string;
-              sourceName: string;
-              externalId: string;
-              version: number;
-              title: string;
-              summary: string;
-              snippet: string;
-              /** @enum {string} */
-              category:
-                | 'port-restriction'
-                | 'notice'
-                | 'navigation-warning'
-                | 'weather'
-                | 'security'
-                | 'environment'
-                | 'incident'
-                | 'other';
-              /** @enum {string} */
-              status: 'active' | 'revised' | 'withdrawn';
-              /** @enum {string} */
-              reviewStatus: 'candidate' | 'confirmed' | 'rejected';
-              /** @enum {string} */
-              visibility: 'public' | 'internal';
-              /** Format: date-time */
-              publishedAt: string | null;
-              /** Format: date-time */
-              observedAt: string;
-              /** Format: date-time */
-              effectiveFrom: string | null;
-              /** Format: date-time */
-              effectiveTo: string | null;
-              /** Format: date-time */
-              collectedAt: string;
-              /** @enum {string} */
-              timeBasis: 'publication' | 'index-observation' | 'effective' | 'unknown';
-              /** Format: uri */
-              originalUrl: string | null;
-              originalArchiveId: string | null;
-              geometry:
-                | (
-                    | {
-                        /** @enum {string} */
-                        type: 'Point';
-                        coordinates: number[];
-                      }
-                    | {
-                        /** @enum {string} */
-                        type: 'LineString';
-                        coordinates: number[][];
-                      }
-                    | {
-                        /** @enum {string} */
-                        type: 'Polygon';
-                        coordinates: number[][][];
-                      }
-                    | {
-                        /** @enum {string} */
-                        type: 'MultiPoint';
-                        coordinates: number[][];
-                      }
-                    | {
-                        /** @enum {string} */
-                        type: 'MultiLineString';
-                        coordinates: number[][][];
-                      }
-                    | {
-                        /** @enum {string} */
-                        type: 'MultiPolygon';
-                        coordinates: number[][][][];
-                      }
-                  )
-                | null;
-              /** @enum {string} */
-              matchBasis: 'geometry' | 'object' | 'mention' | 'keyword' | 'none';
-              locationNote: string;
-            }[];
-            forecasts: {
-              id: string;
-              sourceId: string;
-              samplePointId: string;
-              pointName: string;
-              point: {
-                lon: number;
-                lat: number;
-              };
-              grid: {
-                lon: number;
-                lat: number;
-              };
-              /** Format: date-time */
-              fetchedAt: string;
-              /** Format: date-time */
-              modelPublishedAt: string | null;
-              /** Format: date-time */
-              validFrom: string;
-              /** Format: date-time */
-              validTo: string;
-              series: {
-                /** Format: date-time */
-                validAt: string;
-                waveHeight: number | null;
-                waveDirection: number | null;
-                wavePeriod: number | null;
-              }[];
-              originalArchiveId: string;
-              /** Format: uri */
-              originalUrl: string;
-              /** @enum {string} */
-              visibility: 'public' | 'internal';
-            }[];
-            total: number;
-            nextCursor: string | null;
-            /** Format: date-time */
-            asOf: string;
-            spec: {
-              keyword?: string;
-              locationKeyword?: string;
-              sourceIds?: string[];
-              /** @enum {string} */
-              category?:
-                | 'port-restriction'
-                | 'notice'
-                | 'navigation-warning'
-                | 'weather'
-                | 'security'
-                | 'environment'
-                | 'incident'
-                | 'other';
-              /** @enum {string} */
-              reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-              /** @enum {string} */
-              timeMode?: 'published' | 'effective' | 'observed';
-              /** Format: date-time */
-              from?: string;
-              /** Format: date-time */
-              to?: string;
-              bbox?: number[];
-              objectId?: string;
-              mmsis?: string[];
-              /** @enum {string} */
-              kind?: 'events' | 'marine' | 'both';
-              samplePointId?: string;
-              /** Format: date-time */
-              forecastFrom?: string;
-              /** Format: date-time */
-              forecastTo?: string;
-            };
-            sourceHealth: {
-              sourceId: string;
-              name: string;
-              enabled: boolean;
-              /** @enum {string} */
-              visibility: 'public' | 'internal';
-              /** @enum {string} */
-              status: 'ready' | 'stale' | 'unavailable' | 'never_collected' | 'disabled';
-              /** Format: date-time */
-              lastPolledAt: string | null;
-              /** Format: date-time */
-              lastSuccessfulAt: string | null;
-              /** Format: date-time */
-              nextPollAt: string | null;
-              lastError: string | null;
-            }[];
-            coverageNotes: string[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_sources: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
-            /** @default true */
-            enabled: boolean;
-            /** @enum {string} */
-            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
-            /**
-             * @default internal
-             * @enum {string}
-             */
-            visibility: 'public' | 'internal';
-            bbox?: number[];
-            eventTypes?: ('TC' | 'TS' | 'FL')[];
-            /** @default 6 */
-            requestsPerMinute: number;
-            /** @default 5 */
-            maxDocuments: number;
-            /**
-             * @default aggregator
-             * @enum {string}
-             */
-            trust: 'official' | 'aggregator';
-            endpoint?: string;
-            /** @default [] */
-            allowedHosts: string[];
-            /** @default false */
-            authorizationConfirmed: boolean;
-            /** @default 300 */
-            pollSeconds: number;
-            /** @default 30 */
-            timeoutSeconds: number;
-            /** Format: date-time */
-            lastPolledAt: string | null;
-            /** Format: date-time */
-            lastSuccessfulAt: string | null;
-            lastError: string | null;
-            lastIngestion: {
-              [key: string]: unknown;
-            };
-          }[];
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_createSource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          sourceId: string;
-          name: string;
-          /** @enum {string} */
-          kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
-          /** @default true */
-          enabled?: boolean;
-          /** @enum {string} */
-          adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
-          /**
-           * @default internal
-           * @enum {string}
-           */
-          visibility?: 'public' | 'internal';
-          bbox?: number[];
-          eventTypes?: ('TC' | 'TS' | 'FL')[];
-          /** @default 6 */
-          requestsPerMinute?: number;
-          /** @default 5 */
-          maxDocuments?: number;
-          /**
-           * @default aggregator
-           * @enum {string}
-           */
-          trust?: 'official' | 'aggregator';
-          endpoint?: string;
-          /** @default [] */
-          allowedHosts?: string[];
-          /** @default false */
-          authorizationConfirmed?: boolean;
-          /** @default 300 */
-          pollSeconds?: number;
-          /** @default 30 */
-          timeoutSeconds?: number;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
-            /** @default true */
-            enabled: boolean;
-            /** @enum {string} */
-            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
-            /**
-             * @default internal
-             * @enum {string}
-             */
-            visibility: 'public' | 'internal';
-            bbox?: number[];
-            eventTypes?: ('TC' | 'TS' | 'FL')[];
-            /** @default 6 */
-            requestsPerMinute: number;
-            /** @default 5 */
-            maxDocuments: number;
-            /**
-             * @default aggregator
-             * @enum {string}
-             */
-            trust: 'official' | 'aggregator';
-            endpoint?: string;
-            /** @default [] */
-            allowedHosts: string[];
-            /** @default false */
-            authorizationConfirmed: boolean;
-            /** @default 300 */
-            pollSeconds: number;
-            /** @default 30 */
-            timeoutSeconds: number;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_updateSource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          sourceId: string;
-          name: string;
-          /** @enum {string} */
-          kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
-          /** @default true */
-          enabled?: boolean;
-          /** @enum {string} */
-          adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
-          /**
-           * @default internal
-           * @enum {string}
-           */
-          visibility?: 'public' | 'internal';
-          bbox?: number[];
-          eventTypes?: ('TC' | 'TS' | 'FL')[];
-          /** @default 6 */
-          requestsPerMinute?: number;
-          /** @default 5 */
-          maxDocuments?: number;
-          /**
-           * @default aggregator
-           * @enum {string}
-           */
-          trust?: 'official' | 'aggregator';
-          endpoint?: string;
-          /** @default [] */
-          allowedHosts?: string[];
-          /** @default false */
-          authorizationConfirmed?: boolean;
-          /** @default 300 */
-          pollSeconds?: number;
-          /** @default 30 */
-          timeoutSeconds?: number;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            sourceId: string;
-            name: string;
-            /** @enum {string} */
-            kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
-            /** @default true */
-            enabled: boolean;
-            /** @enum {string} */
-            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
-            /**
-             * @default internal
-             * @enum {string}
-             */
-            visibility: 'public' | 'internal';
-            bbox?: number[];
-            eventTypes?: ('TC' | 'TS' | 'FL')[];
-            /** @default 6 */
-            requestsPerMinute: number;
-            /** @default 5 */
-            maxDocuments: number;
-            /**
-             * @default aggregator
-             * @enum {string}
-             */
-            trust: 'official' | 'aggregator';
-            endpoint?: string;
-            /** @default [] */
-            allowedHosts: string[];
-            /** @default false */
-            authorizationConfirmed: boolean;
-            /** @default 300 */
-            pollSeconds: number;
-            /** @default 30 */
-            timeoutSeconds: number;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_archives: {
-    parameters: {
-      query?: {
-        limit?: number;
-        cursor?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: unknown[];
-            nextCursor: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_archive: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            id: string;
-            content: string;
-            contentType: string;
-            checksum: string;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_events: {
-    parameters: {
-      query?: {
-        limit?: number;
-        cursor?: string;
-        keyword?: string;
-        sourceId?: string;
-        category?:
-          | 'port-restriction'
-          | 'notice'
-          | 'navigation-warning'
-          | 'weather'
-          | 'security'
-          | 'environment'
-          | 'incident'
-          | 'other';
-        reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-        status?: 'active' | 'revised' | 'withdrawn';
-        from?: string;
-        to?: string;
-        objectId?: string;
-        bbox?: string;
-        latest?: 'true' | 'false';
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: unknown[];
-            nextCursor: string | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_createEvent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          sourceId: string;
-          externalId: string;
-          version: number;
-          /**
-           * @default active
-           * @enum {string}
-           */
-          status?: 'active' | 'revised' | 'withdrawn';
-          /** @enum {string} */
-          category:
-            | 'port-restriction'
-            | 'notice'
-            | 'navigation-warning'
-            | 'weather'
-            | 'security'
-            | 'environment'
-            | 'incident'
-            | 'other';
-          /**
-           * @default confirmed
-           * @enum {string}
-           */
-          reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-          /** Format: uri */
-          originalUrl?: string;
-          /** @default [] */
-          relations?: {
-            /** @enum {string} */
-            kind: 'occurs-at' | 'mentions' | 'involves' | 'applies-to' | 'impacts';
-            objectId?: string;
-            geometry?:
-              | {
-                  /** @enum {string} */
-                  type: 'Point';
-                  coordinates: number[];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'LineString';
-                  coordinates: number[][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'Polygon';
-                  coordinates: number[][][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'MultiPoint';
-                  coordinates: number[][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'MultiLineString';
-                  coordinates: number[][][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'MultiPolygon';
-                  coordinates: number[][][][];
-                };
-            basis: string;
-            /** @default [] */
-            paragraphIds?: string[];
-            /**
-             * @default candidate
-             * @enum {string}
-             */
-            reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-            /**
-             * @default manual
-             * @enum {string}
-             */
-            origin?: 'source' | 'rule' | 'manual' | 'legacy';
-            impactType?: string;
-            /** Format: date-time */
-            effectiveFrom?: string;
-            /** Format: date-time */
-            effectiveTo?: string | null;
-          }[];
-          title: string;
-          summary: string;
-          /** Format: date-time */
-          publishedAt: string;
-          /** Format: date-time */
-          effectiveFrom: string;
-          /** Format: date-time */
-          effectiveTo: string | null;
-          bbox?: number[];
-          /** @default [] */
-          vesselTypes?: number[];
-          /** @default [] */
-          mmsis?: string[];
-          paragraphs: {
-            id: string;
-            text: string;
-          }[];
-          commonSourceId?: string;
-          supersedesId?: string;
-          originalArchiveId?: string;
-          raw: unknown;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_eventDetail: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_reviewEvent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          reviewStatus: 'candidate' | 'confirmed' | 'rejected';
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_addRelation: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          kind: 'occurs-at' | 'mentions' | 'involves' | 'applies-to' | 'impacts';
-          objectId?: string;
-          geometry?:
-            | {
-                /** @enum {string} */
-                type: 'Point';
-                coordinates: number[];
-              }
-            | {
-                /** @enum {string} */
-                type: 'LineString';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'Polygon';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPoint';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiLineString';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPolygon';
-                coordinates: number[][][][];
-              };
-          basis: string;
-          /** @default [] */
-          paragraphIds?: string[];
-          /**
-           * @default candidate
-           * @enum {string}
-           */
-          reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-          /**
-           * @default manual
-           * @enum {string}
-           */
-          origin?: 'source' | 'rule' | 'manual' | 'legacy';
-          impactType?: string;
-          /** Format: date-time */
-          effectiveFrom?: string;
-          /** Format: date-time */
-          effectiveTo?: string | null;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_editRelation: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          kind: 'occurs-at' | 'mentions' | 'involves' | 'applies-to' | 'impacts';
-          objectId?: string;
-          geometry?:
-            | {
-                /** @enum {string} */
-                type: 'Point';
-                coordinates: number[];
-              }
-            | {
-                /** @enum {string} */
-                type: 'LineString';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'Polygon';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPoint';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiLineString';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPolygon';
-                coordinates: number[][][][];
-              };
-          basis: string;
-          /** @default [] */
-          paragraphIds?: string[];
-          /**
-           * @default candidate
-           * @enum {string}
-           */
-          reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-          /**
-           * @default manual
-           * @enum {string}
-           */
-          origin?: 'source' | 'rule' | 'manual' | 'legacy';
-          impactType?: string;
-          /** Format: date-time */
-          effectiveFrom?: string;
-          /** Format: date-time */
-          effectiveTo?: string | null;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_reviewRelation: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          reviewStatus: 'candidate' | 'confirmed' | 'rejected';
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_objects: {
-    parameters: {
-      query?: {
-        keyword?: string;
-        kind?: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: unknown[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_createObject: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          id?: string;
-          /** @enum {string} */
-          kind: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
-          name: string;
-          geometry?:
-            | {
-                /** @enum {string} */
-                type: 'Point';
-                coordinates: number[];
-              }
-            | {
-                /** @enum {string} */
-                type: 'LineString';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'Polygon';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPoint';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiLineString';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPolygon';
-                coordinates: number[][][][];
-              };
-          mmsi?: string;
-          /** @default [] */
-          aliases?: string[];
-          /** @default {} */
-          metadata?: {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_editObject: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          id?: string;
-          /** @enum {string} */
-          kind: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
-          name: string;
-          geometry?:
-            | {
-                /** @enum {string} */
-                type: 'Point';
-                coordinates: number[];
-              }
-            | {
-                /** @enum {string} */
-                type: 'LineString';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'Polygon';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPoint';
-                coordinates: number[][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiLineString';
-                coordinates: number[][][];
-              }
-            | {
-                /** @enum {string} */
-                type: 'MultiPolygon';
-                coordinates: number[][][][];
-              };
-          mmsi?: string;
-          /** @default [] */
-          aliases?: string[];
-          /** @default {} */
-          metadata?: {
-            [key: string]: unknown;
-          };
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_importObjects: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          type: 'FeatureCollection';
-          features: {
-            /** @enum {string} */
-            type: 'Feature';
-            id?: string;
-            geometry:
-              | {
-                  /** @enum {string} */
-                  type: 'Point';
-                  coordinates: number[];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'LineString';
-                  coordinates: number[][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'Polygon';
-                  coordinates: number[][][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'MultiPoint';
-                  coordinates: number[][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'MultiLineString';
-                  coordinates: number[][][];
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'MultiPolygon';
-                  coordinates: number[][][][];
-                };
-            properties: {
-              id?: string;
-              /** @enum {string} */
-              kind: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
-              name: string;
-              geometry?:
-                | {
-                    /** @enum {string} */
-                    type: 'Point';
-                    coordinates: number[];
-                  }
-                | {
-                    /** @enum {string} */
-                    type: 'LineString';
-                    coordinates: number[][];
-                  }
-                | {
-                    /** @enum {string} */
-                    type: 'Polygon';
-                    coordinates: number[][][];
-                  }
-                | {
-                    /** @enum {string} */
-                    type: 'MultiPoint';
-                    coordinates: number[][];
-                  }
-                | {
-                    /** @enum {string} */
-                    type: 'MultiLineString';
-                    coordinates: number[][][];
-                  }
-                | {
-                    /** @enum {string} */
-                    type: 'MultiPolygon';
-                    coordinates: number[][][][];
-                  };
-              mmsi?: string;
-              /** @default [] */
-              aliases?: string[];
-              /** @default {} */
-              metadata?: {
-                [key: string]: unknown;
-              };
-            };
-          }[];
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_plot: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          eventIds: string[];
-          /** @default false */
-          includeCandidates?: boolean;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_plotSet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            eventIds: string[];
-            hiddenEventIds: string[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  IntelligenceController_savePlotSet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          eventIds: string[];
-          hiddenEventIds: string[];
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            eventIds: string[];
-            hiddenEventIds: string[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  TopicsController_list: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            definitions: {
-              [key: string]: unknown;
-            }[];
-            instances: {
-              [key: string]: unknown;
-            }[];
-            capabilities: {
-              [key: string]: unknown;
-            };
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  TopicsController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          definitionId: 'port-restriction' | 'area-low-speed-notice';
-          name: string;
-          config: {
-            bbox: number[];
-            /** @default 24 */
-            historyHours?: number;
-            /** @default 60 */
-            windowMinutes?: number;
-            /** @default 3 */
-            lowSpeedKnots?: number;
-            /** @default 3 */
-            minPositions?: number;
-            /** @default 60 */
-            scheduleSeconds?: number;
-          };
-          /** @default false */
-          enabled?: boolean;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  TopicsController_state: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          enabled: boolean;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  TopicsController_run: {
-    parameters: {
-      query?: never;
-      header: {
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  TopicsController_runs: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              [key: string]: unknown;
-            }[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  TopicsController_runDetail: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  TopicsController_config: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          config: {
-            bbox: number[];
-            /** @default 24 */
-            historyHours?: number;
-            /** @default 60 */
-            windowMinutes?: number;
-            /** @default 3 */
-            lowSpeedKnots?: number;
-            /** @default 3 */
-            minPositions?: number;
-            /** @default 60 */
-            scheduleSeconds?: number;
-          };
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AnalysisController_list: {
-    parameters: {
-      query?: {
-        instanceId?: string;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              [key: string]: unknown;
-            }[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AnalysisController_revisions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              [key: string]: unknown;
-            }[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AnalysisController_detail: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            [key: string]: unknown;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AnalysisController_feed: {
-    parameters: {
-      query?: {
-        cursor?: string;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              [key: string]: unknown;
-            }[];
-            nextCursor: string;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_config: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            enabled: boolean;
-            defaultHistoryHours: number;
-            maxHistoryHours: number;
-            maxModelCalls: number;
-            maxToolCalls: number;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_sessions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            items: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              ownerId: string;
-              title: string;
-              /** Format: date-time */
-              createdAt: string;
-            }[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_createSession: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @default 区域研判 */
-          title?: string;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            ownerId: string;
-            title: string;
-            /** Format: date-time */
-            createdAt: string;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_session: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            session: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              ownerId: string;
-              title: string;
-              /** Format: date-time */
-              createdAt: string;
-            };
-            messages: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** @enum {string} */
-              role: 'user' | 'assistant';
-              content: string;
-              /** Format: uuid */
-              taskId: string | null;
-              resultVersion?: number | null;
-              inputRevision?: number | null;
-              /** Format: date-time */
-              createdAt: string;
-            }[];
-            tasks: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              ownerId: string;
-              /** @enum {string} */
-              status:
-                | 'awaiting_input'
-                | 'queued'
-                | 'running'
-                | 'waiting_result'
-                | 'completed'
-                | 'failed'
-                | 'cancelled';
-              goal: string;
-              bbox: number[] | null;
-              historyHours: number;
-              /** Format: date-time */
-              from: string;
-              /** Format: date-time */
-              to: string;
-              /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
-              generation: number;
-              modelCalls: number;
-              toolCalls: number;
-              resultVersion: number;
-              summaryResultVersion: number | null;
-              summary: string | null;
-              error: string | null;
-              /** @enum {string} */
-              intent?:
-                | 'conversation'
-                | 'vessel_list'
-                | 'vessel_detail'
-                | 'analysis'
-                | 'explain'
-                | 'unresolved'
-                | 'intelligence_search'
-                | 'ais_heatmap';
-              selection?: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              inputRevision?: number;
-              resultInputRevision?: number | null;
-              summaryInputRevision?: number | null;
-              errorCode?: string | null;
-              /** Format: uuid */
-              retryOfTaskId?: string | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            }[];
-            pendingInputRequests: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              taskId: string;
-              inputRevision: number;
-              pauseGeneration: number;
-              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
-              /** @enum {string} */
-              reason:
-                | 'missing_region'
-                | 'missing_vessels'
-                | 'missing_time'
-                | 'missing_goal'
-                | 'data_limit'
-                | 'retention'
-                | 'scope_changed'
-                | 'missing_topic';
-              prefill: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              /** @enum {string} */
-              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
-              response: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              } | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              answeredAt: string | null;
-            }[];
-            snapshotCursor: string;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_message: {
-    parameters: {
-      query?: never;
-      header: {
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          content: string;
-          bbox?: number[];
-          /** @default 24 */
-          historyHours?: number;
-          mapContext?: {
-            sourceId?: string;
-            shipType?: number;
-            hours?: number;
-            bbox: number[];
-            /** Format: date-time */
-            capturedAt: string;
-            selectedMmsis?: string[];
-          };
-        };
-      };
-    };
-    responses: {
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            message: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** @enum {string} */
-              role: 'user' | 'assistant';
-              content: string;
-              /** Format: uuid */
-              taskId: string | null;
-              resultVersion?: number | null;
-              inputRevision?: number | null;
-              /** Format: date-time */
-              createdAt: string;
-            };
-            task: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              ownerId: string;
-              /** @enum {string} */
-              status:
-                | 'awaiting_input'
-                | 'queued'
-                | 'running'
-                | 'waiting_result'
-                | 'completed'
-                | 'failed'
-                | 'cancelled';
-              goal: string;
-              bbox: number[] | null;
-              historyHours: number;
-              /** Format: date-time */
-              from: string;
-              /** Format: date-time */
-              to: string;
-              /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
-              generation: number;
-              modelCalls: number;
-              toolCalls: number;
-              resultVersion: number;
-              summaryResultVersion: number | null;
-              summary: string | null;
-              error: string | null;
-              /** @enum {string} */
-              intent?:
-                | 'conversation'
-                | 'vessel_list'
-                | 'vessel_detail'
-                | 'analysis'
-                | 'explain'
-                | 'unresolved'
-                | 'intelligence_search'
-                | 'ais_heatmap';
-              selection?: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              inputRevision?: number;
-              resultInputRevision?: number | null;
-              summaryInputRevision?: number | null;
-              errorCode?: string | null;
-              /** Format: uuid */
-              retryOfTaskId?: string | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-            pendingInputRequests: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              taskId: string;
-              inputRevision: number;
-              pauseGeneration: number;
-              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
-              /** @enum {string} */
-              reason:
-                | 'missing_region'
-                | 'missing_vessels'
-                | 'missing_time'
-                | 'missing_goal'
-                | 'data_limit'
-                | 'retention'
-                | 'scope_changed'
-                | 'missing_topic';
-              prefill: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              /** @enum {string} */
-              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
-              response: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              } | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              answeredAt: string | null;
-            }[];
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_task: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            task: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              ownerId: string;
-              /** @enum {string} */
-              status:
-                | 'awaiting_input'
-                | 'queued'
-                | 'running'
-                | 'waiting_result'
-                | 'completed'
-                | 'failed'
-                | 'cancelled';
-              goal: string;
-              bbox: number[] | null;
-              historyHours: number;
-              /** Format: date-time */
-              from: string;
-              /** Format: date-time */
-              to: string;
-              /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
-              generation: number;
-              modelCalls: number;
-              toolCalls: number;
-              resultVersion: number;
-              summaryResultVersion: number | null;
-              summary: string | null;
-              error: string | null;
-              /** @enum {string} */
-              intent?:
-                | 'conversation'
-                | 'vessel_list'
-                | 'vessel_detail'
-                | 'analysis'
-                | 'explain'
-                | 'unresolved'
-                | 'intelligence_search'
-                | 'ais_heatmap';
-              selection?: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              inputRevision?: number;
-              resultInputRevision?: number | null;
-              summaryInputRevision?: number | null;
-              errorCode?: string | null;
-              /** Format: uuid */
-              retryOfTaskId?: string | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-            results: {
-              [key: string]: unknown;
-            }[];
-            steps: {
-              key: string;
-              name: string;
-              input: unknown;
-              output: unknown;
-              /** Format: date-time */
-              createdAt: string;
-            }[];
-            pendingInputRequests: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              taskId: string;
-              inputRevision: number;
-              pauseGeneration: number;
-              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
-              /** @enum {string} */
-              reason:
-                | 'missing_region'
-                | 'missing_vessels'
-                | 'missing_time'
-                | 'missing_goal'
-                | 'data_limit'
-                | 'retention'
-                | 'scope_changed'
-                | 'missing_topic';
-              prefill: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              /** @enum {string} */
-              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
-              response: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              } | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              answeredAt: string | null;
-            }[];
-            snapshotCursor: string;
-            queryResult: {
-              /** @enum {string} */
-              kind: 'vessel_list' | 'vessel_detail';
-              version: number;
-              inputRevision: number;
-              total: number;
-              truncated: boolean;
-              items: {
+            header?: never;
+            path: {
                 mmsi: string;
-                name: string | null;
-                imo: string | null;
-                shipType: number | null;
-                latestPosition: {
-                  lat: number;
-                  lon: number;
-                  /** Format: date-time */
-                  observedAt: string;
-                  sogKnots: number | null;
-                  sourceId: string;
-                } | null;
-              }[];
-              /** Format: date-time */
-              asOf: string;
-              selection: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
                 };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-            } | null;
-            intelligenceResult: {
-              /** @enum {string} */
-              kind: 'intelligence_search';
-              version: number;
-              inputRevision: number;
-              /** Format: date-time */
-              asOf: string;
-              spec: {
-                keyword?: string;
-                locationKeyword?: string;
-                sourceIds?: string[];
-                /** @enum {string} */
-                category?:
-                  | 'port-restriction'
-                  | 'notice'
-                  | 'navigation-warning'
-                  | 'weather'
-                  | 'security'
-                  | 'environment'
-                  | 'incident'
-                  | 'other';
-                /** @enum {string} */
-                reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                /** @enum {string} */
-                timeMode?: 'published' | 'effective' | 'observed';
-                /** Format: date-time */
-                from?: string;
-                /** Format: date-time */
-                to?: string;
-                bbox?: number[];
-                objectId?: string;
-                mmsis?: string[];
-                /** @enum {string} */
-                kind?: 'events' | 'marine' | 'both';
-                samplePointId?: string;
-                /** Format: date-time */
-                forecastFrom?: string;
-                /** Format: date-time */
-                forecastTo?: string;
-              };
-              total: number;
-              truncated: boolean;
-              evidence: (
-                | {
-                    /** @enum {string} */
-                    kind: 'event';
-                    reference: string;
-                    event: {
-                      id: string;
-                      sourceId: string;
-                      sourceName: string;
-                      externalId: string;
-                      version: number;
-                      title: string;
-                      summary: string;
-                      snippet: string;
-                      /** @enum {string} */
-                      category:
-                        | 'port-restriction'
-                        | 'notice'
-                        | 'navigation-warning'
-                        | 'weather'
-                        | 'security'
-                        | 'environment'
-                        | 'incident'
-                        | 'other';
-                      /** @enum {string} */
-                      status: 'active' | 'revised' | 'withdrawn';
-                      /** @enum {string} */
-                      reviewStatus: 'candidate' | 'confirmed' | 'rejected';
-                      /** @enum {string} */
-                      visibility: 'public' | 'internal';
-                      /** Format: date-time */
-                      publishedAt: string | null;
-                      /** Format: date-time */
-                      observedAt: string;
-                      /** Format: date-time */
-                      effectiveFrom: string | null;
-                      /** Format: date-time */
-                      effectiveTo: string | null;
-                      /** Format: date-time */
-                      collectedAt: string;
-                      /** @enum {string} */
-                      timeBasis: 'publication' | 'index-observation' | 'effective' | 'unknown';
-                      /** Format: uri */
-                      originalUrl: string | null;
-                      originalArchiveId: string | null;
-                      geometry:
-                        | (
-                            | {
-                                /** @enum {string} */
-                                type: 'Point';
-                                coordinates: number[];
-                              }
-                            | {
-                                /** @enum {string} */
-                                type: 'LineString';
-                                coordinates: number[][];
-                              }
-                            | {
-                                /** @enum {string} */
-                                type: 'Polygon';
-                                coordinates: number[][][];
-                              }
-                            | {
-                                /** @enum {string} */
-                                type: 'MultiPoint';
-                                coordinates: number[][];
-                              }
-                            | {
-                                /** @enum {string} */
-                                type: 'MultiLineString';
-                                coordinates: number[][][];
-                              }
-                            | {
-                                /** @enum {string} */
-                                type: 'MultiPolygon';
-                                coordinates: number[][][][];
-                              }
-                          )
-                        | null;
-                      /** @enum {string} */
-                      matchBasis: 'geometry' | 'object' | 'mention' | 'keyword' | 'none';
-                      locationNote: string;
-                    };
-                  }
-                | {
-                    /** @enum {string} */
-                    kind: 'marine';
-                    reference: string;
-                    forecast: {
-                      id: string;
-                      sourceId: string;
-                      samplePointId: string;
-                      pointName: string;
-                      point: {
-                        lon: number;
-                        lat: number;
-                      };
-                      grid: {
-                        lon: number;
-                        lat: number;
-                      };
-                      /** Format: date-time */
-                      fetchedAt: string;
-                      /** Format: date-time */
-                      modelPublishedAt: string | null;
-                      /** Format: date-time */
-                      validFrom: string;
-                      /** Format: date-time */
-                      validTo: string;
-                      series: {
+                content: {
+                    "application/json": {
+                        mmsi: string;
                         /** Format: date-time */
-                        validAt: string;
-                        waveHeight: number | null;
-                        waveDirection: number | null;
-                        wavePeriod: number | null;
-                      }[];
-                      originalArchiveId: string;
-                      /** Format: uri */
-                      originalUrl: string;
-                      /** @enum {string} */
-                      visibility: 'public' | 'internal';
+                        from: string;
+                        /** Format: date-time */
+                        to: string;
+                        segments: {
+                            points: {
+                                /** @enum {number} */
+                                schemaVersion: 1;
+                                /** @enum {number} */
+                                cleaningVersion: 1;
+                                eventId: string;
+                                captureId: string;
+                                sourceId: string;
+                                /** @enum {string} */
+                                sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                                sourcePriority: number;
+                                runId: string | null;
+                                /** Format: date-time */
+                                receivedAt: string;
+                                quality: string[];
+                                /** @enum {string} */
+                                kind: "position";
+                                /** Format: date-time */
+                                observedAt: string;
+                                mmsi: string;
+                                lat: number;
+                                lon: number;
+                                sogKnots: number | null;
+                                cogDegrees: number | null;
+                                headingDegrees: number | null;
+                                rotDegPerMinute: number | null;
+                                navigationStatus: number | null;
+                                /** @enum {string} */
+                                receptionType: "TER" | "SAT" | "ROAM" | "UNKNOWN";
+                            }[];
+                        }[];
+                        sampled: boolean;
+                        truncated: boolean;
+                        total: number;
+                        returned: number;
                     };
-                  }
-              )[];
-              sourceHealth: {
-                sourceId: string;
-                name: string;
-                enabled: boolean;
-                /** @enum {string} */
-                visibility: 'public' | 'internal';
-                /** @enum {string} */
-                status: 'ready' | 'stale' | 'unavailable' | 'never_collected' | 'disabled';
-                /** Format: date-time */
-                lastPolledAt: string | null;
-                /** Format: date-time */
-                lastSuccessfulAt: string | null;
-                /** Format: date-time */
-                nextPollAt: string | null;
-                lastError: string | null;
-              }[];
-              coverageNotes: string[];
-            } | null;
-            heatmapResult: {
-              query: {
-                bbox: number[];
-                /** Format: date-time */
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MapController_heatmap: {
+        parameters: {
+            query: {
+                bbox: string;
                 from: string;
-                /** Format: date-time */
                 to: string;
                 sourceId?: string;
                 shipType?: number;
-                mmsis?: string[];
-              };
-              grid: {
-                level: number;
-                cellDegrees: number;
-              };
-              cells: {
-                id: string;
-                x: number;
-                y: number;
-                lon: number;
-                lat: number;
-                vesselCount: number;
-              }[];
-              totalVessels: number;
-              /** Format: date-time */
-              generatedAt: string;
-              /** @enum {string} */
-              metric: 'unique_vessels';
-              /** @enum {string} */
-              shipTypeBasis: 'current_profile';
-              /** @enum {string} */
-              kind: 'ais_heatmap';
-              version: number;
-              inputRevision: number;
-            } | null;
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_respond: {
-    parameters: {
-      query?: never;
-      header: {
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json':
-          | {
-              /** @enum {string} */
-              action: 'accept';
-              inputRevision: number;
-              values: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-                historyHours?: number;
-              };
-            }
-          | {
-              /** @enum {string} */
-              action: 'decline';
-              inputRevision: number;
+                mmsis?: string;
             };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': {
-            task: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              ownerId: string;
-              /** @enum {string} */
-              status:
-                | 'awaiting_input'
-                | 'queued'
-                | 'running'
-                | 'waiting_result'
-                | 'completed'
-                | 'failed'
-                | 'cancelled';
-              goal: string;
-              bbox: number[] | null;
-              historyHours: number;
-              /** Format: date-time */
-              from: string;
-              /** Format: date-time */
-              to: string;
-              /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
-              generation: number;
-              modelCalls: number;
-              toolCalls: number;
-              resultVersion: number;
-              summaryResultVersion: number | null;
-              summary: string | null;
-              error: string | null;
-              /** @enum {string} */
-              intent?:
-                | 'conversation'
-                | 'vessel_list'
-                | 'vessel_detail'
-                | 'analysis'
-                | 'explain'
-                | 'unresolved'
-                | 'intelligence_search'
-                | 'ais_heatmap';
-              selection?: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
                 };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
+                content: {
+                    "application/json": {
+                        query: {
+                            bbox: (number)[];
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            sourceId?: string;
+                            shipType?: number;
+                            mmsis?: string[];
+                        };
+                        grid: {
+                            level: number;
+                            cellDegrees: number;
+                        };
+                        cells: {
+                            id: string;
+                            x: number;
+                            y: number;
+                            lon: number;
+                            lat: number;
+                            vesselCount: number;
+                        }[];
+                        totalVessels: number;
+                        /** Format: date-time */
+                        generatedAt: string;
+                        /** @enum {string} */
+                        metric: "unique_vessels";
+                        /** @enum {string} */
+                        shipTypeBasis: "current_profile";
+                    };
                 };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              inputRevision?: number;
-              resultInputRevision?: number | null;
-              summaryInputRevision?: number | null;
-              errorCode?: string | null;
-              /** Format: uuid */
-              retryOfTaskId?: string | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
             };
-            request: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              taskId: string;
-              inputRevision: number;
-              pauseGeneration: number;
-              fields: ('region' | 'vessels' | 'time' | 'goal' | 'topic')[];
-              /** @enum {string} */
-              reason:
-                | 'missing_region'
-                | 'missing_vessels'
-                | 'missing_time'
-                | 'missing_goal'
-                | 'data_limit'
-                | 'retention'
-                | 'scope_changed'
-                | 'missing_topic';
-              prefill: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
                 };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              /** @enum {string} */
-              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
-              response: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              } | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              answeredAt: string | null;
+                content?: never;
             };
-          };
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  AgentController_retry: {
-    parameters: {
-      query?: never;
-      header: {
-        'Idempotency-Key': string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': Record<string, never>;
-      };
-    };
-    responses: {
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            task: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              ownerId: string;
-              /** @enum {string} */
-              status:
-                | 'awaiting_input'
-                | 'queued'
-                | 'running'
-                | 'waiting_result'
-                | 'completed'
-                | 'failed'
-                | 'cancelled';
-              goal: string;
-              bbox: number[] | null;
-              historyHours: number;
-              /** Format: date-time */
-              from: string;
-              /** Format: date-time */
-              to: string;
-              /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
-              generation: number;
-              modelCalls: number;
-              toolCalls: number;
-              resultVersion: number;
-              summaryResultVersion: number | null;
-              summary: string | null;
-              error: string | null;
-              /** @enum {string} */
-              intent?:
-                | 'conversation'
-                | 'vessel_list'
-                | 'vessel_detail'
-                | 'analysis'
-                | 'explain'
-                | 'unresolved'
-                | 'intelligence_search'
-                | 'ais_heatmap';
-              selection?: {
-                bbox?: number[];
-                mmsis?: string[];
-                timeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
                 };
-                filters?: {
-                  sourceId?: string;
-                  shipType?: number;
-                  hours?: number;
-                };
-                /** @enum {string} */
-                purpose?:
-                  | 'vessel_list'
-                  | 'vessel_detail'
-                  | 'port-restriction'
-                  | 'area-low-speed-notice'
-                  | 'intelligence_search'
-                  | 'ais_heatmap';
-                intelligenceQuery?: {
-                  keyword?: string;
-                  locationKeyword?: string;
-                  sourceIds?: string[];
-                  /** @enum {string} */
-                  category?:
-                    | 'port-restriction'
-                    | 'notice'
-                    | 'navigation-warning'
-                    | 'weather'
-                    | 'security'
-                    | 'environment'
-                    | 'incident'
-                    | 'other';
-                  /** @enum {string} */
-                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                  /** @enum {string} */
-                  timeMode?: 'published' | 'effective' | 'observed';
-                  /** Format: date-time */
-                  from?: string;
-                  /** Format: date-time */
-                  to?: string;
-                  bbox?: number[];
-                  objectId?: string;
-                  mmsis?: string[];
-                  /** @enum {string} */
-                  kind?: 'events' | 'marine' | 'both';
-                  samplePointId?: string;
-                  /** Format: date-time */
-                  forecastFrom?: string;
-                  /** Format: date-time */
-                  forecastTo?: string;
-                };
-                intelligenceTimeRange?: {
-                  /** Format: date-time */
-                  from: string;
-                  /** Format: date-time */
-                  to: string;
-                };
-                intelligenceTimeUnclear?: boolean;
-                heatmapTimeUnclear?: boolean;
-                intelligenceObjectUnclear?: boolean;
-                intelligenceObjectCandidates?: {
-                  id: string;
-                  name: string;
-                }[];
-              };
-              inputRevision?: number;
-              resultInputRevision?: number | null;
-              summaryInputRevision?: number | null;
-              errorCode?: string | null;
-              /** Format: uuid */
-              retryOfTaskId?: string | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
+                content?: never;
             };
-            message: {
-              /** Format: uuid */
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** @enum {string} */
-              role: 'user' | 'assistant';
-              content: string;
-              /** Format: uuid */
-              taskId: string | null;
-              resultVersion?: number | null;
-              inputRevision?: number | null;
-              /** Format: date-time */
-              createdAt: string;
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
-          };
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
-  AgentController_cancel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            sessionId: string;
-            /** Format: uuid */
-            ownerId: string;
-            /** @enum {string} */
-            status:
-              | 'awaiting_input'
-              | 'queued'
-              | 'running'
-              | 'waiting_result'
-              | 'completed'
-              | 'failed'
-              | 'cancelled';
-            goal: string;
-            bbox: number[] | null;
-            historyHours: number;
-            /** Format: date-time */
-            from: string;
-            /** Format: date-time */
-            to: string;
-            /** @enum {string|null} */
-            definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
-            generation: number;
-            modelCalls: number;
-            toolCalls: number;
-            resultVersion: number;
-            summaryResultVersion: number | null;
-            summary: string | null;
-            error: string | null;
-            /** @enum {string} */
-            intent?:
-              | 'conversation'
-              | 'vessel_list'
-              | 'vessel_detail'
-              | 'analysis'
-              | 'explain'
-              | 'unresolved'
-              | 'intelligence_search'
-              | 'ais_heatmap';
-            selection?: {
-              bbox?: number[];
-              mmsis?: string[];
-              timeRange?: {
-                /** Format: date-time */
-                from: string;
-                /** Format: date-time */
-                to: string;
-              };
-              filters?: {
-                sourceId?: string;
-                shipType?: number;
+    MapController_get: {
+        parameters: {
+            query: {
+                bbox: string;
+                zoom?: number;
                 hours?: number;
-              };
-              /** @enum {string} */
-              purpose?:
-                | 'vessel_list'
-                | 'vessel_detail'
-                | 'port-restriction'
-                | 'area-low-speed-notice'
-                | 'intelligence_search'
-                | 'ais_heatmap';
-              intelligenceQuery?: {
+                sourceId?: string;
+                shipType?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: ({
+                            /** @enum {string} */
+                            kind: "point";
+                            mmsi: string;
+                            lat: number;
+                            lon: number;
+                            observedAt: string;
+                            sourceId: string;
+                            sogKnots: number | null;
+                            cogDegrees: number | null;
+                            headingDegrees: number | null;
+                            quality: string[];
+                        } | {
+                            /** @enum {string} */
+                            kind: "cluster";
+                            clusterId: string;
+                            lat: number;
+                            lon: number;
+                            count: number;
+                            bbox: (number)[];
+                        })[];
+                        sampled: boolean;
+                        truncated: boolean;
+                        total: number;
+                        /** Format: date-time */
+                        generatedAt: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SourcesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sourceId: string;
+                        /** @enum {string} */
+                        sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                        name: string;
+                        /** @enum {string} */
+                        status: "enabled" | "disabled" | "error";
+                        secretRef: string | null;
+                        priority: number;
+                        /** Format: uri */
+                        endpoint?: string;
+                        bbox?: (number)[];
+                        settings?: {
+                            /** @default [] */
+                            allowedHosts: string[];
+                            /** @default 30 */
+                            requestsPerMinute: number;
+                            /** @default 100 */
+                            maxPages: number;
+                            /** @default 2 */
+                            httpConcurrency: number;
+                            /** @default 1 */
+                            browserConcurrency: number;
+                            /** @default 30 */
+                            timeoutSeconds: number;
+                            /** @default 5 */
+                            timespanMinutes: number;
+                            /** @default 2000 */
+                            pageLimit: number;
+                            /** @default false */
+                            authorizationConfirmed: boolean;
+                        };
+                        /** Format: date-time */
+                        lastReceivedAt: string | null;
+                        lastError: string | null;
+                    }[];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SourcesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceId: string;
+                    /** @enum {string} */
+                    sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                    name: string;
+                    /** @enum {string} */
+                    status: "enabled" | "disabled" | "error";
+                    secretRef: string | null;
+                    priority: number;
+                    /** Format: uri */
+                    endpoint?: string;
+                    bbox?: (number)[];
+                    settings?: {
+                        /** @default [] */
+                        allowedHosts?: string[];
+                        /** @default 30 */
+                        requestsPerMinute?: number;
+                        /** @default 100 */
+                        maxPages?: number;
+                        /** @default 2 */
+                        httpConcurrency?: number;
+                        /** @default 1 */
+                        browserConcurrency?: number;
+                        /** @default 30 */
+                        timeoutSeconds?: number;
+                        /** @default 5 */
+                        timespanMinutes?: number;
+                        /** @default 2000 */
+                        pageLimit?: number;
+                        /** @default false */
+                        authorizationConfirmed?: boolean;
+                    };
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sourceId: string;
+                        /** @enum {string} */
+                        sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                        name: string;
+                        /** @enum {string} */
+                        status: "enabled" | "disabled" | "error";
+                        secretRef: string | null;
+                        priority: number;
+                        /** Format: uri */
+                        endpoint?: string;
+                        bbox?: (number)[];
+                        settings?: {
+                            /** @default [] */
+                            allowedHosts: string[];
+                            /** @default 30 */
+                            requestsPerMinute: number;
+                            /** @default 100 */
+                            maxPages: number;
+                            /** @default 2 */
+                            httpConcurrency: number;
+                            /** @default 1 */
+                            browserConcurrency: number;
+                            /** @default 30 */
+                            timeoutSeconds: number;
+                            /** @default 5 */
+                            timespanMinutes: number;
+                            /** @default 2000 */
+                            pageLimit: number;
+                            /** @default false */
+                            authorizationConfirmed: boolean;
+                        };
+                        /** Format: date-time */
+                        lastReceivedAt: string | null;
+                        lastError: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SourcesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceId: string;
+                    /** @enum {string} */
+                    sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                    name: string;
+                    /** @enum {string} */
+                    status: "enabled" | "disabled" | "error";
+                    secretRef: string | null;
+                    priority: number;
+                    /** Format: uri */
+                    endpoint?: string;
+                    bbox?: (number)[];
+                    settings?: {
+                        /** @default [] */
+                        allowedHosts?: string[];
+                        /** @default 30 */
+                        requestsPerMinute?: number;
+                        /** @default 100 */
+                        maxPages?: number;
+                        /** @default 2 */
+                        httpConcurrency?: number;
+                        /** @default 1 */
+                        browserConcurrency?: number;
+                        /** @default 30 */
+                        timeoutSeconds?: number;
+                        /** @default 5 */
+                        timespanMinutes?: number;
+                        /** @default 2000 */
+                        pageLimit?: number;
+                        /** @default false */
+                        authorizationConfirmed?: boolean;
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sourceId: string;
+                        /** @enum {string} */
+                        sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                        name: string;
+                        /** @enum {string} */
+                        status: "enabled" | "disabled" | "error";
+                        secretRef: string | null;
+                        priority: number;
+                        /** Format: uri */
+                        endpoint?: string;
+                        bbox?: (number)[];
+                        settings?: {
+                            /** @default [] */
+                            allowedHosts: string[];
+                            /** @default 30 */
+                            requestsPerMinute: number;
+                            /** @default 100 */
+                            maxPages: number;
+                            /** @default 2 */
+                            httpConcurrency: number;
+                            /** @default 1 */
+                            browserConcurrency: number;
+                            /** @default 30 */
+                            timeoutSeconds: number;
+                            /** @default 5 */
+                            timespanMinutes: number;
+                            /** @default 2000 */
+                            pageLimit: number;
+                            /** @default false */
+                            authorizationConfirmed: boolean;
+                        };
+                        /** Format: date-time */
+                        lastReceivedAt: string | null;
+                        lastError: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SourcesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sourceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        jobId: string;
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "enabled" | "paused";
+                        scheduleSeconds: number | null;
+                    }[];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    jobId?: string;
+                    sourceId: string;
+                    name: string;
+                    /** @enum {string} */
+                    mode: "crawl" | "collect" | "replay";
+                    /** @enum {string} */
+                    status: "enabled" | "paused";
+                    scheduleSeconds?: number | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        jobId: string;
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "enabled" | "paused";
+                        scheduleSeconds: number | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    jobId: string;
+                    sourceId: string;
+                    name: string;
+                    /** @enum {string} */
+                    mode: "crawl" | "collect" | "replay";
+                    /** @enum {string} */
+                    status: "enabled" | "paused";
+                    scheduleSeconds: number | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        jobId: string;
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "enabled" | "paused";
+                        scheduleSeconds: number | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobsController_run: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                jobId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        runId: string;
+                        /** Format: uuid */
+                        jobId: string | null;
+                        sourceId: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+                        /** Format: date-time */
+                        requestedAt: string;
+                        /** Format: date-time */
+                        startedAt: string | null;
+                        /** Format: date-time */
+                        finishedAt: string | null;
+                        captures: number;
+                        positions: number;
+                        statics: number;
+                        quarantined: number;
+                        records: number;
+                        normalizedCaptures: number;
+                        /** @enum {string} */
+                        counterScope: "confirmed expanded records; retained event counts deduplicate separately";
+                        error: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobsController_pause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        jobId: string;
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "enabled" | "paused";
+                        scheduleSeconds: number | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    JobsController_resume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        jobId: string;
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "enabled" | "paused";
+                        scheduleSeconds: number | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RunsController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                status?: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+                sourceId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            runId: string;
+                            /** Format: uuid */
+                            jobId: string | null;
+                            sourceId: string;
+                            /** @enum {string} */
+                            mode: "crawl" | "collect" | "replay";
+                            /** @enum {string} */
+                            status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+                            /** Format: date-time */
+                            requestedAt: string;
+                            /** Format: date-time */
+                            startedAt: string | null;
+                            /** Format: date-time */
+                            finishedAt: string | null;
+                            captures: number;
+                            positions: number;
+                            statics: number;
+                            quarantined: number;
+                            records: number;
+                            normalizedCaptures: number;
+                            /** @enum {string} */
+                            counterScope: "confirmed expanded records; retained event counts deduplicate separately";
+                            error: string | null;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RunsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: unknown;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        runId: string;
+                        /** Format: uuid */
+                        jobId: string | null;
+                        sourceId: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+                        /** Format: date-time */
+                        requestedAt: string;
+                        /** Format: date-time */
+                        startedAt: string | null;
+                        /** Format: date-time */
+                        finishedAt: string | null;
+                        captures: number;
+                        positions: number;
+                        statics: number;
+                        quarantined: number;
+                        records: number;
+                        normalizedCaptures: number;
+                        /** @enum {string} */
+                        counterScope: "confirmed expanded records; retained event counts deduplicate separately";
+                        error: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QualityController_quality: {
+        parameters: {
+            query?: {
+                sourceId?: string;
+                to?: string;
+                from?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: date-time */
+                        from: string;
+                        /** Format: date-time */
+                        to: string;
+                        receivedCaptures: number;
+                        /** @enum {string} */
+                        receivedCapturesLabel: "归档确认响应数";
+                        /** @enum {string} */
+                        receivedCapturesScope: "committed archive minute buckets";
+                        /** @enum {number} */
+                        archiveLagSeconds: 60;
+                        normalizedPositions: number;
+                        normalizedStatic: number;
+                        quarantinedEvents: number;
+                        latestPositionJumpFlags: number;
+                        /** @enum {string} */
+                        latestPositionJumpLabel: "最新位置跳跃标记";
+                        qualityFlags: {
+                            flag: string;
+                            events: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QualityController_quarantine: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                reason?: string;
+                sourceId?: string;
+                to?: string;
+                from?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** @enum {number} */
+                            schemaVersion: 1;
+                            /** @enum {number} */
+                            cleaningVersion: 1;
+                            eventId: string;
+                            captureId: string;
+                            sourceId: string;
+                            /** @enum {string} */
+                            sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
+                            sourcePriority: number;
+                            runId: string | null;
+                            /** Format: date-time */
+                            receivedAt: string;
+                            quality: string[];
+                            /** @enum {string} */
+                            kind: "quarantine";
+                            /** Format: date-time */
+                            observedAt: string | null;
+                            mmsi: string | null;
+                            reasons: string[];
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    QualityController_capture: {
+        parameters: {
+            query: {
+                receivedAt: string;
+                sourceId: string;
+            };
+            header?: never;
+            path: {
+                captureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/plain": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReplayController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                sourceId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            replayId: string;
+                            /** Format: uuid */
+                            runId: string;
+                            sourceId: string;
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            /** @enum {number} */
+                            cleaningVersion: 1;
+                            /** @enum {string} */
+                            targetDataset: "current";
+                            status: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            counters: {
+                                [key: string]: number;
+                            };
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReplayController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceId: string;
+                    /** Format: date-time */
+                    from: string;
+                    /** Format: date-time */
+                    to: string;
+                    /**
+                     * @default 1
+                     * @enum {number}
+                     */
+                    cleaningVersion?: 1;
+                    /**
+                     * @default current
+                     * @enum {string}
+                     */
+                    targetDataset?: "current";
+                };
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        runId: string;
+                        /** Format: uuid */
+                        jobId: string | null;
+                        sourceId: string;
+                        /** @enum {string} */
+                        mode: "crawl" | "collect" | "replay";
+                        /** @enum {string} */
+                        status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+                        /** Format: date-time */
+                        requestedAt: string;
+                        /** Format: date-time */
+                        startedAt: string | null;
+                        /** Format: date-time */
+                        finishedAt: string | null;
+                        captures: number;
+                        positions: number;
+                        statics: number;
+                        quarantined: number;
+                        records: number;
+                        normalizedCaptures: number;
+                        /** @enum {string} */
+                        counterScope: "confirmed expanded records; retained event counts deduplicate separately";
+                        error: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SystemController_health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "ready" | "degraded";
+                        services: {
+                            postgres: boolean;
+                            clickhouse: boolean;
+                            nats: boolean;
+                            s3: boolean;
+                        };
+                        sources: {
+                            enabled: number;
+                            latestReceivedAt: string | null;
+                            empty: boolean;
+                        };
+                        bus: {
+                            status: string;
+                            ready: boolean;
+                            reasons: string[];
+                            streams: {
+                                name: string;
+                                bytes: number;
+                                limit: number;
+                                oldestAgeMs: number;
+                                pendingAgeMs: number;
+                                activeStreamingCommands: number;
+                                messages: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SystemController_ready: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "ready" | "degraded";
+                        services: {
+                            postgres: boolean;
+                            clickhouse: boolean;
+                            nats: boolean;
+                            s3: boolean;
+                        };
+                        sources: {
+                            enabled: number;
+                            latestReceivedAt: string | null;
+                            empty: boolean;
+                        };
+                        bus: {
+                            status: string;
+                            ready: boolean;
+                            reasons: string[];
+                            streams: {
+                                name: string;
+                                bytes: number;
+                                limit: number;
+                                oldestAgeMs: number;
+                                pendingAgeMs: number;
+                                activeStreamingCommands: number;
+                                messages: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SystemController_getMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_search: {
+        parameters: {
+            query?: {
                 keyword?: string;
                 locationKeyword?: string;
-                sourceIds?: string[];
-                /** @enum {string} */
-                category?:
-                  | 'port-restriction'
-                  | 'notice'
-                  | 'navigation-warning'
-                  | 'weather'
-                  | 'security'
-                  | 'environment'
-                  | 'incident'
-                  | 'other';
-                /** @enum {string} */
-                reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
-                /** @enum {string} */
-                timeMode?: 'published' | 'effective' | 'observed';
-                /** Format: date-time */
+                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                reviewStatus?: "candidate" | "confirmed" | "rejected";
+                timeMode?: "published" | "effective" | "observed";
                 from?: string;
-                /** Format: date-time */
                 to?: string;
-                bbox?: number[];
                 objectId?: string;
-                mmsis?: string[];
-                /** @enum {string} */
-                kind?: 'events' | 'marine' | 'both';
+                kind?: "events" | "marine" | "both";
                 samplePointId?: string;
-                /** Format: date-time */
                 forecastFrom?: string;
-                /** Format: date-time */
                 forecastTo?: string;
-              };
-              intelligenceTimeRange?: {
-                /** Format: date-time */
-                from: string;
-                /** Format: date-time */
-                to: string;
-              };
-              intelligenceTimeUnclear?: boolean;
-              heatmapTimeUnclear?: boolean;
-              intelligenceObjectUnclear?: boolean;
-              intelligenceObjectCandidates?: {
-                id: string;
-                name: string;
-              }[];
+                bbox?: string;
+                sourceIds?: string;
+                mmsis?: string;
+                limit?: number;
+                cursor?: string;
             };
-            inputRevision?: number;
-            resultInputRevision?: number | null;
-            summaryInputRevision?: number | null;
-            errorCode?: string | null;
-            /** Format: uuid */
-            retryOfTaskId?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            sourceId: string;
+                            sourceName: string;
+                            externalId: string;
+                            version: number;
+                            title: string;
+                            summary: string;
+                            snippet: string;
+                            /** @enum {string} */
+                            category: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                            /** @enum {string} */
+                            status: "active" | "revised" | "withdrawn";
+                            /** @enum {string} */
+                            reviewStatus: "candidate" | "confirmed" | "rejected";
+                            /** @enum {string} */
+                            visibility: "public" | "internal";
+                            /** Format: date-time */
+                            publishedAt: string | null;
+                            /** Format: date-time */
+                            observedAt: string;
+                            /** Format: date-time */
+                            effectiveFrom: string | null;
+                            /** Format: date-time */
+                            effectiveTo: string | null;
+                            /** Format: date-time */
+                            collectedAt: string;
+                            /** @enum {string} */
+                            timeBasis: "publication" | "index-observation" | "effective" | "unknown";
+                            /** Format: uri */
+                            originalUrl: string | null;
+                            originalArchiveId: string | null;
+                            geometry: ({
+                                /** @enum {string} */
+                                type: "Point";
+                                coordinates: (number)[];
+                            } | {
+                                /** @enum {string} */
+                                type: "LineString";
+                                coordinates: (number)[][];
+                            } | {
+                                /** @enum {string} */
+                                type: "Polygon";
+                                coordinates: (number)[][][];
+                            } | {
+                                /** @enum {string} */
+                                type: "MultiPoint";
+                                coordinates: (number)[][];
+                            } | {
+                                /** @enum {string} */
+                                type: "MultiLineString";
+                                coordinates: (number)[][][];
+                            } | {
+                                /** @enum {string} */
+                                type: "MultiPolygon";
+                                coordinates: (number)[][][][];
+                            }) | null;
+                            /** @enum {string} */
+                            matchBasis: "geometry" | "object" | "mention" | "keyword" | "none";
+                            locationNote: string;
+                        }[];
+                        forecasts: {
+                            id: string;
+                            sourceId: string;
+                            samplePointId: string;
+                            pointName: string;
+                            point: {
+                                lon: number;
+                                lat: number;
+                            };
+                            grid: {
+                                lon: number;
+                                lat: number;
+                            };
+                            /** Format: date-time */
+                            fetchedAt: string;
+                            /** Format: date-time */
+                            modelPublishedAt: string | null;
+                            /** Format: date-time */
+                            validFrom: string;
+                            /** Format: date-time */
+                            validTo: string;
+                            series: {
+                                /** Format: date-time */
+                                validAt: string;
+                                waveHeight: number | null;
+                                waveDirection: number | null;
+                                wavePeriod: number | null;
+                            }[];
+                            originalArchiveId: string;
+                            /** Format: uri */
+                            originalUrl: string;
+                            /** @enum {string} */
+                            visibility: "public" | "internal";
+                        }[];
+                        total: number;
+                        nextCursor: string | null;
+                        /** Format: date-time */
+                        asOf: string;
+                        spec: {
+                            keyword?: string;
+                            locationKeyword?: string;
+                            sourceIds?: string[];
+                            /** @enum {string} */
+                            category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                            /** @enum {string} */
+                            reviewStatus?: "candidate" | "confirmed" | "rejected";
+                            /** @enum {string} */
+                            timeMode?: "published" | "effective" | "observed";
+                            /** Format: date-time */
+                            from?: string;
+                            /** Format: date-time */
+                            to?: string;
+                            bbox?: (number)[];
+                            objectId?: string;
+                            mmsis?: string[];
+                            /** @enum {string} */
+                            kind?: "events" | "marine" | "both";
+                            samplePointId?: string;
+                            /** Format: date-time */
+                            forecastFrom?: string;
+                            /** Format: date-time */
+                            forecastTo?: string;
+                        };
+                        sourceHealth: {
+                            sourceId: string;
+                            name: string;
+                            enabled: boolean;
+                            /** @enum {string} */
+                            visibility: "public" | "internal";
+                            /** @enum {string} */
+                            status: "ready" | "stale" | "unavailable" | "never_collected" | "disabled";
+                            /** Format: date-time */
+                            lastPolledAt: string | null;
+                            /** Format: date-time */
+                            lastSuccessfulAt: string | null;
+                            /** Format: date-time */
+                            nextPollAt: string | null;
+                            lastError: string | null;
+                        }[];
+                        coverageNotes: string[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
-  AgentController_events: {
-    parameters: {
-      query?: {
-        cursor?: string;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
+    IntelligenceController_sources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
+                        /** @default true */
+                        enabled: boolean;
+                        /** @enum {string} */
+                        adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
+                        /**
+                         * @default internal
+                         * @enum {string}
+                         */
+                        visibility: "public" | "internal";
+                        bbox?: (number)[];
+                        eventTypes?: ("TC" | "TS" | "FL")[];
+                        /** @default 6 */
+                        requestsPerMinute: number;
+                        /** @default 5 */
+                        maxDocuments: number;
+                        /**
+                         * @default aggregator
+                         * @enum {string}
+                         */
+                        trust: "official" | "aggregator";
+                        endpoint?: string;
+                        /** @default [] */
+                        allowedHosts: string[];
+                        /** @default false */
+                        authorizationConfirmed: boolean;
+                        /** @default 300 */
+                        pollSeconds: number;
+                        /** @default 30 */
+                        timeoutSeconds: number;
+                        /** Format: date-time */
+                        lastPolledAt: string | null;
+                        /** Format: date-time */
+                        lastSuccessfulAt: string | null;
+                        lastError: string | null;
+                        lastIngestion: {
+                            [key: string]: unknown;
+                        };
+                    }[];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
+    IntelligenceController_createSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          'application/json': {
-            items: {
-              id: string;
-              /** Format: uuid */
-              sessionId: string;
-              /** Format: uuid */
-              taskId: string | null;
-              type: string;
-              data: {
-                [key: string]: unknown;
-              };
-              /** Format: date-time */
-              createdAt: string;
-            }[];
-            nextCursor: string;
-          };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceId: string;
+                    name: string;
+                    /** @enum {string} */
+                    kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
+                    /** @default true */
+                    enabled?: boolean;
+                    /** @enum {string} */
+                    adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
+                    /**
+                     * @default internal
+                     * @enum {string}
+                     */
+                    visibility?: "public" | "internal";
+                    bbox?: (number)[];
+                    eventTypes?: ("TC" | "TS" | "FL")[];
+                    /** @default 6 */
+                    requestsPerMinute?: number;
+                    /** @default 5 */
+                    maxDocuments?: number;
+                    /**
+                     * @default aggregator
+                     * @enum {string}
+                     */
+                    trust?: "official" | "aggregator";
+                    endpoint?: string;
+                    /** @default [] */
+                    allowedHosts?: string[];
+                    /** @default false */
+                    authorizationConfirmed?: boolean;
+                    /** @default 300 */
+                    pollSeconds?: number;
+                    /** @default 30 */
+                    timeoutSeconds?: number;
+                };
+            };
         };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
+                        /** @default true */
+                        enabled: boolean;
+                        /** @enum {string} */
+                        adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
+                        /**
+                         * @default internal
+                         * @enum {string}
+                         */
+                        visibility: "public" | "internal";
+                        bbox?: (number)[];
+                        eventTypes?: ("TC" | "TS" | "FL")[];
+                        /** @default 6 */
+                        requestsPerMinute: number;
+                        /** @default 5 */
+                        maxDocuments: number;
+                        /**
+                         * @default aggregator
+                         * @enum {string}
+                         */
+                        trust: "official" | "aggregator";
+                        endpoint?: string;
+                        /** @default [] */
+                        allowedHosts: string[];
+                        /** @default false */
+                        authorizationConfirmed: boolean;
+                        /** @default 300 */
+                        pollSeconds: number;
+                        /** @default 30 */
+                        timeoutSeconds: number;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-        content?: never;
-      };
-      /** @description Session required */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Role, origin or CSRF denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
     };
-  };
+    IntelligenceController_updateSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceId: string;
+                    name: string;
+                    /** @enum {string} */
+                    kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
+                    /** @default true */
+                    enabled?: boolean;
+                    /** @enum {string} */
+                    adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
+                    /**
+                     * @default internal
+                     * @enum {string}
+                     */
+                    visibility?: "public" | "internal";
+                    bbox?: (number)[];
+                    eventTypes?: ("TC" | "TS" | "FL")[];
+                    /** @default 6 */
+                    requestsPerMinute?: number;
+                    /** @default 5 */
+                    maxDocuments?: number;
+                    /**
+                     * @default aggregator
+                     * @enum {string}
+                     */
+                    trust?: "official" | "aggregator";
+                    endpoint?: string;
+                    /** @default [] */
+                    allowedHosts?: string[];
+                    /** @default false */
+                    authorizationConfirmed?: boolean;
+                    /** @default 300 */
+                    pollSeconds?: number;
+                    /** @default 30 */
+                    timeoutSeconds?: number;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        sourceId: string;
+                        name: string;
+                        /** @enum {string} */
+                        kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
+                        /** @default true */
+                        enabled: boolean;
+                        /** @enum {string} */
+                        adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
+                        /**
+                         * @default internal
+                         * @enum {string}
+                         */
+                        visibility: "public" | "internal";
+                        bbox?: (number)[];
+                        eventTypes?: ("TC" | "TS" | "FL")[];
+                        /** @default 6 */
+                        requestsPerMinute: number;
+                        /** @default 5 */
+                        maxDocuments: number;
+                        /**
+                         * @default aggregator
+                         * @enum {string}
+                         */
+                        trust: "official" | "aggregator";
+                        endpoint?: string;
+                        /** @default [] */
+                        allowedHosts: string[];
+                        /** @default false */
+                        authorizationConfirmed: boolean;
+                        /** @default 300 */
+                        pollSeconds: number;
+                        /** @default 30 */
+                        timeoutSeconds: number;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_archives: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: unknown[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        content: string;
+                        contentType: string;
+                        checksum: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_events: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                keyword?: string;
+                sourceId?: string;
+                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                reviewStatus?: "candidate" | "confirmed" | "rejected";
+                status?: "active" | "revised" | "withdrawn";
+                from?: string;
+                to?: string;
+                objectId?: string;
+                bbox?: string;
+                latest?: "true" | "false";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: unknown[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_createEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceId: string;
+                    externalId: string;
+                    version: number;
+                    /**
+                     * @default active
+                     * @enum {string}
+                     */
+                    status?: "active" | "revised" | "withdrawn";
+                    /** @enum {string} */
+                    category: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                    /**
+                     * @default confirmed
+                     * @enum {string}
+                     */
+                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                    /** Format: uri */
+                    originalUrl?: string;
+                    /** @default [] */
+                    relations?: {
+                        /** @enum {string} */
+                        kind: "occurs-at" | "mentions" | "involves" | "applies-to" | "impacts";
+                        objectId?: string;
+                        geometry?: {
+                            /** @enum {string} */
+                            type: "Point";
+                            coordinates: (number)[];
+                        } | {
+                            /** @enum {string} */
+                            type: "LineString";
+                            coordinates: (number)[][];
+                        } | {
+                            /** @enum {string} */
+                            type: "Polygon";
+                            coordinates: (number)[][][];
+                        } | {
+                            /** @enum {string} */
+                            type: "MultiPoint";
+                            coordinates: (number)[][];
+                        } | {
+                            /** @enum {string} */
+                            type: "MultiLineString";
+                            coordinates: (number)[][][];
+                        } | {
+                            /** @enum {string} */
+                            type: "MultiPolygon";
+                            coordinates: (number)[][][][];
+                        };
+                        basis: string;
+                        /** @default [] */
+                        paragraphIds?: string[];
+                        /**
+                         * @default candidate
+                         * @enum {string}
+                         */
+                        reviewStatus?: "candidate" | "confirmed" | "rejected";
+                        /**
+                         * @default manual
+                         * @enum {string}
+                         */
+                        origin?: "source" | "rule" | "manual" | "legacy";
+                        impactType?: string;
+                        /** Format: date-time */
+                        effectiveFrom?: string;
+                        /** Format: date-time */
+                        effectiveTo?: string | null;
+                    }[];
+                    title: string;
+                    summary: string;
+                    /** Format: date-time */
+                    publishedAt: string;
+                    /** Format: date-time */
+                    effectiveFrom: string;
+                    /** Format: date-time */
+                    effectiveTo: string | null;
+                    bbox?: (number)[];
+                    /** @default [] */
+                    vesselTypes?: number[];
+                    /** @default [] */
+                    mmsis?: string[];
+                    paragraphs: {
+                        id: string;
+                        text: string;
+                    }[];
+                    commonSourceId?: string;
+                    supersedesId?: string;
+                    originalArchiveId?: string;
+                    raw: unknown;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_eventDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_reviewEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    reviewStatus: "candidate" | "confirmed" | "rejected";
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_addRelation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    kind: "occurs-at" | "mentions" | "involves" | "applies-to" | "impacts";
+                    objectId?: string;
+                    geometry?: {
+                        /** @enum {string} */
+                        type: "Point";
+                        coordinates: (number)[];
+                    } | {
+                        /** @enum {string} */
+                        type: "LineString";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "Polygon";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPoint";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiLineString";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPolygon";
+                        coordinates: (number)[][][][];
+                    };
+                    basis: string;
+                    /** @default [] */
+                    paragraphIds?: string[];
+                    /**
+                     * @default candidate
+                     * @enum {string}
+                     */
+                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                    /**
+                     * @default manual
+                     * @enum {string}
+                     */
+                    origin?: "source" | "rule" | "manual" | "legacy";
+                    impactType?: string;
+                    /** Format: date-time */
+                    effectiveFrom?: string;
+                    /** Format: date-time */
+                    effectiveTo?: string | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_editRelation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    kind: "occurs-at" | "mentions" | "involves" | "applies-to" | "impacts";
+                    objectId?: string;
+                    geometry?: {
+                        /** @enum {string} */
+                        type: "Point";
+                        coordinates: (number)[];
+                    } | {
+                        /** @enum {string} */
+                        type: "LineString";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "Polygon";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPoint";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiLineString";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPolygon";
+                        coordinates: (number)[][][][];
+                    };
+                    basis: string;
+                    /** @default [] */
+                    paragraphIds?: string[];
+                    /**
+                     * @default candidate
+                     * @enum {string}
+                     */
+                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                    /**
+                     * @default manual
+                     * @enum {string}
+                     */
+                    origin?: "source" | "rule" | "manual" | "legacy";
+                    impactType?: string;
+                    /** Format: date-time */
+                    effectiveFrom?: string;
+                    /** Format: date-time */
+                    effectiveTo?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_reviewRelation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    reviewStatus: "candidate" | "confirmed" | "rejected";
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_objects: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                kind?: "vessel" | "port" | "channel" | "area" | "facility";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: unknown[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_createObject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id?: string;
+                    /** @enum {string} */
+                    kind: "vessel" | "port" | "channel" | "area" | "facility";
+                    name: string;
+                    geometry?: {
+                        /** @enum {string} */
+                        type: "Point";
+                        coordinates: (number)[];
+                    } | {
+                        /** @enum {string} */
+                        type: "LineString";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "Polygon";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPoint";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiLineString";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPolygon";
+                        coordinates: (number)[][][][];
+                    };
+                    mmsi?: string;
+                    /** @default [] */
+                    aliases?: string[];
+                    /** @default {} */
+                    metadata?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_editObject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    id?: string;
+                    /** @enum {string} */
+                    kind: "vessel" | "port" | "channel" | "area" | "facility";
+                    name: string;
+                    geometry?: {
+                        /** @enum {string} */
+                        type: "Point";
+                        coordinates: (number)[];
+                    } | {
+                        /** @enum {string} */
+                        type: "LineString";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "Polygon";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPoint";
+                        coordinates: (number)[][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiLineString";
+                        coordinates: (number)[][][];
+                    } | {
+                        /** @enum {string} */
+                        type: "MultiPolygon";
+                        coordinates: (number)[][][][];
+                    };
+                    mmsi?: string;
+                    /** @default [] */
+                    aliases?: string[];
+                    /** @default {} */
+                    metadata?: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_importObjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    type: "FeatureCollection";
+                    features: {
+                        /** @enum {string} */
+                        type: "Feature";
+                        id?: string;
+                        geometry: {
+                            /** @enum {string} */
+                            type: "Point";
+                            coordinates: (number)[];
+                        } | {
+                            /** @enum {string} */
+                            type: "LineString";
+                            coordinates: (number)[][];
+                        } | {
+                            /** @enum {string} */
+                            type: "Polygon";
+                            coordinates: (number)[][][];
+                        } | {
+                            /** @enum {string} */
+                            type: "MultiPoint";
+                            coordinates: (number)[][];
+                        } | {
+                            /** @enum {string} */
+                            type: "MultiLineString";
+                            coordinates: (number)[][][];
+                        } | {
+                            /** @enum {string} */
+                            type: "MultiPolygon";
+                            coordinates: (number)[][][][];
+                        };
+                        properties: {
+                            id?: string;
+                            /** @enum {string} */
+                            kind: "vessel" | "port" | "channel" | "area" | "facility";
+                            name: string;
+                            geometry?: {
+                                /** @enum {string} */
+                                type: "Point";
+                                coordinates: (number)[];
+                            } | {
+                                /** @enum {string} */
+                                type: "LineString";
+                                coordinates: (number)[][];
+                            } | {
+                                /** @enum {string} */
+                                type: "Polygon";
+                                coordinates: (number)[][][];
+                            } | {
+                                /** @enum {string} */
+                                type: "MultiPoint";
+                                coordinates: (number)[][];
+                            } | {
+                                /** @enum {string} */
+                                type: "MultiLineString";
+                                coordinates: (number)[][][];
+                            } | {
+                                /** @enum {string} */
+                                type: "MultiPolygon";
+                                coordinates: (number)[][][][];
+                            };
+                            mmsi?: string;
+                            /** @default [] */
+                            aliases?: string[];
+                            /** @default {} */
+                            metadata?: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    }[];
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_plot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    eventIds: string[];
+                    /** @default false */
+                    includeCandidates?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_plotSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        eventIds: string[];
+                        hiddenEventIds: string[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IntelligenceController_savePlotSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    eventIds: string[];
+                    hiddenEventIds: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        eventIds: string[];
+                        hiddenEventIds: string[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TopicsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        definitions: {
+                            [key: string]: unknown;
+                        }[];
+                        instances: {
+                            [key: string]: unknown;
+                        }[];
+                        capabilities: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TopicsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    definitionId: "port-restriction" | "area-low-speed-notice";
+                    name: string;
+                    config: {
+                        bbox: (number)[];
+                        /** @default 24 */
+                        historyHours?: number;
+                        /** @default 60 */
+                        windowMinutes?: number;
+                        /** @default 3 */
+                        lowSpeedKnots?: number;
+                        /** @default 3 */
+                        minPositions?: number;
+                        /** @default 60 */
+                        scheduleSeconds?: number;
+                    };
+                    /** @default false */
+                    enabled?: boolean;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TopicsController_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enabled: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TopicsController_run: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TopicsController_runs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TopicsController_runDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TopicsController_config: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    config: {
+                        bbox: (number)[];
+                        /** @default 24 */
+                        historyHours?: number;
+                        /** @default 60 */
+                        windowMinutes?: number;
+                        /** @default 3 */
+                        lowSpeedKnots?: number;
+                        /** @default 3 */
+                        minPositions?: number;
+                        /** @default 60 */
+                        scheduleSeconds?: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AnalysisController_list: {
+        parameters: {
+            query?: {
+                instanceId?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AnalysisController_revisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            [key: string]: unknown;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AnalysisController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AnalysisController_feed: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            [key: string]: unknown;
+                        }[];
+                        nextCursor: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_config: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
+                        uiEnabled: boolean;
+                        defaultHistoryHours: number;
+                        maxHistoryHours: number;
+                        maxModelCalls: number;
+                        maxToolCalls: number;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_sessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            title: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_createSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @default 区域研判 */
+                    title?: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        ownerId: string;
+                        title: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        session: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            title: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                        messages: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** @enum {string} */
+                            role: "user" | "assistant";
+                            content: string;
+                            /** Format: uuid */
+                            taskId: string | null;
+                            resultVersion?: number | null;
+                            inputRevision?: number | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        tasks: {
+                            uiBinding?: {
+                                /** Format: uuid */
+                                clientId: string;
+                                pageGeneration: number;
+                                heatmapVersion?: number;
+                            } | null;
+                            uiResult?: {
+                                /** @enum {string} */
+                                kind: "ui_control";
+                                /** Format: uuid */
+                                commandId: string | null;
+                                status: string;
+                                components: {
+                                    /** @enum {string} */
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    version: number;
+                                    revision?: number;
+                                    mounted: boolean;
+                                    open: boolean;
+                                    visible: boolean;
+                                    /** @default false */
+                                    focused: boolean;
+                                    /** @default 0 */
+                                    order: number;
+                                    /** @default false */
+                                    loading: boolean;
+                                    /** @default false */
+                                    dirty: boolean;
+                                    /** @default false */
+                                    interacting: boolean;
+                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                                    /** @enum {string} */
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    /** @enum {string} */
+                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                                }[];
+                            } | null;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            /** @enum {string} */
+                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
+                            goal: string;
+                            bbox: (number)[] | null;
+                            historyHours: number;
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            /** @enum {string|null} */
+                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
+                            generation: number;
+                            modelCalls: number;
+                            toolCalls: number;
+                            resultVersion: number;
+                            summaryResultVersion: number | null;
+                            summary: string | null;
+                            error: string | null;
+                            /** @enum {string} */
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            selection?: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            inputRevision?: number;
+                            resultInputRevision?: number | null;
+                            summaryInputRevision?: number | null;
+                            errorCode?: string | null;
+                            /** Format: uuid */
+                            retryOfTaskId?: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                        pendingInputRequests: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            taskId: string;
+                            inputRevision: number;
+                            pauseGeneration: number;
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            /** @enum {string} */
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            prefill: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            /** @enum {string} */
+                            status: "pending" | "answered" | "cancelled" | "superseded";
+                            response: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            answeredAt: string | null;
+                        }[];
+                        snapshotCursor: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_message: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    content: string;
+                    bbox?: (number)[];
+                    /** @default 24 */
+                    historyHours?: number;
+                    mapContext?: {
+                        sourceId?: string;
+                        shipType?: number;
+                        hours?: number;
+                        bbox: (number)[];
+                        /** Format: date-time */
+                        capturedAt: string;
+                        selectedMmsis?: string[];
+                    };
+                    uiBinding?: {
+                        /** Format: uuid */
+                        clientId: string;
+                        pageGeneration: number;
+                        heatmapVersion?: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** @enum {string} */
+                            role: "user" | "assistant";
+                            content: string;
+                            /** Format: uuid */
+                            taskId: string | null;
+                            resultVersion?: number | null;
+                            inputRevision?: number | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                        task: {
+                            uiBinding?: {
+                                /** Format: uuid */
+                                clientId: string;
+                                pageGeneration: number;
+                                heatmapVersion?: number;
+                            } | null;
+                            uiResult?: {
+                                /** @enum {string} */
+                                kind: "ui_control";
+                                /** Format: uuid */
+                                commandId: string | null;
+                                status: string;
+                                components: {
+                                    /** @enum {string} */
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    version: number;
+                                    revision?: number;
+                                    mounted: boolean;
+                                    open: boolean;
+                                    visible: boolean;
+                                    /** @default false */
+                                    focused: boolean;
+                                    /** @default 0 */
+                                    order: number;
+                                    /** @default false */
+                                    loading: boolean;
+                                    /** @default false */
+                                    dirty: boolean;
+                                    /** @default false */
+                                    interacting: boolean;
+                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                                    /** @enum {string} */
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    /** @enum {string} */
+                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                                }[];
+                            } | null;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            /** @enum {string} */
+                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
+                            goal: string;
+                            bbox: (number)[] | null;
+                            historyHours: number;
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            /** @enum {string|null} */
+                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
+                            generation: number;
+                            modelCalls: number;
+                            toolCalls: number;
+                            resultVersion: number;
+                            summaryResultVersion: number | null;
+                            summary: string | null;
+                            error: string | null;
+                            /** @enum {string} */
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            selection?: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            inputRevision?: number;
+                            resultInputRevision?: number | null;
+                            summaryInputRevision?: number | null;
+                            errorCode?: string | null;
+                            /** Format: uuid */
+                            retryOfTaskId?: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                        pendingInputRequests: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            taskId: string;
+                            inputRevision: number;
+                            pauseGeneration: number;
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            /** @enum {string} */
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            prefill: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            /** @enum {string} */
+                            status: "pending" | "answered" | "cancelled" | "superseded";
+                            response: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            answeredAt: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: {
+                            uiBinding?: {
+                                /** Format: uuid */
+                                clientId: string;
+                                pageGeneration: number;
+                                heatmapVersion?: number;
+                            } | null;
+                            uiResult?: {
+                                /** @enum {string} */
+                                kind: "ui_control";
+                                /** Format: uuid */
+                                commandId: string | null;
+                                status: string;
+                                components: {
+                                    /** @enum {string} */
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    version: number;
+                                    revision?: number;
+                                    mounted: boolean;
+                                    open: boolean;
+                                    visible: boolean;
+                                    /** @default false */
+                                    focused: boolean;
+                                    /** @default 0 */
+                                    order: number;
+                                    /** @default false */
+                                    loading: boolean;
+                                    /** @default false */
+                                    dirty: boolean;
+                                    /** @default false */
+                                    interacting: boolean;
+                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                                    /** @enum {string} */
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    /** @enum {string} */
+                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                                }[];
+                            } | null;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            /** @enum {string} */
+                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
+                            goal: string;
+                            bbox: (number)[] | null;
+                            historyHours: number;
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            /** @enum {string|null} */
+                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
+                            generation: number;
+                            modelCalls: number;
+                            toolCalls: number;
+                            resultVersion: number;
+                            summaryResultVersion: number | null;
+                            summary: string | null;
+                            error: string | null;
+                            /** @enum {string} */
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            selection?: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            inputRevision?: number;
+                            resultInputRevision?: number | null;
+                            summaryInputRevision?: number | null;
+                            errorCode?: string | null;
+                            /** Format: uuid */
+                            retryOfTaskId?: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                        results: {
+                            [key: string]: unknown;
+                        }[];
+                        steps: {
+                            key: string;
+                            name: string;
+                            input: unknown;
+                            output: unknown;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        pendingInputRequests: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            taskId: string;
+                            inputRevision: number;
+                            pauseGeneration: number;
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            /** @enum {string} */
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            prefill: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            /** @enum {string} */
+                            status: "pending" | "answered" | "cancelled" | "superseded";
+                            response: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            answeredAt: string | null;
+                        }[];
+                        snapshotCursor: string;
+                        queryResult: {
+                            /** @enum {string} */
+                            kind: "vessel_list" | "vessel_detail";
+                            version: number;
+                            inputRevision: number;
+                            total: number;
+                            truncated: boolean;
+                            items: {
+                                mmsi: string;
+                                name: string | null;
+                                imo: string | null;
+                                shipType: number | null;
+                                latestPosition: {
+                                    lat: number;
+                                    lon: number;
+                                    /** Format: date-time */
+                                    observedAt: string;
+                                    sogKnots: number | null;
+                                    sourceId: string;
+                                } | null;
+                            }[];
+                            /** Format: date-time */
+                            asOf: string;
+                            selection: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                        } | null;
+                        intelligenceResult: {
+                            /** @enum {string} */
+                            kind: "intelligence_search";
+                            version: number;
+                            inputRevision: number;
+                            /** Format: date-time */
+                            asOf: string;
+                            spec: {
+                                keyword?: string;
+                                locationKeyword?: string;
+                                sourceIds?: string[];
+                                /** @enum {string} */
+                                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                /** @enum {string} */
+                                reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                /** @enum {string} */
+                                timeMode?: "published" | "effective" | "observed";
+                                /** Format: date-time */
+                                from?: string;
+                                /** Format: date-time */
+                                to?: string;
+                                bbox?: (number)[];
+                                objectId?: string;
+                                mmsis?: string[];
+                                /** @enum {string} */
+                                kind?: "events" | "marine" | "both";
+                                samplePointId?: string;
+                                /** Format: date-time */
+                                forecastFrom?: string;
+                                /** Format: date-time */
+                                forecastTo?: string;
+                            };
+                            total: number;
+                            truncated: boolean;
+                            evidence: ({
+                                /** @enum {string} */
+                                kind: "event";
+                                reference: string;
+                                event: {
+                                    id: string;
+                                    sourceId: string;
+                                    sourceName: string;
+                                    externalId: string;
+                                    version: number;
+                                    title: string;
+                                    summary: string;
+                                    snippet: string;
+                                    /** @enum {string} */
+                                    category: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    status: "active" | "revised" | "withdrawn";
+                                    /** @enum {string} */
+                                    reviewStatus: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    visibility: "public" | "internal";
+                                    /** Format: date-time */
+                                    publishedAt: string | null;
+                                    /** Format: date-time */
+                                    observedAt: string;
+                                    /** Format: date-time */
+                                    effectiveFrom: string | null;
+                                    /** Format: date-time */
+                                    effectiveTo: string | null;
+                                    /** Format: date-time */
+                                    collectedAt: string;
+                                    /** @enum {string} */
+                                    timeBasis: "publication" | "index-observation" | "effective" | "unknown";
+                                    /** Format: uri */
+                                    originalUrl: string | null;
+                                    originalArchiveId: string | null;
+                                    geometry: ({
+                                        /** @enum {string} */
+                                        type: "Point";
+                                        coordinates: (number)[];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "LineString";
+                                        coordinates: (number)[][];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "Polygon";
+                                        coordinates: (number)[][][];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "MultiPoint";
+                                        coordinates: (number)[][];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "MultiLineString";
+                                        coordinates: (number)[][][];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "MultiPolygon";
+                                        coordinates: (number)[][][][];
+                                    }) | null;
+                                    /** @enum {string} */
+                                    matchBasis: "geometry" | "object" | "mention" | "keyword" | "none";
+                                    locationNote: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                kind: "marine";
+                                reference: string;
+                                forecast: {
+                                    id: string;
+                                    sourceId: string;
+                                    samplePointId: string;
+                                    pointName: string;
+                                    point: {
+                                        lon: number;
+                                        lat: number;
+                                    };
+                                    grid: {
+                                        lon: number;
+                                        lat: number;
+                                    };
+                                    /** Format: date-time */
+                                    fetchedAt: string;
+                                    /** Format: date-time */
+                                    modelPublishedAt: string | null;
+                                    /** Format: date-time */
+                                    validFrom: string;
+                                    /** Format: date-time */
+                                    validTo: string;
+                                    series: {
+                                        /** Format: date-time */
+                                        validAt: string;
+                                        waveHeight: number | null;
+                                        waveDirection: number | null;
+                                        wavePeriod: number | null;
+                                    }[];
+                                    originalArchiveId: string;
+                                    /** Format: uri */
+                                    originalUrl: string;
+                                    /** @enum {string} */
+                                    visibility: "public" | "internal";
+                                };
+                            })[];
+                            sourceHealth: {
+                                sourceId: string;
+                                name: string;
+                                enabled: boolean;
+                                /** @enum {string} */
+                                visibility: "public" | "internal";
+                                /** @enum {string} */
+                                status: "ready" | "stale" | "unavailable" | "never_collected" | "disabled";
+                                /** Format: date-time */
+                                lastPolledAt: string | null;
+                                /** Format: date-time */
+                                lastSuccessfulAt: string | null;
+                                /** Format: date-time */
+                                nextPollAt: string | null;
+                                lastError: string | null;
+                            }[];
+                            coverageNotes: string[];
+                        } | null;
+                        heatmapResult: {
+                            query: {
+                                bbox: (number)[];
+                                /** Format: date-time */
+                                from: string;
+                                /** Format: date-time */
+                                to: string;
+                                sourceId?: string;
+                                shipType?: number;
+                                mmsis?: string[];
+                            };
+                            grid: {
+                                level: number;
+                                cellDegrees: number;
+                            };
+                            cells: {
+                                id: string;
+                                x: number;
+                                y: number;
+                                lon: number;
+                                lat: number;
+                                vesselCount: number;
+                            }[];
+                            totalVessels: number;
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            metric: "unique_vessels";
+                            /** @enum {string} */
+                            shipTypeBasis: "current_profile";
+                            /** @enum {string} */
+                            kind: "ais_heatmap";
+                            version: number;
+                            inputRevision: number;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_respond: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    action: "accept";
+                    inputRevision: number;
+                    values: {
+                        bbox?: (number)[];
+                        mmsis?: string[];
+                        timeRange?: {
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                        };
+                        filters?: {
+                            sourceId?: string;
+                            shipType?: number;
+                            hours?: number;
+                        };
+                        /** @enum {string} */
+                        purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                        intelligenceQuery?: {
+                            keyword?: string;
+                            locationKeyword?: string;
+                            sourceIds?: string[];
+                            /** @enum {string} */
+                            category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                            /** @enum {string} */
+                            reviewStatus?: "candidate" | "confirmed" | "rejected";
+                            /** @enum {string} */
+                            timeMode?: "published" | "effective" | "observed";
+                            /** Format: date-time */
+                            from?: string;
+                            /** Format: date-time */
+                            to?: string;
+                            bbox?: (number)[];
+                            objectId?: string;
+                            mmsis?: string[];
+                            /** @enum {string} */
+                            kind?: "events" | "marine" | "both";
+                            samplePointId?: string;
+                            /** Format: date-time */
+                            forecastFrom?: string;
+                            /** Format: date-time */
+                            forecastTo?: string;
+                        };
+                        intelligenceTimeRange?: {
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                        };
+                        intelligenceTimeUnclear?: boolean;
+                        heatmapTimeUnclear?: boolean;
+                        intelligenceObjectUnclear?: boolean;
+                        intelligenceObjectCandidates?: {
+                            id: string;
+                            name: string;
+                        }[];
+                        historyHours?: number;
+                    };
+                } | {
+                    /** @enum {string} */
+                    action: "decline";
+                    inputRevision: number;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: {
+                            uiBinding?: {
+                                /** Format: uuid */
+                                clientId: string;
+                                pageGeneration: number;
+                                heatmapVersion?: number;
+                            } | null;
+                            uiResult?: {
+                                /** @enum {string} */
+                                kind: "ui_control";
+                                /** Format: uuid */
+                                commandId: string | null;
+                                status: string;
+                                components: {
+                                    /** @enum {string} */
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    version: number;
+                                    revision?: number;
+                                    mounted: boolean;
+                                    open: boolean;
+                                    visible: boolean;
+                                    /** @default false */
+                                    focused: boolean;
+                                    /** @default 0 */
+                                    order: number;
+                                    /** @default false */
+                                    loading: boolean;
+                                    /** @default false */
+                                    dirty: boolean;
+                                    /** @default false */
+                                    interacting: boolean;
+                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                                    /** @enum {string} */
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    /** @enum {string} */
+                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                                }[];
+                            } | null;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            /** @enum {string} */
+                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
+                            goal: string;
+                            bbox: (number)[] | null;
+                            historyHours: number;
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            /** @enum {string|null} */
+                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
+                            generation: number;
+                            modelCalls: number;
+                            toolCalls: number;
+                            resultVersion: number;
+                            summaryResultVersion: number | null;
+                            summary: string | null;
+                            error: string | null;
+                            /** @enum {string} */
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            selection?: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            inputRevision?: number;
+                            resultInputRevision?: number | null;
+                            summaryInputRevision?: number | null;
+                            errorCode?: string | null;
+                            /** Format: uuid */
+                            retryOfTaskId?: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                        request: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            taskId: string;
+                            inputRevision: number;
+                            pauseGeneration: number;
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            /** @enum {string} */
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            prefill: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            /** @enum {string} */
+                            status: "pending" | "answered" | "cancelled" | "superseded";
+                            response: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            answeredAt: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_retry: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    uiBinding?: {
+                        /** Format: uuid */
+                        clientId: string;
+                        pageGeneration: number;
+                        heatmapVersion?: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        task: {
+                            uiBinding?: {
+                                /** Format: uuid */
+                                clientId: string;
+                                pageGeneration: number;
+                                heatmapVersion?: number;
+                            } | null;
+                            uiResult?: {
+                                /** @enum {string} */
+                                kind: "ui_control";
+                                /** Format: uuid */
+                                commandId: string | null;
+                                status: string;
+                                components: {
+                                    /** @enum {string} */
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    version: number;
+                                    revision?: number;
+                                    mounted: boolean;
+                                    open: boolean;
+                                    visible: boolean;
+                                    /** @default false */
+                                    focused: boolean;
+                                    /** @default 0 */
+                                    order: number;
+                                    /** @default false */
+                                    loading: boolean;
+                                    /** @default false */
+                                    dirty: boolean;
+                                    /** @default false */
+                                    interacting: boolean;
+                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                                    /** @enum {string} */
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    /** @enum {string} */
+                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                                }[];
+                            } | null;
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            /** @enum {string} */
+                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
+                            goal: string;
+                            bbox: (number)[] | null;
+                            historyHours: number;
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            /** @enum {string|null} */
+                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
+                            generation: number;
+                            modelCalls: number;
+                            toolCalls: number;
+                            resultVersion: number;
+                            summaryResultVersion: number | null;
+                            summary: string | null;
+                            error: string | null;
+                            /** @enum {string} */
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            selection?: {
+                                bbox?: (number)[];
+                                mmsis?: string[];
+                                timeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                filters?: {
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    hours?: number;
+                                };
+                                /** @enum {string} */
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                intelligenceQuery?: {
+                                    keyword?: string;
+                                    locationKeyword?: string;
+                                    sourceIds?: string[];
+                                    /** @enum {string} */
+                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                    /** @enum {string} */
+                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                    /** @enum {string} */
+                                    timeMode?: "published" | "effective" | "observed";
+                                    /** Format: date-time */
+                                    from?: string;
+                                    /** Format: date-time */
+                                    to?: string;
+                                    bbox?: (number)[];
+                                    objectId?: string;
+                                    mmsis?: string[];
+                                    /** @enum {string} */
+                                    kind?: "events" | "marine" | "both";
+                                    samplePointId?: string;
+                                    /** Format: date-time */
+                                    forecastFrom?: string;
+                                    /** Format: date-time */
+                                    forecastTo?: string;
+                                };
+                                intelligenceTimeRange?: {
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                };
+                                intelligenceTimeUnclear?: boolean;
+                                heatmapTimeUnclear?: boolean;
+                                intelligenceObjectUnclear?: boolean;
+                                intelligenceObjectCandidates?: {
+                                    id: string;
+                                    name: string;
+                                }[];
+                            };
+                            inputRevision?: number;
+                            resultInputRevision?: number | null;
+                            summaryInputRevision?: number | null;
+                            errorCode?: string | null;
+                            /** Format: uuid */
+                            retryOfTaskId?: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                        message: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** @enum {string} */
+                            role: "user" | "assistant";
+                            content: string;
+                            /** Format: uuid */
+                            taskId: string | null;
+                            resultVersion?: number | null;
+                            inputRevision?: number | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        uiBinding?: {
+                            /** Format: uuid */
+                            clientId: string;
+                            pageGeneration: number;
+                            heatmapVersion?: number;
+                        } | null;
+                        uiResult?: {
+                            /** @enum {string} */
+                            kind: "ui_control";
+                            /** Format: uuid */
+                            commandId: string | null;
+                            status: string;
+                            components: {
+                                /** @enum {string} */
+                                id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                version: number;
+                                revision?: number;
+                                mounted: boolean;
+                                open: boolean;
+                                visible: boolean;
+                                /** @default false */
+                                focused: boolean;
+                                /** @default 0 */
+                                order: number;
+                                /** @default false */
+                                loading: boolean;
+                                /** @default false */
+                                dirty: boolean;
+                                /** @default false */
+                                interacting: boolean;
+                                actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                                /** @enum {string} */
+                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                /** @enum {string} */
+                                blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                            }[];
+                        } | null;
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        sessionId: string;
+                        /** Format: uuid */
+                        ownerId: string;
+                        /** @enum {string} */
+                        status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
+                        goal: string;
+                        bbox: (number)[] | null;
+                        historyHours: number;
+                        /** Format: date-time */
+                        from: string;
+                        /** Format: date-time */
+                        to: string;
+                        /** @enum {string|null} */
+                        definitionId: "port-restriction" | "area-low-speed-notice" | null;
+                        generation: number;
+                        modelCalls: number;
+                        toolCalls: number;
+                        resultVersion: number;
+                        summaryResultVersion: number | null;
+                        summary: string | null;
+                        error: string | null;
+                        /** @enum {string} */
+                        intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                        selection?: {
+                            bbox?: (number)[];
+                            mmsis?: string[];
+                            timeRange?: {
+                                /** Format: date-time */
+                                from: string;
+                                /** Format: date-time */
+                                to: string;
+                            };
+                            filters?: {
+                                sourceId?: string;
+                                shipType?: number;
+                                hours?: number;
+                            };
+                            /** @enum {string} */
+                            purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                            intelligenceQuery?: {
+                                keyword?: string;
+                                locationKeyword?: string;
+                                sourceIds?: string[];
+                                /** @enum {string} */
+                                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
+                                /** @enum {string} */
+                                reviewStatus?: "candidate" | "confirmed" | "rejected";
+                                /** @enum {string} */
+                                timeMode?: "published" | "effective" | "observed";
+                                /** Format: date-time */
+                                from?: string;
+                                /** Format: date-time */
+                                to?: string;
+                                bbox?: (number)[];
+                                objectId?: string;
+                                mmsis?: string[];
+                                /** @enum {string} */
+                                kind?: "events" | "marine" | "both";
+                                samplePointId?: string;
+                                /** Format: date-time */
+                                forecastFrom?: string;
+                                /** Format: date-time */
+                                forecastTo?: string;
+                            };
+                            intelligenceTimeRange?: {
+                                /** Format: date-time */
+                                from: string;
+                                /** Format: date-time */
+                                to: string;
+                            };
+                            intelligenceTimeUnclear?: boolean;
+                            heatmapTimeUnclear?: boolean;
+                            intelligenceObjectUnclear?: boolean;
+                            intelligenceObjectCandidates?: {
+                                id: string;
+                                name: string;
+                            }[];
+                        };
+                        inputRevision?: number;
+                        resultInputRevision?: number | null;
+                        summaryInputRevision?: number | null;
+                        errorCode?: string | null;
+                        /** Format: uuid */
+                        retryOfTaskId?: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentController_events: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** Format: uuid */
+                            sessionId: string;
+                            /** Format: uuid */
+                            taskId: string | null;
+                            type: string;
+                            data: {
+                                [key: string]: unknown;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        nextCursor: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentUiController_register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    instanceId: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        clientId: string;
+                        pageGeneration: number;
+                        heatmapVersion?: number;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentUiController_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientId: string;
+                    pageGeneration: number;
+                    heatmapVersion?: number;
+                    /** Format: uuid */
+                    sessionId: string | null;
+                    state: {
+                        sequence: number;
+                        /** @enum {string} */
+                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "unknown";
+                        components: {
+                            /** @enum {string} */
+                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                            version: number;
+                            revision?: number;
+                            mounted: boolean;
+                            open: boolean;
+                            visible: boolean;
+                            /** @default false */
+                            focused?: boolean;
+                            /** @default 0 */
+                            order?: number;
+                            /** @default false */
+                            loading?: boolean;
+                            /** @default false */
+                            dirty?: boolean;
+                            /** @default false */
+                            interacting?: boolean;
+                            actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                            /** @enum {string} */
+                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                            /** @enum {string} */
+                            blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                        }[];
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        clientId: string;
+                        pageGeneration: number;
+                        heatmapVersion?: number;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentUiController_commands: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            presentation?: {
+                                query: {
+                                    bbox: (number)[];
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                    sourceId?: string;
+                                    shipType?: number;
+                                    mmsis?: string[];
+                                };
+                                grid: {
+                                    level: number;
+                                    cellDegrees: number;
+                                };
+                                cells: {
+                                    id: string;
+                                    x: number;
+                                    y: number;
+                                    lon: number;
+                                    lat: number;
+                                    vesselCount: number;
+                                }[];
+                                totalVessels: number;
+                                /** Format: date-time */
+                                generatedAt: string;
+                                /** @enum {string} */
+                                metric: "unique_vessels";
+                                /** @enum {string} */
+                                shipTypeBasis: "current_profile";
+                                /** @enum {string} */
+                                kind: "ais_heatmap";
+                                version: number;
+                                inputRevision: number;
+                            };
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            taskId: string;
+                            /** Format: uuid */
+                            clientId: string;
+                            pageGeneration: number;
+                            operation: {
+                                /** @enum {string} */
+                                componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                /** @enum {string} */
+                                action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                                /** @enum {string} */
+                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                            };
+                            expectedVersion: number;
+                            /** @enum {string} */
+                            status: "queued" | "claimed" | "executing" | "succeeded" | "failed" | "rejected" | "cancelled" | "expired" | "unknown";
+                            /** Format: uuid */
+                            claimToken?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentUiController_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientId: string;
+                    pageGeneration: number;
+                    heatmapVersion?: number;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        presentation?: {
+                            query: {
+                                bbox: (number)[];
+                                /** Format: date-time */
+                                from: string;
+                                /** Format: date-time */
+                                to: string;
+                                sourceId?: string;
+                                shipType?: number;
+                                mmsis?: string[];
+                            };
+                            grid: {
+                                level: number;
+                                cellDegrees: number;
+                            };
+                            cells: {
+                                id: string;
+                                x: number;
+                                y: number;
+                                lon: number;
+                                lat: number;
+                                vesselCount: number;
+                            }[];
+                            totalVessels: number;
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            metric: "unique_vessels";
+                            /** @enum {string} */
+                            shipTypeBasis: "current_profile";
+                            /** @enum {string} */
+                            kind: "ais_heatmap";
+                            version: number;
+                            inputRevision: number;
+                        };
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        taskId: string;
+                        /** Format: uuid */
+                        clientId: string;
+                        pageGeneration: number;
+                        operation: {
+                            /** @enum {string} */
+                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                            /** @enum {string} */
+                            action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                            /** @enum {string} */
+                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                        };
+                        expectedVersion: number;
+                        /** @enum {string} */
+                        status: "queued" | "claimed" | "executing" | "succeeded" | "failed" | "rejected" | "cancelled" | "expired" | "unknown";
+                        /** Format: uuid */
+                        claimToken?: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentUiController_receipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    clientId: string;
+                    pageGeneration: number;
+                    heatmapVersion?: number;
+                    /** Format: uuid */
+                    receiptId: string;
+                    /** Format: uuid */
+                    claimToken: string;
+                    /** @enum {string} */
+                    status: "executing" | "succeeded" | "failed" | "rejected";
+                    state: {
+                        sequence: number;
+                        /** @enum {string} */
+                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "unknown";
+                        components: {
+                            /** @enum {string} */
+                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                            version: number;
+                            revision?: number;
+                            mounted: boolean;
+                            open: boolean;
+                            visible: boolean;
+                            /** @default false */
+                            focused?: boolean;
+                            /** @default 0 */
+                            order?: number;
+                            /** @default false */
+                            loading?: boolean;
+                            /** @default false */
+                            dirty?: boolean;
+                            /** @default false */
+                            interacting?: boolean;
+                            actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
+                            /** @enum {string} */
+                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                            /** @enum {string} */
+                            blocked?: "editing" | "drawing" | "loading" | "unavailable";
+                        }[];
+                    };
+                    /** @enum {string} */
+                    error?: "STATE_CONFLICT" | "POSTCONDITION_FAILED" | "UNAVAILABLE" | "EXECUTION_FAILED";
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }

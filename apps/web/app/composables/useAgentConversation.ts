@@ -1,6 +1,8 @@
+import { isUiIntent } from '../../../../packages/domain/agent-ui-intent';
 import type { UnwrapNestedRefs } from 'vue';
 import type {
   AgentEvent,
+  UiBinding,
   AgentMessage,
   AgentSession,
   AgentStep,
@@ -18,8 +20,9 @@ import type {
 } from '@ais/contracts';
 import { canOperate } from '../utils/display';
 
-interface AgentConfig {
+export interface AgentConfig {
   enabled: boolean;
+  uiEnabled?: boolean;
   defaultHistoryHours: number;
   maxHistoryHours: number;
   maxModelCalls: number;
@@ -62,12 +65,13 @@ export const agentStatusLabel: Record<AgentTask['status'], string> = {
   queued: '等待执行',
   running: '智能体分析中',
   waiting_result: '等待算法结果',
+  waiting_ui: '等待界面执行',
   completed: '已完成',
   failed: '执行失败',
   cancelled: '已取消',
 };
 export function agentTaskActive(task: AgentTask) {
-  return ['queued', 'running', 'waiting_result'].includes(task.status);
+  return ['queued', 'running', 'waiting_result', 'waiting_ui'].includes(task.status);
 }
 export function agentTaskHasAnalysis(
   task: Pick<AgentTask, 'definitionId' | 'resultVersion'>,
@@ -101,6 +105,8 @@ export function createAgentMessageFollow() {
 export function useAgentConversation(
   context?: () => AgentMapContext | undefined,
   heatmap?: AgentHeatmapDisplay,
+  bindUi?: (sessionId: string) => Promise<UiBinding | undefined>,
+  readConfig?: () => Promise<AgentConfig>,
 ) {
   let heatmapTicket: number | undefined;
   const { api, session: identity } = usePlatform();
@@ -244,7 +250,13 @@ export function useAgentConversation(
     fingerprint: string;
     retryFingerprint: string;
     key: string;
-    body: { content: string; historyHours: number; bbox?: number[]; mapContext?: AgentMapContext };
+    body: {
+      content: string;
+      historyHours: number;
+      bbox?: number[];
+      mapContext?: AgentMapContext;
+      uiBinding?: UiBinding;
+    };
   } | null = null;
   function current(value: number) {
     return !disposed && generation === value;
@@ -336,6 +348,7 @@ export function useAgentConversation(
     operationError.value = '';
   }
   function displayHeatmap(response: TaskDetail) {
+    if (config.value?.uiEnabled && response.task.uiBinding) return;
     const result = response.heatmapResult;
     const task = response.task;
     const latest = tasks.value.find((item) => item.id === task.id);
@@ -435,7 +448,7 @@ export function useAgentConversation(
     loading.value = true;
     operationError.value = '';
     try {
-      const settings = await api<AgentConfig>('/agent/config');
+      const settings = await (readConfig ? readConfig() : api<AgentConfig>('/agent/config'));
       if (!current(turn)) return;
       config.value = settings;
       historyHours.value = settings.defaultHistoryHours;
@@ -462,7 +475,7 @@ export function useAgentConversation(
       !config.value?.enabled ||
       busy.value ||
       loading.value ||
-      activeTask.value
+      (activeTask.value && !isUiIntent(draft.value))
     )
       return;
     const content = draft.value.trim();
@@ -481,7 +494,13 @@ export function useAgentConversation(
     const turn = generation;
     const mapContext = context?.();
     heatmapTicket = heatmap?.begin();
-    let body = {
+    let body: {
+      content: string;
+      historyHours: number;
+      bbox?: number[];
+      mapContext?: AgentMapContext;
+      uiBinding?: UiBinding;
+    } = {
       content,
       historyHours: historyHours.value,
       ...(region.value ? { bbox: [...region.value] } : {}),
@@ -518,6 +537,8 @@ export function useAgentConversation(
       }
       const id = activeSession.value.id;
       currentRequest.value!.sessionId = id;
+      const uiBinding = await bindUi?.(id);
+      if (uiBinding) body.uiBinding = uiBinding;
       const retryFingerprint = JSON.stringify({
         id,
         content,
@@ -671,7 +692,15 @@ export function useAgentConversation(
     try {
       const response = await api<{ task: AgentTask; message: AgentMessage }>(
         `/agent/tasks/${encodeURIComponent(id)}/retry`,
-        { method: 'POST', body: {}, idempotencyKey: retryKeys.get(id)! },
+        {
+          method: 'POST',
+          body: {
+            ...(activeSession.value && bindUi
+              ? { uiBinding: await bindUi(activeSession.value.id) }
+              : {}),
+          },
+          idempotencyKey: retryKeys.get(id)!,
+        },
       );
       if (!current(turn)) return;
       // Keep this key for the original task while the session is open, including lost refreshes.
@@ -768,6 +797,9 @@ export function useAgentConversation(
     submittedMessageId,
     currentReply,
     dismissCurrentReply,
+    showCurrentReply: () => {
+      replyDismissed.value = false;
+    },
     tasks,
     detail,
     selectedTaskId,

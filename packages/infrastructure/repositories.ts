@@ -134,7 +134,7 @@ export async function flushOutbox(infra: Infrastructure): Promise<number> {
       'SELECT * FROM outbox WHERE published_at IS NULL ORDER BY created_at LIMIT 100 FOR UPDATE SKIP LOCKED',
     );
     for (const row of rows.rows) {
-      if (row.subject.startsWith('ais.commands.')) await assertCollectionReady(infra);
+      if (row.subject.startsWith('ais.commands.')) await assertCollectionReady(infra, client);
       await infra.js.publish(row.subject, JSON.stringify(row.payload), { msgID: row.id });
       await client.query('UPDATE outbox SET published_at=now(),attempts=attempts+1 WHERE id=$1', [
         row.id,

@@ -5,6 +5,8 @@ import type { AgentHeatmapResult, HeatmapQuery, HeatmapResult } from '@ais/contr
 export function useAisHeatmap() {
   const { api, session } = usePlatform();
   const result = ref<HeatmapResult | null>(null);
+  const lastSnapshot = ref<HeatmapResult | null>(null);
+  const closeRevision = ref(0);
   const lockedQuery = ref<HeatmapQuery | null>(null);
   const loading = ref(false);
   const error = ref('');
@@ -18,6 +20,7 @@ export function useAisHeatmap() {
     return ++generation;
   }
   function close() {
+    closeRevision.value++;
     invalidate();
     result.value = null;
     lockedQuery.value = null;
@@ -31,6 +34,7 @@ export function useAisHeatmap() {
       return false;
     }
     result.value = parsed.data;
+    lastSnapshot.value = parsed.data;
     lockedQuery.value = parsed.data.query;
     displayed.value = false;
     error.value = '';
@@ -94,12 +98,15 @@ export function useAisHeatmap() {
     () => {
       close();
       seen.clear();
+      lastSnapshot.value = null;
     },
     { flush: 'sync' },
   );
   onScopeDispose(close);
   return {
     result,
+    lastSnapshot,
+    closeRevision,
     lockedQuery,
     loading,
     error,

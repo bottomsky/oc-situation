@@ -54,6 +54,7 @@ async function more() {
     error.value = (e as Error).message;
   }
 }
+useUiComponent('page.list', { read: () => uiProjection(true, [], { loading: busy.value }) });
 </script>
 <template>
   <section class="page">

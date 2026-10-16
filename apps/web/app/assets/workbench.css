@@ -965,6 +965,13 @@
     width: 300px;
     box-shadow: 15px 0 30px #0008;
   }
+  .chart-workspace.left-open .chart-map-notices {
+    left: 260px;
+  }
+  .chart-workspace.left-open .chart-agent-dock {
+    left: calc(50% + 126px);
+    width: min(640px, calc(100% - 280px));
+  }
   .chart-right-slot {
     width: var(--chart-right-width, 320px);
     flex-basis: var(--chart-right-width, 320px);

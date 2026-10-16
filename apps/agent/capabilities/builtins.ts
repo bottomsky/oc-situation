@@ -3,6 +3,12 @@ import { CapabilityError } from './errors';
 import type { CapabilityDirectoryEntry, CapabilityRoutingMetadata } from './metadata';
 
 const ROUTING: Readonly<Record<string, CapabilityRoutingMetadata>> = Object.freeze({
+  'ui-control': Object.freeze({
+    intents: Object.freeze(['ui_control'] as const),
+    requiredInputs: Object.freeze({ ui_control: Object.freeze([]) }),
+    executionMode: 'local',
+    available: true,
+  }),
   'ais-heatmap': Object.freeze({
     intents: Object.freeze(['ais_heatmap'] as const),
     requiredInputs: Object.freeze({ ais_heatmap: Object.freeze(['region', 'time'] as const) }),
@@ -39,6 +45,18 @@ export function getBuiltinCapabilityMetadata(capabilityId: string): CapabilityRo
 }
 
 export const BUILTIN_SKILL_BINDINGS: readonly SkillToolBinding[] = Object.freeze([
+  Object.freeze({
+    skillId: 'ui-control',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: Object.freeze([
+      'ui.list_capabilities',
+      'ui.get_state',
+      'ui.execute',
+      'ui.get_command',
+    ]),
+    referencePaths: Object.freeze([]),
+  }),
   Object.freeze({
     skillId: 'ais-heatmap',
     version: '1.0.0',

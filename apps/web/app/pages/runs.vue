@@ -48,6 +48,8 @@ onMounted(async () => {
   timer = setInterval(() => void load(), 5000);
 });
 onBeforeUnmount(() => clearInterval(timer));
+useUiComponent('page.list', { read: () => uiProjection(true, [], { loading: busy.value }) });
+useUiComponent('page.detail', { read: () => uiProjection(!!selected.value, []) });
 </script>
 <template>
   <section class="page">

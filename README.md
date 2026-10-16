@@ -14,6 +14,8 @@ Agent 使用内置技能目录组织任务选择与工具执行，配置和扩�
 
 准备 Node.js 24、Bun 1.3.12、Docker Compose。
 
+Windows 可直接执行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\start.ps1`；只检查环境使用 `-CheckOnly`。脚本以 UTF-8 处理原生命令输出，文件需保留 UTF-8 BOM 以兼容 Windows PowerShell 5.1。
+
 ```powershell
 bun --no-env-file install --frozen-lockfile
 bun --no-env-file run infra:up postgres clickhouse nats s3
@@ -23,6 +25,8 @@ bun --no-env-file run demo
 ```
 
 访问[本地 Web](http://127.0.0.1:13001)。随机管理员、操作员和只读账号保存在 `.data/demo-admin.json`，该文件被 Git 排除。演示运行受控网页、Crawlee、RAW 清洗、独立 PostgreSQL/ClickHouse 写入及 S3 归档，生成 4 艘样例船和轨迹；记录带“样例数据”标记。
+
+启动时先恢复已有消费者，恢复成功后才开启定时任务调度。AISStream 长连接的采集命令会持续保留至运行结束；只有已投递、来源与任务启用、运行中且持有有效来源租约的命令，才不按等待年龄计算积压。健康接口保留真实消息年龄 `oldestAgeMs`，另返回用于背压的等待年龄 `pendingAgeMs` 和被排除的流式命令数 `activeStreamingCommands`。真实排队命令、失效租约、容量超限或消费者异常仍会阻止启动；等待 120 秒超时后保留队列和数据，请检查消费者与租约状态，不要清空队列来绕过检查。
 
 Linux/macOS 安装浏览器前执行 `export PLAYWRIGHT_BROWSERS_PATH="$PWD/.data/playwright"`。配置通过部署环境或明确的 Node `--env-file` 参数注入；新服务不主动读取旧原型 `.env.local`。`.env.example` 与本地 Compose 端口、字段一致。
 

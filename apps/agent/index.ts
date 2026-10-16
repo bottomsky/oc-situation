@@ -1,3 +1,9 @@
+import { executeUiTask } from './ui-runtime';
+import {
+  expireUiCommands,
+  createUiCommand,
+  getUiTaskCommand,
+} from '../../packages/infrastructure/agent-ui';
 import {
   searchAgentIntelligence,
   getIntelligenceSourceHealth,
@@ -162,6 +168,7 @@ export async function ensureAgentBus(infra: Infrastructure): Promise<void> {
 }
 /** PostgreSQL's queued/expired task rows are the outbox; loss of a publish never loses a task. */
 export async function publishRunnableAgentTasks(infra: Infrastructure) {
+  await expireUiCommands(infra);
   const tasks = await listRunnableAgentTasks(infra);
   for (const taskId of tasks)
     await infra.js.publish(AGENT_SUBJECT, JSON.stringify({ taskId }), {
@@ -174,7 +181,7 @@ export async function processAgentTask(
   infra: Infrastructure,
   taskId: string,
   options: RuntimeOptions & { maxRecords?: number },
-  workerId = randomUUID(),
+  workerId: string = randomUUID(),
 ): Promise<boolean> {
   const task = await claimAgentTask(infra, workerId, taskId);
   if (!task) return false;
@@ -199,6 +206,14 @@ export async function processAgentTask(
   try {
     const context = await getAgentTaskContext(infra, task.id);
     if (!context) return false;
+    if (
+      task.intent === 'ui_control' ||
+      (task.intent === 'ais_heatmap' &&
+        (await getUiTaskCommand(infra, task.id, task.inputRevision ?? 0)))
+    ) {
+      await executeUiTask(infra, task, workerId, options.maxToolCalls ?? 24);
+      return true;
+    }
     const previous = await getPreviousAgentTask(infra, task.id);
     let boundTask = task;
     await executeAgent(
@@ -249,7 +264,35 @@ export async function processAgentTask(
           };
         },
         saveResults: (results) => saveAgentResults(...fence, results),
-        finish: (outcome) => finishAgentTask(...fence, outcome),
+        finish: async (outcome) => {
+          if (
+            task.intent === 'ais_heatmap' &&
+            outcome.status === 'completed' &&
+            task.uiBinding &&
+            process.env.AGENT_UI_ENABLED === 'true'
+          ) {
+            await saveAgentStep(...fence, {
+              key: 'ui_presentation_summary',
+              name: '热图计算结果',
+              input: null,
+              output: outcome,
+            });
+            try {
+              return !!(await createUiCommand(...fence, {
+                componentId: 'chart.heatmap',
+                action: 'show',
+              }));
+            } catch {
+              return finishAgentTask(...fence, {
+                ...outcome,
+                summary:
+                  outcome.summary +
+                  ' 计算结果已保存；当前页面状态已改变，未自动展示，请从历史结果重新展示。',
+              });
+            }
+          }
+          return finishAgentTask(...fence, outcome);
+        },
       },
       { ...options, signal: controller.signal },
     );
@@ -269,6 +312,29 @@ export async function runAgentWorker(
   const skillCatalog = options.skillCatalog ?? (await getBusinessSkillCatalog());
   if (!options.apiKey) throw new Error('DEEPSEEK_API_KEY is required when AGENT_ENABLED=true');
   let stage: WorkerStage = 'bus';
+  // A bounded UI lane keeps close/hide commands responsive while a data/model task is running.
+  // Both lanes claim the same durable tasks; PostgreSQL fencing prevents double execution.
+  let uiWork: Promise<void> | undefined;
+  const uiWorkerId = `ui-${randomUUID()}`;
+  const uiTimer = setInterval(() => {
+    if (uiWork || signal.aborted || process.env.AGENT_UI_ENABLED !== 'true') return;
+    uiWork = (async () => {
+      await expireUiCommands(infra);
+      const tasks = await infra.pool
+        .query(`SELECT t.id FROM agent_tasks t WHERE t.status='queued' AND
+        (t.intent='ui_control' OR EXISTS (SELECT 1 FROM agent_ui_commands c WHERE c.task_id=t.id AND c.input_revision=t.input_revision)) ORDER BY t.created_at LIMIT 4`);
+      for (const row of tasks.rows) {
+        if (signal.aborted) break;
+        await processAgentTask(infra, row.id, { ...options, skillCatalog, signal }, uiWorkerId);
+      }
+    })()
+      .catch(() => {
+        /* Durable queued tasks are retried on the next bounded scan. */
+      })
+      .finally(() => {
+        uiWork = undefined;
+      });
+  }, 1000);
   try {
     await ensureAgentBus(infra);
     stage = 'consumer';
@@ -329,5 +395,8 @@ export async function runAgentWorker(
     }
   } catch (error) {
     throw new WorkerOperationError(stage, error);
+  } finally {
+    clearInterval(uiTimer);
+    await uiWork;
   }
 }

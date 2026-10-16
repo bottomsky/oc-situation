@@ -99,7 +99,7 @@ worker('writerPostgres');
 worker('writerClickhouse');
 worker('archiver');
 if (process.env.AGENT_ENABLED === 'true') worker('agent');
-const api = await createApi(infra);
+const api = await createApi(infra, { scheduler: false });
 await api.app.listen(13000, '127.0.0.1');
 const operations = await startOperationsServer(api.app.get(SystemController));
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => shutdown.abort());
@@ -112,6 +112,7 @@ try {
     },
     { signal: shutdown.signal, onProgress: (message) => console.log(message) },
   );
+  api.app.get(JobsService).start();
   try {
     await api.app.get(JobsService).dispatch('00000000-0000-4000-8000-000000000001', randomUUID());
   } catch (error) {

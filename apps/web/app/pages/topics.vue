@@ -122,6 +122,18 @@ onMounted(() => {
 });
 onBeforeUnmount(() => clearInterval(timer));
 watch(analysisVersion, load);
+useUiComponent('page.list', { read: () => uiProjection(true, [], { loading: busy.value }) });
+useUiReadOnlyEditor(
+  () => canManage.value,
+  () => ({
+    name: name.value,
+    bounds: bounds.value,
+    definitionId: definitionId.value,
+    historyHours: historyHours.value,
+    windowMinutes: windowMinutes.value,
+  }),
+  () => busy.value,
+);
 </script>
 <template>
   <section class="page">

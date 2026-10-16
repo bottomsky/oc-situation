@@ -1,3 +1,4 @@
+import { AgentUiController } from './agent/ui-controller';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import 'reflect-metadata';
 import { Module } from '@nestjs/common';
@@ -50,6 +51,7 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
       TopicsController,
       AnalysisController,
       AgentController,
+      AgentUiController,
     ],
     providers: [
       { provide: INFRA, useValue: infra },

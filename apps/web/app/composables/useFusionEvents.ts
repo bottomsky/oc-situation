@@ -17,6 +17,7 @@ let version = 0;
 export function useFusionEvents() {
   const status = useState<'connecting' | 'live' | 'offline'>('fusion-status', () => 'offline');
   const error = useState('fusion-error', () => '');
+  const feedError = useState('fusion-feed-error', () => '');
   const analysisVersion = useState('fusion-analysis-version', () => 0);
   const mapData = useState<MapResponse | null>('fusion-map-data', () => null);
   function subscribeViewport(query: ViewportQuery) {
@@ -25,12 +26,12 @@ export function useFusionEvents() {
     if (socket?.readyState === WebSocket.OPEN)
       socket.send(JSON.stringify({ type: 'viewport', query, version }));
   }
-  return { status, error, analysisVersion, mapData, subscribeViewport };
+  return { status, error, feedError, analysisVersion, mapData, subscribeViewport };
 }
 
 export function startFusionEvents() {
   const { api, session } = usePlatform();
-  const { status, error, analysisVersion, mapData } = useFusionEvents();
+  const { status, error, feedError, analysisVersion, mapData } = useFusionEvents();
   let stopped = false;
   let reconnect: ReturnType<typeof setTimeout> | undefined;
   let fallback: ReturnType<typeof setInterval> | undefined;
@@ -46,9 +47,9 @@ export function startFusionEvents() {
     const current = sessionGeneration;
     try {
       await sync.refresh();
-      if (current === sessionGeneration && status.value === 'live') error.value = '';
+      if (current === sessionGeneration) feedError.value = '';
     } catch (e) {
-      if (current === sessionGeneration) error.value = (e as Error).message;
+      if (current === sessionGeneration) feedError.value = (e as Error).message;
     }
   }
   function connect() {
@@ -62,6 +63,7 @@ export function startFusionEvents() {
       if (socket !== active) return;
       retry = 0;
       status.value = 'live';
+      error.value = '';
       if (viewport) active.send(JSON.stringify({ type: 'viewport', query: viewport, version }));
       void catchUp();
     };
@@ -72,7 +74,10 @@ export function startFusionEvents() {
         if (message.type === 'analysis.updated') void catchUp();
         if (message.type === 'error') {
           status.value = 'offline';
-          error.value = '实时数据暂不可用，已切换接口补取';
+          error.value =
+            message.code === 'INVALID_SUBSCRIPTION'
+              ? '地图实时订阅参数无效，船位已切换接口刷新'
+              : '实时连接暂不可用，船位与专题事件已切换接口补取';
           active.close();
           return;
         }
@@ -104,6 +109,7 @@ export function startFusionEvents() {
     active.onclose = () => {
       if (socket === active) socket = null;
       status.value = 'offline';
+      if (!stopped && session.value) error.value ||= '实时连接已断开，船位与专题事件已切换接口补取';
       if (!stopped && session.value)
         reconnect = setTimeout(connect, Math.min(30000, 1000 * 2 ** retry++));
     };
@@ -128,6 +134,7 @@ export function startFusionEvents() {
       viewport = null;
       version++;
       error.value = '';
+      feedError.value = '';
       if (id) {
         connect();
         void catchUp();

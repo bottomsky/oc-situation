@@ -36,6 +36,12 @@ export async function chartFixture(
         maxModelCalls: 12,
         maxToolCalls: 24,
       };
+    else if (path.endsWith('/intelligence/events')) json = { items: [], nextCursor: null };
+    else if (path.endsWith('/intelligence/objects')) json = { items: [] };
+    else if (path.endsWith('/intelligence/plot-set')) json = { eventIds: [], hiddenEventIds: [] };
+    else if (path.endsWith('/intelligence/plot'))
+      json = { type: 'FeatureCollection', features: [], items: [] };
+    else if (path.endsWith('/intelligence/sources')) json = [];
     else if (path.endsWith('/sources'))
       json = [
         {

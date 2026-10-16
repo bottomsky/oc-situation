@@ -27,6 +27,7 @@ export async function runMigrations(infra: Infrastructure): Promise<void> {
       '015',
       '016',
       '017',
+      '018',
     ]) {
       const existing = await client.query(
         'SELECT version FROM schema_migrations WHERE version=$1',

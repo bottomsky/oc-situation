@@ -14,6 +14,13 @@ const emit = defineEmits<{
 const detailDirection = computed(() =>
   resolveVesselDirection(workspace.value.detail?.latestPosition ?? {}),
 );
+// Mount heavy editors on first use, then retain their drafts while the panel or tab is hidden.
+const visitedTabs = reactive(new Set<string>());
+watch(
+  () => workspace.value.leftTab,
+  (tab) => visitedTabs.add(tab),
+  { immediate: true },
+);
 const layerNames: Record<keyof ChartLayerVisibility, string> = {
   ais: 'AIS 船位',
   tracks: '船舶轨迹',
@@ -47,8 +54,12 @@ const layerNames: Record<keyof ChartLayerVisibility, string> = {
       </button>
     </div>
     <div class="chart-panel-scroll">
-      <slot v-if="workspace.leftTab === 'intelligence'" name="intelligence" />
-      <slot v-if="workspace.leftTab === 'heatmap'" name="heatmap" />
+      <div v-if="visitedTabs.has('intelligence')" v-show="workspace.leftTab === 'intelligence'">
+        <slot name="intelligence" />
+      </div>
+      <div v-if="visitedTabs.has('heatmap')" v-show="workspace.leftTab === 'heatmap'">
+        <slot name="heatmap" />
+      </div>
       <section v-show="workspace.leftTab === 'search'" class="chart-section">
         <h2>船舶搜索</h2>
         <form class="search-row" @submit.prevent="workspace.find(false)">

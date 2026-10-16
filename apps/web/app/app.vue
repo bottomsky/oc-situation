@@ -2,6 +2,23 @@
 const route = useRoute();
 const { notice } = usePlatform();
 startFusionEvents();
+const ui = useAgentUi();
+const { session } = usePlatform();
+useUiComponent('app.page', { read: () => uiProjection(true, []) });
+onMounted(() => {
+  void ui.start();
+});
+watch(
+  () => session.value?.user.id,
+  () => {
+    if (import.meta.client) void ui.start();
+  },
+);
+watch(
+  () => route.path,
+  () => ui.changed(),
+);
+onBeforeUnmount(() => ui.stop());
 </script>
 
 <template>

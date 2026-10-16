@@ -170,6 +170,26 @@ function close() {
   emit('stopDrawing');
   returnFocus?.focus({ preventScroll: true });
 }
+useUiComponent('agent.input', {
+  read: () =>
+    uiProjection(
+      !!props.state.openInput && !props.drawing,
+      ['close', ...(props.state.inputRequests.length ? ['open' as const] : [])],
+      {
+        order: 80,
+        focused: !!dialog.value?.contains(import.meta.client ? document.activeElement : null),
+        dirty:
+          !!request.value && JSON.stringify(values.value) !== JSON.stringify(request.value.prefill),
+        interacting: props.drawing,
+        loading: props.state.inputBusy,
+        ...(props.state.inputBusy ? { blocked: 'loading' as const } : {}),
+      },
+    ),
+  execute: (op) => {
+    if (op.action === 'close') close();
+    else if (props.state.inputRequests[0]) props.state.showInput(props.state.inputRequests[0].id);
+  },
+});
 function currentRegion() {
   const bbox = props.currentBounds?.() ?? props.context.bbox;
   values.value.bbox = [...bbox];

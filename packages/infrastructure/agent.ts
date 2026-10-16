@@ -1,3 +1,4 @@
+import type { UiBinding } from '../contracts/agent-ui';
 import {
   AgentIntelligenceResultSchema,
   type AgentIntelligenceResult,
@@ -40,6 +41,8 @@ type Row = Record<string, unknown>;
 const iso = (v: unknown) => new Date(v as string | Date).toISOString();
 function taskRow(r: Row): AgentTask {
   return {
+    uiBinding: (r.ui_binding ?? null) as AgentTask['uiBinding'],
+    uiResult: (r.ui_result ?? null) as AgentTask['uiResult'],
     id: String(r.id),
     sessionId: String(r.session_id),
     ownerId: String(r.owner_id),
@@ -86,7 +89,7 @@ const messageRow = (r: Row): AgentMessage => ({
   inputRevision: r.input_revision == null ? null : Number(r.input_revision),
   createdAt: iso(r.created_at),
 });
-async function transaction<T>(
+export async function transaction<T>(
   infra: Infrastructure,
   work: (client: PoolClient) => Promise<T>,
   readOnly = false,
@@ -223,7 +226,7 @@ async function insertInputRequest(client: PoolClient, row: Row, spec: AgentInput
   });
   return request;
 }
-async function event(
+export async function event(
   client: PoolClient,
   sessionId: string,
   taskId: string | null,
@@ -236,7 +239,7 @@ async function event(
   );
 }
 // Serialize mutations per session before allocating event IDs, making cursor replay commit-safe.
-async function lockTask(client: PoolClient, taskId: string): Promise<Row | null> {
+export async function lockTask(client: PoolClient, taskId: string): Promise<Row | null> {
   const found = await client.query('SELECT session_id FROM agent_tasks WHERE id=$1', [taskId]);
   if (!found.rowCount) return null;
   await client.query('SELECT id FROM agent_sessions WHERE id=$1 FOR UPDATE', [
@@ -251,7 +254,7 @@ async function lockTask(client: PoolClient, taskId: string): Promise<Row | null>
     ).rows[0] ?? null
   );
 }
-async function canWrite(client: PoolClient, ownerId: unknown) {
+export async function canWrite(client: PoolClient, ownerId: unknown) {
   return Boolean(
     (
       await client.query(
@@ -272,7 +275,7 @@ export async function revokeAgentOwnerExecution(
   ]);
   const tasks = await client.query(
     `SELECT id,session_id FROM agent_tasks WHERE owner_id=$1
-    AND status IN ('awaiting_input','queued','running','waiting_result') ORDER BY session_id,id FOR UPDATE`,
+    AND status IN ('awaiting_input','queued','running','waiting_result','waiting_ui') ORDER BY session_id,id FOR UPDATE`,
     [ownerId],
   );
   for (const row of tasks.rows) {
@@ -289,7 +292,7 @@ export async function revokeAgentOwnerExecution(
     });
   }
 }
-async function fenced(
+export async function fenced(
   client: PoolClient,
   taskId: string,
   workerId: string,
@@ -383,6 +386,7 @@ export async function submitAgentMessage(
         bbox: input.bbox ?? null,
         historyHours: input.historyHours,
         mapContext: input.mapContext ?? null,
+        uiBinding: input.uiBinding ?? null,
       }),
     )
     .digest('hex');
@@ -537,6 +541,18 @@ export async function submitAgentMessage(
         JSON.stringify(selection),
       ],
     );
+    if (input.uiBinding) {
+      const binding = await client.query(
+        'SELECT id FROM agent_ui_clients WHERE id=$1 AND owner_id=$2 AND page_generation=$3 AND session_id=$4 AND lease_until>now()',
+        [input.uiBinding.clientId, ownerId, input.uiBinding.pageGeneration, sessionId],
+      );
+      if (!binding.rowCount) throw new AgentInputError('conflict', '当前页面绑定已失效，请重试。');
+      await client.query('UPDATE agent_tasks SET ui_binding=$2::jsonb WHERE id=$1', [
+        id,
+        JSON.stringify(input.uiBinding),
+      ]);
+      result.rows[0].ui_binding = input.uiBinding;
+    }
     const message = await client.query(
       "INSERT INTO agent_messages(id,session_id,task_id,role,content) VALUES($1,$2,$3,'user',$4) RETURNING *",
       [randomUUID(), sessionId, id, input.content],
@@ -1384,8 +1400,11 @@ export async function retryAgentTask(
   ownerId: string,
   taskId: string,
   key: string,
+  uiBinding?: UiBinding,
 ) {
-  const hash = createHash('sha256').update(`retry:${taskId}`).digest('hex');
+  const hash = createHash('sha256')
+    .update(`retry:${taskId}${uiBinding ? JSON.stringify(uiBinding) : ''}`)
+    .digest('hex');
   return transaction(infra, async (client) => {
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
       `agent-message:${ownerId}:${key}`,
@@ -1420,6 +1439,16 @@ export async function retryAgentTask(
         'conflict',
         'Only a finished or legacy waiting task can start a new attempt',
       );
+    if (
+      uiBinding &&
+      !(
+        await client.query(
+          'SELECT id FROM agent_ui_clients WHERE id=$1 AND owner_id=$2 AND page_generation=$3 AND session_id=$4 AND lease_until>now()',
+          [uiBinding.clientId, ownerId, uiBinding.pageGeneration, source.session_id],
+        )
+      ).rowCount
+    )
+      throw new AgentInputError('conflict', '页面绑定已失效');
     const derived = deriveAgentIntent(String(source.goal));
     const selection = canonicalSelection({
       ...(source.bbox ? { bbox: source.bbox as AgentSelection['bbox'] } : {}),
@@ -1476,6 +1505,13 @@ export async function retryAgentTask(
         'UPDATE agent_tasks SET result_version=1,result_input_revision=0 WHERE id=$1',
         [id],
       );
+    }
+    if (uiBinding) {
+      await client.query('UPDATE agent_tasks SET ui_binding=$2::jsonb WHERE id=$1', [
+        id,
+        JSON.stringify(uiBinding),
+      ]);
+      task.ui_binding = uiBinding;
     }
     const message = (
       await client.query(

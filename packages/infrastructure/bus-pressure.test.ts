@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AckPolicy, DeliverPolicy, DiscardPolicy, StorageType } from '@nats-io/jetstream';
+import {
+  AckPolicy,
+  DeliverPolicy,
+  DiscardPolicy,
+  StorageType,
+  type StoredMsg,
+} from '@nats-io/jetstream';
 import {
   assertCollectionReady,
   createRawEnvelope,
@@ -62,6 +68,37 @@ function fixture(pressureStream = 'AIS_COMMANDS', pressure = 'age') {
   return { infra, publish, streamInfo, consumerInfo };
 }
 
+function streamingFixture() {
+  const f = fixture();
+  Object.assign(f.streamInfo.AIS_COMMANDS!.state, { first_seq: 1, last_seq: 1 });
+  Object.assign(f.consumerInfo.collector!, { num_ack_pending: 1, delivered: { stream_seq: 1 } });
+  const command = {
+    schemaVersion: 1,
+    mode: 'collect',
+    sourceId: 'synthetic-stream',
+    runId: 'synthetic-run',
+    jobId: 'synthetic-job',
+    idempotencyKey: 'synthetic-key',
+    requestedAt: new Date(Date.now() - 172_800_000).toISOString(),
+  };
+  const message = (seq: number, subject = 'ais.commands.collect') =>
+    ({
+      seq,
+      subject,
+      time: new Date(command.requestedAt),
+      json: () => command,
+    }) as unknown as StoredMsg;
+  const messages = [message(1)];
+  const get = vi.fn(
+    async (_name: string, query: { seq: number }) =>
+      messages.find((m) => m.seq >= query.seq) ?? null,
+  );
+  const query = vi.fn().mockResolvedValue({ rowCount: 1, rows: [{ id: command.runId }] });
+  f.infra.jsm.streams.getMessage = get;
+  Object.assign(f.infra, { pool: { query } });
+  return { ...f, get, query, message, messages };
+}
+
 async function raw(infra: Infrastructure) {
   return createRawEnvelope(infra, {
     sourceId: 'pressure-fixture',
@@ -74,6 +111,69 @@ async function raw(infra: Infrastructure) {
 }
 
 describe('RAW publication pressure boundary', () => {
+  it('does not treat a leased and delivered long-lived stream as queued backlog or acknowledge it', async () => {
+    const f = streamingFixture();
+    Object.assign(f.streamInfo.AIS_COMMANDS!.state, { last_seq: 200 });
+    const health = await busHealth(f.infra);
+    expect(health.ready).toBe(true);
+    expect(health.streams.find((s) => s.name === 'AIS_COMMANDS')).toMatchObject({
+      oldestAgeMs: expect.any(Number),
+      pendingAgeMs: 0,
+      activeStreamingCommands: 1,
+      messages: 1,
+    });
+    expect(f.get).toHaveBeenCalledWith('AIS_COMMANDS', { seq: 1, next_by_subj: 'ais.commands.*' });
+    expect(f.publish).not.toHaveBeenCalled();
+  });
+  it('keeps an aged command behind a healthy stream blocking collection, including sequence holes', async () => {
+    const f = streamingFixture();
+    Object.assign(f.streamInfo.AIS_COMMANDS!.state, { last_seq: 20, messages: 2 });
+    f.messages.push(f.message(20, 'ais.commands.crawl'));
+    const health = await busHealth(f.infra);
+    expect(health.reasons).toContain('pressure:AIS_COMMANDS');
+    expect(health.streams.find((s) => s.name === 'AIS_COMMANDS')?.activeStreamingCommands).toBe(1);
+    expect(f.get).toHaveBeenLastCalledWith('AIS_COMMANDS', {
+      seq: 2,
+      next_by_subj: 'ais.commands.*',
+    });
+  });
+  it('does not exempt an undelivered command even when the source has a lease', async () => {
+    const f = streamingFixture();
+    Object.assign(f.consumerInfo.collector!, { delivered: { stream_seq: 0 } });
+    expect((await busHealth(f.infra)).reasons).toContain('pressure:AIS_COMMANDS');
+    expect(f.query).not.toHaveBeenCalled();
+  });
+  it('keeps invalid or expired run ownership and unavailable metadata fail-closed', async () => {
+    const f = streamingFixture();
+    f.query.mockResolvedValue({ rowCount: 0, rows: [] });
+    expect((await busHealth(f.infra)).reasons).toContain('pressure:AIS_COMMANDS');
+    f.query.mockRejectedValue(new Error('Database unavailable'));
+    expect((await busHealth(f.infra)).reasons).toContain('pressure:AIS_COMMANDS');
+    f.get.mockRejectedValue(new Error('Message metadata unavailable'));
+    expect((await busHealth(f.infra)).reasons).toContain('pressure:AIS_COMMANDS');
+  });
+  it('retains capacity, downstream and topology protection while a streaming command is active', async () => {
+    const f = streamingFixture();
+    f.streamInfo.AIS_COMMANDS!.state.bytes = STREAMS.commands.maxBytes;
+    expect((await busHealth(f.infra)).reasons).toContain('pressure:AIS_COMMANDS');
+    expect(f.get).not.toHaveBeenCalled();
+    f.streamInfo.AIS_COMMANDS!.state.bytes = 1;
+    f.streamInfo.AIS_RAW!.state.bytes = STREAMS.raw.maxBytes;
+    delete f.consumerInfo.replay;
+    const health = await busHealth(f.infra);
+    expect(health.reasons).toContain('pressure:AIS_RAW');
+    expect(health.reasons).toContain('missing:consumer:replay');
+  });
+  it('uses the caller transaction instead of borrowing another pool connection', async () => {
+    const f = streamingFixture();
+    f.query.mockRejectedValue(new Error('Pool is saturated'));
+    const query = vi.fn().mockResolvedValue({ rowCount: 1, rows: [{}] });
+    expect(
+      (await busHealth(f.infra, { query } as unknown as Parameters<typeof busHealth>[1])).ready,
+    ).toBe(true);
+    expect(f.query).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledOnce();
+  });
   it('lets an in-flight command publish RAW while new collection stays paused on command age', async () => {
     const f = fixture();
     await expect(assertCollectionReady(f.infra)).rejects.toThrow('pressure:AIS_COMMANDS');

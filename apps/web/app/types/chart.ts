@@ -6,6 +6,7 @@ export interface ChartLayerVisibility {
 }
 
 export interface ChartMapControls {
+  interactionState(): { ready: boolean; moving: boolean; drawing: boolean };
   currentBounds(): Bbox | null;
   editGeometry(geometry: IntelligenceGeometry): void;
   resetView(): void;

@@ -18,6 +18,15 @@ watch(
     }
   },
 );
+useUiComponent('agent.sources', {
+  read: () =>
+    uiProjection(props.state.sourceOpen, ['close'], {
+      order: 70,
+      loading: props.state.sourceBusy,
+      focused: !!dialog.value?.contains(import.meta.client ? document.activeElement : null),
+    }),
+  execute: () => props.state.closeSource(),
+});
 function locate(geometry: IntelligenceGeometry) {
   props.state.closeSource();
   emit('locate', geometry);

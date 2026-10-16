@@ -22,7 +22,13 @@ export function useChartWorkspace() {
   const searchRequests = createRequestGeneration();
   const detailRequests = createRequestGeneration();
   const trackRequests = createRequestGeneration();
-  const { status: liveStatus, error: liveError, mapData, subscribeViewport } = useFusionEvents();
+  const {
+    status: liveStatus,
+    error: liveError,
+    feedError,
+    mapData,
+    subscribeViewport,
+  } = useFusionEvents();
   const data = ref<MapResponse | null>(null);
   const track = ref<TrackResponse | null>(null);
   const detail = ref<VesselDetail | null>(null);
@@ -112,7 +118,7 @@ export function useChartWorkspace() {
   }
   function viewport(bounds: Bbox, z: number) {
     bbox.value = bounds;
-    zoom.value = z;
+    zoom.value = Number.isFinite(z) ? Math.max(0, Math.min(22, z)) : zoom.value;
     subscribe();
     void refresh();
   }
@@ -300,6 +306,7 @@ export function useChartWorkspace() {
     stale,
     liveStatus,
     liveError,
+    feedError,
     leftTab,
     rows,
     refresh,

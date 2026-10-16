@@ -1,3 +1,4 @@
+import { UiBindingSchema, UiResultSchema } from './agent-ui';
 import { z } from 'zod';
 import { TopicDefinitionIdSchema } from './topics';
 import { IntelligenceSearchSpecSchema, IntelligenceTimeRangeSchema } from './intelligence-search';
@@ -23,6 +24,7 @@ export const AgentIntentSchema = z.enum([
   'unresolved',
   'intelligence_search',
   'ais_heatmap',
+  'ui_control',
 ]);
 export type AgentIntent = z.infer<typeof AgentIntentSchema>;
 export const AgentPurposeSchema = z.enum([
@@ -158,12 +160,13 @@ export const AgentQueryResultSchema = z.object({
   selection: AgentSelectionSchema,
 });
 export type AgentQueryResult = z.infer<typeof AgentQueryResultSchema>;
-export const AgentRetryInputSchema = z.strictObject({});
+export const AgentRetryInputSchema = z.strictObject({ uiBinding: UiBindingSchema.optional() });
 export const AgentMessageInputSchema = z.strictObject({
   content: z.string().trim().min(1).max(4000),
   bbox: Bbox.optional(),
   historyHours: z.number().int().min(1).max(168).default(24),
   mapContext: AgentMapContextSchema.optional(),
+  uiBinding: UiBindingSchema.optional(),
 });
 export type AgentMessageInput = z.infer<typeof AgentMessageInputSchema>;
 export const AgentSessionInputSchema = z.strictObject({
@@ -174,6 +177,7 @@ export const AgentTaskStatusSchema = z.enum([
   'queued',
   'running',
   'waiting_result',
+  'waiting_ui',
   'completed',
   'failed',
   'cancelled',
@@ -197,6 +201,8 @@ export const AgentMessageSchema = z.object({
 });
 export type AgentMessage = z.infer<typeof AgentMessageSchema>;
 export const AgentTaskSchema = z.object({
+  uiBinding: UiBindingSchema.nullable().optional(),
+  uiResult: UiResultSchema.nullable().optional(),
   id: z.uuid(),
   sessionId: z.uuid(),
   ownerId: z.uuid(),

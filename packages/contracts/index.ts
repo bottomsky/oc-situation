@@ -344,3 +344,5 @@ export interface AuditRecord {
 export interface ApiError {
   error: { code: string; message: string; requestId: string };
 }
+
+export * from './agent-ui';

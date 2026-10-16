@@ -1,3 +1,4 @@
+import { isUiIntent } from './agent-ui-intent';
 import { isIntelligenceQuestion } from './intelligence-intent';
 import type { TopicDefinitionId } from '../contracts/topics';
 import type {
@@ -50,6 +51,7 @@ export function derivePurposeIntent(purpose: AgentPurpose): AgentIntent {
     : 'analysis';
 }
 export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?: AgentPurpose } {
+  if (isUiIntent(goal)) return { intent: 'ui_control' };
   if (classifyConversationIntent(goal)) return { intent: 'conversation' };
   const text = goal.replace(/\s/g, '');
   const heatmap = /热力图|热度图|(?:AIS|船舶|船流).*密度图|heatmap/i.test(text);
@@ -103,7 +105,7 @@ export function requiredAgentInputFields(
   intent: AgentIntent,
 ): AgentInputField[] {
   const actual = selection.purpose ? derivePurposeIntent(selection.purpose) : intent;
-  if (actual === 'conversation' || actual === 'explain') return [];
+  if (actual === 'ui_control' || actual === 'conversation' || actual === 'explain') return [];
   const fields: AgentInputField[] = [];
   if (
     actual === 'intelligence_search' &&

@@ -14,16 +14,36 @@ function harness(api: (path: string) => Promise<unknown>) {
   vi.stubGlobal('onBeforeUnmount', () => {});
   vi.stubGlobal('useRoute', () => ({ query: {} }));
   vi.stubGlobal('usePlatform', () => ({ api }));
+  const subscribeViewport = vi.fn();
   vi.stubGlobal('useFusionEvents', () => ({
     status: ref('live'),
     error: ref(''),
+    feedError: ref(''),
     mapData: ref(null),
-    subscribeViewport: () => {},
+    subscribeViewport,
   }));
   const workspace = scope.run(() => useChartWorkspace())!;
-  return { workspace, stop: () => scope.stop() };
+  return { workspace, subscribeViewport, stop: () => scope.stop() };
 }
 describe('海图实际搜索状态', () => {
+  it.each([
+    [-2, 0],
+    [0.5, 0.5],
+    [24, 22],
+    [Number.NaN, 3],
+  ])('地图缩放 %s 时 HTTP 与实时订阅均发送合法缩放 %s', async (input, expected) => {
+    const api = vi.fn().mockResolvedValue({ items: [], total: 0 });
+    const { workspace, subscribeViewport, stop } = harness(api);
+    workspace.viewport([-180, -85, 180, 85], input);
+    await Promise.resolve();
+    expect(new URL(api.mock.calls[0]![0], 'http://test').searchParams.get('zoom')).toBe(
+      String(expected),
+    );
+    expect(subscribeViewport).toHaveBeenCalledWith(
+      expect.objectContaining({ bbox: '-180,-85,180,85', zoom: expected }),
+    );
+    stop();
+  });
   it('编辑中的关键词不混入已执行搜索的分页游标', async () => {
     const calls: string[] = [];
     const { workspace, stop } = harness(async (path) => {

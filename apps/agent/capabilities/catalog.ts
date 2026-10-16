@@ -124,7 +124,7 @@ export async function loadSkillCatalog(options: {
     if (
       new Set(binding.toolIds).size !== binding.toolIds.length ||
       !binding.toolIds.length ||
-      binding.toolIds.some((id) => !/^[a-z][a-z0-9_]*$/.test(id))
+      binding.toolIds.some((id) => !/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)?$/.test(id))
     )
       invalid('invalid tool binding');
     if (

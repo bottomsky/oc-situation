@@ -44,7 +44,7 @@ export class JobsService {
       if (active.rows[0]) throw new ConflictException('Source has an active run');
       if (job.mode === 'replay') throw new ConflictException('Replay requires an archive range');
       try {
-        await assertCollectionReady(this.infra);
+        await assertCollectionReady(this.infra, client);
       } catch (error) {
         throw new ServiceUnavailableException(
           error instanceof Error ? error.message : 'Collection paused: bus health unavailable',

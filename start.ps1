@@ -56,7 +56,15 @@ $exitCode = 0
 $locationPushed = $false
 $oldBrowserPath = $env:PLAYWRIGHT_BROWSERS_PATH
 $oldBunExecutable = $env:BUN_EXECUTABLE
+$oldConsoleInputEncoding = [Console]::InputEncoding
+$oldConsoleOutputEncoding = [Console]::OutputEncoding
+$oldPipelineEncoding = $OutputEncoding
 try {
+    # Node emits UTF-8; PowerShell 5.1 otherwise decodes piped native output using the legacy code page.
+    $startupUtf8 = New-Object System.Text.UTF8Encoding($false)
+    [Console]::InputEncoding = $startupUtf8
+    [Console]::OutputEncoding = $startupUtf8
+    $OutputEncoding = $startupUtf8
     Push-Location -LiteralPath $PSScriptRoot
     $locationPushed = $true
     foreach ($relative in @('package.json', 'bun.lock', 'infra/compose.yaml', 'scripts/workspace.ts')) {
@@ -120,6 +128,9 @@ try {
     Write-Host ('启动失败：' + $_.Exception.Message) -ForegroundColor Red
     $exitCode = 1
 } finally {
+    [Console]::InputEncoding = $oldConsoleInputEncoding
+    [Console]::OutputEncoding = $oldConsoleOutputEncoding
+    $OutputEncoding = $oldPipelineEncoding
     $env:PLAYWRIGHT_BROWSERS_PATH = $oldBrowserPath
     $env:BUN_EXECUTABLE = $oldBunExecutable
     if ($locationPushed) { Pop-Location }

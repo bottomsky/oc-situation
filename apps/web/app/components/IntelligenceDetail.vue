@@ -22,6 +22,7 @@ const props = defineProps<{
   detail: { event: IntelligenceEvent; relations: IntelligenceRelation[]; history: unknown[] };
   geometry?: unknown;
   canDraw?: boolean;
+  panelVisible?: boolean;
 }>();
 const emit = defineEmits<{
   refresh: [];
@@ -79,6 +80,14 @@ const draft = reactive({
   geometry: '',
 });
 const editing = ref('');
+const initialDraft = ref(JSON.stringify(draft));
+useUiComponent('intelligence.draft', {
+  read: () =>
+    uiProjection(canManage.value && props.panelVisible !== false, [], {
+      dirty: !!editing.value || JSON.stringify(draft) !== initialDraft.value,
+      loading: busy.value,
+    }),
+});
 watch(
   () => props.geometry,
   (v) => {
@@ -96,6 +105,7 @@ watch(
     draft.geometry = '';
     draft.basis = '';
     draft.paragraphIds = [];
+    initialDraft.value = JSON.stringify(draft);
     emit('draw', 'cancel');
   },
 );
@@ -143,6 +153,7 @@ async function save() {
     editing.value = '';
     draft.basis = '';
     draft.geometry = '';
+    initialDraft.value = JSON.stringify(draft);
     emit('draw', 'cancel');
     emit('refresh');
   } catch (e) {

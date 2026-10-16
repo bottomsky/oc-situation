@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isUiIntent } from '../../../../packages/domain/agent-ui-intent';
 import type { AgentConversationState } from '../composables/useAgentConversation';
 const props = withDefaults(defineProps<{ state: AgentConversationState; floating?: boolean }>(), {
   floating: false,
@@ -17,7 +18,7 @@ const canSend = computed(
     props.state.config?.enabled &&
     !props.state.loading &&
     !props.state.busy &&
-    !props.state.activeTask &&
+    (!props.state.activeTask || isUiIntent(props.state.draft)) &&
     props.state.draft.trim().length > 0 &&
     props.state.draft.trim().length <= 4000,
 );
@@ -40,7 +41,7 @@ const status = computed(
           : !props.state.canWrite
             ? '当前账号为只读权限，可查看已有会话与证据。'
             : props.state.activeTask
-              ? '助手正在处理问题，完成后可继续追问。'
+              ? '助手正在处理问题；仍可发送关闭图层或面板等界面指令。'
               : ''),
 );
 const placeholder = computed(() =>

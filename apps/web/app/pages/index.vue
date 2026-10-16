@@ -19,14 +19,25 @@ function mapContext(): AgentMapContext {
   };
 }
 const heatmap = reactive(useAisHeatmap());
+const ui = useAgentUi();
 const agent = reactive(
-  useAgentConversation(mapContext, {
-    begin: heatmap.beginAgent,
-    accept: heatmap.acceptAgent,
-    reset: heatmap.close,
-  }),
+  useAgentConversation(
+    mapContext,
+    {
+      begin: heatmap.beginAgent,
+      accept: heatmap.acceptAgent,
+      reset: heatmap.close,
+    },
+    ui.bind,
+    ui.readConfig,
+  ),
 );
 const selectingHeatmapRegion = ref(false);
+watch(
+  () => agent.activeSession?.id ?? null,
+  (id) => ui.setSession(id),
+  { flush: 'sync' },
+);
 const heatmapRegion = ref<Bbox | null>(null);
 function finishRegion(bbox: Bbox) {
   if (selectingHeatmapRegion.value) {
@@ -127,6 +138,121 @@ const {
 });
 const layers = reactive<ChartLayerVisibility>({ ...defaultChartVisibility });
 const fullscreen = ref(false);
+useUiComponent('workspace.left', {
+  read: () => uiProjection(leftOpen.value, ['open', 'close', 'tab'], { tab: workspace.leftTab }),
+  execute: (op) => {
+    leftOpen.value = op.action !== 'close';
+    if (op.action === 'tab') workspace.leftTab = op.tab as typeof workspace.leftTab;
+  },
+});
+useUiComponent('workspace.right', {
+  read: () =>
+    uiProjection(
+      rightOpen.value,
+      ['open', 'close', ...(ui.readComponent('intelligence.draft')?.dirty ? [] : ['tab' as const])],
+      { tab: rightTab.value, dirty: ui.readComponent('intelligence.draft')?.dirty ?? false },
+    ),
+  execute: async (op) => {
+    agentPanelChange = true;
+    try {
+      rightOpen.value = op.action !== 'close';
+      if (op.action === 'tab') {
+        rightContent.value = 'collaboration';
+        rightTab.value = op.tab as typeof rightTab.value;
+      }
+      await nextTick();
+    } finally {
+      agentPanelChange = false;
+    }
+  },
+});
+for (const key of ['ais', 'tracks', 'evidence'] as const)
+  useUiComponent(`chart.layers.${key}`, {
+    read: () => uiProjection(layers[key], ['show', 'hide']),
+    execute: (op) => {
+      layers[key] = op.action === 'show';
+    },
+  });
+useUiComponent('chart.heatmap', {
+  read: () =>
+    uiProjection(!!heatmap.result, ['close', 'show'], {
+      visible: !!heatmap.result && heatmap.displayed,
+      loading: heatmap.loading,
+      interacting: selectingHeatmapRegion.value,
+      revision: heatmap.closeRevision,
+    }),
+  execute: async (op, command) => {
+    if (op.action === 'close') {
+      selectingHeatmapRegion.value = false;
+      heatmap.close();
+    } else if (command.presentation || heatmap.lastSnapshot) {
+      heatmap.showSnapshot(command.presentation ?? heatmap.lastSnapshot!);
+      const deadline = Date.now() + 10000;
+      while (!heatmap.displayed && heatmap.result && Date.now() < deadline)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    await nextTick();
+  },
+});
+useUiComponent('chart.heatmap.legend', { read: () => uiProjection(!!heatmap.result, []) });
+useUiComponent('agent.reply', {
+  read: () => uiProjection(!!agent.currentReply, ['close', 'open'], { order: 10 }),
+  execute: (op) => {
+    if (op.action === 'close') agent.dismissCurrentReply();
+    else agent.showCurrentReply();
+  },
+});
+useUiComponent('chart.choices', {
+  read: () => uiProjection(!!mapChoices.value.length, ['close'], { order: 30 }),
+  execute: () => {
+    mapChoices.value = [];
+  },
+});
+const viewportRevision = ref(0);
+watch(
+  () => [workspace.bbox, workspace.detail?.mmsi],
+  () => {
+    viewportRevision.value++;
+  },
+  { deep: true },
+);
+useUiComponent('chart.viewport', {
+  read: () => {
+    const target = workspace.detail?.latestPosition;
+    const bounds = workspace.bbox;
+    const within =
+      !!target &&
+      target.lat >= bounds[1] &&
+      target.lat <= bounds[3] &&
+      (bounds[0] <= bounds[2]
+        ? target.lon >= bounds[0] && target.lon <= bounds[2]
+        : target.lon >= bounds[0] || target.lon <= bounds[2]);
+    const mapState = seaMap.value?.interactionState();
+    const interacting =
+      selectingAgentRegion.value ||
+      selectingHeatmapRegion.value ||
+      !!mapState?.moving ||
+      !!mapState?.drawing;
+    return uiProjection(true, target && mapState?.ready ? ['focus'] : [], {
+      mounted: !!mapState?.ready,
+      focused: within,
+      dirty: !!drawnGeometry.value,
+      interacting,
+      revision: viewportRevision.value,
+      ...(interacting ? { blocked: 'drawing' as const } : {}),
+    });
+  },
+  execute: async () => {
+    const target = workspace.detail?.latestPosition;
+    if (!target) throw new Error('No selected position');
+    seaMap.value?.focusGeometry({ type: 'Point', coordinates: [target.lon, target.lat] });
+    const deadline = Date.now() + 5000;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    } while (seaMap.value?.interactionState().moving && Date.now() < deadline);
+    await nextTick();
+  },
+});
 function layer(key: keyof ChartLayerVisibility, enabled: boolean) {
   layers[key] = enabled;
 }
@@ -210,7 +336,9 @@ watch(
     if (import.meta.client) restorePrefs();
   },
 );
+let agentPanelChange = false;
 watch(rightOpen, (right) => {
+  if (agentPanelChange) return;
   if (!import.meta.client || !session.value) return;
   writeChartPreference(localStorage, session.value.user.id, 'right', right);
 });
@@ -245,9 +373,8 @@ watch(
         rightOpen = false;
       "
     />
-    <div v-if="leftOpen" id="chart-left-slot" class="chart-left-slot open">
+    <div v-show="leftOpen" id="chart-left-slot" class="chart-left-slot open">
       <ChartLeftPanel
-        v-if="leftOpen"
         v-model:workspace="workspace"
         :layers="layers"
         @close="leftOpen = false"
@@ -397,7 +524,10 @@ watch(
           <p v-if="heatmap.error" class="error" role="alert">{{ heatmap.error }}</p>
           <FetchState :error="workspace.error" @retry="workspace.refresh" />
           <p v-if="workspace.liveError" class="error" role="status">
-            专题事件补取失败：{{ workspace.liveError }}
+            {{ workspace.liveError }}
+          </p>
+          <p v-if="workspace.feedError" class="error" role="status">
+            专题事件补取失败：{{ workspace.feedError }}
           </p>
           <p v-if="workspace.stale" class="chart-caution" role="status">
             船位已超过 15 秒未更新，显示上次成功结果。
@@ -456,7 +586,7 @@ watch(
         </button>
       </div>
     </main>
-    <div v-if="rightOpen" id="chart-right-slot" class="chart-right-slot">
+    <div v-show="rightOpen" id="chart-right-slot" class="chart-right-slot">
       <ChartResizeHandle
         v-if="layout.enabled.right"
         panel="right"
@@ -484,6 +614,7 @@ watch(
         <div class="chart-panel-scroll">
           <IntelligenceDetail
             :detail="intelligence.detail"
+            :panel-visible="rightOpen && rightContent === 'intelligence'"
             :geometry="drawnGeometry"
             :can-draw="session?.user.role !== 'viewer'"
             @history="selectIntelligence"

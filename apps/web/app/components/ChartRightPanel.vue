@@ -34,6 +34,14 @@ function closeExpanded() {
   expanded.value = false;
   void nextTick(() => expandTrigger.value?.focus());
 }
+useUiComponent('chart.evidence', {
+  read: () =>
+    uiProjection(expanded.value, ['close'], {
+      order: 60,
+      focused: !!evidenceDialog.value?.contains(import.meta.client ? document.activeElement : null),
+    }),
+  execute: () => closeExpanded(),
+});
 function dialogClosed() {
   if (expanded.value) closeExpanded();
 }

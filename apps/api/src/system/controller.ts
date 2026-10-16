@@ -28,6 +28,8 @@ export const HealthSchema = z.object({
         bytes: z.number(),
         limit: z.number(),
         oldestAgeMs: z.number(),
+        pendingAgeMs: z.number(),
+        activeStreamingCommands: z.number(),
         messages: z.number(),
       }),
     ),

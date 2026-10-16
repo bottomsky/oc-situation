@@ -78,6 +78,7 @@ const emit = defineEmits<{
 const host = useTemplateRef<HTMLElement>('mapHost');
 const mapError = ref('');
 const ready = ref(false);
+const moving = ref(false);
 const regionStart = ref<{ x: number; y: number } | null>(null);
 const regionEnd = ref<{ x: number; y: number } | null>(null);
 const regionBox = computed(() =>
@@ -132,6 +133,14 @@ watch(
 );
 let map: GLMap | undefined;
 let heatmapPopup: maplibregl.Popup | undefined;
+const heatmapPopupOpen = ref(false);
+useUiComponent('chart.heatmap.popup', {
+  read: () => uiProjection(heatmapPopupOpen.value, ['close'], { order: 20 }),
+  execute: () => {
+    heatmapPopup?.remove();
+    heatmapPopupOpen.value = false;
+  },
+});
 let drawing: TerraDraw | undefined;
 const drawMode = ref('cancel');
 const drawingError = ref('');
@@ -508,6 +517,7 @@ function registerBusinessLayers() {
 }
 function updateHeatmap() {
   heatmapPopup?.remove();
+  heatmapPopupOpen.value = false;
   const source = map?.getSource('ais-heatmap') as GeoJSONSource | undefined;
   if (!source) return;
   const snapshot = props.heatmap;
@@ -527,6 +537,8 @@ onMounted(async () => {
       container: host.value,
       style: createOfflineChartStyle(),
       bounds: chartHomeBounds,
+      minZoom: 0,
+      maxZoom: 22,
       fitBoundsOptions: { padding: 30, maxZoom: 8 },
       attributionControl: { compact: true },
     });
@@ -602,7 +614,11 @@ onMounted(async () => {
           const content = document.createElement('div');
           content.textContent = `网格 ${cell.id}：${cell.vesselCount} 艘去重船舶`;
           heatmapPopup ??= new maplibregl.Popup({ closeButton: false, closeOnClick: true });
+          heatmapPopup.on('close', () => {
+            heatmapPopupOpen.value = false;
+          });
           heatmapPopup.setLngLat(e.lngLat).setDOMContent(content).addTo(map!);
+          heatmapPopupOpen.value = true;
         }
       }
     });
@@ -617,7 +633,13 @@ onMounted(async () => {
     });
     resizeObserver = new ResizeObserver(() => scheduling?.resize());
     resizeObserver.observe(host.value);
-    map.on('moveend', () => scheduling?.viewport());
+    map.on('movestart', () => {
+      moving.value = true;
+    });
+    map.on('moveend', () => {
+      moving.value = false;
+      scheduling?.viewport();
+    });
     map.on('mouseenter', 'vessels', (e) => {
       const p = e.features?.[0]?.properties;
       if (!p) return;
@@ -683,6 +705,11 @@ watch(
   { deep: true },
 );
 defineExpose<ChartMapControls>({
+  interactionState: () => ({
+    ready: ready.value,
+    moving: moving.value,
+    drawing: drawMode.value !== 'cancel',
+  }),
   currentBounds,
   resetView: () => map?.fitBounds(chartHomeBounds, { padding: 30, maxZoom: 8 }),
   zoomIn: () => map?.zoomIn(),

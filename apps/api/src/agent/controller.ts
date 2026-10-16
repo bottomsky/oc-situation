@@ -51,6 +51,7 @@ import type { AuthRequest } from '../auth/guard';
 const ObjectResponse = z.record(z.string(), z.unknown());
 const ConfigResponse = z.object({
   enabled: z.boolean(),
+  uiEnabled: z.boolean(),
   defaultHistoryHours: z.number(),
   maxHistoryHours: z.number(),
   maxModelCalls: z.number(),
@@ -89,6 +90,7 @@ export class AgentController {
   config() {
     return {
       enabled: process.env.AGENT_ENABLED === 'true',
+      uiEnabled: process.env.AGENT_UI_ENABLED === 'true',
       defaultHistoryHours: 24,
       maxHistoryHours: 168,
       maxModelCalls: budget('AGENT_MAX_MODEL_CALLS', 12),
@@ -254,9 +256,9 @@ export class AgentController {
     this.assertEnabled();
     parse(Uuid, id);
     parse(Uuid, key);
-    parse(AgentRetryInputSchema, body);
+    const input = parse(AgentRetryInputSchema, body);
     try {
-      return await retryAgentTask(this.infra, req.user.id, id, key);
+      return await retryAgentTask(this.infra, req.user.id, id, key, input.uiBinding);
     } catch (error) {
       return this.inputError(error);
     }

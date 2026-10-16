@@ -42,6 +42,17 @@ async function save() {
     editor.value = false;
   }
 }
+useUiComponent('page.list', { read: () => uiProjection(true, [], { loading: busy.value }) });
+useUiReadOnlyEditor(
+  () => editor.value,
+  () => ({
+    username: username.value,
+    password: password.value,
+    role: role.value,
+    disabled: disabled.value,
+  }),
+  () => busy.value,
+);
 </script>
 <template>
   <section class="page">
