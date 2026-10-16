@@ -153,11 +153,13 @@ test('情报跨页勾选与标绘持久化，筛选保留集合，单海图绘�
   await page.getByRole('checkbox', { name: '勾选 港口气象公告' }).check();
   await page.getByRole('button', { name: '批量加入' }).click();
   await expect.poll(() => fixture.getSet().eventIds.length).toBe(2);
-  await page
-    .getByRole('combobox', { name: '情报类别', exact: true })
-    .selectOption({ label: '气象海况' });
+  await page.getByRole('button', { name: '设置情报筛选' }).click();
+  await page.getByRole('button', { name: '气象海况', exact: true }).click();
   await page.getByRole('textbox', { name: '情报关键词' }).fill('管制');
-  await page.getByRole('button', { name: '检索情报' }).click();
+  await page
+    .getByRole('dialog', { name: '情报筛选条件设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect(page.getByText('当前标绘集合')).toBeVisible();
   await expect.poll(() => fixture.queries.at(-1)?.searchParams.get('category')).toBe('weather');
   await page.getByRole('button', { name: '批量移除' }).click();
@@ -192,6 +194,69 @@ test('情报跨页勾选与标绘持久化，筛选保留集合，单海图绘�
   await expect(map).toHaveAttribute('data-map-instance', instance!);
   expect(errors).toEqual([]);
 });
+test('筛选摘要与独立设置支持取消、应用、移除和重置', async ({ page }) => {
+  const fixture = await intelligenceFixture(page);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto('/');
+  await openLeftPanel(page);
+  await page.getByRole('tab', { name: '情报标绘' }).click();
+  const summary = page.getByRole('region', { name: '筛选条件', exact: true });
+  await expect(summary).toContainText('无');
+  await expect(page.getByLabel('情报关键词', { exact: true })).not.toBeVisible();
+  await page.getByRole('button', { name: '设置情报筛选' }).click();
+  const dialog = page.getByRole('dialog', { name: '情报筛选条件设置' });
+  await dialog.getByLabel('情报关键词', { exact: true }).fill('港口');
+  await dialog.getByRole('button', { name: '气象海况', exact: true }).click();
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await expect(summary).toContainText('无');
+  expect(fixture.queries.at(-1)?.searchParams.has('keyword')).toBe(false);
+  await page.getByRole('button', { name: '设置情报筛选' }).click();
+  await expect(dialog.getByLabel('情报关键词', { exact: true })).toHaveValue('');
+  await dialog.getByLabel('情报关键词', { exact: true }).fill('港口');
+  await dialog.getByRole('button', { name: '气象海况', exact: true }).click();
+  await dialog.getByRole('button', { name: '时间范围', exact: true }).click();
+  await dialog.getByRole('button', { name: '近7天', exact: true }).click();
+  await dialog.getByRole('button', { name: '地理与对象', exact: true }).click();
+  await dialog.getByLabel('关联对象', { exact: true }).selectOption('port-a');
+  await dialog.getByLabel('仅当前海图视野', { exact: true }).check();
+  await dialog.getByRole('button', { name: '应用', exact: true }).click();
+  await expect(summary).toContainText('关键词：港口');
+  await expect(summary).toContainText('对象：测试港口');
+  await expect.poll(() => fixture.queries.at(-1)?.searchParams.get('category')).toBe('weather');
+  expect(fixture.queries.at(-1)?.searchParams.get('from')).toMatch(/Z$/);
+  expect(fixture.queries.at(-1)?.searchParams.has('bbox')).toBe(true);
+  await summary.getByRole('button', { name: '移除类别：气象海况', exact: true }).click();
+  await expect.poll(() => fixture.queries.at(-1)?.searchParams.has('category')).toBe(false);
+  await page.getByRole('button', { name: '设置情报筛选' }).click();
+  await dialog.getByRole('button', { name: '重置', exact: true }).click();
+  await dialog.getByRole('button', { name: '应用', exact: true }).click();
+  await expect(summary).toContainText('无');
+  await expect.poll(() => fixture.queries.at(-1)?.searchParams.has('objectId')).toBe(false);
+  expect(fixture.queries.at(-1)?.searchParams.has('bbox')).toBe(false);
+
+  await page.getByRole('button', { name: '设置情报图层' }).click();
+  const layers = page.getByRole('dialog', { name: '情报图层设置' });
+  await layers.getByLabel('发生位置', { exact: true }).uncheck();
+  await layers.getByRole('button', { name: '取消', exact: true }).click();
+  const layerSummary = page.getByRole('region', { name: '当前图层', exact: true });
+  await expect(layerSummary).toContainText('发生位置');
+  await page.getByRole('button', { name: '设置情报图层' }).click();
+  await layers.getByLabel('发生位置', { exact: true }).uncheck();
+  await layers.getByRole('button', { name: '应用', exact: true }).click();
+  await expect(layerSummary).not.toContainText('发生位置');
+  await page.screenshot({ path: '.data/filter-browser-results/compact-panel.png', fullPage: true });
+  await page.getByRole('button', { name: '设置情报筛选' }).click();
+  await page.screenshot({
+    path: '.data/filter-browser-results/filter-settings.png',
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 520, height: 700 });
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(520);
+  await expect(dialog.getByRole('button', { name: '应用', exact: true })).toBeInViewport();
+});
+
 test('工作台表单创建原文与关联，查看完整证据', async ({ page }) => {
   const fixture = await intelligenceFixture(page);
   await page.goto('/intelligence');

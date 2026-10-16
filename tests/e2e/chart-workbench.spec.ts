@@ -173,7 +173,7 @@ for (const width of [1920, 1440, 1280, 768]) {
       await expect(page.getByTestId('chart-left-panel')).toBeVisible();
       await expect(page.getByTestId('chart-right-panel')).toBeVisible();
     } else {
-      await expect(page.getByTestId('chart-left-panel')).toHaveCount(0);
+      await expect(page.getByTestId('chart-left-panel')).not.toBeVisible();
       await page.getByRole('button', { name: '打开协同面板', exact: true }).click();
       await expect(page.getByTestId('chart-right-panel')).toBeVisible();
     }
@@ -262,11 +262,50 @@ test('真实回放帧和AIS图层开关保留采集连接', async ({ page }) => 
   await page.getByRole('button', { name: '播放轨迹', exact: true }).click();
   await expect(page.getByLabel('轨迹播放位置')).toHaveValue('1');
   await page.getByRole('tab', { name: '图层控制', exact: true }).click();
+  await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('AIS 船位', { exact: true }).uncheck();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect(page.locator('.map-status')).toContainText('1 艘船');
   expect(calls.vesselDetail).toBe(1);
+  await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('AIS 船位', { exact: true }).check();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect(page.getByTestId('sea-map')).toHaveAttribute('data-map-initializations', '1');
+});
+
+test('观测筛选在应用后更新地图，取消保留原条件', async ({ page }) => {
+  const calls = await chartFixture(page);
+  await page.goto('/');
+  await openLeftPanel(page);
+  await page.getByRole('button', { name: '设置观测筛选' }).click();
+  const dialog = page.getByRole('dialog', { name: '观测筛选条件设置' });
+  await dialog.getByLabel('数据来源', { exact: true }).selectOption('fixture-ais');
+  await dialog.getByLabel('船型代码', { exact: true }).fill('70');
+  await dialog.getByRole('button', { name: '7天', exact: true }).click();
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  expect(calls.mapQueries.at(-1)?.searchParams.has('sourceId')).toBe(false);
+  await page.getByRole('button', { name: '设置观测筛选' }).click();
+  await expect(dialog.getByLabel('船型代码', { exact: true })).toHaveValue('');
+  await dialog.getByLabel('数据来源', { exact: true }).selectOption('fixture-ais');
+  await dialog.getByLabel('船型代码', { exact: true }).fill('70');
+  await dialog.getByRole('button', { name: '7天', exact: true }).click();
+  await dialog.getByRole('button', { name: '应用', exact: true }).click();
+  await expect.poll(() => calls.mapQueries.at(-1)?.searchParams.get('shipType')).toBe('70');
+  expect(calls.mapQueries.at(-1)?.searchParams.get('hours')).toBe('168');
+  expect(calls.mapQueries.at(-1)?.searchParams.get('sourceId')).toBe('fixture-ais');
+  await page.getByRole('button', { name: '移除船型：70', exact: true }).click();
+  await expect.poll(() => calls.mapQueries.at(-1)?.searchParams.has('shipType')).toBe(false);
+  await page.getByRole('button', { name: '设置观测筛选' }).click();
+  await dialog.getByRole('button', { name: '重置', exact: true }).click();
+  await dialog.getByRole('button', { name: '应用', exact: true }).click();
+  await expect.poll(() => calls.mapQueries.at(-1)?.searchParams.get('hours')).toBe('24');
+  expect(calls.mapQueries.at(-1)?.searchParams.has('sourceId')).toBe(false);
 });
 
 test('任务中心只读取所选专题运行，幂等提交后待执行时禁用', async ({ page }) => {
@@ -370,10 +409,22 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
   await expect(page.locator('.map-status')).toContainText('1 艘船');
   await openLeftPanel(page);
   await page.getByRole('tab', { name: '图层控制', exact: true }).click();
-  await expect(page.getByTestId('chart-left-panel').getByRole('checkbox')).toHaveCount(3);
+  await page.getByRole('button', { name: '设置海图图层' }).click();
+  await expect(
+    page.getByRole('dialog', { name: '海图图层设置' }).getByRole('checkbox'),
+  ).toHaveCount(3);
   await page.getByLabel('AIS 船位', { exact: true }).uncheck();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect.poll(async () => (await renderedColors()).ais).toBe(0);
+  await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('AIS 船位', { exact: true }).check();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect.poll(async () => (await renderedColors()).ais).toBeGreaterThan(5);
   await page.getByLabel('搜索船名、MMSI或IMO').fill('底图回归船');
   await page.getByRole('button', { name: '搜索船舶', exact: true }).click();
@@ -382,9 +433,19 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
   await page.getByRole('button', { name: '查询轨迹', exact: true }).click();
   await expect.poll(async () => (await renderedColors()).tracks).toBeGreaterThan(20);
   await page.getByRole('tab', { name: '图层控制', exact: true }).click();
+  await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('船舶轨迹', { exact: true }).uncheck();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect.poll(async () => (await renderedColors()).tracks).toBe(0);
+  await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('船舶轨迹', { exact: true }).check();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect.poll(async () => (await renderedColors()).tracks).toBeGreaterThan(20);
   await page.getByRole('tab', { name: /^主动推送/ }).click();
   await page
@@ -392,9 +453,19 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
     .getByRole('button', { name: chartResult.title, exact: true })
     .click();
   await expect.poll(async () => (await renderedColors()).evidence).toBeGreaterThan(15);
+  await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('专题证据', { exact: true }).uncheck();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect.poll(async () => (await renderedColors()).evidence).toBe(0);
+  await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('专题证据', { exact: true }).check();
+  await page
+    .getByRole('dialog', { name: '海图图层设置' })
+    .getByRole('button', { name: '应用', exact: true })
+    .click();
   await expect.poll(async () => (await renderedColors()).evidence).toBeGreaterThan(15);
   await expect(map).toHaveAttribute('data-map-instance', instance!);
   await expect(map).toHaveAttribute('data-map-initializations', '1');

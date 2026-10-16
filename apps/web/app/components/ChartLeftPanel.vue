@@ -6,7 +6,7 @@ import { resolveVesselDirection } from '../utils/vesselMarkers';
 const workspace = defineModel<UnwrapNestedRefs<ReturnType<typeof useChartWorkspace>>>('workspace', {
   required: true,
 });
-defineProps<{ layers: ChartLayerVisibility }>();
+const props = defineProps<{ layers: ChartLayerVisibility }>();
 const emit = defineEmits<{
   close: [];
   layer: [key: keyof ChartLayerVisibility, enabled: boolean];
@@ -26,6 +26,65 @@ const layerNames: Record<keyof ChartLayerVisibility, string> = {
   tracks: '船舶轨迹',
   evidence: '专题证据',
 };
+const filterOpen = ref(false);
+const layerOpen = ref(false);
+const draft = reactive({ sourceId: '', hours: 24, shipType: '' });
+const layerDraft = reactive({ ...props.layers });
+const reportOptions = [
+  { hours: 24, label: '24小时' },
+  { hours: 72, label: '3天' },
+  { hours: 168, label: '7天' },
+  { hours: 720, label: '30天' },
+];
+const filterItems = computed(() => [
+  ...(workspace.value.sourceId
+    ? [
+        {
+          key: 'sourceId',
+          label: `来源：${workspace.value.sources.find((s) => s.sourceId === workspace.value.sourceId)?.name ?? workspace.value.sourceId}`,
+        },
+      ]
+    : []),
+  {
+    key: 'hours',
+    label: `最近报告：${reportOptions.find((p) => p.hours === workspace.value.hours)?.label ?? workspace.value.hours + '小时'}`,
+    removable: false,
+  },
+  ...(workspace.value.shipType
+    ? [{ key: 'shipType', label: `船型：${workspace.value.shipType}` }]
+    : []),
+]);
+const layerItems = computed(() =>
+  Object.entries(layerNames)
+    .filter(([key]) => props.layers[key as keyof ChartLayerVisibility])
+    .map(([key, label]) => ({ key, label })),
+);
+function openFilters() {
+  Object.assign(draft, {
+    sourceId: workspace.value.sourceId,
+    hours: workspace.value.hours,
+    shipType: workspace.value.shipType,
+  });
+  filterOpen.value = true;
+}
+function applyFilters() {
+  Object.assign(workspace.value, draft);
+  filterOpen.value = false;
+}
+function removeFilter(key: string) {
+  if (key === 'hours') workspace.value.hours = 24;
+  else if (key === 'sourceId') workspace.value.sourceId = '';
+  else workspace.value.shipType = '';
+}
+function openLayers() {
+  Object.assign(layerDraft, props.layers);
+  layerOpen.value = true;
+}
+function applyLayers() {
+  for (const key of Object.keys(layerNames) as (keyof ChartLayerVisibility)[])
+    emit('layer', key, layerDraft[key]);
+  layerOpen.value = false;
+}
 </script>
 <template>
   <aside class="chart-left chart-panel" aria-label="人工操控面板" data-testid="chart-left-panel">
@@ -165,17 +224,15 @@ const layerNames: Record<keyof ChartLayerVisibility, string> = {
           在地图中选择单船，或搜索船舶查看详情与历史轨迹。
         </p>
       </section>
-      <section v-show="workspace.leftTab === 'layers'" class="chart-section">
-        <h3>图层控制</h3>
-        <p class="muted">开关控制海图显示，船位采集持续进行。</p>
-        <label v-for="(name, key) in layerNames" :key="key" class="chart-layer-check"
-          ><input
-            type="checkbox"
-            :checked="layers[key]"
-            @change="emit('layer', key, ($event.target as HTMLInputElement).checked)"
-          />{{ name }}</label
-        >
-      </section>
+      <ChartConditionSummary
+        v-show="workspace.leftTab === 'layers'"
+        title="当前图层"
+        settings-label="设置海图图层"
+        icon="layers"
+        :items="layerItems"
+        @settings="openLayers"
+        @remove="emit('layer', $event as keyof ChartLayerVisibility, false)"
+      />
       <section v-show="workspace.leftTab === 'playback'" class="chart-section">
         <h3>时间回放</h3>
         <p v-if="!workspace.detail" class="empty-copy">
@@ -230,35 +287,76 @@ const layerNames: Record<keyof ChartLayerVisibility, string> = {
           </div>
         </template>
       </section>
-      <section class="chart-section chart-filters">
-        <h3>观测筛选</h3>
-        <label
-          >数据来源<select v-model="workspace.sourceId">
-            <option value="">全部来源</option>
-            <option
-              v-for="source in workspace.sources"
-              :key="source.sourceId"
-              :value="source.sourceId"
-            >
-              {{ source.name }}
-            </option>
-          </select></label
-        ><label
-          >最近报告<select v-model="workspace.hours">
-            <option :value="24">24 小时</option>
-            <option :value="72">3 天</option>
-            <option :value="168">7 天</option>
-            <option :value="720">30 天</option>
-          </select></label
-        ><label
-          >船型代码<input
-            v-model="workspace.shipType"
-            type="number"
-            min="1"
-            max="99"
-            placeholder="全部船型"
-        /></label>
-      </section>
+      <ChartConditionSummary
+        title="观测筛选"
+        settings-label="设置观测筛选"
+        :items="filterItems"
+        @settings="openFilters"
+        @remove="removeFilter"
+      />
+      <ChartSettingsDialog
+        v-model="filterOpen"
+        title="观测筛选条件设置"
+        :sections="[{ id: 'basic', label: '基础筛选' }]"
+        @apply="applyFilters"
+        @reset="Object.assign(draft, { sourceId: '', hours: 24, shipType: '' })"
+      >
+        <div class="settings-fields">
+          <h3>基础筛选</h3>
+          <label
+            >数据来源<select v-model="draft.sourceId" aria-label="数据来源">
+              <option value="">全部来源</option>
+              <option
+                v-for="source in workspace.sources"
+                :key="source.sourceId"
+                :value="source.sourceId"
+              >
+                {{ source.name }}
+              </option>
+            </select></label
+          >
+          <fieldset>
+            <legend>最近报告</legend>
+            <div class="settings-choices">
+              <button
+                v-for="option in reportOptions"
+                :key="option.hours"
+                type="button"
+                :aria-pressed="draft.hours === option.hours"
+                @click="draft.hours = option.hours"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </fieldset>
+          <label
+            >船型代码<input
+              v-model="draft.shipType"
+              aria-label="船型代码"
+              type="number"
+              min="1"
+              max="99"
+              step="1"
+              placeholder="全部船型"
+          /></label>
+        </div>
+      </ChartSettingsDialog>
+      <ChartSettingsDialog
+        v-model="layerOpen"
+        title="海图图层设置"
+        :sections="[{ id: 'layers', label: '图层显示' }]"
+        @apply="applyLayers"
+        @reset="Object.assign(layerDraft, { ais: true, tracks: true, evidence: true })"
+      >
+        <div class="settings-fields">
+          <h3>图层显示</h3>
+          <p class="muted">开关控制海图显示，船位采集持续进行。</p>
+          <label v-for="(name, key) in layerNames" :key="key" class="settings-layer"
+            ><span>{{ name }}</span
+            ><input v-model="layerDraft[key]" type="checkbox"
+          /></label>
+        </div>
+      </ChartSettingsDialog>
       <section class="chart-section">
         <h3>航线筹划</h3>
         <p class="muted">航线规划、气象风险、碰撞 CPA / TCPA 服务未接入。</p>

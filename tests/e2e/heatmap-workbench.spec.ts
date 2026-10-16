@@ -180,6 +180,32 @@ test('人工生成锁定范围，缩放不重查，关闭移除图层', async ({
   await legend.getByRole('button', { name: '关闭热力图' }).click();
   await expect(legend).toHaveCount(0);
 });
+test('热图统计设置独立应用并校验自定义时间', async ({ page }) => {
+  const fixture = await heatmapFixture(page);
+  await page.goto('/');
+  await openHeatmap(page);
+  await page.getByRole('button', { name: '设置热图统计条件' }).click();
+  const dialog = page.getByRole('dialog', { name: '热图统计条件设置' });
+  await dialog.getByLabel('热图统计时段', { exact: true }).selectOption('168');
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await expect(page.getByRole('region', { name: '统计条件', exact: true })).toContainText(
+    '最近1天',
+  );
+  await page.getByRole('button', { name: '设置热图统计条件' }).click();
+  await dialog.getByLabel('热图统计时段', { exact: true }).selectOption('custom');
+  await dialog.getByLabel('热图开始时间', { exact: true }).fill('2020-01-01T00:00');
+  await dialog.getByLabel('热图结束时间', { exact: true }).fill('2020-01-02T00:00');
+  await dialog.getByRole('button', { name: '应用', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('最近30天');
+  await dialog.getByLabel('热图统计时段', { exact: true }).selectOption('72');
+  await dialog.getByRole('button', { name: '应用', exact: true }).click();
+  expect(fixture.requests).toHaveLength(0);
+  await page.getByRole('button', { name: '生成热力图', exact: true }).click();
+  await expect.poll(() => fixture.requests.length).toBe(1);
+  const query = fixture.requests[0]!.searchParams;
+  expect(Date.parse(query.get('to')!) - Date.parse(query.get('from')!)).toBe(72 * 3600000);
+});
+
 test('主动任务自动展示，刷新历史需手动点击快照', async ({ page }) => {
   await heatmapFixture(page);
   await page.goto('/');
