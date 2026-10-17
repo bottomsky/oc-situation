@@ -1,3 +1,4 @@
+import { queryVesselTracks } from '../../packages/infrastructure/vessel-tracks';
 import { executeUiTask } from './ui-runtime';
 import {
   expireUiCommands,
@@ -43,6 +44,7 @@ import {
   saveAgentQueryResult,
   saveAgentIntelligenceResult,
   saveAgentHeatmapResult,
+  saveAgentVesselTracksResult,
 } from '../../packages/infrastructure/agent';
 import { executeAgent, type RuntimeOptions } from './runtime';
 
@@ -208,7 +210,7 @@ export async function processAgentTask(
     if (!context) return false;
     if (
       task.intent === 'ui_control' ||
-      (task.intent === 'ais_heatmap' &&
+      ((task.intent === 'ais_heatmap' || task.intent === 'vessel_tracks') &&
         (await getUiTaskCommand(infra, task.id, task.inputRevision ?? 0)))
     ) {
       await executeUiTask(infra, task, workerId, options.maxToolCalls ?? 24);
@@ -240,6 +242,9 @@ export async function processAgentTask(
         intelligenceSourceHealth: () => getIntelligenceSourceHealth(infra),
         saveIntelligenceResult: (result) => saveAgentIntelligenceResult(...fence, result),
         saveQueryResult: (result) => saveAgentQueryResult(...fence, result),
+        queryVesselTracks: (query, signal) =>
+          queryVesselTracks(infra, query, { ownerId: task.ownerId, signal }),
+        saveTracksResult: (result) => saveAgentVesselTracksResult(...fence, result),
         queryHeatmap: (query, signal) =>
           queryAisHeatmap(infra, query, { ownerId: task.ownerId, signal }),
         saveHeatmapResult: (result) => saveAgentHeatmapResult(...fence, result),
@@ -266,20 +271,21 @@ export async function processAgentTask(
         saveResults: (results) => saveAgentResults(...fence, results),
         finish: async (outcome) => {
           if (
-            task.intent === 'ais_heatmap' &&
+            (task.intent === 'ais_heatmap' || task.intent === 'vessel_tracks') &&
             outcome.status === 'completed' &&
             task.uiBinding &&
             process.env.AGENT_UI_ENABLED === 'true'
           ) {
             await saveAgentStep(...fence, {
               key: 'ui_presentation_summary',
-              name: '热图计算结果',
+              name: '本地查询结果',
               input: null,
               output: outcome,
             });
             try {
               return !!(await createUiCommand(...fence, {
-                componentId: 'chart.heatmap',
+                componentId:
+                  task.intent === 'vessel_tracks' ? 'chart.vessel-tracks' : 'chart.heatmap',
                 action: 'show',
               }));
             } catch {

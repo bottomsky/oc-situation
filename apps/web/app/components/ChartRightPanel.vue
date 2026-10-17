@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { AgentConversationState } from '../composables/useAgentConversation';
-import type { AnalysisResult, Bbox, AgentHeatmapResult } from '@ais/contracts';
+import type {
+  AnalysisResult,
+  Bbox,
+  AgentHeatmapResult,
+  AgentVesselTracksResult,
+} from '@ais/contracts';
 const props = defineProps<{
   items: AnalysisResult[];
   busy: boolean;
@@ -19,6 +24,7 @@ const emit = defineEmits<{
   locate: [result: AnalysisResult];
   revision: [result: AnalysisResult];
   heatmap: [result: AgentHeatmapResult];
+  tracks: [result: AgentVesselTracksResult];
 }>();
 const tab = defineModel<'chat' | 'push' | 'tasks'>('tab', { default: 'push' });
 const expanded = ref(false);
@@ -112,6 +118,7 @@ watch(
         :bbox="bbox"
         :state="agent"
         @heatmap="emit('heatmap', $event)"
+        @tracks="emit('tracks', $event)"
         @locate="emit('locate', $event)"
       />
       <template v-if="tab === 'push'"

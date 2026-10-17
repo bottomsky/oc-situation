@@ -69,7 +69,7 @@ export async function executeUiTask(
           ?.output as { summary?: string } | undefined;
         await finishAgentTask(...fence, {
           status: 'completed',
-          summary: `${calculation?.summary ? calculation.summary + ' ' : ''}${verb}${UI_COMPONENTS[saved.operation.componentId]}。${saved.operation.componentId === 'chart.heatmap' && saved.operation.action === 'close' ? '相关图例和网格浮窗已收起，历史结果保留。' : ''}`,
+          summary: `${calculation?.summary ? calculation.summary + ' ' : ''}${verb}${UI_COMPONENTS[saved.operation.componentId]}。${saved.operation.componentId === 'chart.heatmap' && saved.operation.action === 'close' ? '相关图例和网格浮窗已收起，历史结果保留。' : saved.operation.componentId === 'chart.vessel-tracks' && saved.operation.action === 'close' ? '批量航线与在途加载已关闭，历史结果保留。' : ''}`,
         });
       } else
         await finishAgentTask(...fence, {
@@ -78,7 +78,10 @@ export async function executeUiTask(
           summary:
             saved.status === 'unknown'
               ? '操作回执未确认，无法判断界面是否已完成变化；请查看当前页面后再操作。'
-              : '界面操作未完成：页面状态已改变、离线或操作被阻止。请在当前页面重试。',
+              : saved.operation.componentId === 'chart.vessel-tracks' &&
+                  saved.operation.action === 'show'
+                ? '航线展示未完成：当前页面缺少可恢复快照，或页面状态已改变。请从历史结果点击“在海图展示”，或重新生成航线。'
+                : '界面操作未完成：页面状态已改变、离线或操作被阻止。请在当前页面重试。',
         });
       return;
     }

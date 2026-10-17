@@ -147,6 +147,12 @@ export async function createUiCommand(
     const state = UiStateSchema.parse(row.state);
     const component = state.components.find((x) => x.id === op.componentId);
     if (
+      task.intent === 'vessel_tracks' &&
+      op.componentId === 'chart.vessel-tracks' &&
+      binding.tracksVersion !== component?.version
+    )
+      return conflict('航线展示状态已改变；计算结果已保留，请手动重新展示。');
+    if (
       task.intent === 'ais_heatmap' &&
       op.componentId === 'chart.heatmap' &&
       binding.heatmapVersion !== component?.version
@@ -265,6 +271,19 @@ export async function claimUiCommand(
         )
       ).rows[0];
       if (result?.heatmap_result) view.presentation = result.heatmap_result;
+    }
+    if (
+      task.intent === 'vessel_tracks' &&
+      view.operation.componentId === 'chart.vessel-tracks' &&
+      view.operation.action === 'show'
+    ) {
+      const result = (
+        await c.query(
+          'SELECT tracks_result FROM agent_results WHERE task_id=$1 AND version=$2 AND input_revision=$3',
+          [task.id, task.result_version, task.input_revision],
+        )
+      ).rows[0];
+      if (result?.tracks_result) view.tracksPresentation = result.tracks_result;
     }
     return view;
   });

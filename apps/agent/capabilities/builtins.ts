@@ -15,6 +15,14 @@ const ROUTING: Readonly<Record<string, CapabilityRoutingMetadata>> = Object.free
     executionMode: 'local',
     available: true,
   }),
+  'vessel-tracks': Object.freeze({
+    intents: Object.freeze(['vessel_tracks'] as const),
+    requiredInputs: Object.freeze({
+      vessel_tracks: Object.freeze(['region', 'time', 'vessel_selector'] as const),
+    }),
+    executionMode: 'local',
+    available: true,
+  }),
   'vessel-query': Object.freeze({
     intents: Object.freeze(['vessel_list', 'vessel_detail'] as const),
     requiredInputs: Object.freeze({
@@ -63,6 +71,13 @@ export const BUILTIN_SKILL_BINDINGS: readonly SkillToolBinding[] = Object.freeze
     adapterVersion: '1',
     toolIds: Object.freeze(['query_ais_heatmap']),
     referencePaths: Object.freeze(['references/heatmap.md']),
+  }),
+  Object.freeze({
+    skillId: 'vessel-tracks',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: Object.freeze(['query_vessel_tracks']),
+    referencePaths: Object.freeze(['references/tracks.md']),
   }),
   Object.freeze({
     skillId: 'vessel-query',

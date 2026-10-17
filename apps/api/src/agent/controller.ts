@@ -1,3 +1,4 @@
+import { AgentVesselTracksResultSchema } from '../../../../packages/contracts/vessel-tracks';
 import { AgentIntelligenceResultSchema } from '../../../../packages/contracts/intelligence-search';
 import { AgentHeatmapResultSchema } from '../../../../packages/contracts/heatmap';
 import {
@@ -73,6 +74,7 @@ const TaskResponse = z.object({
   queryResult: AgentQueryResultSchema.nullable(),
   intelligenceResult: AgentIntelligenceResultSchema.nullable(),
   heatmapResult: AgentHeatmapResultSchema.nullable(),
+  tracksResult: AgentVesselTracksResultSchema.nullable(),
 });
 const budget = (key: string, fallback: number) => {
   const value = Number(process.env[key] ?? fallback);
@@ -190,6 +192,7 @@ export class AgentController {
       queryResult: result.queryResult,
       intelligenceResult: result.intelligenceResult,
       heatmapResult: result.heatmapResult,
+      tracksResult: result.tracksResult,
     };
   }
   private inputError(error: unknown): never {

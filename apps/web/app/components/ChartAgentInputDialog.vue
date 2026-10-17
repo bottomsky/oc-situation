@@ -9,7 +9,7 @@ import type {
   VesselSummary,
   AgentInputField,
 } from '@ais/contracts';
-import { MARINE_SAMPLE_POINTS } from '@ais/contracts';
+import { MARINE_SAMPLE_POINTS, VesselTracksSelectorSchema } from '@ais/contracts';
 import type { AgentConversationState } from '../composables/useAgentConversation';
 const props = defineProps<{
   state: AgentConversationState;
@@ -34,6 +34,7 @@ const expanded = ref(false);
 let searchGeneration = 0;
 let returnFocus: HTMLElement | null = null;
 const reasonLabels = {
+  missing_vessel_selector: '请补充船舶型号、船型或船舶信息',
   missing_region: '请选择本次任务的区域',
   missing_vessels: '请选择要查询的船舶',
   missing_time: '请补充时间范围',
@@ -72,18 +73,21 @@ function beijingInput(iso: string) {
 function required(field: AgentInputField) {
   if (request.value?.fields.includes(field)) return true;
   const purpose = values.value.purpose;
+  if (field === 'vessel_selector') return purpose === 'vessel_tracks';
   if (field === 'topic') return purpose === 'intelligence_search';
   if (field === 'vessels') return purpose === 'vessel_detail';
   if (field === 'region')
     return (
       purpose === 'vessel_list' ||
       purpose === 'ais_heatmap' ||
+      purpose === 'vessel_tracks' ||
       purpose === 'port-restriction' ||
       purpose === 'area-low-speed-notice'
     );
   if (field === 'time')
     return (
       purpose === 'ais_heatmap' ||
+      purpose === 'vessel_tracks' ||
       purpose === 'port-restriction' ||
       purpose === 'area-low-speed-notice'
     );
@@ -232,6 +236,14 @@ async function submit() {
   if (!request.value) return;
   error.value = '';
   const body: AgentInputValues = JSON.parse(JSON.stringify(values.value));
+  if (
+    required('vessel_selector') &&
+    !VesselTracksSelectorSchema.safeParse(body.vesselSelector).success
+  ) {
+    error.value = '请填写至少一项有效船舶条件；AIS 船型编码范围为 1–99。';
+    return;
+  }
+  if (body.purpose === 'vessel_tracks') delete body.tracksTimeUnclear;
   if (required('region') && !body.bbox) {
     error.value = '请确认当前视野或框选区域。';
     return;
@@ -381,12 +393,14 @@ onBeforeUnmount(() => {
           <option disabled value="">请选择</option>
           <option value="vessel_list">区域船舶列表</option>
           <option value="vessel_detail">船舶基本信息</option>
+          <option value="vessel_tracks">船舶历史航线</option>
           <option value="ais_heatmap">AIS 历史船舶热力图</option>
           <option value="port-restriction">港口限制船舶识别</option>
           <option value="area-low-speed-notice">区域低速活动与公告关联</option>
           <option value="intelligence_search">本地情报与海况检索</option>
         </select>
       </fieldset>
+      <VesselSelectorFields v-if="required('vessel_selector')" v-model="values.vesselSelector" />
       <fieldset v-if="isIntelligence && visible('topic')">
         <legend>情报主题</legend>
         <label

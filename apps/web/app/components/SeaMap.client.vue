@@ -43,7 +43,8 @@ import type {
 import { vesselMarkerProperties } from '../utils/vesselMarkers';
 import { registerChartBusinessLayers } from '../utils/chartBusinessLayers';
 import { heatmapGeoJson, registerHeatmapLayers, heatmapViewportBounds } from '../utils/heatmapMap';
-import type { HeatmapResult } from '@ais/contracts';
+import { registerVesselTracksLayers, vesselTracksGeoJson } from '../utils/vesselTracksMap';
+import type { VesselTracksResult, HeatmapResult } from '@ais/contracts';
 import type { ChartLayerVisibility, ChartMapControls } from '../types/chart';
 import {
   applyChartBusinessVisibility,
@@ -64,6 +65,7 @@ const props = defineProps<{
   layers?: Partial<ChartLayerVisibility>;
   selectingRegion?: boolean;
   heatmap?: HeatmapResult | null;
+  vesselTracks?: VesselTracksResult | null;
 }>();
 const emit = defineEmits<{
   viewport: [bbox: Bbox, zoom: number];
@@ -74,6 +76,7 @@ const emit = defineEmits<{
   regionSelected: [bbox: Bbox];
   regionCancelled: [];
   heatmapDisplayed: [result: HeatmapResult];
+  vesselTracksDisplayed: [result: VesselTracksResult];
 }>();
 const host = useTemplateRef<HTMLElement>('mapHost');
 const mapError = ref('');
@@ -507,6 +510,8 @@ function registerBusinessLayers() {
   if (!map) return;
   registerHeatmapLayers(map);
   updateHeatmap();
+  registerVesselTracksLayers(map);
+  updateVesselTracks();
   registerChartBusinessLayers(map, grid);
   applyChartBusinessVisibility(map, props.layers);
   registerIntelligenceLayers(map);
@@ -514,6 +519,17 @@ function registerBusinessLayers() {
   update();
   ready.value = true;
   scheduling?.viewport();
+}
+function updateVesselTracks() {
+  const source = map?.getSource('ais-history-tracks') as GeoJSONSource | undefined;
+  if (!source) return;
+  const snapshot = props.vesselTracks;
+  source.setData(vesselTracksGeoJson(snapshot ?? null));
+  if (snapshot)
+    map?.once('idle', () => {
+      if (props.vesselTracks === snapshot && map?.getLayer('ais-history-tracks'))
+        emit('vesselTracksDisplayed', snapshot);
+    });
 }
 function updateHeatmap() {
   heatmapPopup?.remove();
@@ -690,6 +706,7 @@ function currentBounds(): Bbox | null {
 }
 watch(() => [props.data, props.track, props.frame], update, { deep: true });
 watch(() => props.heatmap, updateHeatmap);
+watch(() => props.vesselTracks, updateVesselTracks);
 watch(
   () => [props.intelligence, props.activeEventId, props.objects, props.intelligenceLayers],
   updateIntelligence,

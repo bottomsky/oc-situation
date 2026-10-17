@@ -83,7 +83,7 @@ RAW 使用 file storage 与 InterestPolicy，cleaner 和 archiver 独立确认�
 
 当前 Agent 使用 Pi 1.1.0 的 agent-core 与 ai 包，连接配置的 DeepSeek 模型。会话、任务、输入修订、步骤、结果和事件由 PostgreSQL 保存；worker 以任务 generation 和租约限制迟到写入。等待用户输入和界面回执通过持久状态释放执行资源。
 
-可信技能目录目前包含 `ais-heatmap`、`vessel-query`、`intelligence-search`、`ui-control` 四份技能；区域研判仍保留兼容执行路径。技能框架已有目录校验、代码授权、预算、模型投影和恢复回执，执行通道统一列入后续重构。
+可信技能目录目前包含 `ais-heatmap`、`vessel-query`、`vessel-tracks`、`intelligence-search`、`ui-control` 五份技能；区域研判仍保留兼容执行路径。技能框架已有目录校验、代码授权、预算、模型投影和恢复回执，执行通道统一列入后续重构。历史航线由 HTTP 与 Agent 共用查询服务，以独立图层展示多船分段轨迹，详见[船舶历史航线](vessel-tracks.md)。
 
 Web 当前支持全站语义状态感知与海图白名单操控，包括面板、页签、图层、已选船位定位、只读浮窗及热图展示/关闭。通用导航、业务编辑保存、删除、审核和系统配置操控处于目标范围。当前接口和恢复语义见[界面协议](agent-ui-protocol.md)。
 

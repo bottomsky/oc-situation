@@ -102,6 +102,7 @@ function applyLayers() {
           { id: 'intelligence', name: '情报标绘' },
           { id: 'layers', name: '图层控制' },
           { id: 'playback', name: '时间回放' },
+          { id: 'history-tracks', name: '历史航线' },
           { id: 'heatmap', name: 'AIS 热力图' },
         ] as const"
         :key="tab.id"
@@ -115,6 +116,9 @@ function applyLayers() {
     <div class="chart-panel-scroll">
       <div v-if="visitedTabs.has('intelligence')" v-show="workspace.leftTab === 'intelligence'">
         <slot name="intelligence" />
+      </div>
+      <div v-if="visitedTabs.has('history-tracks')" v-show="workspace.leftTab === 'history-tracks'">
+        <slot name="history-tracks" />
       </div>
       <div v-if="visitedTabs.has('heatmap')" v-show="workspace.leftTab === 'heatmap'">
         <slot name="heatmap" />

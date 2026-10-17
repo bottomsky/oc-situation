@@ -175,6 +175,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/map/vessel-tracks/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bounded historical vessel tracks selected by recorded vessel information */
+        post: operations["VesselTracksController_query"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources": {
         parameters: {
             query?: never;
@@ -1891,6 +1908,116 @@ export interface operations {
                         total: number;
                         /** Format: date-time */
                         generatedAt: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VesselTracksController_query: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    bbox: (number)[];
+                    /** Format: date-time */
+                    from: string;
+                    /** Format: date-time */
+                    to: string;
+                    selector: {
+                        shipTypes?: number[];
+                        mmsis?: string[];
+                        query?: string;
+                        model?: string;
+                    };
+                    sourceId?: string;
+                    /** @default 20 */
+                    maxVessels?: number;
+                    /** @default 500 */
+                    maxPointsPerVessel?: number;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        query: {
+                            bbox: (number)[];
+                            /** Format: date-time */
+                            from: string;
+                            /** Format: date-time */
+                            to: string;
+                            selector: {
+                                shipTypes?: number[];
+                                mmsis?: string[];
+                                query?: string;
+                                model?: string;
+                            };
+                            sourceId?: string;
+                            /** @default 20 */
+                            maxVessels: number;
+                            /** @default 500 */
+                            maxPointsPerVessel: number;
+                        };
+                        /** Format: date-time */
+                        asOf: string;
+                        /** Format: date-time */
+                        generatedAt: string;
+                        /** @enum {string} */
+                        shipTypeBasis: "current_profile";
+                        /** @enum {string} */
+                        selectionBasis: "historical_observation_in_bbox";
+                        /** @enum {string} */
+                        trackScope: "full_time_window";
+                        returnedVessels: number;
+                        matchedVesselsLowerBound: number;
+                        hasMoreVessels: boolean;
+                        tracks: {
+                            mmsi: string;
+                            name: string | null;
+                            shipType: number | null;
+                            segments: {
+                                points: {
+                                    lon: number;
+                                    lat: number;
+                                    /** Format: date-time */
+                                    observedAt: string;
+                                }[];
+                            }[];
+                            total: number;
+                            returned: number;
+                            sampled: boolean;
+                            truncated: boolean;
+                        }[];
                     };
                 };
             };
@@ -5601,6 +5728,7 @@ export interface operations {
                                 /** Format: uuid */
                                 clientId: string;
                                 pageGeneration: number;
+                                tracksVersion?: number;
                                 heatmapVersion?: number;
                             } | null;
                             uiResult?: {
@@ -5611,7 +5739,7 @@ export interface operations {
                                 status: string;
                                 components: {
                                     /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                                     version: number;
                                     revision?: number;
                                     mounted: boolean;
@@ -5629,7 +5757,7 @@ export interface operations {
                                     interacting: boolean;
                                     actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                                     /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                                     /** @enum {string} */
                                     blocked?: "editing" | "drawing" | "loading" | "unavailable";
                                 }[];
@@ -5659,7 +5787,7 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
                             selection?: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -5675,7 +5803,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -5709,6 +5837,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -5735,9 +5870,9 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
                             prefill: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -5753,7 +5888,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -5787,6 +5922,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -5810,7 +5952,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -5844,6 +5986,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -5911,6 +6060,7 @@ export interface operations {
                         /** Format: uuid */
                         clientId: string;
                         pageGeneration: number;
+                        tracksVersion?: number;
                         heatmapVersion?: number;
                     };
                 };
@@ -5943,6 +6093,7 @@ export interface operations {
                                 /** Format: uuid */
                                 clientId: string;
                                 pageGeneration: number;
+                                tracksVersion?: number;
                                 heatmapVersion?: number;
                             } | null;
                             uiResult?: {
@@ -5953,7 +6104,7 @@ export interface operations {
                                 status: string;
                                 components: {
                                     /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                                     version: number;
                                     revision?: number;
                                     mounted: boolean;
@@ -5971,7 +6122,7 @@ export interface operations {
                                     interacting: boolean;
                                     actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                                     /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                                     /** @enum {string} */
                                     blocked?: "editing" | "drawing" | "loading" | "unavailable";
                                 }[];
@@ -6001,7 +6152,7 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
                             selection?: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -6017,7 +6168,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -6051,6 +6202,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -6077,9 +6235,9 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
                             prefill: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -6095,7 +6253,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -6129,6 +6287,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -6152,7 +6317,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -6186,6 +6351,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -6243,6 +6415,7 @@ export interface operations {
                                 /** Format: uuid */
                                 clientId: string;
                                 pageGeneration: number;
+                                tracksVersion?: number;
                                 heatmapVersion?: number;
                             } | null;
                             uiResult?: {
@@ -6253,7 +6426,7 @@ export interface operations {
                                 status: string;
                                 components: {
                                     /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                                     version: number;
                                     revision?: number;
                                     mounted: boolean;
@@ -6271,7 +6444,7 @@ export interface operations {
                                     interacting: boolean;
                                     actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                                     /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                                     /** @enum {string} */
                                     blocked?: "editing" | "drawing" | "loading" | "unavailable";
                                 }[];
@@ -6301,7 +6474,7 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
                             selection?: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -6317,7 +6490,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -6351,6 +6524,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -6388,9 +6568,9 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
                             prefill: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -6406,7 +6586,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -6440,6 +6620,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -6463,7 +6650,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -6497,6 +6684,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -6547,7 +6741,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -6581,6 +6775,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -6779,6 +6980,60 @@ export interface operations {
                             version: number;
                             inputRevision: number;
                         } | null;
+                        tracksResult: {
+                            query: {
+                                bbox: (number)[];
+                                /** Format: date-time */
+                                from: string;
+                                /** Format: date-time */
+                                to: string;
+                                selector: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
+                                sourceId?: string;
+                                /** @default 20 */
+                                maxVessels: number;
+                                /** @default 500 */
+                                maxPointsPerVessel: number;
+                            };
+                            /** Format: date-time */
+                            asOf: string;
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            shipTypeBasis: "current_profile";
+                            /** @enum {string} */
+                            selectionBasis: "historical_observation_in_bbox";
+                            /** @enum {string} */
+                            trackScope: "full_time_window";
+                            returnedVessels: number;
+                            matchedVesselsLowerBound: number;
+                            hasMoreVessels: boolean;
+                            tracks: {
+                                mmsi: string;
+                                name: string | null;
+                                shipType: number | null;
+                                segments: {
+                                    points: {
+                                        lon: number;
+                                        lat: number;
+                                        /** Format: date-time */
+                                        observedAt: string;
+                                    }[];
+                                }[];
+                                total: number;
+                                returned: number;
+                                sampled: boolean;
+                                truncated: boolean;
+                            }[];
+                            /** @enum {string} */
+                            kind: "vessel_tracks";
+                            version: number;
+                            inputRevision: number;
+                        } | null;
                     };
                 };
             };
@@ -6835,7 +7090,7 @@ export interface operations {
                             hours?: number;
                         };
                         /** @enum {string} */
-                        purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                        purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                         intelligenceQuery?: {
                             keyword?: string;
                             locationKeyword?: string;
@@ -6869,6 +7124,13 @@ export interface operations {
                         };
                         intelligenceTimeUnclear?: boolean;
                         heatmapTimeUnclear?: boolean;
+                        tracksTimeUnclear?: boolean;
+                        vesselSelector?: {
+                            shipTypes?: number[];
+                            mmsis?: string[];
+                            query?: string;
+                            model?: string;
+                        };
                         intelligenceObjectUnclear?: boolean;
                         intelligenceObjectCandidates?: {
                             id: string;
@@ -6895,6 +7157,7 @@ export interface operations {
                                 /** Format: uuid */
                                 clientId: string;
                                 pageGeneration: number;
+                                tracksVersion?: number;
                                 heatmapVersion?: number;
                             } | null;
                             uiResult?: {
@@ -6905,7 +7168,7 @@ export interface operations {
                                 status: string;
                                 components: {
                                     /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                                     version: number;
                                     revision?: number;
                                     mounted: boolean;
@@ -6923,7 +7186,7 @@ export interface operations {
                                     interacting: boolean;
                                     actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                                     /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                                     /** @enum {string} */
                                     blocked?: "editing" | "drawing" | "loading" | "unavailable";
                                 }[];
@@ -6953,7 +7216,7 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
                             selection?: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -6969,7 +7232,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -7003,6 +7266,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -7029,9 +7299,9 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
                             prefill: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -7047,7 +7317,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -7081,6 +7351,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -7104,7 +7381,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -7138,6 +7415,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -7191,6 +7475,7 @@ export interface operations {
                         /** Format: uuid */
                         clientId: string;
                         pageGeneration: number;
+                        tracksVersion?: number;
                         heatmapVersion?: number;
                     };
                 };
@@ -7208,6 +7493,7 @@ export interface operations {
                                 /** Format: uuid */
                                 clientId: string;
                                 pageGeneration: number;
+                                tracksVersion?: number;
                                 heatmapVersion?: number;
                             } | null;
                             uiResult?: {
@@ -7218,7 +7504,7 @@ export interface operations {
                                 status: string;
                                 components: {
                                     /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                                     version: number;
                                     revision?: number;
                                     mounted: boolean;
@@ -7236,7 +7522,7 @@ export interface operations {
                                     interacting: boolean;
                                     actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                                     /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                                     /** @enum {string} */
                                     blocked?: "editing" | "drawing" | "loading" | "unavailable";
                                 }[];
@@ -7266,7 +7552,7 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
                             selection?: {
                                 bbox?: (number)[];
                                 mmsis?: string[];
@@ -7282,7 +7568,7 @@ export interface operations {
                                     hours?: number;
                                 };
                                 /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                                 intelligenceQuery?: {
                                     keyword?: string;
                                     locationKeyword?: string;
@@ -7316,6 +7602,13 @@ export interface operations {
                                 };
                                 intelligenceTimeUnclear?: boolean;
                                 heatmapTimeUnclear?: boolean;
+                                tracksTimeUnclear?: boolean;
+                                vesselSelector?: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
                                 intelligenceObjectUnclear?: boolean;
                                 intelligenceObjectCandidates?: {
                                     id: string;
@@ -7393,6 +7686,7 @@ export interface operations {
                             /** Format: uuid */
                             clientId: string;
                             pageGeneration: number;
+                            tracksVersion?: number;
                             heatmapVersion?: number;
                         } | null;
                         uiResult?: {
@@ -7403,7 +7697,7 @@ export interface operations {
                             status: string;
                             components: {
                                 /** @enum {string} */
-                                id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                                 version: number;
                                 revision?: number;
                                 mounted: boolean;
@@ -7421,7 +7715,7 @@ export interface operations {
                                 interacting: boolean;
                                 actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                                 /** @enum {string} */
-                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                                 /** @enum {string} */
                                 blocked?: "editing" | "drawing" | "loading" | "unavailable";
                             }[];
@@ -7451,7 +7745,7 @@ export interface operations {
                         summary: string | null;
                         error: string | null;
                         /** @enum {string} */
-                        intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "ui_control";
+                        intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
                         selection?: {
                             bbox?: (number)[];
                             mmsis?: string[];
@@ -7467,7 +7761,7 @@ export interface operations {
                                 hours?: number;
                             };
                             /** @enum {string} */
-                            purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap";
+                            purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
                             intelligenceQuery?: {
                                 keyword?: string;
                                 locationKeyword?: string;
@@ -7501,6 +7795,13 @@ export interface operations {
                             };
                             intelligenceTimeUnclear?: boolean;
                             heatmapTimeUnclear?: boolean;
+                            tracksTimeUnclear?: boolean;
+                            vesselSelector?: {
+                                shipTypes?: number[];
+                                mmsis?: string[];
+                                query?: string;
+                                model?: string;
+                            };
                             intelligenceObjectUnclear?: boolean;
                             intelligenceObjectCandidates?: {
                                 id: string;
@@ -7626,6 +7927,7 @@ export interface operations {
                         /** Format: uuid */
                         clientId: string;
                         pageGeneration: number;
+                        tracksVersion?: number;
                         heatmapVersion?: number;
                     };
                 };
@@ -7666,6 +7968,7 @@ export interface operations {
                     /** Format: uuid */
                     clientId: string;
                     pageGeneration: number;
+                    tracksVersion?: number;
                     heatmapVersion?: number;
                     /** Format: uuid */
                     sessionId: string | null;
@@ -7675,7 +7978,7 @@ export interface operations {
                         route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "unknown";
                         components: {
                             /** @enum {string} */
-                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                             version: number;
                             revision?: number;
                             mounted: boolean;
@@ -7693,7 +7996,7 @@ export interface operations {
                             interacting?: boolean;
                             actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                             /** @enum {string} */
-                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                             /** @enum {string} */
                             blocked?: "editing" | "drawing" | "loading" | "unavailable";
                         }[];
@@ -7711,6 +8014,7 @@ export interface operations {
                         /** Format: uuid */
                         clientId: string;
                         pageGeneration: number;
+                        tracksVersion?: number;
                         heatmapVersion?: number;
                     };
                 };
@@ -7789,6 +8093,60 @@ export interface operations {
                                 version: number;
                                 inputRevision: number;
                             };
+                            tracksPresentation?: {
+                                query: {
+                                    bbox: (number)[];
+                                    /** Format: date-time */
+                                    from: string;
+                                    /** Format: date-time */
+                                    to: string;
+                                    selector: {
+                                        shipTypes?: number[];
+                                        mmsis?: string[];
+                                        query?: string;
+                                        model?: string;
+                                    };
+                                    sourceId?: string;
+                                    /** @default 20 */
+                                    maxVessels: number;
+                                    /** @default 500 */
+                                    maxPointsPerVessel: number;
+                                };
+                                /** Format: date-time */
+                                asOf: string;
+                                /** Format: date-time */
+                                generatedAt: string;
+                                /** @enum {string} */
+                                shipTypeBasis: "current_profile";
+                                /** @enum {string} */
+                                selectionBasis: "historical_observation_in_bbox";
+                                /** @enum {string} */
+                                trackScope: "full_time_window";
+                                returnedVessels: number;
+                                matchedVesselsLowerBound: number;
+                                hasMoreVessels: boolean;
+                                tracks: {
+                                    mmsi: string;
+                                    name: string | null;
+                                    shipType: number | null;
+                                    segments: {
+                                        points: {
+                                            lon: number;
+                                            lat: number;
+                                            /** Format: date-time */
+                                            observedAt: string;
+                                        }[];
+                                    }[];
+                                    total: number;
+                                    returned: number;
+                                    sampled: boolean;
+                                    truncated: boolean;
+                                }[];
+                                /** @enum {string} */
+                                kind: "vessel_tracks";
+                                version: number;
+                                inputRevision: number;
+                            };
                             /** Format: uuid */
                             id: string;
                             /** Format: uuid */
@@ -7798,11 +8156,11 @@ export interface operations {
                             pageGeneration: number;
                             operation: {
                                 /** @enum {string} */
-                                componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                                 /** @enum {string} */
                                 action: "open" | "close" | "show" | "hide" | "focus" | "tab";
                                 /** @enum {string} */
-                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                             };
                             expectedVersion: number;
                             /** @enum {string} */
@@ -7849,6 +8207,7 @@ export interface operations {
                     /** Format: uuid */
                     clientId: string;
                     pageGeneration: number;
+                    tracksVersion?: number;
                     heatmapVersion?: number;
                 };
             };
@@ -7895,6 +8254,60 @@ export interface operations {
                             version: number;
                             inputRevision: number;
                         };
+                        tracksPresentation?: {
+                            query: {
+                                bbox: (number)[];
+                                /** Format: date-time */
+                                from: string;
+                                /** Format: date-time */
+                                to: string;
+                                selector: {
+                                    shipTypes?: number[];
+                                    mmsis?: string[];
+                                    query?: string;
+                                    model?: string;
+                                };
+                                sourceId?: string;
+                                /** @default 20 */
+                                maxVessels: number;
+                                /** @default 500 */
+                                maxPointsPerVessel: number;
+                            };
+                            /** Format: date-time */
+                            asOf: string;
+                            /** Format: date-time */
+                            generatedAt: string;
+                            /** @enum {string} */
+                            shipTypeBasis: "current_profile";
+                            /** @enum {string} */
+                            selectionBasis: "historical_observation_in_bbox";
+                            /** @enum {string} */
+                            trackScope: "full_time_window";
+                            returnedVessels: number;
+                            matchedVesselsLowerBound: number;
+                            hasMoreVessels: boolean;
+                            tracks: {
+                                mmsi: string;
+                                name: string | null;
+                                shipType: number | null;
+                                segments: {
+                                    points: {
+                                        lon: number;
+                                        lat: number;
+                                        /** Format: date-time */
+                                        observedAt: string;
+                                    }[];
+                                }[];
+                                total: number;
+                                returned: number;
+                                sampled: boolean;
+                                truncated: boolean;
+                            }[];
+                            /** @enum {string} */
+                            kind: "vessel_tracks";
+                            version: number;
+                            inputRevision: number;
+                        };
                         /** Format: uuid */
                         id: string;
                         /** Format: uuid */
@@ -7904,11 +8317,11 @@ export interface operations {
                         pageGeneration: number;
                         operation: {
                             /** @enum {string} */
-                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                             /** @enum {string} */
                             action: "open" | "close" | "show" | "hide" | "focus" | "tab";
                             /** @enum {string} */
-                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                         };
                         expectedVersion: number;
                         /** @enum {string} */
@@ -7954,6 +8367,7 @@ export interface operations {
                     /** Format: uuid */
                     clientId: string;
                     pageGeneration: number;
+                    tracksVersion?: number;
                     heatmapVersion?: number;
                     /** Format: uuid */
                     receiptId: string;
@@ -7967,7 +8381,7 @@ export interface operations {
                         route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "unknown";
                         components: {
                             /** @enum {string} */
-                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
                             version: number;
                             revision?: number;
                             mounted: boolean;
@@ -7985,7 +8399,7 @@ export interface operations {
                             interacting?: boolean;
                             actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
                             /** @enum {string} */
-                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "chat" | "push" | "tasks";
+                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
                             /** @enum {string} */
                             blocked?: "editing" | "drawing" | "loading" | "unavailable";
                         }[];

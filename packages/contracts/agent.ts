@@ -1,3 +1,4 @@
+import { VesselTracksSelectorSchema } from './vessel-tracks';
 import { UiBindingSchema, UiResultSchema } from './agent-ui';
 import { z } from 'zod';
 import { TopicDefinitionIdSchema } from './topics';
@@ -24,6 +25,7 @@ export const AgentIntentSchema = z.enum([
   'unresolved',
   'intelligence_search',
   'ais_heatmap',
+  'vessel_tracks',
   'ui_control',
 ]);
 export type AgentIntent = z.infer<typeof AgentIntentSchema>;
@@ -34,6 +36,7 @@ export const AgentPurposeSchema = z.enum([
   'area-low-speed-notice',
   'intelligence_search',
   'ais_heatmap',
+  'vessel_tracks',
 ]);
 export type AgentPurpose = z.infer<typeof AgentPurposeSchema>;
 export const AgentTimeRangeSchema = z
@@ -62,6 +65,8 @@ export const AgentSelectionSchema = z.strictObject({
   intelligenceTimeRange: IntelligenceTimeRangeSchema.optional(),
   intelligenceTimeUnclear: z.boolean().optional(),
   heatmapTimeUnclear: z.boolean().optional(),
+  tracksTimeUnclear: z.boolean().optional(),
+  vesselSelector: VesselTracksSelectorSchema.optional(),
   intelligenceObjectUnclear: z.boolean().optional(),
   intelligenceObjectCandidates: z
     .array(
@@ -87,7 +92,14 @@ export const AgentMapContextSchema = AgentFiltersSchema.extend({
   selectedMmsis: Mmsis.optional(),
 });
 export type AgentMapContext = z.infer<typeof AgentMapContextSchema>;
-export const AgentInputFieldSchema = z.enum(['region', 'vessels', 'time', 'goal', 'topic']);
+export const AgentInputFieldSchema = z.enum([
+  'region',
+  'vessels',
+  'time',
+  'goal',
+  'topic',
+  'vessel_selector',
+]);
 export type AgentInputField = z.infer<typeof AgentInputFieldSchema>;
 export const AgentInputReasonSchema = z.enum([
   'missing_region',
@@ -98,13 +110,14 @@ export const AgentInputReasonSchema = z.enum([
   'retention',
   'scope_changed',
   'missing_topic',
+  'missing_vessel_selector',
 ]);
 export type AgentInputReason = z.infer<typeof AgentInputReasonSchema>;
 export const AgentInputSpecSchema = z.strictObject({
   fields: z
     .array(AgentInputFieldSchema)
     .min(1)
-    .max(5)
+    .max(6)
     .refine((fields) => new Set(fields).size === fields.length, 'Duplicate input fields'),
   reason: AgentInputReasonSchema,
 });

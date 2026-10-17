@@ -11,6 +11,7 @@ import { AuthController } from './auth/controller';
 import { UsersController } from './auth/users.controller';
 import { VesselsController } from './vessels/controller';
 import { MapController } from './map/controller';
+import { VesselTracksController } from './map/vessel-tracks-controller';
 import { SourcesController } from './sources/controller';
 import { JobsController } from './jobs/controller';
 import { JobsService } from './jobs/service';
@@ -41,6 +42,7 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
       UsersController,
       VesselsController,
       MapController,
+      VesselTracksController,
       SourcesController,
       JobsController,
       RunsController,

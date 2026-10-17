@@ -1,3 +1,4 @@
+import { AgentVesselTracksResultSchema } from './vessel-tracks';
 import { AgentHeatmapResultSchema } from './heatmap';
 import { z } from 'zod';
 
@@ -11,6 +12,7 @@ export const UI_COMPONENTS = {
   'intelligence.draft': '人工情报关系草稿',
   'workspace.left': '人工操控面板',
   'workspace.right': '智能协同面板',
+  'chart.vessel-tracks': '历史航线',
   'chart.heatmap': '热力图',
   'chart.heatmap.legend': '热力图统计图例',
   'chart.heatmap.popup': '热力图网格详情',
@@ -36,6 +38,7 @@ export const UiTabSchema = z.enum([
   'layers',
   'playback',
   'heatmap',
+  'history-tracks',
   'chat',
   'push',
   'tasks',
@@ -43,6 +46,7 @@ export const UiTabSchema = z.enum([
 export const UiBindingSchema = z.strictObject({
   clientId: z.uuid(),
   pageGeneration: z.number().int().positive(),
+  tracksVersion: z.number().int().positive().optional(),
   heatmapVersion: z.number().int().positive().optional(),
 });
 export type UiBinding = z.infer<typeof UiBindingSchema>;
@@ -97,6 +101,7 @@ export const UiOperationSchema = z.strictObject({
 export type UiOperation = z.infer<typeof UiOperationSchema>;
 export const UiCommandSchema = z.object({
   presentation: AgentHeatmapResultSchema.optional(),
+  tracksPresentation: AgentVesselTracksResultSchema.optional(),
   id: z.uuid(),
   taskId: z.uuid(),
   clientId: z.uuid(),
@@ -140,7 +145,9 @@ export function uiOperationAllowed(op: UiOperation): boolean {
     return (
       ['open', 'close'].includes(op.action) ||
       (op.action === 'tab' &&
-        ['search', 'intelligence', 'layers', 'playback', 'heatmap'].includes(op.tab ?? ''))
+        ['search', 'intelligence', 'layers', 'playback', 'heatmap', 'history-tracks'].includes(
+          op.tab ?? '',
+        ))
     );
   if (op.componentId === 'workspace.right')
     return (
@@ -148,7 +155,8 @@ export function uiOperationAllowed(op: UiOperation): boolean {
       (op.action === 'tab' && ['chat', 'push', 'tasks'].includes(op.tab ?? ''))
     );
   if (op.componentId.startsWith('chart.layers.')) return ['show', 'hide'].includes(op.action);
-  if (op.componentId === 'chart.heatmap') return ['show', 'close'].includes(op.action);
+  if (op.componentId === 'chart.heatmap' || op.componentId === 'chart.vessel-tracks')
+    return ['show', 'close'].includes(op.action);
   if (op.componentId === 'chart.viewport') return op.action === 'focus';
   if (op.componentId === 'agent.input' || op.componentId === 'agent.reply')
     return ['open', 'close'].includes(op.action);
@@ -170,6 +178,8 @@ export function uiPostcondition(op: UiOperation, state: UiState): boolean {
         state.components.some((x) => x.id === id && !x.open),
       )
     );
+  if (op.componentId === 'chart.vessel-tracks' && op.action === 'close')
+    return !c.open && !c.visible && !c.loading && !c.interacting;
   if (op.action === 'close' || op.action === 'hide') return !c.open && !c.visible;
   if (op.action === 'tab') return c.open && c.tab === op.tab;
   if (op.action === 'focus') return c.focused;

@@ -17,6 +17,7 @@ import type {
   IntelligenceEvidence,
   IntelligenceSourceHealth,
   AgentHeatmapResult,
+  AgentVesselTracksResult,
 } from '@ais/contracts';
 import { canOperate } from '../utils/display';
 
@@ -43,10 +44,16 @@ interface TaskDetail {
   queryResult?: AgentQueryResult | null;
   intelligenceResult?: AgentIntelligenceResult | null;
   heatmapResult?: AgentHeatmapResult | null;
+  tracksResult?: AgentVesselTracksResult | null;
 }
 export interface AgentHeatmapDisplay {
   begin(): number;
   accept(result: AgentHeatmapResult, scope: string, token: number): unknown;
+  reset(): void;
+}
+export interface AgentTracksDisplay {
+  begin(): number;
+  accept(result: AgentVesselTracksResult, scope: string, token: number): unknown;
   reset(): void;
 }
 export type CurrentAgentReplyStatus = AgentTask['status'] | 'sending' | 'send_failed';
@@ -107,8 +114,10 @@ export function useAgentConversation(
   heatmap?: AgentHeatmapDisplay,
   bindUi?: (sessionId: string) => Promise<UiBinding | undefined>,
   readConfig?: () => Promise<AgentConfig>,
+  tracks?: AgentTracksDisplay,
 ) {
   let heatmapTicket: number | undefined;
+  let tracksTicket: number | undefined;
   const { api, session: identity } = usePlatform();
   const config = ref<AgentConfig | null>(null);
   const sessions = ref<AgentSession[]>([]);
@@ -276,6 +285,8 @@ export function useAgentConversation(
   function reset() {
     heatmap?.reset();
     heatmapTicket = undefined;
+    tracks?.reset();
+    tracksTicket = undefined;
     closeSource();
     generation++;
     detailGeneration++;
@@ -312,6 +323,8 @@ export function useAgentConversation(
   function hideCachedReply(message: string) {
     heatmap?.reset();
     heatmapTicket = undefined;
+    tracks?.reset();
+    tracksTicket = undefined;
     closeSource();
     readEpoch++;
     detailGeneration++;
@@ -367,6 +380,26 @@ export function useAgentConversation(
     )
       heatmap?.accept(result, `${task.sessionId}:${task.id}`, heatmapTicket);
   }
+  function displayTracks(response: TaskDetail) {
+    if (config.value?.uiEnabled && response.task.uiBinding) return;
+    const result = response.tracksResult;
+    const task = response.task;
+    const latest = tasks.value.find((item) => item.id === task.id);
+    if (
+      tracksTicket !== undefined &&
+      result &&
+      task.status === 'completed' &&
+      task.id === currentRequest.value?.taskId &&
+      task.sessionId === activeSession.value?.id &&
+      task.sessionId === currentRequest.value?.sessionId &&
+      latest?.inputRevision === task.inputRevision &&
+      latest?.resultVersion === task.resultVersion &&
+      result.inputRevision === task.inputRevision &&
+      task.resultInputRevision === task.inputRevision &&
+      result.version === task.resultVersion
+    )
+      tracks?.accept(result, `${task.sessionId}:${task.id}`, tracksTicket);
+  }
   async function loadTask(id: string, propagateError = false) {
     const turn = generation;
     const request = ++detailGeneration;
@@ -382,6 +415,7 @@ export function useAgentConversation(
       ) {
         detail.value = response;
         displayHeatmap(response);
+        displayTracks(response);
       }
     } catch (e) {
       if (current(turn) && request === detailGeneration) hideCachedReply((e as Error).message);
@@ -405,9 +439,16 @@ export function useAgentConversation(
         response.tasks.find((item) => item.id === selectedTaskId.value) ?? response.tasks.at(-1);
       if (selected) await loadTask(selected.id, true);
       const liveId = currentRequest.value?.taskId;
-      if (heatmapTicket !== undefined && liveId && liveId !== selected?.id) {
+      if (
+        (heatmapTicket !== undefined || tracksTicket !== undefined) &&
+        liveId &&
+        liveId !== selected?.id
+      ) {
         const live = await api<TaskDetail>(`/agent/tasks/${encodeURIComponent(liveId)}`);
-        if (current(turn) && epoch === readEpoch) displayHeatmap(live);
+        if (current(turn) && epoch === readEpoch) {
+          displayHeatmap(live);
+          displayTracks(live);
+        }
       }
       return current(turn) && epoch === readEpoch;
     } catch (e) {
@@ -494,6 +535,7 @@ export function useAgentConversation(
     const turn = generation;
     const mapContext = context?.();
     heatmapTicket = heatmap?.begin();
+    tracksTicket = tracks?.begin();
     let body: {
       content: string;
       historyHours: number;
@@ -622,7 +664,10 @@ export function useAgentConversation(
     const body = values
       ? { action: 'accept' as const, inputRevision: request.inputRevision, values }
       : { action: 'decline' as const, inputRevision: request.inputRevision };
-    if (values) heatmapTicket = heatmap?.begin();
+    if (values) {
+      heatmapTicket = heatmap?.begin();
+      tracksTicket = tracks?.begin();
+    }
     const fingerprint = JSON.stringify(body);
     if (inputKeys.get(request.id)?.fingerprint !== fingerprint)
       inputKeys.set(request.id, { fingerprint, key: crypto.randomUUID() });
@@ -686,6 +731,7 @@ export function useAgentConversation(
     if (!canWrite.value || busy.value || activeTask.value) return;
     const turn = generation;
     heatmapTicket = heatmap?.begin();
+    tracksTicket = tracks?.begin();
     busy.value = true;
     operationError.value = '';
     if (!retryKeys.has(id)) retryKeys.set(id, crypto.randomUUID());

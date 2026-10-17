@@ -1,3 +1,9 @@
+import type {
+  AgentVesselTracksResult,
+  VesselTracksQuery,
+  VesselTracksResult,
+} from '../../packages/contracts/vessel-tracks';
+import { executeVesselTracks } from './vessel-tracks-runtime';
 import { executeIntelligence } from './intelligence-runtime';
 import { executeHeatmap } from './heatmap-runtime';
 import type {
@@ -77,6 +83,8 @@ export interface RuntimePorts {
     selection: AgentSelection,
   ): Promise<AgentQueryResult>;
   saveQueryResult?(result: AgentQueryResult): Promise<number | null>;
+  queryVesselTracks?(query: VesselTracksQuery, signal?: AbortSignal): Promise<VesselTracksResult>;
+  saveTracksResult?(result: AgentVesselTracksResult): Promise<number | null>;
   queryHeatmap?(query: HeatmapQuery, signal?: AbortSignal): Promise<HeatmapResult>;
   saveHeatmapResult?(result: AgentHeatmapResult): Promise<number | null>;
   searchIntelligence?(selection: AgentSelection): Promise<AgentIntelligenceResult>;
@@ -108,6 +116,7 @@ export interface RuntimeContext {
   steps: AgentStep[];
   queryResult?: AgentQueryResult | null;
   intelligenceResult?: AgentIntelligenceResult | null;
+  tracksResult?: AgentVesselTracksResult | null;
   heatmapResult?: AgentHeatmapResult | null;
   previous?: RuntimeContext | null;
 }
@@ -444,6 +453,7 @@ export async function executeAgent(
       queryResult: null,
       intelligenceResult: null,
       heatmapResult: null,
+      tracksResult: null,
     };
   const selectedPurpose = task.selection?.purpose;
   const resolvedIntent = selectedPurpose
@@ -456,6 +466,35 @@ export async function executeAgent(
       ? { purpose: deriveAgentIntent(task.goal).purpose }
       : {}),
   };
+  if (
+    resolvedIntent === 'vessel_tracks' ||
+    (resolvedIntent === 'explain' && (context.tracksResult || context.previous?.tracksResult))
+  ) {
+    const prior =
+      resolvedIntent === 'explain'
+        ? (context.tracksResult ??
+          (context.previous?.tracksResult?.inputRevision ===
+          (context.previous?.task.inputRevision ?? 0)
+            ? context.previous?.tracksResult
+            : undefined))
+        : undefined;
+    const fields = prior ? [] : requiredAgentInputFields(selection, 'vessel_tracks');
+    if (fields.length)
+      await requestInput(
+        ports,
+        {
+          fields,
+          reason: fields.includes('region')
+            ? 'missing_region'
+            : fields.includes('time')
+              ? 'missing_time'
+              : 'missing_vessel_selector',
+        },
+        '请补充历史航线的区域、明确时间和船舶目标。',
+      );
+    else await executeVesselTracks(context, selection, ports, options, prior ?? undefined);
+    return;
+  }
   if (
     resolvedIntent === 'ais_heatmap' ||
     (resolvedIntent === 'explain' && (context.heatmapResult || context.previous?.heatmapResult))
@@ -556,7 +595,8 @@ export async function executeAgent(
     selectedPurpose !== 'vessel_list' &&
     selectedPurpose !== 'vessel_detail' &&
     selectedPurpose !== 'intelligence_search' &&
-    selectedPurpose !== 'ais_heatmap'
+    selectedPurpose !== 'ais_heatmap' &&
+    selectedPurpose !== 'vessel_tracks'
       ? { action: 'analyze' as const, algorithm: selectedPurpose }
       : null) ??
     classifyRequest(task.goal, context.previous?.task.resultVersion ? previousDefinition : null) ??

@@ -1976,6 +1976,413 @@
         ]
       }
     },
+    "/api/v1/map/vessel-tracks/query": {
+      "post": {
+        "operationId": "VesselTracksController_query",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bbox": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        },
+                        {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        },
+                        {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        },
+                        {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        }
+                      ]
+                    },
+                    "minItems": 4,
+                    "maxItems": 4
+                  },
+                  "from": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  "selector": {
+                    "type": "object",
+                    "properties": {
+                      "shipTypes": {
+                        "minItems": 1,
+                        "maxItems": 30,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 99
+                        }
+                      },
+                      "mmsis": {
+                        "minItems": 1,
+                        "maxItems": 100,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[1-9]\\d{8}$"
+                        }
+                      },
+                      "query": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "model": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "sourceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "maxVessels": {
+                    "default": 20,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  },
+                  "maxPointsPerVessel": {
+                    "default": 500,
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 1000
+                  }
+                },
+                "required": [
+                  "bbox",
+                  "from",
+                  "to",
+                  "selector"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "object",
+                      "properties": {
+                        "bbox": {
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              },
+                              {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              }
+                            ]
+                          },
+                          "minItems": 4,
+                          "maxItems": 4
+                        },
+                        "from": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "selector": {
+                          "type": "object",
+                          "properties": {
+                            "shipTypes": {
+                              "minItems": 1,
+                              "maxItems": 30,
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 99
+                              }
+                            },
+                            "mmsis": {
+                              "minItems": 1,
+                              "maxItems": 100,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[1-9]\\d{8}$"
+                              }
+                            },
+                            "query": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "model": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "sourceId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "maxVessels": {
+                          "default": 20,
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 50
+                        },
+                        "maxPointsPerVessel": {
+                          "default": 500,
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 1000
+                        }
+                      },
+                      "required": [
+                        "bbox",
+                        "from",
+                        "to",
+                        "selector"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "asOf": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "maxLength": 40,
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "shipTypeBasis": {
+                      "type": "string",
+                      "enum": [
+                        "current_profile"
+                      ]
+                    },
+                    "selectionBasis": {
+                      "type": "string",
+                      "enum": [
+                        "historical_observation_in_bbox"
+                      ]
+                    },
+                    "trackScope": {
+                      "type": "string",
+                      "enum": [
+                        "full_time_window"
+                      ]
+                    },
+                    "returnedVessels": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 50
+                    },
+                    "matchedVesselsLowerBound": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 51
+                    },
+                    "hasMoreVessels": {
+                      "type": "boolean"
+                    },
+                    "tracks": {
+                      "maxItems": 50,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mmsi": {
+                            "type": "string",
+                            "pattern": "^[1-9]\\d{8}$"
+                          },
+                          "name": {
+                            "nullable": true,
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "shipType": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99
+                          },
+                          "segments": {
+                            "maxItems": 1000,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "points": {
+                                  "minItems": 1,
+                                  "maxItems": 1000,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "lon": {
+                                        "type": "number",
+                                        "minimum": -180,
+                                        "maximum": 180
+                                      },
+                                      "lat": {
+                                        "type": "number",
+                                        "minimum": -90,
+                                        "maximum": 90
+                                      },
+                                      "observedAt": {
+                                        "type": "string",
+                                        "maxLength": 40,
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "lon",
+                                      "lat",
+                                      "observedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "points"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "total": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "returned": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000
+                          },
+                          "sampled": {
+                            "type": "boolean"
+                          },
+                          "truncated": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "mmsi",
+                          "name",
+                          "shipType",
+                          "segments",
+                          "total",
+                          "returned",
+                          "sampled",
+                          "truncated"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "asOf",
+                    "generatedAt",
+                    "shipTypeBasis",
+                    "selectionBasis",
+                    "trackScope",
+                    "returnedVessels",
+                    "matchedVesselsLowerBound",
+                    "hasMoreVessels",
+                    "tracks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Bounded historical vessel tracks selected by recorded vessel information",
+        "tags": [
+          "VesselTracks"
+        ]
+      }
+    },
     "/api/v1/sources": {
       "get": {
         "operationId": "SourcesController_list",
@@ -11507,6 +11914,12 @@
                                 "exclusiveMinimum": true,
                                 "maximum": 9007199254740991
                               },
+                              "tracksVersion": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "exclusiveMinimum": true,
+                                "maximum": 9007199254740991
+                              },
                               "heatmapVersion": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -11556,6 +11969,7 @@
                                         "intelligence.draft",
                                         "workspace.left",
                                         "workspace.right",
+                                        "chart.vessel-tracks",
                                         "chart.heatmap",
                                         "chart.heatmap.legend",
                                         "chart.heatmap.popup",
@@ -11635,6 +12049,7 @@
                                         "layers",
                                         "playback",
                                         "heatmap",
+                                        "history-tracks",
                                         "chat",
                                         "push",
                                         "tasks"
@@ -11787,6 +12202,7 @@
                               "unresolved",
                               "intelligence_search",
                               "ais_heatmap",
+                              "vessel_tracks",
                               "ui_control"
                             ]
                           },
@@ -11879,7 +12295,8 @@
                                   "port-restriction",
                                   "area-low-speed-notice",
                                   "intelligence_search",
-                                  "ais_heatmap"
+                                  "ais_heatmap",
+                                  "vessel_tracks"
                                 ]
                               },
                               "intelligenceQuery": {
@@ -12034,6 +12451,44 @@
                               },
                               "heatmapTimeUnclear": {
                                 "type": "boolean"
+                              },
+                              "tracksTimeUnclear": {
+                                "type": "boolean"
+                              },
+                              "vesselSelector": {
+                                "type": "object",
+                                "properties": {
+                                  "shipTypes": {
+                                    "minItems": 1,
+                                    "maxItems": 30,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    }
+                                  },
+                                  "mmsis": {
+                                    "minItems": 1,
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
                               },
                               "intelligenceObjectUnclear": {
                                 "type": "boolean"
@@ -12165,7 +12620,8 @@
                                 "vessels",
                                 "time",
                                 "goal",
-                                "topic"
+                                "topic",
+                                "vessel_selector"
                               ]
                             }
                           },
@@ -12179,7 +12635,8 @@
                               "data_limit",
                               "retention",
                               "scope_changed",
-                              "missing_topic"
+                              "missing_topic",
+                              "missing_vessel_selector"
                             ]
                           },
                           "prefill": {
@@ -12271,7 +12728,8 @@
                                   "port-restriction",
                                   "area-low-speed-notice",
                                   "intelligence_search",
-                                  "ais_heatmap"
+                                  "ais_heatmap",
+                                  "vessel_tracks"
                                 ]
                               },
                               "intelligenceQuery": {
@@ -12426,6 +12884,44 @@
                               },
                               "heatmapTimeUnclear": {
                                 "type": "boolean"
+                              },
+                              "tracksTimeUnclear": {
+                                "type": "boolean"
+                              },
+                              "vesselSelector": {
+                                "type": "object",
+                                "properties": {
+                                  "shipTypes": {
+                                    "minItems": 1,
+                                    "maxItems": 30,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    }
+                                  },
+                                  "mmsis": {
+                                    "minItems": 1,
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
                               },
                               "intelligenceObjectUnclear": {
                                 "type": "boolean"
@@ -12556,7 +13052,8 @@
                                   "port-restriction",
                                   "area-low-speed-notice",
                                   "intelligence_search",
-                                  "ais_heatmap"
+                                  "ais_heatmap",
+                                  "vessel_tracks"
                                 ]
                               },
                               "intelligenceQuery": {
@@ -12711,6 +13208,44 @@
                               },
                               "heatmapTimeUnclear": {
                                 "type": "boolean"
+                              },
+                              "tracksTimeUnclear": {
+                                "type": "boolean"
+                              },
+                              "vesselSelector": {
+                                "type": "object",
+                                "properties": {
+                                  "shipTypes": {
+                                    "minItems": 1,
+                                    "maxItems": 30,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    }
+                                  },
+                                  "mmsis": {
+                                    "minItems": 1,
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
                               },
                               "intelligenceObjectUnclear": {
                                 "type": "boolean"
@@ -12948,6 +13483,12 @@
                         "exclusiveMinimum": true,
                         "maximum": 9007199254740991
                       },
+                      "tracksVersion": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991
+                      },
                       "heatmapVersion": {
                         "type": "integer",
                         "minimum": 0,
@@ -13052,6 +13593,12 @@
                               "exclusiveMinimum": true,
                               "maximum": 9007199254740991
                             },
+                            "tracksVersion": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "maximum": 9007199254740991
+                            },
                             "heatmapVersion": {
                               "type": "integer",
                               "minimum": 0,
@@ -13101,6 +13648,7 @@
                                       "intelligence.draft",
                                       "workspace.left",
                                       "workspace.right",
+                                      "chart.vessel-tracks",
                                       "chart.heatmap",
                                       "chart.heatmap.legend",
                                       "chart.heatmap.popup",
@@ -13180,6 +13728,7 @@
                                       "layers",
                                       "playback",
                                       "heatmap",
+                                      "history-tracks",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -13332,6 +13881,7 @@
                             "unresolved",
                             "intelligence_search",
                             "ais_heatmap",
+                            "vessel_tracks",
                             "ui_control"
                           ]
                         },
@@ -13424,7 +13974,8 @@
                                 "port-restriction",
                                 "area-low-speed-notice",
                                 "intelligence_search",
-                                "ais_heatmap"
+                                "ais_heatmap",
+                                "vessel_tracks"
                               ]
                             },
                             "intelligenceQuery": {
@@ -13579,6 +14130,44 @@
                             },
                             "heatmapTimeUnclear": {
                               "type": "boolean"
+                            },
+                            "tracksTimeUnclear": {
+                              "type": "boolean"
+                            },
+                            "vesselSelector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
                             },
                             "intelligenceObjectUnclear": {
                               "type": "boolean"
@@ -13709,7 +14298,8 @@
                                 "vessels",
                                 "time",
                                 "goal",
-                                "topic"
+                                "topic",
+                                "vessel_selector"
                               ]
                             }
                           },
@@ -13723,7 +14313,8 @@
                               "data_limit",
                               "retention",
                               "scope_changed",
-                              "missing_topic"
+                              "missing_topic",
+                              "missing_vessel_selector"
                             ]
                           },
                           "prefill": {
@@ -13815,7 +14406,8 @@
                                   "port-restriction",
                                   "area-low-speed-notice",
                                   "intelligence_search",
-                                  "ais_heatmap"
+                                  "ais_heatmap",
+                                  "vessel_tracks"
                                 ]
                               },
                               "intelligenceQuery": {
@@ -13970,6 +14562,44 @@
                               },
                               "heatmapTimeUnclear": {
                                 "type": "boolean"
+                              },
+                              "tracksTimeUnclear": {
+                                "type": "boolean"
+                              },
+                              "vesselSelector": {
+                                "type": "object",
+                                "properties": {
+                                  "shipTypes": {
+                                    "minItems": 1,
+                                    "maxItems": 30,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    }
+                                  },
+                                  "mmsis": {
+                                    "minItems": 1,
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
                               },
                               "intelligenceObjectUnclear": {
                                 "type": "boolean"
@@ -14100,7 +14730,8 @@
                                   "port-restriction",
                                   "area-low-speed-notice",
                                   "intelligence_search",
-                                  "ais_heatmap"
+                                  "ais_heatmap",
+                                  "vessel_tracks"
                                 ]
                               },
                               "intelligenceQuery": {
@@ -14256,6 +14887,44 @@
                               "heatmapTimeUnclear": {
                                 "type": "boolean"
                               },
+                              "tracksTimeUnclear": {
+                                "type": "boolean"
+                              },
+                              "vesselSelector": {
+                                "type": "object",
+                                "properties": {
+                                  "shipTypes": {
+                                    "minItems": 1,
+                                    "maxItems": 30,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    }
+                                  },
+                                  "mmsis": {
+                                    "minItems": 1,
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
                               "intelligenceObjectUnclear": {
                                 "type": "boolean"
                               },
@@ -14375,6 +15044,12 @@
                               "exclusiveMinimum": true,
                               "maximum": 9007199254740991
                             },
+                            "tracksVersion": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "maximum": 9007199254740991
+                            },
                             "heatmapVersion": {
                               "type": "integer",
                               "minimum": 0,
@@ -14424,6 +15099,7 @@
                                       "intelligence.draft",
                                       "workspace.left",
                                       "workspace.right",
+                                      "chart.vessel-tracks",
                                       "chart.heatmap",
                                       "chart.heatmap.legend",
                                       "chart.heatmap.popup",
@@ -14503,6 +15179,7 @@
                                       "layers",
                                       "playback",
                                       "heatmap",
+                                      "history-tracks",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -14655,6 +15332,7 @@
                             "unresolved",
                             "intelligence_search",
                             "ais_heatmap",
+                            "vessel_tracks",
                             "ui_control"
                           ]
                         },
@@ -14747,7 +15425,8 @@
                                 "port-restriction",
                                 "area-low-speed-notice",
                                 "intelligence_search",
-                                "ais_heatmap"
+                                "ais_heatmap",
+                                "vessel_tracks"
                               ]
                             },
                             "intelligenceQuery": {
@@ -14902,6 +15581,44 @@
                             },
                             "heatmapTimeUnclear": {
                               "type": "boolean"
+                            },
+                            "tracksTimeUnclear": {
+                              "type": "boolean"
+                            },
+                            "vesselSelector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
                             },
                             "intelligenceObjectUnclear": {
                               "type": "boolean"
@@ -15067,7 +15784,8 @@
                                 "vessels",
                                 "time",
                                 "goal",
-                                "topic"
+                                "topic",
+                                "vessel_selector"
                               ]
                             }
                           },
@@ -15081,7 +15799,8 @@
                               "data_limit",
                               "retention",
                               "scope_changed",
-                              "missing_topic"
+                              "missing_topic",
+                              "missing_vessel_selector"
                             ]
                           },
                           "prefill": {
@@ -15173,7 +15892,8 @@
                                   "port-restriction",
                                   "area-low-speed-notice",
                                   "intelligence_search",
-                                  "ais_heatmap"
+                                  "ais_heatmap",
+                                  "vessel_tracks"
                                 ]
                               },
                               "intelligenceQuery": {
@@ -15328,6 +16048,44 @@
                               },
                               "heatmapTimeUnclear": {
                                 "type": "boolean"
+                              },
+                              "tracksTimeUnclear": {
+                                "type": "boolean"
+                              },
+                              "vesselSelector": {
+                                "type": "object",
+                                "properties": {
+                                  "shipTypes": {
+                                    "minItems": 1,
+                                    "maxItems": 30,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    }
+                                  },
+                                  "mmsis": {
+                                    "minItems": 1,
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
                               },
                               "intelligenceObjectUnclear": {
                                 "type": "boolean"
@@ -15458,7 +16216,8 @@
                                   "port-restriction",
                                   "area-low-speed-notice",
                                   "intelligence_search",
-                                  "ais_heatmap"
+                                  "ais_heatmap",
+                                  "vessel_tracks"
                                 ]
                               },
                               "intelligenceQuery": {
@@ -15613,6 +16372,44 @@
                               },
                               "heatmapTimeUnclear": {
                                 "type": "boolean"
+                              },
+                              "tracksTimeUnclear": {
+                                "type": "boolean"
+                              },
+                              "vesselSelector": {
+                                "type": "object",
+                                "properties": {
+                                  "shipTypes": {
+                                    "minItems": 1,
+                                    "maxItems": 30,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    }
+                                  },
+                                  "mmsis": {
+                                    "minItems": 1,
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    }
+                                  },
+                                  "query": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
                               },
                               "intelligenceObjectUnclear": {
                                 "type": "boolean"
@@ -15861,7 +16658,8 @@
                                 "port-restriction",
                                 "area-low-speed-notice",
                                 "intelligence_search",
-                                "ais_heatmap"
+                                "ais_heatmap",
+                                "vessel_tracks"
                               ]
                             },
                             "intelligenceQuery": {
@@ -16016,6 +16814,44 @@
                             },
                             "heatmapTimeUnclear": {
                               "type": "boolean"
+                            },
+                            "tracksTimeUnclear": {
+                              "type": "boolean"
+                            },
+                            "vesselSelector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
                             },
                             "intelligenceObjectUnclear": {
                               "type": "boolean"
@@ -17122,6 +17958,288 @@
                         "inputRevision"
                       ],
                       "additionalProperties": false
+                    },
+                    "tracksResult": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "query": {
+                          "type": "object",
+                          "properties": {
+                            "bbox": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  },
+                                  {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  },
+                                  {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  },
+                                  {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  }
+                                ]
+                              },
+                              "minItems": 4,
+                              "maxItems": 4
+                            },
+                            "from": {
+                              "type": "string",
+                              "maxLength": 40,
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            },
+                            "to": {
+                              "type": "string",
+                              "maxLength": 40,
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            },
+                            "selector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "sourceId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "maxVessels": {
+                              "default": 20,
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 50
+                            },
+                            "maxPointsPerVessel": {
+                              "default": 500,
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 1000
+                            }
+                          },
+                          "required": [
+                            "bbox",
+                            "from",
+                            "to",
+                            "selector"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "asOf": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "generatedAt": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "shipTypeBasis": {
+                          "type": "string",
+                          "enum": [
+                            "current_profile"
+                          ]
+                        },
+                        "selectionBasis": {
+                          "type": "string",
+                          "enum": [
+                            "historical_observation_in_bbox"
+                          ]
+                        },
+                        "trackScope": {
+                          "type": "string",
+                          "enum": [
+                            "full_time_window"
+                          ]
+                        },
+                        "returnedVessels": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 50
+                        },
+                        "matchedVesselsLowerBound": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 51
+                        },
+                        "hasMoreVessels": {
+                          "type": "boolean"
+                        },
+                        "tracks": {
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "mmsi": {
+                                "type": "string",
+                                "pattern": "^[1-9]\\d{8}$"
+                              },
+                              "name": {
+                                "nullable": true,
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "shipType": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 99
+                              },
+                              "segments": {
+                                "maxItems": 1000,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "points": {
+                                      "minItems": 1,
+                                      "maxItems": 1000,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "lon": {
+                                            "type": "number",
+                                            "minimum": -180,
+                                            "maximum": 180
+                                          },
+                                          "lat": {
+                                            "type": "number",
+                                            "minimum": -90,
+                                            "maximum": 90
+                                          },
+                                          "observedAt": {
+                                            "type": "string",
+                                            "maxLength": 40,
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                          }
+                                        },
+                                        "required": [
+                                          "lon",
+                                          "lat",
+                                          "observedAt"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "points"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "total": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "returned": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000
+                              },
+                              "sampled": {
+                                "type": "boolean"
+                              },
+                              "truncated": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "mmsi",
+                              "name",
+                              "shipType",
+                              "segments",
+                              "total",
+                              "returned",
+                              "sampled",
+                              "truncated"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "vessel_tracks"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "inputRevision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "query",
+                        "asOf",
+                        "generatedAt",
+                        "shipTypeBasis",
+                        "selectionBasis",
+                        "trackScope",
+                        "returnedVessels",
+                        "matchedVesselsLowerBound",
+                        "hasMoreVessels",
+                        "tracks",
+                        "kind",
+                        "version",
+                        "inputRevision"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -17132,7 +18250,8 @@
                     "snapshotCursor",
                     "queryResult",
                     "intelligenceResult",
-                    "heatmapResult"
+                    "heatmapResult",
+                    "tracksResult"
                   ]
                 }
               }
@@ -17282,7 +18401,8 @@
                               "port-restriction",
                               "area-low-speed-notice",
                               "intelligence_search",
-                              "ais_heatmap"
+                              "ais_heatmap",
+                              "vessel_tracks"
                             ]
                           },
                           "intelligenceQuery": {
@@ -17438,6 +18558,44 @@
                           "heatmapTimeUnclear": {
                             "type": "boolean"
                           },
+                          "tracksTimeUnclear": {
+                            "type": "boolean"
+                          },
+                          "vesselSelector": {
+                            "type": "object",
+                            "properties": {
+                              "shipTypes": {
+                                "minItems": 1,
+                                "maxItems": 30,
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 99
+                                }
+                              },
+                              "mmsis": {
+                                "minItems": 1,
+                                "maxItems": 100,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                }
+                              },
+                              "query": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              "model": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              }
+                            },
+                            "additionalProperties": false
+                          },
                           "intelligenceObjectUnclear": {
                             "type": "boolean"
                           },
@@ -17533,6 +18691,12 @@
                               "exclusiveMinimum": true,
                               "maximum": 9007199254740991
                             },
+                            "tracksVersion": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "maximum": 9007199254740991
+                            },
                             "heatmapVersion": {
                               "type": "integer",
                               "minimum": 0,
@@ -17582,6 +18746,7 @@
                                       "intelligence.draft",
                                       "workspace.left",
                                       "workspace.right",
+                                      "chart.vessel-tracks",
                                       "chart.heatmap",
                                       "chart.heatmap.legend",
                                       "chart.heatmap.popup",
@@ -17661,6 +18826,7 @@
                                       "layers",
                                       "playback",
                                       "heatmap",
+                                      "history-tracks",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -17813,6 +18979,7 @@
                             "unresolved",
                             "intelligence_search",
                             "ais_heatmap",
+                            "vessel_tracks",
                             "ui_control"
                           ]
                         },
@@ -17905,7 +19072,8 @@
                                 "port-restriction",
                                 "area-low-speed-notice",
                                 "intelligence_search",
-                                "ais_heatmap"
+                                "ais_heatmap",
+                                "vessel_tracks"
                               ]
                             },
                             "intelligenceQuery": {
@@ -18060,6 +19228,44 @@
                             },
                             "heatmapTimeUnclear": {
                               "type": "boolean"
+                            },
+                            "tracksTimeUnclear": {
+                              "type": "boolean"
+                            },
+                            "vesselSelector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
                             },
                             "intelligenceObjectUnclear": {
                               "type": "boolean"
@@ -18188,7 +19394,8 @@
                               "vessels",
                               "time",
                               "goal",
-                              "topic"
+                              "topic",
+                              "vessel_selector"
                             ]
                           }
                         },
@@ -18202,7 +19409,8 @@
                             "data_limit",
                             "retention",
                             "scope_changed",
-                            "missing_topic"
+                            "missing_topic",
+                            "missing_vessel_selector"
                           ]
                         },
                         "prefill": {
@@ -18294,7 +19502,8 @@
                                 "port-restriction",
                                 "area-low-speed-notice",
                                 "intelligence_search",
-                                "ais_heatmap"
+                                "ais_heatmap",
+                                "vessel_tracks"
                               ]
                             },
                             "intelligenceQuery": {
@@ -18449,6 +19658,44 @@
                             },
                             "heatmapTimeUnclear": {
                               "type": "boolean"
+                            },
+                            "tracksTimeUnclear": {
+                              "type": "boolean"
+                            },
+                            "vesselSelector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
                             },
                             "intelligenceObjectUnclear": {
                               "type": "boolean"
@@ -18579,7 +19826,8 @@
                                 "port-restriction",
                                 "area-low-speed-notice",
                                 "intelligence_search",
-                                "ais_heatmap"
+                                "ais_heatmap",
+                                "vessel_tracks"
                               ]
                             },
                             "intelligenceQuery": {
@@ -18735,6 +19983,44 @@
                             "heatmapTimeUnclear": {
                               "type": "boolean"
                             },
+                            "tracksTimeUnclear": {
+                              "type": "boolean"
+                            },
+                            "vesselSelector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
+                            },
                             "intelligenceObjectUnclear": {
                               "type": "boolean"
                             },
@@ -18857,6 +20143,12 @@
                         "exclusiveMinimum": true,
                         "maximum": 9007199254740991
                       },
+                      "tracksVersion": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991
+                      },
                       "heatmapVersion": {
                         "type": "integer",
                         "minimum": 0,
@@ -18897,6 +20189,12 @@
                               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                             },
                             "pageGeneration": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "maximum": 9007199254740991
+                            },
+                            "tracksVersion": {
                               "type": "integer",
                               "minimum": 0,
                               "exclusiveMinimum": true,
@@ -18951,6 +20249,7 @@
                                       "intelligence.draft",
                                       "workspace.left",
                                       "workspace.right",
+                                      "chart.vessel-tracks",
                                       "chart.heatmap",
                                       "chart.heatmap.legend",
                                       "chart.heatmap.popup",
@@ -19030,6 +20329,7 @@
                                       "layers",
                                       "playback",
                                       "heatmap",
+                                      "history-tracks",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -19182,6 +20482,7 @@
                             "unresolved",
                             "intelligence_search",
                             "ais_heatmap",
+                            "vessel_tracks",
                             "ui_control"
                           ]
                         },
@@ -19274,7 +20575,8 @@
                                 "port-restriction",
                                 "area-low-speed-notice",
                                 "intelligence_search",
-                                "ais_heatmap"
+                                "ais_heatmap",
+                                "vessel_tracks"
                               ]
                             },
                             "intelligenceQuery": {
@@ -19429,6 +20731,44 @@
                             },
                             "heatmapTimeUnclear": {
                               "type": "boolean"
+                            },
+                            "tracksTimeUnclear": {
+                              "type": "boolean"
+                            },
+                            "vesselSelector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
                             },
                             "intelligenceObjectUnclear": {
                               "type": "boolean"
@@ -19633,6 +20973,12 @@
                           "exclusiveMinimum": true,
                           "maximum": 9007199254740991
                         },
+                        "tracksVersion": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "exclusiveMinimum": true,
+                          "maximum": 9007199254740991
+                        },
                         "heatmapVersion": {
                           "type": "integer",
                           "minimum": 0,
@@ -19682,6 +21028,7 @@
                                   "intelligence.draft",
                                   "workspace.left",
                                   "workspace.right",
+                                  "chart.vessel-tracks",
                                   "chart.heatmap",
                                   "chart.heatmap.legend",
                                   "chart.heatmap.popup",
@@ -19761,6 +21108,7 @@
                                   "layers",
                                   "playback",
                                   "heatmap",
+                                  "history-tracks",
                                   "chat",
                                   "push",
                                   "tasks"
@@ -19913,6 +21261,7 @@
                         "unresolved",
                         "intelligence_search",
                         "ais_heatmap",
+                        "vessel_tracks",
                         "ui_control"
                       ]
                     },
@@ -20005,7 +21354,8 @@
                             "port-restriction",
                             "area-low-speed-notice",
                             "intelligence_search",
-                            "ais_heatmap"
+                            "ais_heatmap",
+                            "vessel_tracks"
                           ]
                         },
                         "intelligenceQuery": {
@@ -20160,6 +21510,44 @@
                         },
                         "heatmapTimeUnclear": {
                           "type": "boolean"
+                        },
+                        "tracksTimeUnclear": {
+                          "type": "boolean"
+                        },
+                        "vesselSelector": {
+                          "type": "object",
+                          "properties": {
+                            "shipTypes": {
+                              "minItems": 1,
+                              "maxItems": 30,
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 99
+                              }
+                            },
+                            "mmsis": {
+                              "minItems": 1,
+                              "maxItems": 100,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[1-9]\\d{8}$"
+                              }
+                            },
+                            "query": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "model": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "additionalProperties": false
                         },
                         "intelligenceObjectUnclear": {
                           "type": "boolean"
@@ -20428,6 +21816,12 @@
                       "exclusiveMinimum": true,
                       "maximum": 9007199254740991
                     },
+                    "tracksVersion": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991
+                    },
                     "heatmapVersion": {
                       "type": "integer",
                       "minimum": 0,
@@ -20487,6 +21881,12 @@
                     "exclusiveMinimum": true,
                     "maximum": 9007199254740991
                   },
+                  "tracksVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991
+                  },
                   "heatmapVersion": {
                     "type": "integer",
                     "minimum": 0,
@@ -20540,6 +21940,7 @@
                                 "intelligence.draft",
                                 "workspace.left",
                                 "workspace.right",
+                                "chart.vessel-tracks",
                                 "chart.heatmap",
                                 "chart.heatmap.legend",
                                 "chart.heatmap.popup",
@@ -20619,6 +22020,7 @@
                                 "layers",
                                 "playback",
                                 "heatmap",
+                                "history-tracks",
                                 "chat",
                                 "push",
                                 "tasks"
@@ -20679,6 +22081,12 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "pageGeneration": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991
+                    },
+                    "tracksVersion": {
                       "type": "integer",
                       "minimum": 0,
                       "exclusiveMinimum": true,
@@ -20933,6 +22341,287 @@
                             ],
                             "additionalProperties": false
                           },
+                          "tracksPresentation": {
+                            "type": "object",
+                            "properties": {
+                              "query": {
+                                "type": "object",
+                                "properties": {
+                                  "bbox": {
+                                    "type": "array",
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": -180,
+                                          "maximum": 180
+                                        },
+                                        {
+                                          "type": "number",
+                                          "minimum": -90,
+                                          "maximum": 90
+                                        },
+                                        {
+                                          "type": "number",
+                                          "minimum": -180,
+                                          "maximum": 180
+                                        },
+                                        {
+                                          "type": "number",
+                                          "minimum": -90,
+                                          "maximum": 90
+                                        }
+                                      ]
+                                    },
+                                    "minItems": 4,
+                                    "maxItems": 4
+                                  },
+                                  "from": {
+                                    "type": "string",
+                                    "maxLength": 40,
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                  },
+                                  "to": {
+                                    "type": "string",
+                                    "maxLength": 40,
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                  },
+                                  "selector": {
+                                    "type": "object",
+                                    "properties": {
+                                      "shipTypes": {
+                                        "minItems": 1,
+                                        "maxItems": 30,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 99
+                                        }
+                                      },
+                                      "mmsis": {
+                                        "minItems": 1,
+                                        "maxItems": 100,
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[1-9]\\d{8}$"
+                                        }
+                                      },
+                                      "query": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 200
+                                      },
+                                      "model": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 200
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "sourceId": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  },
+                                  "maxVessels": {
+                                    "default": 20,
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 50
+                                  },
+                                  "maxPointsPerVessel": {
+                                    "default": 500,
+                                    "type": "integer",
+                                    "minimum": 2,
+                                    "maximum": 1000
+                                  }
+                                },
+                                "required": [
+                                  "bbox",
+                                  "from",
+                                  "to",
+                                  "selector"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "asOf": {
+                                "type": "string",
+                                "maxLength": 40,
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              "generatedAt": {
+                                "type": "string",
+                                "maxLength": 40,
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              "shipTypeBasis": {
+                                "type": "string",
+                                "enum": [
+                                  "current_profile"
+                                ]
+                              },
+                              "selectionBasis": {
+                                "type": "string",
+                                "enum": [
+                                  "historical_observation_in_bbox"
+                                ]
+                              },
+                              "trackScope": {
+                                "type": "string",
+                                "enum": [
+                                  "full_time_window"
+                                ]
+                              },
+                              "returnedVessels": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 50
+                              },
+                              "matchedVesselsLowerBound": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 51
+                              },
+                              "hasMoreVessels": {
+                                "type": "boolean"
+                              },
+                              "tracks": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "mmsi": {
+                                      "type": "string",
+                                      "pattern": "^[1-9]\\d{8}$"
+                                    },
+                                    "name": {
+                                      "nullable": true,
+                                      "type": "string",
+                                      "maxLength": 1000
+                                    },
+                                    "shipType": {
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 99
+                                    },
+                                    "segments": {
+                                      "maxItems": 1000,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "points": {
+                                            "minItems": 1,
+                                            "maxItems": 1000,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "lon": {
+                                                  "type": "number",
+                                                  "minimum": -180,
+                                                  "maximum": 180
+                                                },
+                                                "lat": {
+                                                  "type": "number",
+                                                  "minimum": -90,
+                                                  "maximum": 90
+                                                },
+                                                "observedAt": {
+                                                  "type": "string",
+                                                  "maxLength": 40,
+                                                  "format": "date-time",
+                                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                                }
+                                              },
+                                              "required": [
+                                                "lon",
+                                                "lat",
+                                                "observedAt"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          }
+                                        },
+                                        "required": [
+                                          "points"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "total": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "returned": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 1000
+                                    },
+                                    "sampled": {
+                                      "type": "boolean"
+                                    },
+                                    "truncated": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "mmsi",
+                                    "name",
+                                    "shipType",
+                                    "segments",
+                                    "total",
+                                    "returned",
+                                    "sampled",
+                                    "truncated"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "vessel_tracks"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "inputRevision": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "query",
+                              "asOf",
+                              "generatedAt",
+                              "shipTypeBasis",
+                              "selectionBasis",
+                              "trackScope",
+                              "returnedVessels",
+                              "matchedVesselsLowerBound",
+                              "hasMoreVessels",
+                              "tracks",
+                              "kind",
+                              "version",
+                              "inputRevision"
+                            ],
+                            "additionalProperties": false
+                          },
                           "id": {
                             "type": "string",
                             "format": "uuid",
@@ -20968,6 +22657,7 @@
                                   "intelligence.draft",
                                   "workspace.left",
                                   "workspace.right",
+                                  "chart.vessel-tracks",
                                   "chart.heatmap",
                                   "chart.heatmap.legend",
                                   "chart.heatmap.popup",
@@ -21001,6 +22691,7 @@
                                   "layers",
                                   "playback",
                                   "heatmap",
+                                  "history-tracks",
                                   "chat",
                                   "push",
                                   "tasks"
@@ -21096,6 +22787,12 @@
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "pageGeneration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991
+                  },
+                  "tracksVersion": {
                     "type": "integer",
                     "minimum": 0,
                     "exclusiveMinimum": true,
@@ -21320,6 +23017,287 @@
                       ],
                       "additionalProperties": false
                     },
+                    "tracksPresentation": {
+                      "type": "object",
+                      "properties": {
+                        "query": {
+                          "type": "object",
+                          "properties": {
+                            "bbox": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  },
+                                  {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  },
+                                  {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  },
+                                  {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  }
+                                ]
+                              },
+                              "minItems": 4,
+                              "maxItems": 4
+                            },
+                            "from": {
+                              "type": "string",
+                              "maxLength": 40,
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            },
+                            "to": {
+                              "type": "string",
+                              "maxLength": 40,
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            },
+                            "selector": {
+                              "type": "object",
+                              "properties": {
+                                "shipTypes": {
+                                  "minItems": 1,
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 99
+                                  }
+                                },
+                                "mmsis": {
+                                  "minItems": 1,
+                                  "maxItems": 100,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  }
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "sourceId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "maxVessels": {
+                              "default": 20,
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 50
+                            },
+                            "maxPointsPerVessel": {
+                              "default": 500,
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 1000
+                            }
+                          },
+                          "required": [
+                            "bbox",
+                            "from",
+                            "to",
+                            "selector"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "asOf": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "generatedAt": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "shipTypeBasis": {
+                          "type": "string",
+                          "enum": [
+                            "current_profile"
+                          ]
+                        },
+                        "selectionBasis": {
+                          "type": "string",
+                          "enum": [
+                            "historical_observation_in_bbox"
+                          ]
+                        },
+                        "trackScope": {
+                          "type": "string",
+                          "enum": [
+                            "full_time_window"
+                          ]
+                        },
+                        "returnedVessels": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 50
+                        },
+                        "matchedVesselsLowerBound": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 51
+                        },
+                        "hasMoreVessels": {
+                          "type": "boolean"
+                        },
+                        "tracks": {
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "mmsi": {
+                                "type": "string",
+                                "pattern": "^[1-9]\\d{8}$"
+                              },
+                              "name": {
+                                "nullable": true,
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "shipType": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 99
+                              },
+                              "segments": {
+                                "maxItems": 1000,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "points": {
+                                      "minItems": 1,
+                                      "maxItems": 1000,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "lon": {
+                                            "type": "number",
+                                            "minimum": -180,
+                                            "maximum": 180
+                                          },
+                                          "lat": {
+                                            "type": "number",
+                                            "minimum": -90,
+                                            "maximum": 90
+                                          },
+                                          "observedAt": {
+                                            "type": "string",
+                                            "maxLength": 40,
+                                            "format": "date-time",
+                                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                          }
+                                        },
+                                        "required": [
+                                          "lon",
+                                          "lat",
+                                          "observedAt"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "points"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "total": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991
+                              },
+                              "returned": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000
+                              },
+                              "sampled": {
+                                "type": "boolean"
+                              },
+                              "truncated": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "mmsi",
+                              "name",
+                              "shipType",
+                              "segments",
+                              "total",
+                              "returned",
+                              "sampled",
+                              "truncated"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "vessel_tracks"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "inputRevision": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "query",
+                        "asOf",
+                        "generatedAt",
+                        "shipTypeBasis",
+                        "selectionBasis",
+                        "trackScope",
+                        "returnedVessels",
+                        "matchedVesselsLowerBound",
+                        "hasMoreVessels",
+                        "tracks",
+                        "kind",
+                        "version",
+                        "inputRevision"
+                      ],
+                      "additionalProperties": false
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid",
@@ -21355,6 +23333,7 @@
                             "intelligence.draft",
                             "workspace.left",
                             "workspace.right",
+                            "chart.vessel-tracks",
                             "chart.heatmap",
                             "chart.heatmap.legend",
                             "chart.heatmap.popup",
@@ -21388,6 +23367,7 @@
                             "layers",
                             "playback",
                             "heatmap",
+                            "history-tracks",
                             "chat",
                             "push",
                             "tasks"
@@ -21482,6 +23462,12 @@
                     "exclusiveMinimum": true,
                     "maximum": 9007199254740991
                   },
+                  "tracksVersion": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991
+                  },
                   "heatmapVersion": {
                     "type": "integer",
                     "minimum": 0,
@@ -21548,6 +23534,7 @@
                                 "intelligence.draft",
                                 "workspace.left",
                                 "workspace.right",
+                                "chart.vessel-tracks",
                                 "chart.heatmap",
                                 "chart.heatmap.legend",
                                 "chart.heatmap.popup",
@@ -21627,6 +23614,7 @@
                                 "layers",
                                 "playback",
                                 "heatmap",
+                                "history-tracks",
                                 "chat",
                                 "push",
                                 "tasks"

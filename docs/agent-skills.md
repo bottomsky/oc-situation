@@ -10,6 +10,7 @@ Agent 从随应用发布的可信目录加载技能说明，以代码注册的�
 | --------------------- | ------------------------------ | ------------------------------ | ------------------------------------------ |
 | `ais-heatmap`         | `ais_heatmap`                  | 区域、时间范围                 | 本地查询与聚合，以每格去重船舶数形成热力图 |
 | `vessel-query`        | `vessel_list`、`vessel_detail` | 列表需要区域；详情需要船舶     | 本地查询                                   |
+| `vessel-tracks`       | `vessel_tracks`                | 船舶筛选条件、区域、时间范围   | 本地查询历史轨迹、持久快照与受控展示       |
 | `intelligence-search` | `intelligence_search`          | 公开情报主题                   | 模型编排受控工具                           |
 | `ui-control`          | `ui_control`                   | 已绑定且在线的页面与支持的动作 | 本地有限语义解析、界面命令与执行回执       |
 | `region-analysis`     | `analysis`                     | 分析目标、区域、时间范围       | 现有区域研判流程                           |
@@ -41,7 +42,9 @@ allowed-tools: query_sample
 3. 通过 `bindBusinessCapability` 绑定技能，将工具传给返回的 `executor`。能力所需的新宿主端口由运行时提供，并沿用任务所有权、输入修订和执行代次的写入检查。
 4. 补充目录加载、授权范围、阶段校验、预算拒绝、执行失效、恢复与模型投影测试。新意图还需在领域输入校验、契约、接口和前端结果展示中完成对应接入。
 
-当前随应用打包四份内置技能：`ais-heatmap`、`vessel-query`、`intelligence-search`、`ui-control`。区域研判保留兼容能力目录项。新增技能时同步更新绑定、`check-skills.ts`、内置目录测试和业务路由的预期。
+当前随应用打包五份内置技能：`ais-heatmap`、`vessel-query`、`vessel-tracks`、`intelligence-search`、`ui-control`。区域研判保留兼容能力目录项。新增技能时同步更新绑定、`check-skills.ts`、内置目录测试和业务路由的预期。
+
+历史航线技能接受 AIS 船型、具体型号和船舶相关信息，由后端查询已有档案与历史观测。型号字段、查询限制和绘制回执见[船舶历史航线](vessel-tracks.md)。
 
 ## 绑定与权限来源
 
@@ -80,7 +83,7 @@ bun run agent:skills:check
 
 构建先验证仓库、Agent、`dist` 和已有 `dist/skills` 的真实路径，再仅替换技能资源目录，保留其他产物。增量构建会清除源目录已删除的技能与参考文件。输出目录被符号链接重定向时构建拒绝清理。
 
-源码加载路径相对 `capabilities` 解析；构建通过 `__AGENT_SKILLS_BUNDLED__` 切换为产物旁的 `skills` 目录。`dist/check-skills.mjs` 使用与服务相同的加载器，打印四个内置技能的版本和摘要，无需模型密钥。该检查验证打包资源和加载配置；业务接口、数据库及模型执行分别由对应测试验证。
+源码加载路径相对 `capabilities` 解析；构建通过 `__AGENT_SKILLS_BUNDLED__` 切换为产物旁的 `skills` 目录。`dist/check-skills.mjs` 使用与服务相同的加载器，打印五个内置技能的版本和摘要，无需模型密钥。该检查验证打包资源和加载配置；业务接口、数据库及模型执行分别由对应测试验证。
 
 ## 目标扩展入口
 

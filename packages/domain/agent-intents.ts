@@ -46,18 +46,26 @@ export function derivePurposeIntent(purpose: AgentPurpose): AgentIntent {
   return purpose === 'vessel_list' ||
     purpose === 'vessel_detail' ||
     purpose === 'ais_heatmap' ||
+    purpose === 'vessel_tracks' ||
     purpose === 'intelligence_search'
     ? purpose
     : 'analysis';
 }
 export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?: AgentPurpose } {
+  if (
+    /航线|历史轨迹|批量轨迹|船舶轨迹/.test(goal) &&
+    /不要|别(?:再|帮我)?(?:绘制|显示|生成|查询|关闭)|无需|不用/.test(goal)
+  )
+    return { intent: 'unresolved' };
   if (isUiIntent(goal)) return { intent: 'ui_control' };
   if (classifyConversationIntent(goal)) return { intent: 'conversation' };
   const text = goal.replace(/\s/g, '');
+  const tracks = /航线|历史轨迹|批量轨迹|船舶轨迹|vessel.?tracks/i.test(text);
   const heatmap = /热力图|热度图|(?:AIS|船舶|船流).*密度图|heatmap/i.test(text);
-  if (/定位|保存|删除|画区域/.test(text) || (/绘制/.test(text) && !heatmap))
+  if (/定位|保存|删除|画区域/.test(text) || (/绘制/.test(text) && !heatmap && !tracks))
     return { intent: 'unresolved' };
   const queryAgain = /重新(?:查询|查看|查)|再查(?:询)?|刷新(?:船舶|列表|查询|结果)/.test(text);
+  if (tracks && queryAgain) return { intent: 'vessel_tracks', purpose: 'vessel_tracks' };
   if (heatmap && queryAgain) return { intent: 'ais_heatmap', purpose: 'ais_heatmap' };
   if (queryAgain && isIntelligenceQuestion(text))
     return { intent: 'intelligence_search', purpose: 'intelligence_search' };
@@ -75,6 +83,7 @@ export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?
     !/重跑|重算|重新|新分析/.test(text)
   )
     return { intent: 'explain' };
+  if (tracks) return { intent: 'vessel_tracks', purpose: 'vessel_tracks' };
   if (heatmap) return { intent: 'ais_heatmap', purpose: 'ais_heatmap' };
   if (
     !queryAgain &&
@@ -117,7 +126,10 @@ export function requiredAgentInputFields(
   if (actual === 'intelligence_search' && selection.intelligenceTimeUnclear) fields.push('time');
   if (actual === 'unresolved' || (actual === 'analysis' && !selection.purpose)) fields.push('goal');
   if (
-    (actual === 'vessel_list' || actual === 'analysis' || actual === 'ais_heatmap') &&
+    (actual === 'vessel_list' ||
+      actual === 'analysis' ||
+      actual === 'ais_heatmap' ||
+      actual === 'vessel_tracks') &&
     !selection.bbox
   )
     fields.push('region');
@@ -125,5 +137,8 @@ export function requiredAgentInputFields(
   if (actual === 'analysis' && !selection.timeRange) fields.push('time');
   if (actual === 'ais_heatmap' && (!selection.timeRange || selection.heatmapTimeUnclear))
     fields.push('time');
+  if (actual === 'vessel_tracks' && (!selection.timeRange || selection.tracksTimeUnclear))
+    fields.push('time');
+  if (actual === 'vessel_tracks' && !selection.vesselSelector) fields.push('vessel_selector');
   return fields;
 }

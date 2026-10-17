@@ -19,6 +19,7 @@ function mapContext(): AgentMapContext {
   };
 }
 const heatmap = reactive(useAisHeatmap());
+const vesselTracks = reactive(useVesselTracks());
 const ui = useAgentUi();
 const agent = reactive(
   useAgentConversation(
@@ -30,6 +31,7 @@ const agent = reactive(
     },
     ui.bind,
     ui.readConfig,
+    { begin: vesselTracks.beginAgent, accept: vesselTracks.acceptAgent, reset: vesselTracks.reset },
   ),
 );
 const selectingHeatmapRegion = ref(false);
@@ -192,6 +194,31 @@ useUiComponent('chart.heatmap', {
         await new Promise((resolve) => setTimeout(resolve, 50));
     }
     await nextTick();
+  },
+});
+useUiComponent('chart.vessel-tracks', {
+  read: () =>
+    uiProjection(!!vesselTracks.result, ['show', 'close'], {
+      visible: !!vesselTracks.result && vesselTracks.displayed,
+      loading: vesselTracks.loading,
+      revision: vesselTracks.revision,
+    }),
+  execute: async (op, command) => {
+    if (op.action === 'close') {
+      vesselTracks.close();
+      await nextTick();
+      return;
+    }
+    const value = command.tracksPresentation ?? vesselTracks.lastSnapshot;
+    if (!value || !vesselTracks.showSnapshot(value)) throw { code: 'UNAVAILABLE' };
+    const snapshot = vesselTracks.result;
+    const revision = vesselTracks.revision;
+    const deadline = Date.now() + 10000;
+    while (!vesselTracks.displayed && vesselTracks.revision === revision && Date.now() < deadline)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    if (vesselTracks.result !== snapshot || vesselTracks.revision !== revision)
+      throw { code: 'STATE_CONFLICT' };
+    if (!vesselTracks.displayed) throw { code: 'POSTCONDITION_FAILED' };
   },
 });
 useUiComponent('chart.heatmap.legend', { read: () => uiProjection(!!heatmap.result, []) });
@@ -385,6 +412,12 @@ watch(
             @select="selectIntelligence"
             @locate="locateIntelligence"
         /></template>
+        <template #history-tracks
+          ><ChartVesselTracksPanel
+            :state="vesselTracks"
+            :current-bounds="currentMapBounds"
+            :source-id="workspace.sourceId"
+        /></template>
         <template #heatmap
           ><ChartHeatmapPanel
             :state="heatmap"
@@ -457,6 +490,10 @@ watch(
               selectingAgentRegion = false;
               selectingHeatmapRegion = false;
             "
+            :vessel-tracks="vesselTracks.result"
+            @vessel-tracks-displayed="
+              if (vesselTracks.result === $event) vesselTracks.displayed = true;
+            "
             :heatmap="heatmap.result"
             @heatmap-displayed="if (heatmap.result === $event) heatmap.displayed = true;"
             :track="workspace.track"
@@ -491,6 +528,32 @@ watch(
           ><button @click="mapChoices = []">关闭</button>
         </div>
         <div class="chart-map-notices">
+          <section
+            v-if="vesselTracks.result"
+            class="vessel-tracks-legend"
+            aria-label="历史航线图例"
+            data-testid="vessel-tracks-legend"
+          >
+            <strong>历史航线 · {{ vesselTracks.result.returnedVessels }} 艘</strong>
+            <span>{{ vesselTracks.displayed ? '海图已展示' : '等待地图绘制' }}</span>
+            <span
+              >{{ heatmapDateLabel(vesselTracks.result.query.from) }} ～
+              {{ heatmapDateLabel(vesselTracks.result.query.to) }}</span
+            >
+            <span>按历史经过区域选船，展示时段完整可用航线；AIS 船型按当前资料。</span>
+            <span v-if="vesselTracks.result.hasMoreVessels"
+              >至少匹配
+              {{ vesselTracks.result.matchedVesselsLowerBound }} 艘，已达展示数量上限。</span
+            >
+            <span v-if="vesselTracks.result.tracks.some((t) => t.sampled || t.truncated)"
+              >部分航线已抽样或截断，详见人工面板。</span
+            >
+            <span v-if="!vesselTracks.result.tracks.length"
+              >该条件下没有匹配观测；具体型号依赖已收录资料。</span
+            >
+            <button @click="vesselTracks.close">关闭历史航线</button>
+          </section>
+          <p v-if="vesselTracks.error" class="error" role="alert">{{ vesselTracks.error }}</p>
           <section
             v-if="heatmap.result"
             class="heatmap-legend"
@@ -634,6 +697,7 @@ watch(
         v-model:tab="rightTab"
         :agent="agent"
         @heatmap="heatmap.showSnapshot($event)"
+        @tracks="vesselTracks.showSnapshot($event)"
         :bbox="workspace.bbox"
         :items="topics.items"
         :busy="topics.busy"
@@ -653,7 +717,8 @@ watch(
 </template>
 
 <style scoped>
-.heatmap-legend {
+.heatmap-legend,
+.vessel-tracks-legend {
   display: grid;
   gap: 5px;
   padding: 10px;
@@ -671,7 +736,8 @@ watch(
   height: 5px;
   background: linear-gradient(90deg, #206ca5, #23c5bc, #f2d666, #e56244);
 }
-.chart-workspace:not(.left-open) .heatmap-legend {
+.chart-workspace:not(.left-open) .heatmap-legend,
+.chart-workspace:not(.left-open) .vessel-tracks-legend {
   margin-top: 42px;
 }
 .chart-agent-dock {

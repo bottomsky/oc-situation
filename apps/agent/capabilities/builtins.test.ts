@@ -6,14 +6,20 @@ import {
 } from './builtins';
 
 describe('bundled trusted skills', () => {
-  it('discovers four skill packages with runtime tool bindings and legacy directory metadata', async () => {
+  it('discovers five skill packages with runtime tool bindings and legacy directory metadata', async () => {
     const catalog = await loadBuiltinSkillCatalog();
     expect(
       catalog
         .list()
         .map((skill) => skill.skillId)
         .sort(),
-    ).toEqual(['ais-heatmap', 'intelligence-search', 'ui-control', 'vessel-query']);
+    ).toEqual([
+      'ais-heatmap',
+      'intelligence-search',
+      'ui-control',
+      'vessel-query',
+      'vessel-tracks',
+    ]);
     for (const binding of BUILTIN_SKILL_BINDINGS) {
       expect(catalog.get(binding.skillId).metadata.toolIds).toEqual(binding.toolIds);
       for (const reference of binding.referencePaths)

@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { AnalysisResult, Bbox, AgentHeatmapResult } from '@ais/contracts';
+import type {
+  AnalysisResult,
+  Bbox,
+  AgentHeatmapResult,
+  AgentVesselTracksResult,
+} from '@ais/contracts';
 import type { AgentConversationState } from '../composables/useAgentConversation';
 import {
   agentStatusLabel,
@@ -13,15 +18,20 @@ const props = defineProps<{ bbox: Bbox; state: AgentConversationState }>();
 const emit = defineEmits<{
   locate: [result: AnalysisResult];
   heatmap: [result: AgentHeatmapResult];
+  tracks: [result: AgentVesselTracksResult];
 }>();
 const state = props.state;
 const selectedTask = computed(() => state.detail?.task);
 const hasAnalysis = computed(
   () =>
     !!selectedTask.value &&
-    !['intelligence_search', 'vessel_list', 'vessel_detail', 'ais_heatmap'].includes(
-      selectedTask.value.intent ?? '',
-    ) &&
+    ![
+      'intelligence_search',
+      'vessel_list',
+      'vessel_detail',
+      'ais_heatmap',
+      'vessel_tracks',
+    ].includes(selectedTask.value.intent ?? '') &&
     agentTaskHasAnalysis(selectedTask.value, state.detail?.steps ?? []),
 );
 const panel = useTemplateRef<HTMLElement>('panel');
@@ -97,7 +107,16 @@ const heatmapResult = computed(() => {
     ? result
     : null;
 });
+const tracksResult = computed(() => {
+  const result = state.detail?.tracksResult;
+  return result &&
+    result.inputRevision === selectedTask.value?.inputRevision &&
+    result.version === selectedTask.value.resultVersion
+    ? result
+    : null;
+});
 const tools: Record<string, string> = {
+  render_vessel_tracks: '查询历史航线',
   render_ais_heatmap: '计算 AIS 热力图',
   list_algorithms: '查询可用算法',
   region_overview: '查询区域概况',
@@ -336,6 +355,28 @@ function changeSession(event: Event) {
             [{{ item.reference }}]
             {{ item.kind === 'event' ? item.event.title : item.forecast.pointName + ' · 海况预报' }}
           </button>
+        </section>
+        <section v-if="tracksResult" class="agent-summary" aria-label="历史航线结果">
+          <h4>历史航线 · {{ tracksResult.returnedVessels }} 艘</h4>
+          <p>
+            {{ heatmapDateLabel(tracksResult.query.from) }} ～
+            {{ heatmapDateLabel(tracksResult.query.to) }}
+          </p>
+          <p>按历史经过区域选船，展示时段完整可用航线；AIS 船型按当前资料。</p>
+          <p v-if="tracksResult.hasMoreVessels">
+            至少匹配 {{ tracksResult.matchedVesselsLowerBound }} 艘，已达展示数量上限。
+          </p>
+          <p v-if="!tracksResult.tracks.length">
+            没有匹配观测；具体型号资料尚未收录也可能导致空结果。
+          </p>
+          <p v-for="track in tracksResult.tracks" :key="track.mmsi">
+            {{ track.name || track.mmsi }} · {{ track.returned }}/{{ track.total }} 点<span
+              v-if="track.sampled"
+            >
+              · 已抽样</span
+            ><span v-if="track.truncated"> · 已截断</span>
+          </p>
+          <button @click="emit('tracks', tracksResult)">在海图展示此航线快照</button>
         </section>
         <section v-if="heatmapResult" class="agent-summary" aria-label="AIS 热力图结果">
           <h4>AIS 热力图计算完成</h4>

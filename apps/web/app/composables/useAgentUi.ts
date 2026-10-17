@@ -149,9 +149,13 @@ function createUiRegistry() {
       try {
         await adapter.execute(claimed.operation, claimed);
         await nextTick();
-      } catch {
+      } catch (error) {
         status = 'failed';
-        failure = 'EXECUTION_FAILED';
+        const code = (error as { code?: string })?.code;
+        failure =
+          code === 'UNAVAILABLE' || code === 'STATE_CONFLICT' || code === 'POSTCONDITION_FAILED'
+            ? code
+            : 'EXECUTION_FAILED';
       }
     }
     const after = snapshot();
@@ -244,6 +248,8 @@ function createUiRegistry() {
           ? {
               ...binding,
               heatmapVersion: snapshot().components.find((c) => c.id === 'chart.heatmap')?.version,
+              tracksVersion: snapshot().components.find((c) => c.id === 'chart.vessel-tracks')
+                ?.version,
             }
           : undefined;
       });

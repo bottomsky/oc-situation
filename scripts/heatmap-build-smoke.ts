@@ -86,8 +86,8 @@ assert.deepEqual(
     .split(/\r?\n/)
     .map((line) => line.split('@')[0])
     .sort(),
-  ['ais-heatmap', 'intelligence-search', 'vessel-query'],
-  'The compiled worker must bundle exactly the three business skills',
+  ['ais-heatmap', 'intelligence-search', 'ui-control', 'vessel-query', 'vessel-tracks'],
+  'The compiled worker must bundle exactly the five built-in skills',
 );
 
 const children: { name: string; child: ChildProcess; logs: string }[] = [];

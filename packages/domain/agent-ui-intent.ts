@@ -1,6 +1,13 @@
 import type { UiOperation, UiState } from '../contracts/agent-ui';
 
 export function isUiIntent(text: string) {
+  if (/航线|历史轨迹|批量轨迹/.test(text)) {
+    if (/关闭|隐藏|收起/.test(text)) return true;
+    if (/(?:打开|展开|切换).*(?:面板|历史航线)$/.test(text)) return true;
+    return /(?:恢复|展示|显示)(?:上次|已有|历史|之前|刚才)(?:的)?(?:航线|轨迹)|^(?:请)?(?:显示|恢复)(?:历史)?航线$/.test(
+      text,
+    );
+  }
   return (
     /(?:关闭|隐藏|收起|打开|展开|切换|显示|定位).*(?:热力图|热度图|面板|浮窗|弹窗|窗口|图层|浮卡|条件框|选中船舶|这艘船|聊天|任务中心|主动推送|情报来源详情|研判证据详情|补充任务条件|来源详情|证据详情|船舶搜索|情报标绘|时间回放|图层控制)|(?:当前|现在|目前|哪些|什么).*(?:界面|窗口|弹窗|面板).*(?:打开|显示|状态)|(?:打开|显示)了哪些(?:界面|窗口|弹窗|面板)|(?:恢复|展示)(?:上次|已有|历史)热力图/.test(
       text,
@@ -15,6 +22,15 @@ export function resolveUiOperation(text: string, state: UiState): UiOperation | 
     return null;
   if (/不要|别|勿|不必|不用/.test(text)) return null;
   const close = /关闭|隐藏|收起/.test(text);
+  if (/航线|历史轨迹|批量轨迹/.test(text)) {
+    if (/面板/.test(text) || (!close && /打开|展开|切换/.test(text)))
+      return {
+        componentId: 'workspace.left',
+        action: close ? 'close' : 'tab',
+        ...(close ? {} : { tab: 'history-tracks' }),
+      };
+    return { componentId: 'chart.vessel-tracks', action: close ? 'close' : 'show' };
+  }
   if (/热力图|热度图/.test(text))
     return {
       componentId: /网格|详情浮窗/.test(text) ? 'chart.heatmap.popup' : 'chart.heatmap',
