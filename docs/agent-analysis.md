@@ -4,11 +4,11 @@
 
 ## 服务与运行
 
-界面控制扩展见[智能体界面控制协议](agent-ui-protocol.md)和[首期实施计划](superpowers/plans/2026-10-11-agent-ui-control.md)，规划能力查询、脱敏对象引用、显示命令、执行回执与人工确认。现有区域研判运行流程如下，界面控制能力按计划另行接入。
+当前已接入全站路由感知与海图白名单操作，范围见[智能体界面控制协议](agent-ui-protocol.md)。通用 SDK、全站业务操作、确认与导航迁移按[目标架构](agent-sdk-architecture.md)和[路线图](agent-sdk-roadmap.md)推进。本文说明现有 AIS 智能体运行方式。
 
 `apps/agent` 是独立 Node.js 24 工作进程。NestJS API 管理会话、任务与访问权限；PostgreSQL 保存任务权威状态、执行步骤和证据；独立 JetStream 队列投递任务。一次性任务与持续专题实例分别管理，用户提问按一次计算执行。
 
-使用 Bun 安装依赖和执行工程命令。迁移包含 `012_postgres.sql`（智能体数据表）、`013_postgres.sql`（前置任务绑定）与 `014_postgres.sql`（结构化输入、修订与查询结果）；启动新版本 API 和工作进程前执行迁移。
+使用 Bun 安装依赖和执行工程命令。智能体相关迁移包括 `012`～`014`（会话、任务、输入与查询）、`015`～`016`（情报）、`017`（热图）和 `018`（界面客户端、命令与回执）。启动新版本 API 和工作进程前通过统一迁移入口执行全部待执行迁移。
 
 ```powershell
 bun --no-env-file install --frozen-lockfile
@@ -25,14 +25,15 @@ node --env-file=.env.local --import tsx apps/agent/main.ts
 
 本地 demo 在启用功能后启动智能体子进程。生产 Compose 提供 `agent` profile；为 API 与智能体配置功能开关，然后以 `--profile agent` 启动。密钥只配置给智能体服务。
 
-| 配置                    | 默认值           | 用途                          |
-| ----------------------- | ---------------- | ----------------------------- |
-| `AGENT_ENABLED`         | `false`          | 启用接口与工作进程            |
-| `DEEPSEEK_API_KEY`      | 空               | 官方 DeepSeek API 密钥        |
-| `DEEPSEEK_MODEL`        | `deepseek-flash` | Pi 模型目录中的 DeepSeek 模型 |
-| `AGENT_MAX_MODEL_CALLS` | `12`             | 每次任务的模型调用预算        |
-| `AGENT_MAX_TOOL_CALLS`  | `24`             | 每次任务的工具调用预算        |
-| `AGENT_MAX_RECORDS`     | `50000`          | 单次查询记录上限              |
+| 配置                    | 默认值           | 用途                                          |
+| ----------------------- | ---------------- | --------------------------------------------- |
+| `AGENT_UI_ENABLED`      | `false`          | 启用界面感知与海图白名单操作，依赖 Agent 开关 |
+| `AGENT_ENABLED`         | `false`          | 启用接口与工作进程                            |
+| `DEEPSEEK_API_KEY`      | 空               | 官方 DeepSeek API 密钥                        |
+| `DEEPSEEK_MODEL`        | `deepseek-flash` | Pi 模型目录中的 DeepSeek 模型                 |
+| `AGENT_MAX_MODEL_CALLS` | `12`             | 每次任务的模型调用预算                        |
+| `AGENT_MAX_TOOL_CALLS`  | `24`             | 每次任务的工具调用预算                        |
+| `AGENT_MAX_RECORDS`     | `50000`          | 单次查询记录上限                              |
 
 ## 使用与权限
 
@@ -88,26 +89,6 @@ node --env-file=.env.local --import tsx apps/agent/smoke.ts
 
 最后一个命令进行有费用的最小真实模型联调，使用合成脱敏工具数据，验证模型与 Pi 的实际调用链。离线模型测试和真实模型联调分别报告。集成测试使用独立数据库、队列和对象存储，浏览器测试检查选区、补问、进度、证据、取消与恢复。
 
-## 2026 年 10 月 13 日条件选择与续作验收
+## 历史验证与当前交付
 
-- 全量单元测试 442 项通过。Windows 默认 Python 为应用商店占位程序，Python 专题测试使用本机可用运行时加入本次命令 PATH 后通过，未改变系统配置。
-- 相关隔离集成测试 37 项通过：任务持久化 16 项、船舶查询 3 项、实际算法流水线 8 项、API/队列/浏览器闭环 6 项、融合数据过滤与归档 4 项。浏览器闭环启用 `AIS_INPUT_BROWSER=1`，加载真实 Nuxt 页面并将 HTTP 请求转发到本次隔离 API，没有模拟 API 回答。
-- 覆盖同 taskId 回答和连续两轮补问、181 秒等待时间模拟及 worker 实例重启、刷新恢复、丢失响应的幂等重试、CSRF、取消和实际管理员撤权后恢复权限仍拒绝旧回答。
-- 28 项智能体浏览器回归通过；包含目标切换后动态字段、选船草稿收起保留、矩形框选返回弹窗和时间越界。
-- 实际 PostgreSQL 船舶查询与查询解释均为零模型调用。区域分析使用真实数据库和算法，流水线模型响应为测试替身；外发内容由已有 Pi 序列化链路检验。
-- 独立真实 DeepSeek 联调使用合成数据，`deepseek-flash` 完成 5 次模型调用、7 次工具调用和一个结果版本，不读取真实 AIS。结果保存在本地 `.data/agent-input-verification/model-smoke.json`。
-- 工作区类型检查、ESLint、格式检查和生产构建通过。通过 `start.ps1` 重载本机服务并应用 014 迁移，Web 与 API readiness 均返回 HTTP 200，agent 指标端口正常监听。
-
-本次融合归档测试采用独立临时 S3 测试桶，验收后已清理；本机演示的数据与基础设施保持运行。界面操作命令、草稿保存批准与通知注册仍按后续协议实施，不计入本次交付。
-
-## 2026 年 10 月 11 日验证记录
-
-2026 年 10 月 11 日验证结果：
-
-- 全量单元测试 321 项通过；类型检查、ESLint 与生产构建通过。
-- 智能体持久化及实际算法流水线集成测试 13 项通过，使用独立 PostgreSQL、ClickHouse 与 NATS。流水线模型响应采用测试替身，并通过 Pi 实际请求序列化链路验证外发内容。
-- 浏览器测试 43 项通过，其中智能体交互使用模拟 API，覆盖区域补问、证据定位、恢复与取消。浏览器与真实模型的组合仍需部署验收。
-- 使用已配置密钥调用官方 DeepSeek，`deepseek-flash` 完成 5 轮模型调用、7 次工具调用，保存结果版本 1 及对应总结；输入采用合成脱敏数据。
-- 最新全量集成测试为 78 项通过、1 项失败。失败位于并行修改的 `intelligence-spatial.integration.test.ts`，涉及实时 AIS 可见范围下的船舶关联查询；本次智能体交付保留该并行修改，未将全量集成测试标记为通过。
-
-默认功能开关保持关闭。验证日志与真实模型联调记录保存在本地 `.data/agent-verify/`，部署时按实际权限、数据规模及所选模型继续验收。
+区域研判与条件选择的日期验收见[2026 年 10 月 11～13 日记录](reports/agent-validation-2026-10-11-13.md)，海图界面子集见[2026 年 10 月 16 日记录](reports/agent-ui-verification-2026-10-16.md)。历史结果保留当时代码与环境边界；当前交付范围见[实施状态](implementation-status.md)，本轮文档与部署材料核验见[交付报告](reports/deployment-delivery-2026-10-17.md)。

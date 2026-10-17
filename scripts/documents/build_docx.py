@@ -1,6 +1,25 @@
 from pathlib import Path
+import argparse
 import re
-import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+PRODUCT = ROOT / 'docs' / 'product'
+parser = argparse.ArgumentParser(description='从产品 Markdown 生成 Word 文档。')
+parser.add_argument('source', nargs='?', type=Path, default=PRODUCT / '产品方案.md')
+parser.add_argument('--output', type=Path, default=PRODUCT / '海上智能态势与筹划分析产品方案.docx')
+parser.add_argument('--check-paths', action='store_true', help='仅检查输入和输出目录，不生成文档。')
+args = parser.parse_args()
+source = args.source.resolve()
+output = args.output.resolve()
+if not source.is_file():
+    parser.error(f'找不到 Markdown 源稿：{source}')
+if not output.parent.is_dir():
+    parser.error(f'输出目录不存在：{output.parent}')
+if args.check_paths:
+    print(f'Source: {source}')
+    print(f'Output: {output}')
+    raise SystemExit(0)
+
 from docx import Document
 from docx.shared import Cm, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -8,9 +27,6 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
-ROOT = Path(__file__).resolve().parents[1]
-source = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'finalized_content.md'
-output = ROOT / '海上智能态势与筹划分析产品方案.docx'
 doc = Document()
 sec = doc.sections[0]
 sec.page_width, sec.page_height = Cm(21), Cm(29.7)

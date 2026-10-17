@@ -1,5 +1,22 @@
-param([Parameter(Mandatory = $true)][string]$InputDocx, [Parameter(Mandatory = $true)][string]$OutputPdf)
+﻿param(
+    [string]$InputDocx = '',
+    [Parameter(Mandatory = $true)][string]$OutputPdf,
+    [switch]$CheckPaths
+)
 $ErrorActionPreference = 'Stop'
+if (-not $InputDocx) {
+    $InputDocx = Join-Path $PSScriptRoot '../../docs/product/海上智能态势与筹划分析产品方案.docx'
+}
+$InputDocx = (Resolve-Path -LiteralPath $InputDocx).Path
+$OutputPdf = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputPdf)
+if (-not (Test-Path -LiteralPath (Split-Path -Parent $OutputPdf) -PathType Container)) {
+    throw "输出目录不存在：$OutputPdf"
+}
+if ($CheckPaths) {
+    Write-Output "Input: $InputDocx"
+    Write-Output "Output: $OutputPdf"
+    return
+}
 $word = $null
 $document = $null
 try {

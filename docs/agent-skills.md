@@ -2,14 +2,17 @@
 
 Agent 从随应用发布的可信目录加载技能说明，以代码注册的工具完成业务操作。`apps/agent/skills` 保存说明与参考文档，`apps/agent/capabilities` 负责目录校验、权限收窄、工具执行和恢复记录，`apps/agent/business-capabilities.ts` 将框架接入现有运行时端口。
 
+本文记录现有 AIS 技能接入方式。配置目录动态刷新、通用工具宿主与远程 MCP 属于[SDK 目标架构](agent-sdk-architecture.md)，按[路线图](agent-sdk-roadmap.md)实施。
+
 ## 当前能力目录
 
-| 能力                  | 意图                           | 基础必填输入               | 运行方式                                   |
-| --------------------- | ------------------------------ | -------------------------- | ------------------------------------------ |
-| `ais-heatmap`         | `ais_heatmap`                  | 区域、时间范围             | 本地查询与聚合，以每格去重船舶数形成热力图 |
-| `vessel-query`        | `vessel_list`、`vessel_detail` | 列表需要区域；详情需要船舶 | 本地查询                                   |
-| `intelligence-search` | `intelligence_search`          | 公开情报主题               | 模型编排受控工具                           |
-| `region-analysis`     | `analysis`                     | 分析目标、区域、时间范围   | 现有区域研判流程                           |
+| 能力                  | 意图                           | 基础必填输入                   | 运行方式                                   |
+| --------------------- | ------------------------------ | ------------------------------ | ------------------------------------------ |
+| `ais-heatmap`         | `ais_heatmap`                  | 区域、时间范围                 | 本地查询与聚合，以每格去重船舶数形成热力图 |
+| `vessel-query`        | `vessel_list`、`vessel_detail` | 列表需要区域；详情需要船舶     | 本地查询                                   |
+| `intelligence-search` | `intelligence_search`          | 公开情报主题                   | 模型编排受控工具                           |
+| `ui-control`          | `ui_control`                   | 已绑定且在线的页面与支持的动作 | 本地有限语义解析、界面命令与执行回执       |
+| `region-analysis`     | `analysis`                     | 分析目标、区域、时间范围       | 现有区域研判流程                           |
 
 `CapabilityDefinition` 和目录项包含 `intents`、按意图分组的 `requiredInputs`、`executionMode` 与 `available`。`available` 表示能力已安装并启用；远程数据源是否健康由来源状态工具报告。基础输入之外的条件追问，例如情报时间范围不明确，继续由 `requiredAgentInputFields` 判断。
 
@@ -38,7 +41,7 @@ allowed-tools: query_sample
 3. 通过 `bindBusinessCapability` 绑定技能，将工具传给返回的 `executor`。能力所需的新宿主端口由运行时提供，并沿用任务所有权、输入修订和执行代次的写入检查。
 4. 补充目录加载、授权范围、阶段校验、预算拒绝、执行失效、恢复与模型投影测试。新意图还需在领域输入校验、契约、接口和前端结果展示中完成对应接入。
 
-新增第四份内置技能时，同时更新 `check-skills.ts` 和内置目录测试中当前三份技能的预期数量。
+当前随应用打包四份内置技能：`ais-heatmap`、`vessel-query`、`intelligence-search`、`ui-control`。区域研判保留兼容能力目录项。新增技能时同步更新绑定、`check-skills.ts`、内置目录测试和业务路由的预期。
 
 ## 绑定与权限来源
 
@@ -48,9 +51,11 @@ allowed-tools: query_sample
 
 加载器使用 YAML 库解析 frontmatter，检查目录名称、重复项、工具绑定、文件大小及真实路径边界。默认单文件上限为 64 KiB，总内容上限为 512 KiB。技能目录只接受 `SKILL.md` 和代码白名单内的 `references/*.md`；脚本、任意附件与其他路径会被拒绝。技能正文禁止混入用户原文、逐点 AIS 或外部页面指令，也不提供任意路径读取或代码执行入口。
 
-目录加载后形成不可变快照。`contentHash` 覆盖完整技能文档、引用正文、代码绑定工具集合、技能版本与适配器版本。发布修改后，工作进程通过新快照识别内容变化。
+目录加载后形成不可变快照。`contentHash` 覆盖完整技能文档、引用正文、代码绑定工具集合、技能版本与适配器版本。当前目录由工作进程缓存；发布后重启进程加载新快照并识别内容变化。运行期间原子刷新与在途任务快照管理由 SDK 的 SERVER 任务实现。
 
 ## 预算、审计与恢复
+
+以下执行顺序适用于已接入 `CapabilityExecutor` 的路径。当前 UI 运行时使用 `SkillSession` 激活技能，并单独调用预算、状态读取和命令端口；区域研判保留独立封装。全路径统一阶段、授权、预算、journal 与模型投影由 SERVER 任务推进。
 
 `CapabilityExecutor` 按顺序执行能力与工具查询、阶段检查、输入校验、`active` 检查、一次 `reserve('tool', maximum)`、handler、输出校验、模型投影、再次 `active` 检查及审计写入。预算拒绝时返回 `budget`；任务失效、取消或审计写入失败时返回 `fenced`。业务结果持久化由宿主端口负责。
 
@@ -75,10 +80,8 @@ bun run agent:skills:check
 
 构建先验证仓库、Agent、`dist` 和已有 `dist/skills` 的真实路径，再仅替换技能资源目录，保留其他产物。增量构建会清除源目录已删除的技能与参考文件。输出目录被符号链接重定向时构建拒绝清理。
 
-源码加载路径相对 `capabilities` 解析；构建通过 `__AGENT_SKILLS_BUNDLED__` 切换为产物旁的 `skills` 目录。`dist/check-skills.mjs` 使用与服务相同的加载器，打印三个内置技能的版本和摘要，无需模型密钥。该检查验证打包资源和加载配置；业务接口、数据库及模型执行分别由对应测试验证。
+源码加载路径相对 `capabilities` 解析；构建通过 `__AGENT_SKILLS_BUNDLED__` 切换为产物旁的 `skills` 目录。`dist/check-skills.mjs` 使用与服务相同的加载器，打印四个内置技能的版本和摘要，无需模型密钥。该检查验证打包资源和加载配置；业务接口、数据库及模型执行分别由对应测试验证。
 
-## 后续 MCP 适配
+## 目标扩展入口
 
-当前工具注册表使用进程内 TypeScript 接口。后续有跨进程或跨服务调用需求时，可在现有 `ToolDefinition` 与宿主端口之间增加 MCP 适配层。
-
-接入前应明确远程服务身份、工具授权映射、schema 版本、超时取消、预算归属和审计关联方式。适配器需要保持任务身份由宿主注入、技能声明仅收窄权限、本地结果与模型投影分离，以及执行失效后阻止写入的语义。远程工具执行还需提供可测试的幂等策略和失败恢复方案，再进入生产能力目录。
+通用 SDK 将配置化技能、进程内工具、HTTP 与 MCP 工具接入同一注册表及执行宿主。具体接口、授权交集、模型投影、未知结果对账和 Pi 适配版本以[SDK 目标架构](agent-sdk-architecture.md)为准，实施与验收以路线图 SERVER、REMOTE 和 PACKAGE 任务为准。

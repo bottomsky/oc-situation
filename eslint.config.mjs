@@ -12,8 +12,6 @@ export default tseslint.config(
       '**/coverage/**',
       '**/test-results/**',
       '**/playwright-report/**',
-      'doc_work/**',
-      'review_render/**',
       'ingest/**',
     ],
   },

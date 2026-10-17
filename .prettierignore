@@ -7,11 +7,8 @@ coverage/
 test-results/
 playwright-report/
 bun.lock
-doc_work/
-review_render/
+scripts/documents/
+docs/product/产品方案.md
 ingest/
 *.docx
-analysis_modes_draft.md
-conclusions_planning_draft.md
-finalized_content.md
 references/osint/

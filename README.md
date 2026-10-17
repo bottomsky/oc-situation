@@ -2,6 +2,20 @@
 
 AIS 与情报融合专题系统，提供数据采集、历史存储、独立专题计算、结论证据链与海图展示。Bun 管理 TypeScript 单仓库，Node.js 24 运行后台服务；Nuxt 4、Nuxt UI 4 与 MapLibre 提供中文地图、专题事件和采集治理界面。
 
+## 文档入口
+
+后续开发按下表顺序阅读。SDK 抽库、动态 Skill/MCP 和全站 Agent 控制属于后续开发目标，当前交付包含现有系统的文档整理与 Docker/Kubernetes 部署配置。
+
+| 阅读顺序 | 文档                                                                              | 用途                                 |
+| -------- | --------------------------------------------------------------------------------- | ------------------------------------ |
+| 系统现状 | [当前架构](docs/architecture.md)、[能力与验证状态](docs/implementation-status.md) | 确认已有服务、数据流和能力边界       |
+| SDK 目标 | [Agent SDK 架构设计](docs/agent-sdk-architecture.md)                              | 理解四包结构、宿主适配与扩展协议     |
+| 开发路线 | [Agent SDK 开发路线图](docs/agent-sdk-roadmap.md)                                 | 按依赖领取任务，执行测试、迁移和回滚 |
+| 本地开发 | [开发说明](docs/development.md)                                                   | 配置环境、启动服务、执行验证         |
+| 部署运维 | [Docker 与 Kubernetes 运维](infra/OPERATIONS.md)                                  | 配置密钥、初始化、上线和恢复         |
+
+[产品资料](docs/product/README.md)集中保存正式方案、Word 和流程图；[报告索引](docs/reports/README.md)保留历史验收、成功与失败性能数据及本轮清理依据。
+
 专题协议、服务边界、数据流与扩展方法见[融合专题架构](docs/fusion-architecture.md)。
 
 Pi 与 DeepSeek 的一次性区域研判任务、模型外发边界和启用方式见[区域研判智能体](docs/agent-analysis.md)。
@@ -32,15 +46,16 @@ Linux/macOS 安装浏览器前执行 `export PLAYWRIGHT_BROWSERS_PATH="$PWD/.dat
 
 ## 工程与命令
 
-| 路径                                                  | 职责                               |
-| ----------------------------------------------------- | ---------------------------------- |
-| `apps/web`、`apps/api`                                | Web、登录权限、查询和控制面        |
-| `apps/collector`、`apps/crawler`                      | 官方接口/流、受控网页采集          |
-| `apps/processor`、`apps/writer`、`apps/archiver`      | 清洗、独立双写入、原始归档         |
-| `apps/intelligence`、`apps/topics`                    | 情报接入、独立专题计算与可追溯结果 |
-| `packages/contracts`、`packages/domain`               | 运行时 Schema、清洗和来源选择      |
-| `packages/source-adapters`、`packages/infrastructure` | 协议适配、数据库、队列和对象存储   |
-| `infra`、`tests`、`scripts`                           | 部署、样例、验证和操作入口         |
+| 路径                                                  | 职责                                |
+| ----------------------------------------------------- | ----------------------------------- |
+| `apps/web`、`apps/api`                                | Web、登录权限、查询和控制面         |
+| `apps/agent`                                          | Pi 任务执行、内置技能与受控海图操作 |
+| `apps/collector`、`apps/crawler`                      | 官方接口/流、受控网页采集           |
+| `apps/processor`、`apps/writer`、`apps/archiver`      | 清洗、独立双写入、原始归档          |
+| `apps/intelligence`、`apps/topics`                    | 情报接入、独立专题计算与可追溯结果  |
+| `packages/contracts`、`packages/domain`               | 运行时 Schema、清洗和来源选择       |
+| `packages/source-adapters`、`packages/infrastructure` | 协议适配、数据库、队列和对象存储    |
+| `infra`、`tests`、`scripts`                           | 部署、样例、验证和操作入口          |
 
 ```powershell
 bun --no-env-file run migrate
@@ -56,6 +71,8 @@ bun --no-env-file run test:e2e
 # 复用 demo 数据检查实际 Node 编译产物
 bun --no-env-file run build:smoke
 bun --no-env-file run api:generate
+# 需要 Docker Compose 与 kubectl；仅解析配置，不连接集群
+bun --no-env-file run deployment:check
 ```
 
 集成测试使用真实本地数据库、NATS 和 S3；执行时暂停 demo 后台进程，防止故障注入影响运行来源。浏览器测试自动启动或复用 API 与 Web，从本地凭证文件取得账号。`demo --backend-only` 单独启动后台，另开终端执行 `bun --no-env-file run dev:web`。
@@ -80,4 +97,6 @@ bun --no-env-file run bench --full
 
 报告保存在 `docs/reports/`，记录响应数与展开观测数、20 个查询用户、吞吐、积压恢复、查询延迟、归档和容量。短冒烟证明链路可运行；25.9 亿条的 30 天历史规模、生产承载和备份恢复需要专项验收。
 
-生产镜像使用 `infra/Dockerfile`，模板为 `infra/compose.production.yaml`。注入数据库/NATS/外部 S3/管理员及 HTTPS 域名，指定已构建镜像 `AIS_IMAGE`；Caddy 提供 HTTPS，数据库与指标在内部网络。单机部署存在主机故障停服及未归档消息损失风险。
+生产镜像使用 `infra/Dockerfile`。Docker 入口为 [compose.production.yaml](infra/compose.production.yaml)，Kubernetes 入口位于 [infra/k8s](infra/k8s)。两种方式共用当前构建产物，分别按运维说明配置域名、外部专用 S3 桶及凭据；初始化成功后再启动应用。Kubernetes 按基础组件、初始化 Job、应用三个阶段发布，Agent 与监控按需启用。
+
+当前模板采用单实例存储和单副本应用，生产容量、备份恢复与故障切换需要在目标环境验收。配置静态检查、镜像构建、容器运行和真实集群部署分别记录结果，详见[能力与验证状态](docs/implementation-status.md)。

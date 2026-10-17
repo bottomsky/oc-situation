@@ -11,8 +11,7 @@ test-results
 playwright-report
 coverage
 ingest
-doc_work
-review_render
+scripts/documents
 **/*.docx
 *.md
 docs
