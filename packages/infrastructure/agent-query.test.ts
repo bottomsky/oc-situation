@@ -3,6 +3,60 @@ import { queryAgentVessels, resolveAgentAnalysisMmsis } from './agent-query';
 import type { Infrastructure } from './clients';
 
 describe('read-only agent vessel query', () => {
+  it('resolves model and name constraints through the existing local selector and preserves an empty set', async () => {
+    let resolverValues: unknown[] = [];
+    let queryValues: unknown[] = [];
+    const infra = {
+      pool: {
+        connect: async () => ({
+          query: async (sql: string, values?: unknown[]) => {
+            if (sql.includes('WITH objects')) resolverValues = values!;
+            return { rows: [] };
+          },
+          release() {},
+        }),
+        query: async (_sql: string, values: unknown[]) => {
+          queryValues = values;
+          return { rows: [{ total: '0', items: [], as_of: new Date() }] };
+        },
+      },
+    } as unknown as Infrastructure;
+    await queryAgentVessels(infra, {
+      kind: 'vessel_list',
+      inputRevision: 0,
+      selection: {
+        bbox: [120, 30, 122, 32],
+        vesselSelector: { model: '052D', query: '海巡01', mmsis: ['413123456'] },
+      },
+    });
+    expect(resolverValues.slice(0, 4)).toEqual([['413123456'], null, '海巡01', '052D']);
+    expect(queryValues[3]).toEqual([]);
+  });
+  it('filters a cargo family at the SQL boundary while retaining the exact count', async () => {
+    let statement = '';
+    let parameters: unknown[] = [];
+    const infra = {
+      pool: {
+        query: async (sql: string, values: unknown[]) => {
+          statement = sql;
+          parameters = values;
+          return { rows: [{ total: '0', items: [], as_of: new Date() }] };
+        },
+      },
+    } as unknown as Infrastructure;
+    await queryAgentVessels(infra, {
+      kind: 'vessel_list',
+      inputRevision: 0,
+      selection: {
+        bbox: [120, 30, 122, 32],
+        vesselSelector: { shipTypes: [70, 71, 72, 79] },
+        filters: { shipType: 71 },
+      },
+    });
+    expect(statement).toContain('v.ship_type=ANY($9::integer[])');
+    expect(statement).toContain('($3::integer IS NULL OR v.ship_type=$3)');
+    expect(parameters.at(-1)).toEqual([70, 71, 72, 79]);
+  });
   it('resolves ship type with vessel intersection and preserves an empty result', async () => {
     const calls: unknown[][] = [];
     const infra = {

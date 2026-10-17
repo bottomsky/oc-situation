@@ -49,6 +49,8 @@ docker compose --env-file /secure/ais.production.env -f infra/compose.production
 
 启用 Agent 时，将 AGENT_ENABLED 与 AGENT_UI_ENABLED 同时设为 true，配置 DEEPSEEK_API_KEY，再在上述启动命令中加入 `--profile agent`。仅传 profile 而保持 false 会使 Agent 进程退出。可叠加 `--profile monitoring` 启用 Prometheus/Grafana；它们只进入内部网络，访问方式由运维平台安排。停用 Agent 时同步关闭两个旗标并停止 Agent 容器，防止 API 继续接受无人消费的任务。
 
+动态个人技能另由 `AGENT_DYNAMIC_SKILLS_ENABLED` 控制，默认 `false`。启用时，Docker Compose 的 API 与 Agent 使用同一变量；Kubernetes 修改 `bootstrap/config.yaml` 中共享 ConfigMap 的该值，并滚动更新 API、Agent。升级先执行 020 迁移，再启用开关；关闭开关停止新的动态任务和管理写入，技能版本及已保存任务结果仍可读取。技能正文、版本和执行产物均保存在 PostgreSQL，无需额外文件卷。
+
 启用 Agent 和监控后的完整启动命令如下；profile 参数位于 up 前。仅启用 Agent 时去掉 monitoring 参数。
 
 ```sh

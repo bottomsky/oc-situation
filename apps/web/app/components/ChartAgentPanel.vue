@@ -31,6 +31,7 @@ const hasAnalysis = computed(
       'vessel_detail',
       'ais_heatmap',
       'vessel_tracks',
+      'skill',
     ].includes(selectedTask.value.intent ?? '') &&
     agentTaskHasAnalysis(selectedTask.value, state.detail?.steps ?? []),
 );
@@ -276,6 +277,13 @@ function changeSession(event: Event) {
           <small>结果版本 {{ selectedTask.resultVersion }}</small>
         </div>
         <p v-if="selectedTask.error" class="agent-error">{{ selectedTask.error }}</p>
+        <AgentSkillResults
+          :execution="state.detail.dynamicSkill"
+          :artifacts="state.detail.artifacts ?? state.detail.dynamicSkill?.artifacts ?? []"
+          :input-revision="selectedTask.inputRevision ?? 0"
+          @heatmap="emit('heatmap', $event)"
+          @tracks="emit('tracks', $event)"
+        />
         <p
           v-if="
             selectedTask.status === 'awaiting_input' &&

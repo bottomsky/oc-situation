@@ -1,6 +1,6 @@
 # 通用 Agent SDK 目标架构
 
-本文记录已确认的目标设计，供后续开发实施。四个 `@agent-kit/*` 包、动态技能配置、统一执行宿主、远程 MCP、全站业务操控和订单示例均待实现。本轮交付文档整理及当前系统部署材料，当前代码能力见[现状架构](architecture.md)和[实施状态](implementation-status.md)。
+本文记录已确认的目标设计，供后续开发实施。四个 `@agent-kit/*` 包、跨项目统一执行宿主、远程 MCP、全站业务操控和订单示例按后续路线实施。当前 AIS 应用已接入账号个人技能的发布、版本绑定和步骤恢复，详见[动态个人技能](agent-dynamic-skills.md)；当前代码能力见[现状架构](architecture.md)和[实施状态](implementation-status.md)。
 
 开发顺序、责任写域与完成条件以[开发路线图](agent-sdk-roadmap.md)为准；AIS 当前 HTTP/UI 接口仍以[现行界面协议](agent-ui-protocol.md)、已有 Schema 和 OpenAPI 为准。
 

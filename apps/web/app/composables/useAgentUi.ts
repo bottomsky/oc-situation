@@ -1,4 +1,5 @@
 import type { AgentConfig } from './useAgentConversation';
+import { commandReceiptIdentity } from '../utils/agentArtifacts';
 import { nextTick, onScopeDispose } from 'vue';
 import {
   UiStateSchema,
@@ -117,7 +118,11 @@ function createUiRegistry() {
         uiOperationAllowed(claimed.operation)
       );
     };
-    const base = { ...bound, claimToken: claimed.claimToken };
+    const base = {
+      ...bound,
+      claimToken: claimed.claimToken,
+      ...commandReceiptIdentity(claimed),
+    };
     if (!component || !adapter?.execute || !valid()) {
       const rejected: UiReceipt = {
         ...base,

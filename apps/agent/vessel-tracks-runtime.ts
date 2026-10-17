@@ -1,11 +1,7 @@
-import { z } from 'zod';
-import {
-  AgentVesselTracksResultSchema,
-  VesselTracksQuerySchema,
-  type AgentVesselTracksResult,
-} from '../../packages/contracts/vessel-tracks';
+import { type AgentVesselTracksResult } from '../../packages/contracts/vessel-tracks';
 import type { AgentSelection, AgentInputSpec } from '../../packages/contracts/agent';
-import { CapabilityError, defineTool } from './capabilities';
+import { CapabilityError } from './capabilities';
+import { createBusinessToolRegistry } from './business-tool-registry';
 import { bindBusinessCapability, validateRestoredSkill } from './business-capabilities';
 import {
   abortable,
@@ -52,31 +48,12 @@ export async function executeVesselTracks(
           signal: controller.signal,
         });
         await capability.session.readReference('vessel-tracks', 'references/tracks.md');
-        const query = VesselTracksQuerySchema.parse({
-          bbox: selection.bbox,
-          ...selection.timeRange,
-          selector: selection.vesselSelector,
-          ...(selection.filters?.sourceId ? { sourceId: selection.filters.sourceId } : {}),
-        });
-        const execute = capability.executor([
-          defineTool({
-            id: 'query_vessel_tracks',
-            description: '查询 AIS 独立船舶历史航线',
-            allowedPhases: ['query'],
-            inputSchema: z.strictObject({}),
-            outputSchema: AgentVesselTracksResultSchema,
-            handler: async () => ({
-              ...(await ports.queryVesselTracks!(query, controller.signal)),
-              kind: 'vessel_tracks' as const,
-              version: 0,
-              inputRevision: revision,
-            }),
-            project: (output) => ({
-              returnedVessels: output.returnedVessels,
-              hasMoreVessels: output.hasMoreVessels,
-            }),
-          }),
-        ]);
+        const registry = createBusinessToolRegistry(
+          { ...context, task: { ...context.task, selection } },
+          ports,
+          controller.signal,
+        );
+        const execute = capability.executor([registry.get('query_vessel_tracks').tool]);
         result = (await abortable(execute('query_vessel_tracks', 'query', {}), controller.signal))
           .local as AgentVesselTracksResult;
       }

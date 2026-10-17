@@ -6,6 +6,7 @@ import {
 } from '../contracts/agent';
 import type { Infrastructure } from './clients';
 import { FusionDatasetLimitError } from './fusion-data';
+import { resolveVesselTracksSelector } from './vessel-tracks';
 
 /** Empty user selection means all; an empty type intersection means no matching vessels. */
 export async function resolveAgentAnalysisMmsis(
@@ -33,15 +34,33 @@ const QueryInputSchema = z.strictObject({
 export async function queryAgentVessels(
   infra: Infrastructure,
   input: z.infer<typeof QueryInputSchema>,
+  options: { signal?: AbortSignal } = {},
 ): Promise<AgentQueryResult> {
   const { kind, inputRevision, selection } = QueryInputSchema.parse(input);
   if (kind === 'vessel_list' && !selection.bbox) throw new Error('region_required');
   if (kind === 'vessel_detail' && !selection.mmsis?.length) throw new Error('vessels_required');
+  let selectedMmsis: string[] | null = selection.mmsis?.length ? selection.mmsis : null;
+  if (
+    selection.vesselSelector &&
+    (selection.vesselSelector.model ||
+      selection.vesselSelector.query ||
+      selection.vesselSelector.mmsis)
+  ) {
+    const profiles = await resolveVesselTracksSelector(
+      infra,
+      selection.vesselSelector,
+      options.signal ?? new AbortController().signal,
+    );
+    const resolved = new Set(profiles.map((profile) => profile.mmsi));
+    selectedMmsis = selectedMmsis
+      ? selectedMmsis.filter((mmsi) => resolved.has(mmsi))
+      : [...resolved];
+  }
   const values: unknown[] = [
     selection.filters?.hours ?? 24,
     selection.filters?.sourceId ?? null,
     selection.filters?.shipType ?? null,
-    selection.mmsis?.length ? selection.mmsis : null,
+    selectedMmsis,
   ];
   const filters = [
     '($2::text IS NULL OR p.source_id=$2)',
@@ -55,6 +74,10 @@ export async function queryAgentVessels(
     filters.push(
       `p.latitude BETWEEN $6 AND $8 AND (p.longitude >= $5 ${west <= east ? 'AND' : 'OR'} p.longitude <= $7)`,
     );
+  }
+  if (selection.vesselSelector?.shipTypes?.length) {
+    values.push(selection.vesselSelector.shipTypes);
+    filters.push(`v.ship_type=ANY($${values.length}::integer[])`);
   }
   const result = await infra.pool.query<{
     total: string;

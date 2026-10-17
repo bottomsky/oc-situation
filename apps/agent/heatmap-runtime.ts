@@ -1,11 +1,7 @@
-import { z } from 'zod';
-import {
-  AgentHeatmapResultSchema,
-  HeatmapQuerySchema,
-  type AgentHeatmapResult,
-} from '../../packages/contracts/heatmap';
+import { type AgentHeatmapResult } from '../../packages/contracts/heatmap';
 import type { AgentSelection, AgentInputSpec } from '../../packages/contracts/agent';
-import { CapabilityError, defineTool } from './capabilities';
+import { CapabilityError } from './capabilities';
+import { createBusinessToolRegistry } from './business-tool-registry';
 import { bindBusinessCapability, validateRestoredSkill } from './business-capabilities';
 import {
   abortable,
@@ -52,35 +48,12 @@ export async function executeHeatmap(
           signal: controller.signal,
         });
         await capability.session.readReference('ais-heatmap', 'references/heatmap.md');
-        const query = HeatmapQuerySchema.parse({
-          bbox: selection.bbox,
-          ...selection.timeRange,
-          ...(selection.mmsis?.length ? { mmsis: selection.mmsis } : {}),
-          ...(selection.filters?.sourceId ? { sourceId: selection.filters.sourceId } : {}),
-          ...(selection.filters?.shipType !== undefined
-            ? { shipType: selection.filters.shipType }
-            : {}),
-        });
-        const execute = capability.executor([
-          defineTool({
-            id: 'query_ais_heatmap',
-            description: '查询 AIS 独立船舶热力图',
-            allowedPhases: ['query'],
-            inputSchema: z.strictObject({}),
-            outputSchema: AgentHeatmapResultSchema,
-            handler: async () => ({
-              ...(await ports.queryHeatmap!(query, controller.signal)),
-              kind: 'ais_heatmap' as const,
-              version: 0,
-              inputRevision: revision,
-            }),
-            project: (output) => ({
-              totalVessels: output.totalVessels,
-              cellCount: output.cells.length,
-              metric: output.metric,
-            }),
-          }),
-        ]);
+        const registry = createBusinessToolRegistry(
+          { ...context, task: { ...context.task, selection } },
+          ports,
+          controller.signal,
+        );
+        const execute = capability.executor([registry.get('query_ais_heatmap').tool]);
         result = (await abortable(execute('query_ais_heatmap', 'query', {}), controller.signal))
           .local as AgentHeatmapResult;
       }

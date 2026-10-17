@@ -6,18 +6,15 @@ import type {
 import { executeVesselTracks } from './vessel-tracks-runtime';
 import { executeIntelligence } from './intelligence-runtime';
 import { executeHeatmap } from './heatmap-runtime';
+import { executeDynamicSkill, type DynamicRuntimePorts } from './dynamic-runtime';
+import { shouldUseDynamicSkill } from '../../packages/domain/agent-dynamic-routing';
 import type {
   AgentHeatmapResult,
   HeatmapQuery,
   HeatmapResult,
 } from '../../packages/contracts/heatmap';
-import { AgentQueryResultSchema } from '../../packages/contracts/agent';
-import {
-  CapabilityError,
-  defineTool,
-  buildCapabilityDirectory,
-  type SkillCatalog,
-} from './capabilities';
+import { CapabilityError, buildCapabilityDirectory, type SkillCatalog } from './capabilities';
+import { createBusinessToolRegistry } from './business-tool-registry';
 import {
   bindBusinessCapability,
   getBusinessSkillCatalog,
@@ -70,6 +67,7 @@ import {
 } from './gateway';
 
 export interface RuntimePorts {
+  dynamicSkills?: DynamicRuntimePorts;
   active(): Promise<boolean>;
   reserve(kind: 'model' | 'tool', maximum: number): Promise<boolean>;
   setDefinition(definition: TopicDefinitionId): Promise<boolean>;
@@ -109,6 +107,8 @@ export interface RuntimeOptions {
   runtimeTimeoutMs?: number;
   now?: () => Date;
   skillCatalog?: SkillCatalog;
+  dynamicSkillsEnabled?: boolean;
+  dynamicSkillsAllowed?: () => boolean;
 }
 export interface RuntimeContext {
   task: AgentTask;
@@ -171,17 +171,12 @@ async function executeVesselQuery(
           signal: controller.signal,
         });
         await capability.session.readReference('vessel-query', 'references/vessels.md');
-        const execute = capability.executor([
-          defineTool({
-            id: 'query_vessels',
-            description: '查询船舶快照',
-            allowedPhases: ['query'],
-            inputSchema: z.strictObject({}),
-            outputSchema: AgentQueryResultSchema,
-            handler: () => ports.queryVessels!(kind, selection),
-            project: (output) => ({ total: output.total, truncated: output.truncated }),
-          }),
-        ]);
+        const registry = createBusinessToolRegistry(
+          { ...context, task: { ...context.task, intent: kind, selection } },
+          ports,
+          controller.signal,
+        );
+        const execute = capability.executor([registry.get('query_vessels').tool]);
         result = (await abortable(execute('query_vessels', 'query', {}), controller.signal))
           .local as AgentQueryResult;
       }
@@ -444,6 +439,25 @@ export async function executeAgent(
 ): Promise<void> {
   let task = context.task;
   if (!(await ports.active())) return;
+  if (
+    task.intent === 'skill' ||
+    shouldUseDynamicSkill(task.goal, {
+      enabled: options.dynamicSkillsEnabled === true,
+      intent: task.intent,
+      skillRef: task.skillRef ?? undefined,
+    })
+  ) {
+    if (!ports.dynamicSkills) {
+      await ports.finish({
+        status: 'failed',
+        errorCode: 'configuration',
+        error: '动态技能执行端口尚未配置。',
+      });
+      return;
+    }
+    await executeDynamicSkill(context, ports, ports.dynamicSkills, options);
+    return;
+  }
   const revision = task.inputRevision ?? 0;
   const currentResults = (task.resultInputRevision ?? 0) === revision;
   if (!currentResults)

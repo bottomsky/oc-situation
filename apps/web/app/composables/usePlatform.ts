@@ -42,9 +42,20 @@ export function usePlatform() {
         session.value = null;
         if (path !== '/auth/login') await navigateTo('/login');
       }
-      throw Object.assign(new Error(errorLabel(response.status, path)), {
-        status: response.status,
-      });
+      const skillError = path.startsWith('/agent/skills')
+        ? ((await response.json().catch(() => null)) as { error?: { message?: unknown } } | null)
+        : null;
+      const skillMessage = skillError?.error?.message;
+      throw Object.assign(
+        new Error(
+          typeof skillMessage === 'string' && [400, 409].includes(response.status)
+            ? skillMessage
+            : errorLabel(response.status, path),
+        ),
+        {
+          status: response.status,
+        },
+      );
     }
     return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>);
   }

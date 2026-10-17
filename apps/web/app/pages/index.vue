@@ -5,6 +5,7 @@ import { readChartPreference, writeChartPreference } from '../utils/chartWorkspa
 import { chartLayoutDefaults } from '../utils/chartLayout';
 import { defaultChartVisibility } from '../utils/chartLayers';
 import { heatmapDateLabel } from '../utils/display';
+import { commandPresentation } from '../utils/agentArtifacts';
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
 function mapContext(): AgentMapContext {
@@ -187,8 +188,14 @@ useUiComponent('chart.heatmap', {
     if (op.action === 'close') {
       selectingHeatmapRegion.value = false;
       heatmap.close();
-    } else if (command.presentation || heatmap.lastSnapshot) {
-      heatmap.showSnapshot(command.presentation ?? heatmap.lastSnapshot!);
+    } else {
+      const value = commandPresentation(
+        command.presentation,
+        command.artifactRef,
+        heatmap.lastSnapshot,
+      );
+      if (!value) throw { code: 'UNAVAILABLE' };
+      heatmap.showSnapshot(value);
       const deadline = Date.now() + 10000;
       while (!heatmap.displayed && heatmap.result && Date.now() < deadline)
         await new Promise((resolve) => setTimeout(resolve, 50));
@@ -209,7 +216,11 @@ useUiComponent('chart.vessel-tracks', {
       await nextTick();
       return;
     }
-    const value = command.tracksPresentation ?? vesselTracks.lastSnapshot;
+    const value = commandPresentation(
+      command.tracksPresentation,
+      command.artifactRef,
+      vesselTracks.lastSnapshot,
+    );
     if (!value || !vesselTracks.showSnapshot(value)) throw { code: 'UNAVAILABLE' };
     const snapshot = vesselTracks.result;
     const revision = vesselTracks.revision;

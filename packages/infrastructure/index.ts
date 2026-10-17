@@ -15,6 +15,7 @@ export * from './processing-stats';
 export * from './fusion-data';
 export * from './topics';
 export * from './agent';
+export * from './dynamic-skills';
 export * from './agent-query';
 export * from './heatmap';
 export * from './vessel-tracks';

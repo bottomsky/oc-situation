@@ -347,3 +347,4 @@ export interface ApiError {
 
 export * from './agent-ui';
 export * from './vessel-tracks';
+export * from './dynamic-skills';

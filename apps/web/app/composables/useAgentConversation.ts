@@ -20,10 +20,15 @@ import type {
   AgentVesselTracksResult,
 } from '@ais/contracts';
 import { canOperate } from '../utils/display';
+import type {
+  DynamicSkillArtifact,
+  DynamicSkillExecution,
+} from '../../../../packages/contracts/dynamic-skills';
 
 export interface AgentConfig {
   enabled: boolean;
   uiEnabled?: boolean;
+  dynamicSkillsEnabled?: boolean;
   defaultHistoryHours: number;
   maxHistoryHours: number;
   maxModelCalls: number;
@@ -45,6 +50,8 @@ interface TaskDetail {
   intelligenceResult?: AgentIntelligenceResult | null;
   heatmapResult?: AgentHeatmapResult | null;
   tracksResult?: AgentVesselTracksResult | null;
+  dynamicSkill?: DynamicSkillExecution;
+  artifacts?: DynamicSkillArtifact[];
 }
 export interface AgentHeatmapDisplay {
   begin(): number;

@@ -299,7 +299,7 @@ export function validateCompose(compose: RecordValue): string[] {
     )
       errors.push(`Compose/${name}: wrong readiness port`);
   if (services.agent) {
-    for (const key of ['AGENT_ENABLED', 'AGENT_UI_ENABLED'])
+    for (const key of ['AGENT_ENABLED', 'AGENT_UI_ENABLED', 'AGENT_DYNAMIC_SKILLS_ENABLED'])
       if (at(services.api, 'environment', key) !== at(services.agent, 'environment', key))
         errors.push(`Compose: Agent/API ${key} mismatch`);
     if (at(services.agent, 'environment', 'INTERNAL_METRICS_PORT') !== '13110')
@@ -405,6 +405,7 @@ export function checkDeployment(sourceOnly = false): string[] {
           {
             AGENT_ENABLED: String(profiles.includes('agent')),
             AGENT_UI_ENABLED: String(profiles.includes('agent')),
+            AGENT_DYNAMIC_SKILLS_ENABLED: String(profiles.includes('agent')),
           },
         ),
       ),

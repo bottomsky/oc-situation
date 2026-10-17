@@ -30,6 +30,7 @@ import {
   receiptUiCommand,
 } from '../../../../packages/infrastructure/agent-ui';
 import { AgentInputError } from '../../../../packages/infrastructure/agent';
+import { DynamicSkillError } from '../../../../packages/infrastructure/dynamic-skills';
 import { DocumentRoute, INFRA, MinimumRole, parse, Uuid } from '../common';
 import type { AuthRequest } from '../auth/guard';
 
@@ -41,6 +42,12 @@ export class AgentUiController {
     try {
       return await work();
     } catch (e) {
+      if (e instanceof DynamicSkillError) {
+        if (e.code === 'not_found') throw new NotFoundException(e.message);
+        if (e.code === 'forbidden' || e.code === 'fenced') throw new ForbiddenException(e.message);
+        if (e.code === 'invalid_input') throw new BadRequestException(e.message);
+        throw new ConflictException(e.message);
+      }
       if (e instanceof AgentInputError) {
         if (e.code === 'forbidden') throw new ForbiddenException(e.message);
         if (e.code === 'not_found') throw new NotFoundException(e.message);

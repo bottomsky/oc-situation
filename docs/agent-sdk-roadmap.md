@@ -1,6 +1,12 @@
 # 通用 Agent SDK 与系统重构开发路线图
 
-本文是后续代码工作的唯一主计划，目标设计以[SDK 架构](agent-sdk-architecture.md)为准。当前处于文档与部署材料整理阶段，下列代码任务均待实施。现有能力和验证见[实施状态](implementation-status.md)，历史过程保留在报告目录及Git历史。
+本文是通用 SDK 后续代码工作的主计划，目标设计以[SDK 架构](agent-sdk-architecture.md)为准。AIS 应用已接入账号私有声明式技能、版本管理、按步骤保存多产物以及携带产物引用的界面命令，范围见[账号动态技能](agent-dynamic-skills.md)。下列通用 SDK 工作包仍按各自完成条件验收。现有能力和验证见[实施状态](implementation-status.md)，历史过程保留在报告目录及 Git 历史。
+
+## 账号动态技能应用接入
+
+本轮实现落在现有 `packages/contracts`、`packages/domain`、`packages/infrastructure`、`apps/agent`、`apps/api` 和 `apps/web`，由 `AGENT_DYNAMIC_SKILLS_ENABLED` 控制发布与执行，默认关闭。声明式程序引用宿主任务输入与前序产物，自动校验后形成私有不可变版本；任务固定绑定版本、摘要与工具上限，保存调用账本和步骤产物。`/skills` 提供当前账号目录与历史版本管理，功能关闭时继续读取历史。
+
+该接入为 SERVER 的版本快照、调用恢复和产物引用提供应用样例。通用四包拆分、任意业务工具接入、远程 MCP、通用导航迁移和独立 SDK 发布继续由下列工作包实施。已有应用代码按对应任务逐步抽取，验收时同时覆盖本轮私有技能回归。
 
 ## 交付顺序与范围
 

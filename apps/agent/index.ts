@@ -4,7 +4,20 @@ import {
   expireUiCommands,
   createUiCommand,
   getUiTaskCommand,
+  queueDynamicSkillUi,
 } from '../../packages/infrastructure/agent-ui';
+import {
+  getDynamicSkillExecution,
+  listOwnedSkills,
+  getOwnedSkill,
+  publishOwnedSkill,
+  bindTaskDynamicSkill,
+  assertTaskDynamicSkillActive,
+  beginDynamicSkillCall,
+  completeDynamicSkillCall,
+  failDynamicSkillCall,
+} from '../../packages/infrastructure/dynamic-skills';
+import { createBusinessToolRegistry } from './business-tool-registry';
 import {
   searchAgentIntelligence,
   getIntelligenceSourceHealth,
@@ -46,7 +59,7 @@ import {
   saveAgentHeatmapResult,
   saveAgentVesselTracksResult,
 } from '../../packages/infrastructure/agent';
-import { executeAgent, type RuntimeOptions } from './runtime';
+import { executeAgent, type RuntimeOptions, type RuntimePorts } from './runtime';
 
 export const AGENT_STREAM = 'AGENT_TASKS';
 export const AGENT_SUBJECT = 'agent.task.requested';
@@ -104,6 +117,8 @@ export function agentEnvironment(
     maxModelCalls: positive(env.AGENT_MAX_MODEL_CALLS, 12, 100),
     maxToolCalls: positive(env.AGENT_MAX_TOOL_CALLS, 24, 200),
     maxRecords: positive(env.AGENT_MAX_RECORDS, 50000, 100000),
+    dynamicSkillsEnabled: env.AGENT_DYNAMIC_SKILLS_ENABLED === 'true',
+    dynamicSkillsAllowed: () => env.AGENT_DYNAMIC_SKILLS_ENABLED === 'true',
   };
 }
 function missing(error: unknown) {
@@ -218,90 +233,158 @@ export async function processAgentTask(
     }
     const previous = await getPreviousAgentTask(infra, task.id);
     let boundTask = task;
-    await executeAgent(
-      { ...context, previous },
-      {
-        active: async () => !controller.signal.aborted && (await renewAgentTask(...fence)),
-        reserve: (kind, maximum) => reserveAgentCall(...fence, kind, maximum),
-        setDefinition: (definition) => setAgentDefinition(...fence, definition),
-        reusePrevious: async (previousId) => {
-          const reused = await reusePreviousAgentTask(...fence, previousId);
-          if (reused) boundTask = reused;
-          return reused;
-        },
-        saveStep: (key, name, output) =>
-          saveAgentStep(...fence, { key, name, input: null, output }),
-        requestInput: (spec) => requestAgentInput(...fence, spec),
-        queryVessels: (kind, selection) =>
-          queryAgentVessels(infra, {
+    const runtimePorts: RuntimePorts = {
+      active: async () => !controller.signal.aborted && (await renewAgentTask(...fence)),
+      reserve: (kind, maximum) => reserveAgentCall(...fence, kind, maximum),
+      setDefinition: (definition) => setAgentDefinition(...fence, definition),
+      reusePrevious: async (previousId) => {
+        const reused = await reusePreviousAgentTask(...fence, previousId);
+        if (reused) boundTask = reused;
+        return reused;
+      },
+      saveStep: (key, name, output) => saveAgentStep(...fence, { key, name, input: null, output }),
+      requestInput: (spec) => requestAgentInput(...fence, spec),
+      queryVessels: (kind, selection) =>
+        queryAgentVessels(
+          infra,
+          {
             kind,
             selection,
             inputRevision: boundTask.inputRevision ?? 0,
-          }),
-        searchIntelligence: (selection) => searchAgentIntelligence(infra, selection),
-        intelligenceSourceHealth: () => getIntelligenceSourceHealth(infra),
-        saveIntelligenceResult: (result) => saveAgentIntelligenceResult(...fence, result),
-        saveQueryResult: (result) => saveAgentQueryResult(...fence, result),
-        queryVesselTracks: (query, signal) =>
-          queryVesselTracks(infra, query, { ownerId: task.ownerId, signal }),
-        saveTracksResult: (result) => saveAgentVesselTracksResult(...fence, result),
-        queryHeatmap: (query, signal) =>
-          queryAisHeatmap(infra, query, { ownerId: task.ownerId, signal }),
-        saveHeatmapResult: (result) => saveAgentHeatmapResult(...fence, result),
-        query: async () => {
-          if (!boundTask.bbox) throw new Error('region_required');
-          const mmsis = await resolveAgentAnalysisMmsis(
-            infra,
-            boundTask.selection ?? {},
-            options.maxRecords ?? 50000,
-          );
-          const dataset = await queryFusionDataset(infra, {
-            from: boundTask.from,
-            to: boundTask.to,
-            bbox: boundTask.bbox,
-            maxRecords: options.maxRecords ?? 50000,
-            mmsis,
-            sourceId: boundTask.selection?.filters?.sourceId,
-          });
-          return {
-            ...dataset,
-            intelligence: dataset.intelligence.map((d) => ({ ...d, kind: d.category })),
-          };
-        },
-        saveResults: (results) => saveAgentResults(...fence, results),
-        finish: async (outcome) => {
-          if (
-            (task.intent === 'ais_heatmap' || task.intent === 'vessel_tracks') &&
-            outcome.status === 'completed' &&
-            task.uiBinding &&
-            process.env.AGENT_UI_ENABLED === 'true'
-          ) {
-            await saveAgentStep(...fence, {
-              key: 'ui_presentation_summary',
-              name: '本地查询结果',
-              input: null,
-              output: outcome,
-            });
-            try {
-              return !!(await createUiCommand(...fence, {
-                componentId:
-                  task.intent === 'vessel_tracks' ? 'chart.vessel-tracks' : 'chart.heatmap',
-                action: 'show',
-              }));
-            } catch {
-              return finishAgentTask(...fence, {
-                ...outcome,
-                summary:
-                  outcome.summary +
-                  ' 计算结果已保存；当前页面状态已改变，未自动展示，请从历史结果重新展示。',
-              });
-            }
-          }
-          return finishAgentTask(...fence, outcome);
-        },
+          },
+          { signal: controller.signal },
+        ),
+      searchIntelligence: (selection) => searchAgentIntelligence(infra, selection),
+      intelligenceSourceHealth: () => getIntelligenceSourceHealth(infra),
+      saveIntelligenceResult: (result) => saveAgentIntelligenceResult(...fence, result),
+      saveQueryResult: (result) => saveAgentQueryResult(...fence, result),
+      queryVesselTracks: (query, signal) =>
+        queryVesselTracks(infra, query, { ownerId: task.ownerId, signal }),
+      saveTracksResult: (result) => saveAgentVesselTracksResult(...fence, result),
+      queryHeatmap: (query, signal) =>
+        queryAisHeatmap(infra, query, { ownerId: task.ownerId, signal }),
+      saveHeatmapResult: (result) => saveAgentHeatmapResult(...fence, result),
+      query: async () => {
+        if (!boundTask.bbox) throw new Error('region_required');
+        const mmsis = await resolveAgentAnalysisMmsis(
+          infra,
+          boundTask.selection ?? {},
+          options.maxRecords ?? 50000,
+        );
+        const dataset = await queryFusionDataset(infra, {
+          from: boundTask.from,
+          to: boundTask.to,
+          bbox: boundTask.bbox,
+          maxRecords: options.maxRecords ?? 50000,
+          mmsis,
+          sourceId: boundTask.selection?.filters?.sourceId,
+        });
+        return {
+          ...dataset,
+          intelligence: dataset.intelligence.map((d) => ({ ...d, kind: d.category })),
+        };
       },
-      { ...options, signal: controller.signal },
-    );
+      saveResults: (results) => saveAgentResults(...fence, results),
+      finish: async (outcome) => {
+        if (
+          (task.intent === 'ais_heatmap' || task.intent === 'vessel_tracks') &&
+          outcome.status === 'completed' &&
+          task.uiBinding &&
+          process.env.AGENT_UI_ENABLED === 'true'
+        ) {
+          await saveAgentStep(...fence, {
+            key: 'ui_presentation_summary',
+            name: '本地查询结果',
+            input: null,
+            output: outcome,
+          });
+          try {
+            return !!(await createUiCommand(...fence, {
+              componentId:
+                task.intent === 'vessel_tracks' ? 'chart.vessel-tracks' : 'chart.heatmap',
+              action: 'show',
+            }));
+          } catch {
+            return finishAgentTask(...fence, {
+              ...outcome,
+              summary:
+                outcome.summary +
+                ' 计算结果已保存；当前页面状态已改变，未自动展示，请从历史结果重新展示。',
+            });
+          }
+        }
+        return finishAgentTask(...fence, outcome);
+      },
+    };
+    const skillFence = {
+      ownerId: task.ownerId,
+      taskId: task.id,
+      inputRevision: task.inputRevision ?? 0,
+      generation: task.generation,
+      workerId,
+    };
+    const readDynamic = async () => {
+      const execution = await getDynamicSkillExecution(
+        infra,
+        task.ownerId,
+        task.id,
+        skillFence.inputRevision,
+      );
+      if (!execution) throw new Error('fenced');
+      return execution;
+    };
+    runtimePorts.dynamicSkills = {
+      read: readDynamic,
+      catalog: () => listOwnedSkills(infra, task.ownerId),
+      detail: (skillId) => getOwnedSkill(infra, task.ownerId, skillId),
+      bind: (ref, ceiling) => bindTaskDynamicSkill(infra, skillFence, ref, ceiling),
+      publish: async (input, ceiling) => {
+        await publishOwnedSkill(infra, task.ownerId, input, {
+          fence: skillFence,
+          toolCeiling: ceiling,
+          toolCatalog: createBusinessToolRegistry(
+            context,
+            runtimePorts,
+            controller.signal,
+          ).descriptors(),
+        });
+        return readDynamic();
+      },
+      authorize: async (toolId) => {
+        if (controller.signal.aborted || !(await renewAgentTask(...fence))) return false;
+        const execution = await readDynamic();
+        if (!execution.taskBinding) return toolId === undefined;
+        return assertTaskDynamicSkillActive(infra, skillFence, toolId);
+      },
+      begin: (stepId, toolId, input, maximum) =>
+        beginDynamicSkillCall(infra, skillFence, {
+          stepId,
+          toolId,
+          input,
+          maxToolCalls: maximum,
+          recoverableRead: true,
+        }),
+      complete: (stepId, localResult, modelProjection, artifact) =>
+        completeDynamicSkillCall(infra, skillFence, {
+          stepId,
+          localResult,
+          modelProjection,
+          artifact,
+        }),
+      fail: async (stepId, code) => {
+        await failDynamicSkillCall(infra, skillFence, stepId, code);
+      },
+      uiCommand: async (stepId) => {
+        const command = await getUiTaskCommand(infra, task.id, skillFence.inputRevision, stepId);
+        return command ? { status: command.status, result: command.result ?? undefined } : null;
+      },
+      queueUi: (stepId, artifactRef, operation) =>
+        queueDynamicSkillUi(infra, skillFence, stepId, artifactRef, operation),
+    };
+    await executeAgent({ ...context, previous }, runtimePorts, {
+      ...options,
+      signal: controller.signal,
+    });
     return true;
   } finally {
     clearInterval(timer);

@@ -2,6 +2,11 @@ import { AgentVesselTracksResultSchema } from '../../../../packages/contracts/ve
 import { AgentIntelligenceResultSchema } from '../../../../packages/contracts/intelligence-search';
 import { AgentHeatmapResultSchema } from '../../../../packages/contracts/heatmap';
 import {
+  DynamicSkillArtifactSchema,
+  DynamicSkillExecutionSchema,
+} from '../../../../packages/contracts/dynamic-skills';
+import { DynamicSkillError } from '../../../../packages/infrastructure/dynamic-skills';
+import {
   Body,
   ConflictException,
   BadRequestException,
@@ -50,9 +55,14 @@ import { DocumentQuery, DocumentRoute, INFRA, MinimumRole, Uuid, parse } from '.
 import type { AuthRequest } from '../auth/guard';
 
 const ObjectResponse = z.record(z.string(), z.unknown());
+const TaskQuery = z.strictObject({
+  resultVersion: z.coerce.number().int().positive().optional(),
+  inputRevision: z.coerce.number().int().nonnegative().optional(),
+});
 const ConfigResponse = z.object({
   enabled: z.boolean(),
   uiEnabled: z.boolean(),
+  dynamicSkillsEnabled: z.boolean(),
   defaultHistoryHours: z.number(),
   maxHistoryHours: z.number(),
   maxModelCalls: z.number(),
@@ -75,6 +85,8 @@ const TaskResponse = z.object({
   intelligenceResult: AgentIntelligenceResultSchema.nullable(),
   heatmapResult: AgentHeatmapResultSchema.nullable(),
   tracksResult: AgentVesselTracksResultSchema.nullable(),
+  dynamicSkill: DynamicSkillExecutionSchema,
+  artifacts: z.array(DynamicSkillArtifactSchema),
 });
 const budget = (key: string, fallback: number) => {
   const value = Number(process.env[key] ?? fallback);
@@ -93,6 +105,7 @@ export class AgentController {
     return {
       enabled: process.env.AGENT_ENABLED === 'true',
       uiEnabled: process.env.AGENT_UI_ENABLED === 'true',
+      dynamicSkillsEnabled: process.env.AGENT_DYNAMIC_SKILLS_ENABLED === 'true',
       defaultHistoryHours: 24,
       maxHistoryHours: 168,
       maxModelCalls: budget('AGENT_MAX_MODEL_CALLS', 12),
@@ -173,15 +186,21 @@ export class AgentController {
     }
   }
   @Get('tasks/:id')
+  @DocumentQuery(TaskQuery)
   @DocumentRoute('Read owned task, immutable results and tool ledger', TaskResponse)
   async task(@Param('id') id: string, @Req() req: AuthRequest, @Query() query: unknown = {}) {
     this.assertEnabled();
     parse(Uuid, id);
-    const { resultVersion } = parse(
-      z.strictObject({ resultVersion: z.coerce.number().int().positive().optional() }),
-      query,
+    const { resultVersion, inputRevision } = parse(TaskQuery, query);
+    if (resultVersion !== undefined && inputRevision !== undefined)
+      throw new BadRequestException('请选择结果版本或输入修订中的一种读取方式');
+    const result = await getOwnedAgentTask(
+      this.infra,
+      req.user.id,
+      id,
+      resultVersion,
+      inputRevision,
     );
-    const result = await getOwnedAgentTask(this.infra, req.user.id, id, resultVersion);
     if (!result) throw new NotFoundException('Task not found');
     return {
       task: result.task,
@@ -193,10 +212,12 @@ export class AgentController {
       intelligenceResult: result.intelligenceResult,
       heatmapResult: result.heatmapResult,
       tracksResult: result.tracksResult,
+      dynamicSkill: result.dynamicSkill,
+      artifacts: result.artifacts,
     };
   }
   private inputError(error: unknown): never {
-    if (error instanceof AgentInputError) {
+    if (error instanceof AgentInputError || error instanceof DynamicSkillError) {
       const body = { code: error.code, message: error.message };
       if (error.code === 'not_found') throw new NotFoundException(body);
       if (error.code === 'forbidden') throw new ForbiddenException(body);
@@ -261,7 +282,14 @@ export class AgentController {
     parse(Uuid, key);
     const input = parse(AgentRetryInputSchema, body);
     try {
-      return await retryAgentTask(this.infra, req.user.id, id, key, input.uiBinding);
+      return await retryAgentTask(
+        this.infra,
+        req.user.id,
+        id,
+        key,
+        input.uiBinding,
+        input.skillVersionPolicy ?? 'original',
+      );
     } catch (error) {
       return this.inputError(error);
     }

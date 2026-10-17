@@ -1,6 +1,6 @@
 # 海上多元情报分析系统当前架构
 
-本文描述仓库当前实现。通用 Agent SDK 的已确认目标见[SDK 架构](agent-sdk-architecture.md)，后续任务及验收见[开发路线图](agent-sdk-roadmap.md)。SDK 拆包、动态技能配置、远程 MCP 和全站业务操控处于待实施状态；当前交付范围见[实施状态](implementation-status.md)。
+本文描述仓库当前实现。通用 Agent SDK 的已确认目标见[SDK 架构](agent-sdk-architecture.md)，后续任务及验收见[开发路线图](agent-sdk-roadmap.md)。SDK 拆包、远程 MCP 和全站业务操控按路线图推进；当前账号动态技能的实现见[动态个人技能](agent-dynamic-skills.md)，交付状态见[实施状态](implementation-status.md)。
 
 ## 业务链路与部署边界
 
@@ -83,7 +83,7 @@ RAW 使用 file storage 与 InterestPolicy，cleaner 和 archiver 独立确认�
 
 当前 Agent 使用 Pi 1.1.0 的 agent-core 与 ai 包，连接配置的 DeepSeek 模型。会话、任务、输入修订、步骤、结果和事件由 PostgreSQL 保存；worker 以任务 generation 和租约限制迟到写入。等待用户输入和界面回执通过持久状态释放执行资源。
 
-可信技能目录目前包含 `ais-heatmap`、`vessel-query`、`vessel-tracks`、`intelligence-search`、`ui-control` 五份技能；区域研判仍保留兼容执行路径。技能框架已有目录校验、代码授权、预算、模型投影和恢复回执，执行通道统一列入后续重构。历史航线由 HTTP 与 Agent 共用查询服务，以独立图层展示多船分段轨迹，详见[船舶历史航线](vessel-tracks.md)。
+可信技能目录目前包含 `ais-heatmap`、`vessel-query`、`vessel-tracks`、`intelligence-search`、`ui-control` 五份技能；区域研判仍保留兼容执行路径。内置技能继续使用可信目录和既有执行入口。账号私有技能由 PostgreSQL 的不可变版本与活动目录管理，Pi 根据安全目标投影生成组合定义，宿主校验工具和参数引用后事务发布并绑定原任务。动态任务使用步骤调用日志与多个不可变产物恢复，界面回执后继续下一步；停用或撤销版本会阻止后续调用。历史航线由 HTTP 与 Agent 共用查询服务，以独立图层展示多船分段轨迹，详见[船舶历史航线](vessel-tracks.md)。
 
 Web 当前支持全站语义状态感知与海图白名单操控，包括面板、页签、图层、已选船位定位、只读浮窗及热图展示/关闭。通用导航、业务编辑保存、删除、审核和系统配置操控处于目标范围。当前接口和恢复语义见[界面协议](agent-ui-protocol.md)。
 

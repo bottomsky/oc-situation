@@ -11,6 +11,12 @@ import type {
 } from '@ais/contracts';
 import { MARINE_SAMPLE_POINTS, VesselTracksSelectorSchema } from '@ais/contracts';
 import type { AgentConversationState } from '../composables/useAgentConversation';
+import {
+  skillCandidateKey,
+  skillChoiceValid,
+  inputNeedsIntelligence,
+  initializeAgentInputValues,
+} from '../utils/skillInput';
 const props = defineProps<{
   state: AgentConversationState;
   context: AgentMapContext;
@@ -39,12 +45,15 @@ const reasonLabels = {
   missing_vessels: '请选择要查询的船舶',
   missing_time: '请补充时间范围',
   missing_goal: '请选择希望执行的任务',
+  ambiguous_skill: '多个技能符合请求，请选择本次使用的版本',
   data_limit: '数据较多，请缩小范围或时间',
   retention: '所选时间超出在线数据范围，请调整',
   scope_changed: '任务范围已变化，请确认条件',
   missing_topic: '请补充要检索的情报主题或海况代表点',
 };
-const isIntelligence = computed(() => values.value.purpose === 'intelligence_search');
+const isIntelligence = computed(() =>
+  inputNeedsIntelligence(request.value?.fields ?? [], values.value.purpose),
+);
 const isMarine = computed(
   () => isIntelligence.value && values.value.intelligenceQuery?.kind === 'marine',
 );
@@ -64,6 +73,7 @@ const intelligenceObjectId = computed({
   },
 });
 const objectCandidates = computed(() => request.value?.prefill.intelligenceObjectCandidates ?? []);
+const skillCandidates = computed(() => request.value?.prefill.skillCandidates ?? []);
 const isQuery = computed(() =>
   ['vessel_list', 'vessel_detail'].includes(values.value.purpose ?? ''),
 );
@@ -112,22 +122,21 @@ watch(
     }
     if (request.value?.id !== next.id || request.value.inputRevision !== next.inputRevision) {
       request.value = next;
-      values.value = JSON.parse(JSON.stringify(next.prefill));
+      values.value = initializeAgentInputValues(next.prefill, next.fields);
       if (!values.value.bbox && values.value.intelligenceQuery?.bbox)
         values.value.bbox = [...values.value.intelligenceQuery.bbox];
-      const range =
-        next.prefill.purpose === 'intelligence_search'
-          ? (next.prefill.intelligenceTimeRange ??
-            (next.prefill.intelligenceQuery?.kind === 'marine'
-              ? {
-                  from: next.prefill.intelligenceQuery?.forecastFrom,
-                  to: next.prefill.intelligenceQuery?.forecastTo,
-                }
-              : {
-                  from: next.prefill.intelligenceQuery?.from,
-                  to: next.prefill.intelligenceQuery?.to,
-                }))
-          : next.prefill.timeRange;
+      const range = inputNeedsIntelligence(next.fields, next.prefill.purpose)
+        ? (next.prefill.intelligenceTimeRange ??
+          (next.prefill.intelligenceQuery?.kind === 'marine'
+            ? {
+                from: next.prefill.intelligenceQuery?.forecastFrom,
+                to: next.prefill.intelligenceQuery?.forecastTo,
+              }
+            : {
+                from: next.prefill.intelligenceQuery?.from,
+                to: next.prefill.intelligenceQuery?.to,
+              }))
+        : next.prefill.timeRange;
       preset.value = range?.from && range.to ? 'custom' : '24';
       from.value = range?.from ? beijingInput(range.from) : '';
       to.value = range?.to ? beijingInput(range.to) : '';
@@ -236,6 +245,11 @@ async function submit() {
   if (!request.value) return;
   error.value = '';
   const body: AgentInputValues = JSON.parse(JSON.stringify(values.value));
+  if (required('skill') && !skillChoiceValid(body.skillRef, skillCandidates.value)) {
+    error.value = '请选择本次使用的技能版本。';
+    return;
+  }
+  delete body.skillCandidates;
   if (
     required('vessel_selector') &&
     !VesselTracksSelectorSchema.safeParse(body.vesselSelector).success
@@ -387,6 +401,29 @@ onBeforeUnmount(() => {
       </header>
       <p>{{ reasonLabels[request.reason] }}</p>
       <p class="hint">确认后将自动继续当前任务，无需再次发送问题。</p>
+      <fieldset v-if="visible('skill') && skillCandidates.length">
+        <legend>选择技能</legend>
+        <label
+          v-for="candidate in skillCandidates"
+          :key="skillCandidateKey(candidate)"
+          class="skill-choice"
+        >
+          <input
+            type="radio"
+            name="agent-skill-choice"
+            :value="skillCandidateKey(candidate)"
+            :checked="
+              values.skillRef?.skillId === candidate.skillId &&
+              values.skillRef?.version === candidate.version
+            "
+            @change="values.skillRef = { skillId: candidate.skillId, version: candidate.version }"
+          />
+          <span
+            ><strong>{{ candidate.name }}</strong> · {{ candidate.version
+            }}<small v-if="candidate.description">{{ candidate.description }}</small></span
+          >
+        </label>
+      </fieldset>
       <fieldset v-if="visible('goal')">
         <legend>任务目标</legend>
         <select aria-label="任务目标" :value="values.purpose ?? ''" @change="purposeChanged">
@@ -680,6 +717,22 @@ input {
 .hint {
   color: #9dbdcc;
   font-size: 12px;
+}
+.skill-choice {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+.skill-choice input {
+  width: auto;
+  margin-top: 4px;
+}
+.skill-choice small {
+  display: block;
+  color: #9dbdcc;
+  line-height: 1.6;
+  margin-top: 5px;
 }
 .error {
   color: #ffc3ae;

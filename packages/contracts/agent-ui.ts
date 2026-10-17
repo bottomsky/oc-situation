@@ -80,6 +80,7 @@ export const UiStateSchema = z.strictObject({
     '/jobs',
     '/users',
     '/login',
+    '/skills',
     'unknown',
   ]),
   components: z
@@ -100,6 +101,11 @@ export const UiOperationSchema = z.strictObject({
 });
 export type UiOperation = z.infer<typeof UiOperationSchema>;
 export const UiCommandSchema = z.object({
+  stepId: z
+    .string()
+    .regex(/^[a-z][a-z0-9_-]{0,63}$/)
+    .optional(),
+  artifactRef: z.uuid().optional(),
   presentation: AgentHeatmapResultSchema.optional(),
   tracksPresentation: AgentVesselTracksResultSchema.optional(),
   id: z.uuid(),
@@ -123,6 +129,11 @@ export const UiCommandSchema = z.object({
 });
 export type UiCommand = z.infer<typeof UiCommandSchema>;
 export const UiReceiptSchema = UiBindingSchema.extend({
+  stepId: z
+    .string()
+    .regex(/^[a-z][a-z0-9_-]{0,63}$/)
+    .optional(),
+  artifactRef: z.uuid().optional(),
   receiptId: z.uuid(),
   claimToken: z.uuid(),
   status: z.enum(['executing', 'succeeded', 'failed', 'rejected']),

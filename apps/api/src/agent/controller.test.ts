@@ -25,6 +25,23 @@ describe('agent feature switch', () => {
       maxHistoryHours: 168,
     });
   });
+  it('按输入修订读取个人技能历史并拒绝混用旧结果版本参数', async () => {
+    process.env.AGENT_ENABLED = 'true';
+    const read = vi.spyOn(agentStorage, 'getOwnedAgentTask').mockResolvedValue({
+      task: {},
+      results: [],
+      steps: [],
+      artifacts: [],
+      dynamicSkill: {},
+    } as unknown as NonNullable<Awaited<ReturnType<typeof agentStorage.getOwnedAgentTask>>>);
+    const id = '11111111-1111-4111-8111-111111111111';
+    const controller = new AgentController({} as Infrastructure);
+    await controller.task(id, { user: { id } } as never, { inputRevision: '0' });
+    expect(read).toHaveBeenCalledWith(expect.anything(), id, id, undefined, 0);
+    await expect(
+      controller.task(id, { user: { id } } as never, { inputRevision: '0', resultVersion: '1' }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
   it('以400响应明确说明热力图船舶筛选上限', async () => {
     process.env.AGENT_ENABLED = 'true';
     vi.spyOn(agentStorage, 'getAgentSession').mockResolvedValue(

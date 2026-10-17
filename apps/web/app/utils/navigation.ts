@@ -27,6 +27,7 @@ const groups: NavigationGroup[] = [
     links: [
       { path: '/topics', label: '分析专题' },
       { path: '/intelligence', label: '情报公告' },
+      { path: '/skills', label: '我的技能' },
     ],
   },
   {

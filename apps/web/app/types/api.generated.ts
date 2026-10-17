@@ -1171,6 +1171,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/agent/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current account private skill catalog, including disabled history */
+        get: operations["SkillsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/skills/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one owned skill and all immutable versions */
+        get: operations["SkillsController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/skills/{id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read an owned immutable skill version */
+        get: operations["SkillsController_version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/skills/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate and idempotently publish a private skill version */
+        post: operations["SkillsController_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/skills/{id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Enable or disable an owned skill with catalog revision protection */
+        put: operations["SkillsController_state"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/skills/{id}/versions/{version}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate one non-revoked private skill version */
+        post: operations["SkillsController_activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/skills/{id}/versions/{version}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke an owned version while preserving its task history */
+        post: operations["SkillsController_revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5013,9 +5132,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        definitions: {
-                            [key: string]: unknown;
-                        }[];
                         instances: {
                             [key: string]: unknown;
                         }[];
@@ -5549,6 +5665,7 @@ export interface operations {
                     "application/json": {
                         enabled: boolean;
                         uiEnabled: boolean;
+                        dynamicSkillsEnabled: boolean;
                         defaultHistoryHours: number;
                         maxHistoryHours: number;
                         maxModelCalls: number;
@@ -5724,6 +5841,12 @@ export interface operations {
                             createdAt: string;
                         }[];
                         tasks: {
+                            skillRef?: {
+                                skillId: string;
+                                version?: string;
+                            } | null;
+                            /** @enum {string} */
+                            skillVersionPolicy?: "original" | "latest";
                             uiBinding?: {
                                 /** Format: uuid */
                                 clientId: string;
@@ -5787,8 +5910,18 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
                             selection?: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -5870,10 +6003,20 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
                             prefill: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -5938,6 +6081,16 @@ export interface operations {
                             /** @enum {string} */
                             status: "pending" | "answered" | "cancelled" | "superseded";
                             response: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -6063,6 +6216,10 @@ export interface operations {
                         tracksVersion?: number;
                         heatmapVersion?: number;
                     };
+                    skillRef?: {
+                        skillId: string;
+                        version?: string;
+                    };
                 };
             };
         };
@@ -6089,6 +6246,12 @@ export interface operations {
                             createdAt: string;
                         };
                         task: {
+                            skillRef?: {
+                                skillId: string;
+                                version?: string;
+                            } | null;
+                            /** @enum {string} */
+                            skillVersionPolicy?: "original" | "latest";
                             uiBinding?: {
                                 /** Format: uuid */
                                 clientId: string;
@@ -6152,8 +6315,18 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
                             selection?: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -6235,10 +6408,20 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
                             prefill: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -6303,6 +6486,16 @@ export interface operations {
                             /** @enum {string} */
                             status: "pending" | "answered" | "cancelled" | "superseded";
                             response: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -6397,7 +6590,10 @@ export interface operations {
     };
     AgentController_task: {
         parameters: {
-            query?: never;
+            query?: {
+                resultVersion?: number;
+                inputRevision?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -6411,6 +6607,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         task: {
+                            skillRef?: {
+                                skillId: string;
+                                version?: string;
+                            } | null;
+                            /** @enum {string} */
+                            skillVersionPolicy?: "original" | "latest";
                             uiBinding?: {
                                 /** Format: uuid */
                                 clientId: string;
@@ -6474,8 +6676,18 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
                             selection?: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -6568,10 +6780,20 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
                             prefill: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -6636,6 +6858,16 @@ export interface operations {
                             /** @enum {string} */
                             status: "pending" | "answered" | "cancelled" | "superseded";
                             response: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -6727,6 +6959,16 @@ export interface operations {
                             /** Format: date-time */
                             asOf: string;
                             selection: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -7034,6 +7276,187 @@ export interface operations {
                             version: number;
                             inputRevision: number;
                         } | null;
+                        dynamicSkill: {
+                            taskBinding: {
+                                /** Format: uuid */
+                                ownerId: string;
+                                /** Format: uuid */
+                                taskId: string;
+                                inputRevision: number;
+                                binding: {
+                                    skillId: string;
+                                    version: string;
+                                    contentHash: string;
+                                    adapterVersion: string;
+                                };
+                                toolCeiling: string[];
+                                /** Format: date-time */
+                                boundAt: string;
+                            } | null;
+                            version: {
+                                /** Format: uuid */
+                                ownerId: string;
+                                binding: {
+                                    skillId: string;
+                                    version: string;
+                                    contentHash: string;
+                                    adapterVersion: string;
+                                };
+                                definition: {
+                                    /** @enum {number} */
+                                    schemaVersion: 1;
+                                    name: string;
+                                    description: string;
+                                    body: string;
+                                    /** @default {} */
+                                    references: {
+                                        [key: string]: string;
+                                    };
+                                    /** @default [] */
+                                    requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                                    toolIds: string[];
+                                    steps: {
+                                        id: string;
+                                        toolId: string;
+                                        input: {
+                                            [key: string]: unknown;
+                                        };
+                                        /** @enum {string} */
+                                        artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                        ui?: {
+                                            /** @enum {string} */
+                                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                            /** @enum {string} */
+                                            action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                                            /** @enum {string} */
+                                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
+                                        };
+                                    }[];
+                                    /** @default [] */
+                                    expectedArtifacts: {
+                                        stepId: string;
+                                        /** @enum {string} */
+                                        kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                    }[];
+                                    /** @default [] */
+                                    requiredDisplays: string[];
+                                };
+                                /** @enum {string} */
+                                source: "agent" | "user";
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                revokedAt: string | null;
+                            } | null;
+                            calls: {
+                                /** Format: uuid */
+                                callId: string;
+                                /** Format: uuid */
+                                taskId: string;
+                                inputRevision: number;
+                                stepId: string;
+                                toolId: string;
+                                generation: number;
+                                /** @enum {string} */
+                                status: "running" | "completed" | "failed" | "unknown" | "waiting_ui";
+                                input: unknown;
+                                localResult: unknown;
+                                modelProjection: unknown;
+                                artifactRefs: string[];
+                                errorCode: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            }[];
+                            artifacts: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                ownerId: string;
+                                /** Format: uuid */
+                                taskId: string;
+                                inputRevision: number;
+                                stepId: string;
+                                /** @enum {string} */
+                                kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                payload: unknown;
+                                modelProjection: unknown;
+                                /** Format: date-time */
+                                createdAt: string;
+                            }[];
+                            createdVersions: {
+                                /** Format: uuid */
+                                ownerId: string;
+                                binding: {
+                                    skillId: string;
+                                    version: string;
+                                    contentHash: string;
+                                    adapterVersion: string;
+                                };
+                                definition: {
+                                    /** @enum {number} */
+                                    schemaVersion: 1;
+                                    name: string;
+                                    description: string;
+                                    body: string;
+                                    /** @default {} */
+                                    references: {
+                                        [key: string]: string;
+                                    };
+                                    /** @default [] */
+                                    requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                                    toolIds: string[];
+                                    steps: {
+                                        id: string;
+                                        toolId: string;
+                                        input: {
+                                            [key: string]: unknown;
+                                        };
+                                        /** @enum {string} */
+                                        artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                        ui?: {
+                                            /** @enum {string} */
+                                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                            /** @enum {string} */
+                                            action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                                            /** @enum {string} */
+                                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
+                                        };
+                                    }[];
+                                    /** @default [] */
+                                    expectedArtifacts: {
+                                        stepId: string;
+                                        /** @enum {string} */
+                                        kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                    }[];
+                                    /** @default [] */
+                                    requiredDisplays: string[];
+                                };
+                                /** @enum {string} */
+                                source: "agent" | "user";
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                revokedAt: string | null;
+                            }[];
+                        };
+                        artifacts: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            ownerId: string;
+                            /** Format: uuid */
+                            taskId: string;
+                            inputRevision: number;
+                            stepId: string;
+                            /** @enum {string} */
+                            kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                            payload: unknown;
+                            modelProjection: unknown;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
                     };
                 };
             };
@@ -7076,6 +7499,16 @@ export interface operations {
                     action: "accept";
                     inputRevision: number;
                     values: {
+                        skillRef?: {
+                            skillId: string;
+                            version?: string;
+                        };
+                        skillCandidates?: {
+                            skillId: string;
+                            version: string;
+                            name: string;
+                            description?: string;
+                        }[];
                         bbox?: (number)[];
                         mmsis?: string[];
                         timeRange?: {
@@ -7153,6 +7586,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         task: {
+                            skillRef?: {
+                                skillId: string;
+                                version?: string;
+                            } | null;
+                            /** @enum {string} */
+                            skillVersionPolicy?: "original" | "latest";
                             uiBinding?: {
                                 /** Format: uuid */
                                 clientId: string;
@@ -7216,8 +7655,18 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
                             selection?: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -7299,10 +7748,20 @@ export interface operations {
                             taskId: string;
                             inputRevision: number;
                             pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
                             /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector";
+                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
                             prefill: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -7367,6 +7826,16 @@ export interface operations {
                             /** @enum {string} */
                             status: "pending" | "answered" | "cancelled" | "superseded";
                             response: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -7478,6 +7947,8 @@ export interface operations {
                         tracksVersion?: number;
                         heatmapVersion?: number;
                     };
+                    /** @enum {string} */
+                    skillVersionPolicy?: "original" | "latest";
                 };
             };
         };
@@ -7489,6 +7960,12 @@ export interface operations {
                 content: {
                     "application/json": {
                         task: {
+                            skillRef?: {
+                                skillId: string;
+                                version?: string;
+                            } | null;
+                            /** @enum {string} */
+                            skillVersionPolicy?: "original" | "latest";
                             uiBinding?: {
                                 /** Format: uuid */
                                 clientId: string;
@@ -7552,8 +8029,18 @@ export interface operations {
                             summary: string | null;
                             error: string | null;
                             /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
+                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
                             selection?: {
+                                skillRef?: {
+                                    skillId: string;
+                                    version?: string;
+                                };
+                                skillCandidates?: {
+                                    skillId: string;
+                                    version: string;
+                                    name: string;
+                                    description?: string;
+                                }[];
                                 bbox?: (number)[];
                                 mmsis?: string[];
                                 timeRange?: {
@@ -7682,6 +8169,12 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        skillRef?: {
+                            skillId: string;
+                            version?: string;
+                        } | null;
+                        /** @enum {string} */
+                        skillVersionPolicy?: "original" | "latest";
                         uiBinding?: {
                             /** Format: uuid */
                             clientId: string;
@@ -7745,8 +8238,18 @@ export interface operations {
                         summary: string | null;
                         error: string | null;
                         /** @enum {string} */
-                        intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control";
+                        intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
                         selection?: {
+                            skillRef?: {
+                                skillId: string;
+                                version?: string;
+                            };
+                            skillCandidates?: {
+                                skillId: string;
+                                version: string;
+                                name: string;
+                                description?: string;
+                            }[];
                             bbox?: (number)[];
                             mmsis?: string[];
                             timeRange?: {
@@ -7975,7 +8478,7 @@ export interface operations {
                     state: {
                         sequence: number;
                         /** @enum {string} */
-                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "unknown";
+                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "/skills" | "unknown";
                         components: {
                             /** @enum {string} */
                             id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
@@ -8058,6 +8561,9 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: {
+                            stepId?: string;
+                            /** Format: uuid */
+                            artifactRef?: string;
                             presentation?: {
                                 query: {
                                     bbox: (number)[];
@@ -8219,6 +8725,9 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        stepId?: string;
+                        /** Format: uuid */
+                        artifactRef?: string;
                         presentation?: {
                             query: {
                                 bbox: (number)[];
@@ -8369,6 +8878,9 @@ export interface operations {
                     pageGeneration: number;
                     tracksVersion?: number;
                     heatmapVersion?: number;
+                    stepId?: string;
+                    /** Format: uuid */
+                    artifactRef?: string;
                     /** Format: uuid */
                     receiptId: string;
                     /** Format: uuid */
@@ -8378,7 +8890,7 @@ export interface operations {
                     state: {
                         sequence: number;
                         /** @enum {string} */
-                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "unknown";
+                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "/skills" | "unknown";
                         components: {
                             /** @enum {string} */
                             id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
@@ -8417,6 +8929,620 @@ export interface operations {
                 content: {
                     "application/json": {
                         status: string;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SkillsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catalogRevision: number;
+                        items: {
+                            skillId: string;
+                            name: string;
+                            description: string;
+                            toolIds: string[];
+                            enabled: boolean;
+                            currentVersion: string | null;
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SkillsController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catalogRevision: number;
+                        skill: {
+                            skillId: string;
+                            name: string;
+                            description: string;
+                            toolIds: string[];
+                            enabled: boolean;
+                            currentVersion: string | null;
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                        versions: {
+                            /** Format: uuid */
+                            ownerId: string;
+                            binding: {
+                                skillId: string;
+                                version: string;
+                                contentHash: string;
+                                adapterVersion: string;
+                            };
+                            definition: {
+                                /** @enum {number} */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                body: string;
+                                /** @default {} */
+                                references: {
+                                    [key: string]: string;
+                                };
+                                /** @default [] */
+                                requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                                toolIds: string[];
+                                steps: {
+                                    id: string;
+                                    toolId: string;
+                                    input: {
+                                        [key: string]: unknown;
+                                    };
+                                    /** @enum {string} */
+                                    artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                    ui?: {
+                                        /** @enum {string} */
+                                        componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                        /** @enum {string} */
+                                        action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                                        /** @enum {string} */
+                                        tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
+                                    };
+                                }[];
+                                /** @default [] */
+                                expectedArtifacts: {
+                                    stepId: string;
+                                    /** @enum {string} */
+                                    kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                }[];
+                                /** @default [] */
+                                requiredDisplays: string[];
+                            };
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            revokedAt: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SkillsController_version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        ownerId: string;
+                        binding: {
+                            skillId: string;
+                            version: string;
+                            contentHash: string;
+                            adapterVersion: string;
+                        };
+                        definition: {
+                            /** @enum {number} */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            body: string;
+                            /** @default {} */
+                            references: {
+                                [key: string]: string;
+                            };
+                            /** @default [] */
+                            requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                            toolIds: string[];
+                            steps: {
+                                id: string;
+                                toolId: string;
+                                input: {
+                                    [key: string]: unknown;
+                                };
+                                /** @enum {string} */
+                                artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                ui?: {
+                                    /** @enum {string} */
+                                    componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                    /** @enum {string} */
+                                    action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                                    /** @enum {string} */
+                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
+                                };
+                            }[];
+                            /** @default [] */
+                            expectedArtifacts: {
+                                stepId: string;
+                                /** @enum {string} */
+                                kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                            }[];
+                            /** @default [] */
+                            requiredDisplays: string[];
+                        };
+                        /** @enum {string} */
+                        source: "agent" | "user";
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        revokedAt: string | null;
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SkillsController_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    operationId: string;
+                    expectedCatalogRevision: number;
+                    skillId?: string;
+                    definition: {
+                        /** @enum {number} */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        body: string;
+                        /** @default {} */
+                        references?: {
+                            [key: string]: string;
+                        };
+                        /** @default [] */
+                        requiredInputs?: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                        toolIds: string[];
+                        steps: {
+                            id: string;
+                            toolId: string;
+                            input: {
+                                [key: string]: unknown;
+                            };
+                            /** @enum {string} */
+                            artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                            ui?: {
+                                /** @enum {string} */
+                                componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                /** @enum {string} */
+                                action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                                /** @enum {string} */
+                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
+                            };
+                        }[];
+                        /** @default [] */
+                        expectedArtifacts?: {
+                            stepId: string;
+                            /** @enum {string} */
+                            kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                        }[];
+                        /** @default [] */
+                        requiredDisplays?: string[];
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catalogRevision: number;
+                        skill: {
+                            skillId: string;
+                            name: string;
+                            description: string;
+                            toolIds: string[];
+                            enabled: boolean;
+                            currentVersion: string | null;
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                        version: {
+                            /** Format: uuid */
+                            ownerId: string;
+                            binding: {
+                                skillId: string;
+                                version: string;
+                                contentHash: string;
+                                adapterVersion: string;
+                            };
+                            definition: {
+                                /** @enum {number} */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                body: string;
+                                /** @default {} */
+                                references: {
+                                    [key: string]: string;
+                                };
+                                /** @default [] */
+                                requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
+                                toolIds: string[];
+                                steps: {
+                                    id: string;
+                                    toolId: string;
+                                    input: {
+                                        [key: string]: unknown;
+                                    };
+                                    /** @enum {string} */
+                                    artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                    ui?: {
+                                        /** @enum {string} */
+                                        componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
+                                        /** @enum {string} */
+                                        action: "open" | "close" | "show" | "hide" | "focus" | "tab";
+                                        /** @enum {string} */
+                                        tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
+                                    };
+                                }[];
+                                /** @default [] */
+                                expectedArtifacts: {
+                                    stepId: string;
+                                    /** @enum {string} */
+                                    kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
+                                }[];
+                                /** @default [] */
+                                requiredDisplays: string[];
+                            };
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            revokedAt: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SkillsController_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    operationId: string;
+                    expectedCatalogRevision: number;
+                    enabled: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catalogRevision: number;
+                        skill: {
+                            skillId: string;
+                            name: string;
+                            description: string;
+                            toolIds: string[];
+                            enabled: boolean;
+                            currentVersion: string | null;
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SkillsController_activate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    operationId: string;
+                    expectedCatalogRevision: number;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catalogRevision: number;
+                        skill: {
+                            skillId: string;
+                            name: string;
+                            description: string;
+                            toolIds: string[];
+                            enabled: boolean;
+                            currentVersion: string | null;
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Session required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Role, origin or CSRF denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SkillsController_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    operationId: string;
+                    expectedCatalogRevision: number;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catalogRevision: number;
+                        skill: {
+                            skillId: string;
+                            name: string;
+                            description: string;
+                            toolIds: string[];
+                            enabled: boolean;
+                            currentVersion: string | null;
+                            /** @enum {string} */
+                            source: "agent" | "user";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
                     };
                 };
             };

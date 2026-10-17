@@ -1,4 +1,8 @@
 import { isDeepStrictEqual } from 'node:util';
+import type { AgentSkillFence } from '../contracts/dynamic-skills';
+import { AgentHeatmapResultSchema } from '../contracts/heatmap';
+import { AgentVesselTracksResultSchema } from '../contracts/vessel-tracks';
+import { assertDynamicSkillUiAvailable } from './dynamic-skills';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import {
@@ -111,13 +115,20 @@ const commandView = (row: Record<string, unknown>, token = false): UiCommand => 
   operation: UiOperationSchema.parse(row.operation),
   expectedVersion: Number(row.expected_version),
   status: row.status as UiCommand['status'],
+  ...(row.step_id && row.step_id !== 'legacy' ? { stepId: String(row.step_id) } : {}),
+  ...(row.artifact_ref ? { artifactRef: String(row.artifact_ref) } : {}),
   ...(token ? { claimToken: String(row.claim_token) } : {}),
 });
-export async function getUiTaskCommand(infra: Infrastructure, taskId: string, revision: number) {
+export async function getUiTaskCommand(
+  infra: Infrastructure,
+  taskId: string,
+  revision: number,
+  stepId = 'legacy',
+) {
   const row = (
     await infra.pool.query(
-      'SELECT * FROM agent_ui_commands WHERE task_id=$1 AND input_revision=$2',
-      [taskId, revision],
+      'SELECT * FROM agent_ui_commands WHERE task_id=$1 AND input_revision=$2 AND step_id=$3',
+      [taskId, revision, stepId],
     )
   ).rows[0];
   return row ? { ...commandView(row), result: row.result as UiState | null } : null;
@@ -128,6 +139,7 @@ export async function createUiCommand(
   workerId: string,
   generation: number,
   operation: UiOperation,
+  options: { stepId?: string; artifactRef?: string; inputRevision?: number } = {},
 ) {
   assertUiEnabled();
   const op = UiOperationSchema.parse(operation);
@@ -135,6 +147,23 @@ export async function createUiCommand(
   return transaction(infra, async (c) => {
     const task = await fenced(c, taskId, workerId, generation);
     if (!task) return null;
+    if (
+      options.inputRevision !== undefined &&
+      Number(task.input_revision) !== options.inputRevision
+    )
+      return null;
+    const stepId = options.stepId ?? 'legacy';
+    if (task.intent === 'skill') {
+      const admitted = await assertDynamicSkillUiAvailable(c, task, stepId, options.artifactRef);
+      if (!isDeepStrictEqual(admitted.operation, op)) return conflict('界面操作与技能声明不匹配。');
+    } else if (stepId !== 'legacy' || options.artifactRef) return conflict();
+    const existing = (
+      await c.query(
+        'SELECT id,status FROM agent_ui_commands WHERE task_id=$1 AND input_revision=$2 AND step_id=$3',
+        [taskId, task.input_revision, stepId],
+      )
+    ).rows[0];
+    if (existing) return String(existing.id);
     const binding = task.ui_binding as UiBinding | null;
     if (!binding) return conflict('消息缺少当前页面绑定，请刷新页面后重试。');
     const row = (
@@ -146,6 +175,23 @@ export async function createUiCommand(
     if (!row) return conflict();
     const state = UiStateSchema.parse(row.state);
     const component = state.components.find((x) => x.id === op.componentId);
+    if (task.intent === 'skill' && op.action === 'show') {
+      const previous = (
+        await c.query(
+          "SELECT result FROM agent_ui_commands WHERE task_id=$1 AND input_revision=$2 AND status='succeeded' AND operation->>'componentId'=$3 ORDER BY created_at DESC,id DESC LIMIT 1",
+          [taskId, task.input_revision, op.componentId],
+        )
+      ).rows[0];
+      const acknowledged = previous?.result
+        ? UiStateSchema.parse(previous.result).components.find((item) => item.id === op.componentId)
+            ?.version
+        : undefined;
+      const baseline =
+        acknowledged ??
+        (op.componentId === 'chart.heatmap' ? binding.heatmapVersion : binding.tracksVersion);
+      if (baseline === undefined || baseline !== component?.version)
+        return conflict('图层状态已被人工改变；已保存计算产物，请在新任务中确认展示。');
+    }
     if (
       task.intent === 'vessel_tracks' &&
       op.componentId === 'chart.vessel-tracks' &&
@@ -167,8 +213,8 @@ export async function createUiCommand(
       return conflict('该组件当前不可操作，或存在人工交互，请先完成当前操作。');
     const id = randomUUID();
     await c.query(
-      `INSERT INTO agent_ui_commands(id,task_id,input_revision,task_generation,client_id,page_generation,operation,expected_version,status)
-      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,'queued') ON CONFLICT(task_id,input_revision) DO NOTHING`,
+      `INSERT INTO agent_ui_commands(id,task_id,input_revision,task_generation,client_id,page_generation,operation,expected_version,status,step_id,artifact_ref)
+      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,'queued',$9,$10) ON CONFLICT(task_id,input_revision,step_id) DO NOTHING`,
       [
         id,
         taskId,
@@ -178,6 +224,8 @@ export async function createUiCommand(
         binding.pageGeneration,
         JSON.stringify(op),
         component.version,
+        stepId,
+        options.artifactRef ?? null,
       ],
     );
     await c.query(
@@ -187,6 +235,8 @@ export async function createUiCommand(
     await event(c, String(task.session_id), taskId, 'task.waiting_ui', {
       componentId: op.componentId,
       action: op.action,
+      stepId,
+      artifactRef: options.artifactRef ?? null,
     });
     return id;
   });
@@ -196,7 +246,7 @@ export async function listUiCommands(infra: Infrastructure, owner: string, bindi
   const rows = await infra.pool.query(
     `SELECT q.* FROM agent_ui_commands q JOIN agent_ui_clients c ON c.id=q.client_id JOIN agent_tasks t ON t.id=q.task_id
     WHERE c.id=$1 AND c.owner_id=$2 AND c.page_generation=$3 AND q.page_generation=c.page_generation AND c.lease_until>now()
-    AND t.status='waiting_ui' AND t.generation=q.task_generation AND q.status IN ('queued','claimed','executing') ORDER BY q.created_at LIMIT 100`,
+    AND t.status='waiting_ui' AND t.generation=q.task_generation AND t.input_revision=q.input_revision AND q.status IN ('queued','claimed','executing') ORDER BY q.created_at LIMIT 100`,
     [binding.clientId, owner, binding.pageGeneration],
   );
   return rows.rows.map((row) => commandView(row));
@@ -233,6 +283,7 @@ async function commandLocks(c: PoolClient, owner: string, id: string, binding: U
     !client.live
   )
     return conflict();
+  if (Number(task.input_revision) !== Number(q.input_revision)) return conflict();
   return { task, client, q };
 }
 export async function claimUiCommand(
@@ -259,6 +310,18 @@ export async function claimUiCommand(
       )
     ).rows[0];
     const view = commandView(row, true);
+    if (task.intent === 'skill') {
+      const admitted = await assertDynamicSkillUiAvailable(
+        c,
+        task,
+        String(q.step_id),
+        String(q.artifact_ref),
+      );
+      if (admitted.artifact.kind === 'ais_heatmap')
+        view.presentation = AgentHeatmapResultSchema.parse(admitted.artifact.payload);
+      if (admitted.artifact.kind === 'vessel_tracks')
+        view.tracksPresentation = AgentVesselTracksResultSchema.parse(admitted.artifact.payload);
+    }
     if (
       task.intent === 'ais_heatmap' &&
       view.operation.componentId === 'chart.heatmap' &&
@@ -297,6 +360,11 @@ export async function receiptUiCommand(
   assertUiEnabled();
   return transaction(infra, async (c) => {
     const { task, client, q } = await commandLocks(c, owner, id, receipt);
+    if (
+      task.intent === 'skill' &&
+      (receipt.stepId !== q.step_id || receipt.artifactRef !== q.artifact_ref)
+    )
+      return conflict();
     const old = (
       await c.query('SELECT body FROM agent_ui_receipts WHERE receipt_id=$1 AND command_id=$2', [
         receipt.receiptId,
@@ -316,6 +384,8 @@ export async function receiptUiCommand(
         return conflict();
       return { status: q.status };
     }
+    if (task.intent === 'skill')
+      await assertDynamicSkillUiAvailable(c, task, String(q.step_id), String(q.artifact_ref));
     if (
       task.status !== 'waiting_ui' ||
       task.generation !== q.task_generation ||
@@ -362,9 +432,21 @@ export async function receiptUiCommand(
       componentId: op.componentId,
     });
     if (status !== 'executing') {
-      await c.query("UPDATE agent_tasks SET status='queued',updated_at=now() WHERE id=$1", [
-        task.id,
-      ]);
+      if (task.intent === 'skill')
+        await c.query(
+          "UPDATE agent_skill_calls SET status=$4,error_code=$5,updated_at=now() WHERE task_id=$1 AND input_revision=$2 AND step_id=$3 AND status='waiting_ui'",
+          [
+            task.id,
+            task.input_revision,
+            q.step_id,
+            status === 'succeeded' ? 'completed' : 'failed',
+            status === 'succeeded' ? null : `ui_${status}`,
+          ],
+        );
+      await c.query(
+        "UPDATE agent_tasks SET status='queued',worker_id=NULL,lease_until=NULL,updated_at=now() WHERE id=$1",
+        [task.id],
+      );
       await event(c, String(task.session_id), String(task.id), 'task.queued');
     }
     return { status };
@@ -387,12 +469,32 @@ export async function expireUiCommands(infra: Infrastructure) {
         [item.id, task.status],
       );
       if (result.rowCount && task.status === 'waiting_ui') {
-        await c.query("UPDATE agent_tasks SET status='queued',updated_at=now() WHERE id=$1", [
-          item.task_id,
-        ]);
+        if (task.intent === 'skill')
+          await c.query(
+            "UPDATE agent_skill_calls s SET status=CASE WHEN q.status='unknown' THEN 'unknown' ELSE 'failed' END,error_code='ui_outcome_unknown',updated_at=now() FROM agent_ui_commands q WHERE q.id=$1 AND s.task_id=q.task_id AND s.input_revision=q.input_revision AND s.step_id=q.step_id AND s.status='waiting_ui'",
+            [item.id],
+          );
+        await c.query(
+          "UPDATE agent_tasks SET status='queued',worker_id=NULL,lease_until=NULL,updated_at=now() WHERE id=$1",
+          [item.task_id],
+        );
         await event(c, String(task.session_id), item.task_id, 'task.queued');
       }
     });
+}
+
+export async function queueDynamicSkillUi(
+  infra: Infrastructure,
+  fence: AgentSkillFence,
+  stepId: string,
+  artifactRef: string,
+  operation: UiOperation,
+) {
+  return createUiCommand(infra, fence.taskId, fence.workerId, fence.generation, operation, {
+    stepId,
+    artifactRef,
+    inputRevision: fence.inputRevision,
+  });
 }
 export async function saveUiResult(
   infra: Infrastructure,

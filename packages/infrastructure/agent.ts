@@ -1,9 +1,18 @@
 import { vesselTracksSelection } from '../domain/vessel-tracks-intent';
+import { dynamicTaskSelection, shouldUseDynamicSkill } from '../domain/agent-dynamic-routing';
+import {
+  copyDynamicSkillBinding,
+  readDynamicSkillExecution,
+  verifyTaskDynamicSkillCompletion,
+  validateOwnedDynamicSkillRef,
+  DynamicSkillError,
+} from './dynamic-skills';
 import {
   AgentVesselTracksResultSchema,
   type AgentVesselTracksResult,
 } from '../contracts/vessel-tracks';
 import type { UiBinding } from '../contracts/agent-ui';
+import { UiStateSchema } from '../contracts/agent-ui';
 import {
   AgentIntelligenceResultSchema,
   type AgentIntelligenceResult,
@@ -48,6 +57,8 @@ function taskRow(r: Row): AgentTask {
   return {
     uiBinding: (r.ui_binding ?? null) as AgentTask['uiBinding'],
     uiResult: (r.ui_result ?? null) as AgentTask['uiResult'],
+    skillRef: (r.skill_ref ?? null) as AgentTask['skillRef'],
+    skillVersionPolicy: (r.skill_version_policy ?? 'original') as AgentTask['skillVersionPolicy'],
     id: String(r.id),
     sessionId: String(r.session_id),
     ownerId: String(r.owner_id),
@@ -182,6 +193,7 @@ const inputPrompt = (spec: AgentInputSpec, selection: AgentSelection) =>
         data_limit: '数据量超过上限，请缩小区域、船舶或时间范围。',
         retention: '查询超出在线历史保留范围，请选择近期时间。',
         scope_changed: '请选择本次任务的范围，确认后将自动继续。',
+        ambiguous_skill: '发现多个可用技能，请选择本次执行的方法与确切版本。',
       }[spec.reason];
 
 async function removeObjectKeywords(client: PoolClient, selection: AgentSelection, ids: string[]) {
@@ -206,6 +218,13 @@ async function insertInputRequest(client: PoolClient, row: Row, spec: AgentInput
     [row.id],
   );
   if (found.rowCount) return requestRow(found.rows[0]);
+  const prefill = { ...((row.selection as AgentSelection) ?? {}) };
+  delete prefill.skillCandidates;
+  if (spec.skillCandidates) {
+    for (const candidate of spec.skillCandidates)
+      await validateOwnedDynamicSkillRef(client, String(row.owner_id), candidate);
+    prefill.skillCandidates = spec.skillCandidates;
+  }
   const result = await client.query(
     `INSERT INTO agent_input_requests(id,task_id,session_id,input_revision,pause_generation,fields,reason,prefill,status)
     VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8::jsonb,'pending') RETURNING *`,
@@ -217,7 +236,7 @@ async function insertInputRequest(client: PoolClient, row: Row, spec: AgentInput
       row.generation,
       JSON.stringify(spec.fields),
       spec.reason,
-      JSON.stringify(row.selection ?? {}),
+      JSON.stringify(prefill),
     ],
   );
   const request = requestRow(result.rows[0]);
@@ -396,6 +415,7 @@ export async function submitAgentMessage(
         historyHours: input.historyHours,
         mapContext: input.mapContext ?? null,
         uiBinding: input.uiBinding ?? null,
+        ...(input.skillRef ? { skillRef: input.skillRef } : {}),
       }),
     )
     .digest('hex');
@@ -431,9 +451,15 @@ export async function submitAgentMessage(
       };
     }
     const id = randomUUID();
-    const derived = deriveAgentIntent(input.content);
+    const useDynamic = shouldUseDynamicSkill(input.content, {
+      enabled: process.env.AGENT_DYNAMIC_SKILLS_ENABLED === 'true',
+      skillRef: input.skillRef,
+    });
+    if (input.skillRef && !useDynamic)
+      throw new AgentInputError('forbidden', '动态技能执行尚未启用');
+    const derived = useDynamic ? { intent: 'skill' as const } : deriveAgentIntent(input.content);
     const now = new Date();
-    const selection: AgentSelection = {
+    let selection: AgentSelection = {
       ...(input.bbox ? { bbox: input.bbox } : {}),
       timeRange: {
         from: new Date(now.getTime() - input.historyHours * 3_600_000).toISOString(),
@@ -445,6 +471,25 @@ export async function submitAgentMessage(
       /当前.*(?:视野|视图|地图|海图)|(?:视野|视图)内|所选区域|这个区域|当前区域/.test(
         input.content,
       );
+    if (useDynamic) {
+      selection.bbox = input.bbox ?? input.mapContext?.bbox;
+      if (
+        input.mapContext?.selectedMmsis?.length &&
+        /选中|选定|这艘|该船|当前船舶/.test(input.content)
+      ) {
+        selection.mmsis = input.mapContext.selectedMmsis;
+        selection.vesselSelector = { mmsis: input.mapContext.selectedMmsis };
+      }
+      if (input.mapContext) {
+        const { sourceId, shipType, hours } = input.mapContext;
+        selection.filters = {
+          ...(sourceId ? { sourceId } : {}),
+          ...(shipType !== undefined ? { shipType } : {}),
+          ...(hours !== undefined ? { hours } : {}),
+        };
+      }
+      selection = dynamicTaskSelection(input.content, selection, now);
+    }
     if (derived.intent === 'vessel_tracks') {
       delete selection.timeRange;
       Object.assign(selection, vesselTracksSelection(input.content, now));
@@ -531,7 +576,9 @@ export async function submitAgentMessage(
         input.content.replace(/[，,。！!\s]/g, ''),
       );
     const fields =
-      legacyContinuation && input.bbox ? [] : requiredAgentInputFields(selection, derived.intent);
+      useDynamic || (legacyContinuation && input.bbox)
+        ? []
+        : requiredAgentInputFields(selection, derived.intent);
     const status = fields.length ? 'awaiting_input' : 'queued';
     const parent =
       (
@@ -542,8 +589,8 @@ export async function submitAgentMessage(
         )
       ).rows.find((row) => classifyConversationIntent(String(row.goal)) === null)?.task_id ?? null;
     const result = await client.query(
-      `INSERT INTO agent_tasks(id,session_id,owner_id,idempotency_key,request_hash,status,goal,bbox,history_hours,from_time,to_time,parent_task_id,intent,selection)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14::jsonb) RETURNING *`,
+      `INSERT INTO agent_tasks(id,session_id,owner_id,idempotency_key,request_hash,status,goal,bbox,history_hours,from_time,to_time,parent_task_id,intent,selection,skill_ref)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14::jsonb,$15::jsonb) RETURNING *`,
       [
         id,
         sessionId,
@@ -560,19 +607,30 @@ export async function submitAgentMessage(
         parent,
         derived.intent,
         JSON.stringify(selection),
+        JSON.stringify(input.skillRef ?? null),
       ],
     );
     if (input.uiBinding) {
       const binding = await client.query(
-        'SELECT id FROM agent_ui_clients WHERE id=$1 AND owner_id=$2 AND page_generation=$3 AND session_id=$4 AND lease_until>now()',
+        'SELECT id,state FROM agent_ui_clients WHERE id=$1 AND owner_id=$2 AND page_generation=$3 AND session_id=$4 AND lease_until>now()',
         [input.uiBinding.clientId, ownerId, input.uiBinding.pageGeneration, sessionId],
       );
       if (!binding.rowCount) throw new AgentInputError('conflict', '当前页面绑定已失效，请重试。');
+      const taskBinding = { ...input.uiBinding };
+      if (useDynamic && binding.rows[0].state) {
+        const state = UiStateSchema.parse(binding.rows[0].state);
+        taskBinding.heatmapVersion ??= state.components.find(
+          (component) => component.id === 'chart.heatmap',
+        )?.version;
+        taskBinding.tracksVersion ??= state.components.find(
+          (component) => component.id === 'chart.vessel-tracks',
+        )?.version;
+      }
       await client.query('UPDATE agent_tasks SET ui_binding=$2::jsonb WHERE id=$1', [
         id,
-        JSON.stringify(input.uiBinding),
+        JSON.stringify(taskBinding),
       ]);
-      result.rows[0].ui_binding = input.uiBinding;
+      result.rows[0].ui_binding = taskBinding;
     }
     const message = await client.query(
       "INSERT INTO agent_messages(id,session_id,task_id,role,content) VALUES($1,$2,$3,'user',$4) RETURNING *",
@@ -595,6 +653,7 @@ async function readTaskContext(
   taskId: string,
   ownerId?: string,
   resultVersion?: number,
+  dynamicInputRevision?: number,
 ) {
   const task = (
     await client.query(
@@ -612,12 +671,23 @@ async function readTaskContext(
     [taskId, task.input_revision],
   );
   const result = await client.query(
-    'SELECT results,query_result,intelligence_result,heatmap_result,tracks_result FROM agent_results WHERE task_id=$1 AND version=$2',
+    'SELECT input_revision,results,query_result,intelligence_result,heatmap_result,tracks_result FROM agent_results WHERE task_id=$1 AND version=$2',
     [taskId, resultVersion ?? task.result_version],
   );
   if (resultVersion !== undefined && !result.rowCount) return null;
+  const dynamicSkill = await readDynamicSkillExecution(
+    client,
+    String(task.owner_id),
+    taskId,
+    dynamicInputRevision ??
+      (resultVersion === undefined
+        ? Number(task.input_revision)
+        : Number(result.rows[0]?.input_revision ?? task.input_revision)),
+  );
   return {
     task: taskRow(task),
+    dynamicSkill,
+    artifacts: dynamicSkill.artifacts,
     messages: messages.rows.map(messageRow),
     steps: steps.rows.map((r): AgentStep => ({
       key: r.step_key,
@@ -644,10 +714,11 @@ export async function getOwnedAgentTask(
   ownerId: string,
   taskId: string,
   resultVersion?: number,
+  dynamicInputRevision?: number,
 ) {
   return transaction(
     infra,
-    (client) => readTaskContext(client, taskId, ownerId, resultVersion),
+    (client) => readTaskContext(client, taskId, ownerId, resultVersion, dynamicInputRevision),
     true,
   );
 }
@@ -669,6 +740,7 @@ export async function reusePreviousAgentTask(
   return transaction(infra, async (client) => {
     const current = await fenced(client, taskId, workerId, generation);
     if (!current) return null;
+    if (current.intent === 'skill') return null;
     const previous = (
       await client.query(
         "SELECT * FROM agent_tasks WHERE id=$1 AND id=$3 AND session_id=$2 AND status IN ('completed','failed','awaiting_input')",
@@ -912,6 +984,12 @@ export async function finishAgentTask(
   return transaction(infra, async (client) => {
     const row = await fenced(client, taskId, workerId, generation);
     if (
+      row?.intent === 'skill' &&
+      outcome.status === 'completed' &&
+      !(await verifyTaskDynamicSkillCompletion(client, row))
+    )
+      return false;
+    if (
       !row ||
       (outcome.summaryResultVersion !== undefined &&
         (outcome.summaryResultVersion !== Number(row.result_version) ||
@@ -1108,7 +1186,7 @@ export async function saveAgentQueryResult(
   });
 }
 
-async function pinIntelligence(
+export async function pinIntelligence(
   client: PoolClient,
   taskId: string,
   revision: number,
@@ -1274,8 +1352,36 @@ export async function respondAgentInput(
       ).rows[0];
       await event(client, String(task.session_id), taskId, 'task.cancelled', { requestId });
     } else {
+      if (task.intent === 'skill' && process.env.AGENT_DYNAMIC_SKILLS_ENABLED !== 'true')
+        throw new AgentInputError('forbidden', '动态技能执行尚未启用');
       const { historyHours, ...values } = input.values;
+      delete values.skillCandidates;
+      const choosingSkill = (row.fields as AgentInputSpec['fields']).includes('skill');
+      const chosenSkill = choosingSkill ? values.skillRef : undefined;
+      if (choosingSkill) {
+        const candidates = (row.prefill as AgentSelection).skillCandidates ?? [];
+        if (
+          !chosenSkill?.version ||
+          !candidates.some(
+            (candidate) =>
+              candidate.skillId === chosenSkill.skillId &&
+              candidate.version === chosenSkill.version,
+          )
+        )
+          throw new AgentInputError('invalid_input', '请选择本任务提供的技能版本');
+        try {
+          await validateOwnedDynamicSkillRef(client, ownerId, chosenSkill);
+        } catch (error) {
+          if (error instanceof DynamicSkillError)
+            throw new AgentInputError(
+              'invalid_input',
+              '所选技能版本已不可用，请刷新候选或发起新任务',
+            );
+          throw error;
+        }
+      } else delete values.skillRef;
       let selection = { ...(task.selection as AgentSelection), ...values };
+      delete selection.skillCandidates;
       if (historyHours !== undefined) {
         const now = new Date();
         selection.timeRange = {
@@ -1287,6 +1393,10 @@ export async function respondAgentInput(
         if (values.timeRange || historyHours !== undefined) delete selection.tracksTimeUnclear;
         else if ((task.selection as AgentSelection).tracksTimeUnclear)
           selection.tracksTimeUnclear = true;
+      }
+      if (task.intent === 'skill' && (values.timeRange || historyHours !== undefined)) {
+        delete selection.heatmapTimeUnclear;
+        delete selection.tracksTimeUnclear;
       }
       if (selection.purpose === 'ais_heatmap') {
         if (values.timeRange || historyHours !== undefined) delete selection.heatmapTimeUnclear;
@@ -1366,9 +1476,24 @@ export async function respondAgentInput(
         if (found.rows.length !== selection.mmsis.length)
           throw new AgentInputError('invalid_input', '部分船舶已不可用，请重新选择');
       }
-      const intent = selection.purpose
-        ? derivePurposeIntent(selection.purpose)
-        : (task.intent as NonNullable<AgentTask['intent']>);
+      const legacyGoal =
+        task.intent === 'skill' &&
+        (row.fields as AgentInputSpec['fields']).includes('goal') &&
+        !task.skill_ref &&
+        (values.purpose === 'port-restriction' || values.purpose === 'area-low-speed-notice') &&
+        !(
+          await client.query(
+            'SELECT task_id FROM agent_task_skill_bindings WHERE task_id=$1 AND input_revision=$2',
+            [taskId, task.input_revision],
+          )
+        ).rowCount;
+      const intent = legacyGoal
+        ? 'analysis'
+        : task.intent === 'skill'
+          ? 'skill'
+          : selection.purpose
+            ? derivePurposeIntent(selection.purpose)
+            : (task.intent as NonNullable<AgentTask['intent']>);
       if (
         (intent === 'analysis' || intent === 'ais_heatmap' || intent === 'vessel_tracks') &&
         selection.timeRange &&
@@ -1398,7 +1523,7 @@ export async function respondAgentInput(
       updated = (
         await client.query(
           `UPDATE agent_tasks SET selection=$2::jsonb,intent=$3,input_revision=$4,bbox=$5::jsonb,
-        from_time=$6,to_time=$7,history_hours=$8,definition_id=$9,status='queued',summary=NULL,summary_result_version=NULL,summary_input_revision=NULL,error=NULL,error_code=NULL,worker_id=NULL,lease_until=NULL,updated_at=now() WHERE id=$1 RETURNING *`,
+        from_time=$6,to_time=$7,history_hours=$8,definition_id=$9,skill_ref=$10::jsonb,status='queued',summary=NULL,summary_result_version=NULL,summary_input_revision=NULL,error=NULL,error_code=NULL,worker_id=NULL,lease_until=NULL,updated_at=now() WHERE id=$1 RETURNING *`,
           [
             taskId,
             JSON.stringify(selection),
@@ -1418,9 +1543,19 @@ export async function respondAgentInput(
                   )
                 : task.history_hours),
             definition,
+            JSON.stringify(chosenSkill ?? task.skill_ref ?? null),
           ],
         )
       ).rows[0];
+      if (intent === 'skill' && !chosenSkill && revision !== Number(task.input_revision))
+        await copyDynamicSkillBinding(
+          client,
+          ownerId,
+          taskId,
+          Number(task.input_revision),
+          taskId,
+          revision,
+        );
       request = requestRow(
         (
           await client.query(
@@ -1473,9 +1608,12 @@ export async function retryAgentTask(
   taskId: string,
   key: string,
   uiBinding?: UiBinding,
+  skillVersionPolicy: 'original' | 'latest' = 'original',
 ) {
   const hash = createHash('sha256')
-    .update(`retry:${taskId}${uiBinding ? JSON.stringify(uiBinding) : ''}`)
+    .update(
+      `retry:${taskId}${skillVersionPolicy === 'latest' ? ':latest' : ''}${uiBinding ? JSON.stringify(uiBinding) : ''}`,
+    )
     .digest('hex');
   return transaction(infra, async (client) => {
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
@@ -1486,6 +1624,8 @@ export async function retryAgentTask(
       throw new AgentInputError('not_found', 'Task not found');
     if (!(await canWrite(client, ownerId)))
       throw new AgentInputError('forbidden', 'Agent write permission required');
+    if (source.intent === 'skill' && process.env.AGENT_DYNAMIC_SKILLS_ENABLED !== 'true')
+      throw new AgentInputError('forbidden', '动态技能执行尚未启用');
     const existing = (
       await client.query('SELECT * FROM agent_tasks WHERE owner_id=$1 AND idempotency_key=$2', [
         ownerId,
@@ -1528,16 +1668,19 @@ export async function retryAgentTask(
       ...(derived.purpose ? { purpose: derived.purpose } : {}),
       ...(source.selection as AgentSelection),
     });
-    const intent = selection.purpose
-      ? derivePurposeIntent(selection.purpose)
-      : source.intent === 'unresolved'
-        ? derived.intent
-        : source.intent;
+    const intent =
+      source.intent === 'skill'
+        ? 'skill'
+        : selection.purpose
+          ? derivePurposeIntent(selection.purpose)
+          : source.intent === 'unresolved'
+            ? derived.intent
+            : source.intent;
     const id = randomUUID();
     const task = (
       await client.query(
-        `INSERT INTO agent_tasks(id,session_id,owner_id,idempotency_key,request_hash,status,goal,bbox,history_hours,from_time,to_time,definition_id,intent,selection,retry_of_task_id,retry_source_input_revision,retry_source_result_version)
-      VALUES($1,$2,$3,$4,$5,'queued',$6,$7::jsonb,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16) RETURNING *`,
+        `INSERT INTO agent_tasks(id,session_id,owner_id,idempotency_key,request_hash,status,goal,bbox,history_hours,from_time,to_time,definition_id,intent,selection,retry_of_task_id,retry_source_input_revision,retry_source_result_version,skill_ref,skill_version_policy)
+      VALUES($1,$2,$3,$4,$5,'queued',$6,$7::jsonb,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16,$17::jsonb,$18) RETURNING *`,
         [
           id,
           source.session_id,
@@ -1555,14 +1698,41 @@ export async function retryAgentTask(
           taskId,
           source.input_revision,
           source.result_version,
+          JSON.stringify(source.skill_ref ?? null),
+          skillVersionPolicy,
         ],
       )
     ).rows[0];
+    if (source.intent === 'skill') {
+      await copyDynamicSkillBinding(
+        client,
+        ownerId,
+        taskId,
+        Number(source.input_revision),
+        id,
+        0,
+        skillVersionPolicy,
+      );
+      const copied = (
+        await client.query(
+          'SELECT skill_id,version FROM agent_task_skill_bindings WHERE task_id=$1 AND input_revision=0',
+          [id],
+        )
+      ).rows[0];
+      if (copied) {
+        task.skill_ref = { skillId: copied.skill_id, version: copied.version };
+        await client.query('UPDATE agent_tasks SET skill_ref=$2::jsonb WHERE id=$1', [
+          id,
+          JSON.stringify(task.skill_ref),
+        ]);
+      }
+    }
     await client.query(
       `INSERT INTO agent_steps(task_id,input_revision,step_key,name,input,output) SELECT $1,0,step_key,name,input,output FROM agent_steps WHERE task_id=$2 AND input_revision=$3 AND step_key IN ('input_snapshot','input_digest','overview')`,
       [id, taskId, source.input_revision],
     );
     if (
+      source.intent !== 'skill' &&
       Number(source.result_version) > 0 &&
       source.result_input_revision === source.input_revision
     ) {

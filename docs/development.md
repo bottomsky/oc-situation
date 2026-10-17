@@ -40,3 +40,7 @@ api:generate 用 Nest 与 Schema 导出 OpenAPI，再生成 Web 接口类型。�
 查询使用 20 个不同只读用户的实际会话；身份初始化属于准备，登录由独立测试覆盖。可见延迟是一秒抽样和一秒轮询测得的上界；归档以每批最早接收时间计算保守 p95。报告记录硬件、实际速率、错误和未完成样本，容量门槛仅在完整模式满足全部条件后标记。
 
 完整模式约产生 510 万持续位置、5 万密集轨迹、覆盖 50 万 MMSI；25.9 亿条累计历史属于专项规模验收。ClickHouse 容量统计覆盖开发数据库全部活跃位置分区，报告说明该范围。
+
+## 动态个人技能开发
+
+先执行包含 020 的数据库迁移，再为 API 与 Agent 同步设置 `AGENT_DYNAMIC_SKILLS_ENABLED=true`。地图展示继续需要 `AGENT_ENABLED=true` 和 `AGENT_UI_ENABLED=true`；模型密钥只注入 Agent。默认关闭时，个人技能与历史产物可读。实现边界、参数引用、版本发布、任务恢复与测试方法见[动态个人技能](agent-dynamic-skills.md)，生产配置见[运维说明](../infra/OPERATIONS.md)。

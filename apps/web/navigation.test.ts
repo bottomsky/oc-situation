@@ -6,7 +6,7 @@ import {
 } from './app/utils/navigation';
 
 describe('top navigation permissions and route grouping', () => {
-  it('keeps all nine existing destinations available to administrators', () => {
+  it('keeps all destinations available to administrators', () => {
     const groups = navigationForRole('admin');
     expect(groups.map((group) => group.label)).toEqual([
       '海图态势',
@@ -21,6 +21,7 @@ describe('top navigation permissions and route grouping', () => {
         '/',
         '/topics',
         '/intelligence',
+        '/skills',
         '/sources',
         '/jobs',
         '/runs',
@@ -35,6 +36,9 @@ describe('top navigation permissions and route grouping', () => {
     'hides administration destinations for %s',
     (role) => {
       expect(navigationForRole(role)).toHaveLength(5);
+      expect(navigationForRole(role).flatMap((group) => group.links)).toContainEqual(
+        expect.objectContaining({ path: '/skills', label: '我的技能' }),
+      );
       expect(navigationForRole(role).flatMap((group) => group.links)).not.toContainEqual(
         expect.objectContaining({ path: '/users' }),
       );
@@ -46,6 +50,7 @@ describe('top navigation permissions and route grouping', () => {
     ['/sources', 'ais'],
     ['/topics', 'analysis'],
     ['/intelligence', 'analysis'],
+    ['/skills', 'analysis'],
     ['/jobs', 'tasks'],
     ['/runs', 'tasks'],
     ['/quality', 'data'],

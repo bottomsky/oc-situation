@@ -4,7 +4,7 @@ import { deepseekProvider } from '@earendil-works/pi-ai/providers/deepseek';
 import { z } from 'zod';
 import { CapabilityError, defineTool } from './capabilities';
 import { bindBusinessCapability } from './business-capabilities';
-import { AgentIntelligenceResultSchema } from '../../packages/contracts/intelligence-search';
+import { createBusinessToolRegistry } from './business-tool-registry';
 import type {
   AgentIntelligenceResult,
   IntelligenceSourceHealth,
@@ -193,17 +193,12 @@ export async function executeIntelligence(
       await check();
       if (previous) snapshot = { ...previous, inputRevision: revision, version: 0 };
       else {
-        const search = capability.executor([
-          defineTool({
-            id: 'search_intelligence',
-            description: '检索本地情报快照',
-            allowedPhases: ['query'],
-            inputSchema: z.strictObject({}),
-            outputSchema: AgentIntelligenceResultSchema,
-            handler: () => ports.searchIntelligence!(selection),
-            project: (output) => ({ total: output.total, truncated: output.truncated }),
-          }),
-        ]);
+        const registry = createBusinessToolRegistry(
+          { ...context, task: { ...context.task, selection } },
+          ports,
+          controller.signal,
+        );
+        const search = capability.executor([registry.get('search_intelligence').tool]);
         snapshot = (await abortable(search('search_intelligence', 'query', {}), controller.signal))
           .local as AgentIntelligenceResult;
       }

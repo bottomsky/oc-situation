@@ -1,6 +1,7 @@
 import { VesselTracksSelectorSchema } from './vessel-tracks';
 import { UiBindingSchema, UiResultSchema } from './agent-ui';
 import { z } from 'zod';
+import { DynamicSkillRefSchema } from './dynamic-skills';
 import { TopicDefinitionIdSchema } from './topics';
 import { IntelligenceSearchSpecSchema, IntelligenceTimeRangeSchema } from './intelligence-search';
 
@@ -16,6 +17,17 @@ const Mmsis = z
   .array(z.string().regex(/^\d{9}$/))
   .max(100)
   .refine((items) => new Set(items).size === items.length, 'Duplicate vessels');
+export const AgentSkillCandidatesSchema = z
+  .array(
+    z.strictObject({
+      skillId: z.string().min(1).max(200),
+      version: z.string().min(1).max(100),
+      name: z.string().min(1).max(200),
+      description: z.string().max(2000).optional(),
+    }),
+  )
+  .min(1)
+  .max(20);
 export const AgentIntentSchema = z.enum([
   'conversation',
   'vessel_list',
@@ -27,6 +39,7 @@ export const AgentIntentSchema = z.enum([
   'ais_heatmap',
   'vessel_tracks',
   'ui_control',
+  'skill',
 ]);
 export type AgentIntent = z.infer<typeof AgentIntentSchema>;
 export const AgentPurposeSchema = z.enum([
@@ -56,6 +69,8 @@ export const AgentFiltersSchema = z.strictObject({
   hours: z.number().int().min(1).max(720).optional(),
 });
 export const AgentSelectionSchema = z.strictObject({
+  skillRef: DynamicSkillRefSchema.optional(),
+  skillCandidates: AgentSkillCandidatesSchema.optional(),
   bbox: Bbox.optional(),
   mmsis: Mmsis.optional(),
   timeRange: AgentTimeRangeSchema.optional(),
@@ -99,6 +114,7 @@ export const AgentInputFieldSchema = z.enum([
   'goal',
   'topic',
   'vessel_selector',
+  'skill',
 ]);
 export type AgentInputField = z.infer<typeof AgentInputFieldSchema>;
 export const AgentInputReasonSchema = z.enum([
@@ -111,15 +127,17 @@ export const AgentInputReasonSchema = z.enum([
   'scope_changed',
   'missing_topic',
   'missing_vessel_selector',
+  'ambiguous_skill',
 ]);
 export type AgentInputReason = z.infer<typeof AgentInputReasonSchema>;
 export const AgentInputSpecSchema = z.strictObject({
   fields: z
     .array(AgentInputFieldSchema)
     .min(1)
-    .max(6)
+    .max(7)
     .refine((fields) => new Set(fields).size === fields.length, 'Duplicate input fields'),
   reason: AgentInputReasonSchema,
+  skillCandidates: AgentSkillCandidatesSchema.optional(),
 });
 export type AgentInputSpec = z.infer<typeof AgentInputSpecSchema>;
 export const AgentInputResponseSchema = z.discriminatedUnion('action', [
@@ -173,13 +191,17 @@ export const AgentQueryResultSchema = z.object({
   selection: AgentSelectionSchema,
 });
 export type AgentQueryResult = z.infer<typeof AgentQueryResultSchema>;
-export const AgentRetryInputSchema = z.strictObject({ uiBinding: UiBindingSchema.optional() });
+export const AgentRetryInputSchema = z.strictObject({
+  uiBinding: UiBindingSchema.optional(),
+  skillVersionPolicy: z.enum(['original', 'latest']).optional(),
+});
 export const AgentMessageInputSchema = z.strictObject({
   content: z.string().trim().min(1).max(4000),
   bbox: Bbox.optional(),
   historyHours: z.number().int().min(1).max(168).default(24),
   mapContext: AgentMapContextSchema.optional(),
   uiBinding: UiBindingSchema.optional(),
+  skillRef: DynamicSkillRefSchema.optional(),
 });
 export type AgentMessageInput = z.infer<typeof AgentMessageInputSchema>;
 export const AgentSessionInputSchema = z.strictObject({
@@ -214,6 +236,8 @@ export const AgentMessageSchema = z.object({
 });
 export type AgentMessage = z.infer<typeof AgentMessageSchema>;
 export const AgentTaskSchema = z.object({
+  skillRef: DynamicSkillRefSchema.nullable().optional(),
+  skillVersionPolicy: z.enum(['original', 'latest']).optional(),
   uiBinding: UiBindingSchema.nullable().optional(),
   uiResult: UiResultSchema.nullable().optional(),
   id: z.uuid(),

@@ -31,13 +31,78 @@ export function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.data;
 }
 // Runtime validators are also the source for request/response OpenAPI schemas.
+function isRecursiveJson(schema: z.core.$ZodTypes) {
+  // Zod's public z.json() factory is a lazy union of these six JSON value types.
+  if (!(schema instanceof z.ZodLazy)) return false;
+  const inner = schema.unwrap();
+  if (!(inner instanceof z.ZodUnion) || inner.options.length !== 6) return false;
+  return (
+    inner.options.some((option) => option instanceof z.ZodString) &&
+    inner.options.some((option) => option instanceof z.ZodNumber) &&
+    inner.options.some((option) => option instanceof z.ZodBoolean) &&
+    inner.options.some((option) => option instanceof z.ZodNull) &&
+    inner.options.some((option) => option instanceof z.ZodArray && option.element === schema) &&
+    inner.options.some(
+      (option) =>
+        option instanceof z.ZodRecord &&
+        option.keyType instanceof z.ZodString &&
+        option.valueType === schema,
+    )
+  );
+}
+function inlineSchemaDefinitions(
+  value: unknown,
+  definitions: Record<string, unknown>,
+  active = new Set<string>(),
+): unknown {
+  if (Array.isArray(value))
+    return value.map((item) => inlineSchemaDefinitions(item, definitions, active));
+  if (!value || typeof value !== 'object') return value;
+  const node = value as Record<string, unknown>;
+  const ref = node.$ref;
+  if (typeof ref === 'string' && ref.startsWith('#/definitions/')) {
+    const name = ref.slice('#/definitions/'.length).replaceAll('~1', '/').replaceAll('~0', '~');
+    if (!(name in definitions) || active.has(ref))
+      throw new Error(`OpenAPI requires a document-level schema for ${ref}`);
+    return {
+      ...(inlineSchemaDefinitions(
+        definitions[name],
+        definitions,
+        new Set([...active, ref]),
+      ) as object),
+      ...(inlineSchemaDefinitions(
+        Object.fromEntries(Object.entries(node).filter(([key]) => key !== '$ref')),
+        definitions,
+        active,
+      ) as object),
+    };
+  }
+  if (ref === '#')
+    throw new Error('OpenAPI requires a document-level schema for recursive objects');
+  return Object.fromEntries(
+    Object.entries(node)
+      .filter(([key]) => key !== 'definitions')
+      .map(([key, item]) => [key, inlineSchemaDefinitions(item, definitions, active)]),
+  );
+}
 export function schemaJson(schema: z.ZodType) {
   const json = z.toJSONSchema(schema, {
     target: 'openapi-3.0',
     io: 'input',
     unrepresentable: 'any',
+    override: ({ zodSchema, jsonSchema }) => {
+      if (!isRecursiveJson(zodSchema)) return;
+      const description = jsonSchema.description;
+      for (const key of Object.keys(jsonSchema)) delete jsonSchema[key];
+      if (description) jsonSchema.description = description;
+    },
   });
-  return json as Extract<Parameters<typeof ApiBody>[0], { schema: unknown }>['schema'];
+  // Each route embeds its schema below a response/body; fragment refs would target the
+  // OpenAPI document root. Inline Zod's local definitions after mapping JSON to {}.
+  return inlineSchemaDefinitions(
+    json,
+    (json.definitions ?? {}) as Record<string, unknown>,
+  ) as Extract<Parameters<typeof ApiBody>[0], { schema: unknown }>['schema'];
 }
 export function DocumentRoute(
   summary: string,

@@ -1,4 +1,5 @@
 import { AgentUiController } from './agent/ui-controller';
+import { SkillsController } from './agent/skills-controller';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import 'reflect-metadata';
 import { Module } from '@nestjs/common';
@@ -54,6 +55,7 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
       AnalysisController,
       AgentController,
       AgentUiController,
+      SkillsController,
     ],
     providers: [
       { provide: INFRA, useValue: infra },
