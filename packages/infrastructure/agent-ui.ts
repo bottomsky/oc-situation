@@ -8,6 +8,7 @@ import type { PoolClient } from 'pg';
 import {
   UiStateSchema,
   UiOperationSchema,
+  UiReceiptSchema,
   uiOperationAllowed,
   uiPostcondition,
   type UiBinding,
@@ -124,14 +125,25 @@ export async function getUiTaskCommand(
   taskId: string,
   revision: number,
   stepId = 'legacy',
-) {
+): Promise<(UiCommand & { result: UiState | null; error?: UiReceipt['error'] }) | null> {
   const row = (
     await infra.pool.query(
-      'SELECT * FROM agent_ui_commands WHERE task_id=$1 AND input_revision=$2 AND step_id=$3',
+      `SELECT q.*,(SELECT r.body->>'error' FROM agent_ui_receipts r
+        WHERE r.command_id=q.id AND r.body->>'status' IN ('succeeded','failed','rejected')
+        ORDER BY r.created_at DESC,r.receipt_id DESC LIMIT 1) AS receipt_error
+       FROM agent_ui_commands q WHERE q.task_id=$1 AND q.input_revision=$2 AND q.step_id=$3`,
       [taskId, revision, stepId],
     )
   ).rows[0];
-  return row ? { ...commandView(row), result: row.result as UiState | null } : null;
+  if (!row) return null;
+  const error = UiReceiptSchema.shape.error.safeParse(row.receipt_error);
+  return {
+    ...commandView(row),
+    result: row.result as UiState | null,
+    ...(['failed', 'rejected'].includes(row.status) && error.success && error.data
+      ? { error: error.data }
+      : {}),
+  };
 }
 export async function createUiCommand(
   infra: Infrastructure,

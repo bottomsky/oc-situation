@@ -1,6 +1,22 @@
 import type { UiOperation, UiState } from '../contracts/agent-ui';
 
 export function isUiIntent(text: string) {
+  if (
+    /热力图|热度图/.test(text) &&
+    /打开|展开|切换|显示|恢复|展示/.test(text) &&
+    !/关闭|隐藏|收起|哪些|什么|状态|不要|别|勿|不必|不用/.test(text)
+  ) {
+    // Showing a new heatmap is a data request. Only an explicit reference restores a snapshot.
+    if (
+      /恢复/.test(text) ||
+      /(?:上次|已有|历史|之前|刚才)(?:的)?(?:(?:生成|计算)的)?(?:AIS)?(?:热力图|热度图)/i.test(
+        text.replace(/\s/g, ''),
+      )
+    )
+      return true;
+    if (/(?:生成|计算|重新查询).*热力图/.test(text)) return false;
+    return /面板/.test(text);
+  }
   if (/航线|历史轨迹|批量轨迹/.test(text)) {
     if (/关闭|隐藏|收起/.test(text)) return true;
     if (/(?:打开|展开|切换).*(?:面板|历史航线)$/.test(text)) return true;
@@ -31,6 +47,12 @@ export function resolveUiOperation(text: string, state: UiState): UiOperation | 
       };
     return { componentId: 'chart.vessel-tracks', action: close ? 'close' : 'show' };
   }
+  if (/热力图|热度图/.test(text) && /面板/.test(text))
+    return {
+      componentId: 'workspace.left',
+      action: close ? 'close' : 'tab',
+      ...(close ? {} : { tab: 'heatmap' }),
+    };
   if (/热力图|热度图/.test(text))
     return {
       componentId: /网格|详情浮窗/.test(text) ? 'chart.heatmap.popup' : 'chart.heatmap',

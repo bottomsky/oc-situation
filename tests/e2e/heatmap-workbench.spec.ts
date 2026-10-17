@@ -283,6 +283,9 @@ test('等待智能体期间手动生成并关闭，迟到任务结果不恢复�
   await expect(page.getByTestId('heatmap-legend')).toContainText('海图已展示');
   await page.getByTestId('heatmap-legend').getByRole('button', { name: '关闭热力图' }).click();
   fixture.complete();
+  await page.getByRole('button', { name: '查看任务详情', exact: true }).click();
   await expect(page.getByRole('button', { name: '在海图展示此快照' })).toBeVisible();
   await expect(page.getByTestId('heatmap-legend')).toHaveCount(0);
+  await page.getByRole('button', { name: '在海图展示此快照' }).click();
+  await expect(page.getByTestId('heatmap-legend')).toContainText('海图已展示');
 });

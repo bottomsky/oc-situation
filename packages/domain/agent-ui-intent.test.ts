@@ -49,6 +49,46 @@ describe('semantic UI intent and postconditions', () => {
     expect(deriveAgentIntent('生成当前视野热力图').intent).toBe('ais_heatmap');
     expect(deriveAgentIntent('解释上次热力图').intent).toBe('explain');
   });
+  it.each([
+    '显示热力图',
+    '打开热力图',
+    '请显示 AIS 热力图',
+    '展开热度图',
+    '展示热力图',
+    '显示当前视野过去24小时AIS热力图',
+    '打开最近2小时的热力图',
+    '显示之前24小时的热力图',
+    '显示重新生成的热力图',
+  ])('%s 查询生成热图，首次使用不依赖页面缓存', (goal) => {
+    expect(deriveAgentIntent(goal).intent).toBe('ais_heatmap');
+  });
+  it.each([
+    '恢复热力图',
+    '显示上次热力图',
+    '打开已有的AIS热力图',
+    '展示刚才的热力图',
+    '恢复刚才生成的热力图',
+    '显示上次生成的热力图',
+    '打开刚才计算的热力图',
+  ])('%s 恢复已有快照，保持 UI 控制', (goal) => {
+    expect(deriveAgentIntent(goal).intent).toBe('ui_control');
+    expect(resolveUiOperation(goal, state)).toEqual({
+      componentId: 'chart.heatmap',
+      action: 'show',
+    });
+  });
+  it('打开热图操作面板只切换功能栏，关闭热图仍操作图层', () => {
+    expect(deriveAgentIntent('打开AIS热力图操作面板').intent).toBe('ui_control');
+    expect(resolveUiOperation('打开AIS热力图操作面板', state)).toEqual({
+      componentId: 'workspace.left',
+      action: 'tab',
+      tab: 'heatmap',
+    });
+    expect(resolveUiOperation('关闭热力图', state)).toEqual({
+      componentId: 'chart.heatmap',
+      action: 'close',
+    });
+  });
   it('requires all heatmap surfaces and in-flight work to be closed', () => {
     const op = resolveUiOperation('关闭热力图', state);
     expect(op).toEqual({ componentId: 'chart.heatmap', action: 'close' });

@@ -3,7 +3,7 @@ import { getBusinessSkillCatalog } from './business-capabilities';
 import { getAgentTaskContext, renewAgentTask } from '../../packages/infrastructure/agent';
 import type { Infrastructure } from '../../packages/infrastructure/clients';
 import type { AgentTask } from '../../packages/contracts/agent';
-import { UI_COMPONENTS } from '../../packages/contracts/agent-ui';
+import { UI_COMPONENTS, type UiCommand, type UiReceipt } from '../../packages/contracts/agent-ui';
 import { resolveUiOperation } from '../../packages/domain/agent-ui-intent';
 import {
   readUiState,
@@ -16,6 +16,37 @@ import {
   reserveAgentCall,
   saveAgentStep,
 } from '../../packages/infrastructure/agent';
+
+function uiFailureSummary(
+  command: Pick<UiCommand, 'status' | 'operation'> & {
+    error?: UiReceipt['error'];
+  },
+) {
+  if (command.status === 'unknown')
+    return '操作回执未确认，无法判断界面是否已完成变化；请查看当前页面后再操作。';
+  if (command.status === 'expired')
+    return '界面命令已过期，页面可能离线或已切换。请回到当前海图后重试。';
+  if (command.status === 'cancelled') return '界面操作已取消，请在当前页面发起新操作。';
+  if (command.error === 'UNAVAILABLE') {
+    if (command.operation.componentId === 'chart.heatmap' && command.operation.action === 'show')
+      return '当前页面没有可恢复的热力图快照。请生成热力图并确认区域，或从历史结果点击“在海图展示此快照”。';
+    if (
+      command.operation.componentId === 'chart.vessel-tracks' &&
+      command.operation.action === 'show'
+    )
+      return '当前页面没有可恢复的航线快照。请从历史结果点击“在海图展示”，或重新生成航线。';
+    return '当前操作所需的界面数据不可用，请重新打开对应结果后重试。';
+  }
+  if (command.error === 'STATE_CONFLICT')
+    return '页面状态已改变，本次操作已停止。请在当前页面重新发送指令。';
+  if (command.error === 'POSTCONDITION_FAILED')
+    return command.operation.componentId === 'chart.heatmap' && command.operation.action === 'show'
+      ? '热力图展示未完成：地图绘制尚未确认。请检查海图，或从历史结果重新展示。'
+      : '界面操作后的显示状态尚未确认，请检查当前页面后重试。';
+  if (command.error === 'EXECUTION_FAILED')
+    return '界面操作未完成：浏览器执行失败。请检查当前页面后重试。';
+  return '界面操作未完成，未收到具体失败原因。请检查当前页面后重试。';
+}
 
 /** Local, finite planner. User text and UI state never become external model instructions. */
 export async function executeUiTask(
@@ -56,7 +87,11 @@ export async function executeUiTask(
         key: 'ui_command_receipt',
         name: 'ui.get_command',
         input: null,
-        output: { commandId: saved.id, status: saved.status },
+        output: {
+          commandId: saved.id,
+          status: saved.status,
+          ...(saved.error ? { error: saved.error } : {}),
+        },
       });
       if (saved.status === 'succeeded' && saved.result) {
         await saveUiResult(...fence, saved.id, saved.status, saved.result);
@@ -75,13 +110,7 @@ export async function executeUiTask(
         await finishAgentTask(...fence, {
           status: 'failed',
           errorCode: `ui_${saved.status}`,
-          summary:
-            saved.status === 'unknown'
-              ? '操作回执未确认，无法判断界面是否已完成变化；请查看当前页面后再操作。'
-              : saved.operation.componentId === 'chart.vessel-tracks' &&
-                  saved.operation.action === 'show'
-                ? '航线展示未完成：当前页面缺少可恢复快照，或页面状态已改变。请从历史结果点击“在海图展示”，或重新生成航线。'
-                : '界面操作未完成：页面状态已改变、离线或操作被阻止。请在当前页面重试。',
+          summary: uiFailureSummary(saved),
         });
       return;
     }

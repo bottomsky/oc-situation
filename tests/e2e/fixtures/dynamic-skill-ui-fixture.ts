@@ -119,7 +119,12 @@ export async function dynamicSkillUiFixture(page: Page) {
       };
     await route.fulfill({ json });
   });
-  function issue(kind: 'vessel_tracks' | 'ais_heatmap', stepId: string, project = true) {
+  function issue(
+    kind: 'vessel_tracks' | 'ais_heatmap',
+    stepId: string,
+    project = true,
+    legacy = false,
+  ) {
     if (!state || command) throw new Error('UI not ready or previous command unfinished');
     const componentId = kind === 'vessel_tracks' ? 'chart.vessel-tracks' : 'chart.heatmap';
     command = UiCommandSchema.parse({
@@ -127,7 +132,7 @@ export async function dynamicSkillUiFixture(page: Page) {
       taskId,
       ...client,
       stepId,
-      artifactRef: crypto.randomUUID(),
+      ...(legacy ? {} : { artifactRef: crypto.randomUUID() }),
       operation: { componentId, action: 'show' },
       expectedVersion: state.components.find((component) => component.id === componentId)?.version,
       status: 'queued',
