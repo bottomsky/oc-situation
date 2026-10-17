@@ -156,7 +156,7 @@ ais-config、ais-nats 和 Secret 使用稳定名称，更新后已有进程不�
 
 ```sh
 bun --no-env-file run deployment:check
-node --import tsx --test scripts/check-deployment.test.ts
+bun --no-env-file run test scripts/check-deployment.test.ts
 ```
 
 检查使用合成 env 样例执行四种 Compose profile 的 config 渲染，并使用 kubectl kustomize 渲染六个阶段，核对端口、探针、Secret/ConfigMap/PVC/Service 引用和应用镜像版本一致性。它不会读取真实 .env 或 kubeconfig，也不会连接 Docker daemon 或 Kubernetes API。缺少 CLI 时可运行 `bun --no-env-file run deployment:check --source-only` 做语法检查，其验证范围较小。静态检查不是 Kubernetes OpenAPI 服务端校验，也不包含镜像运行、Caddy 二进制配置加载或网络连通验收。

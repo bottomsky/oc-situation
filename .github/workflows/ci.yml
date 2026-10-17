@@ -37,7 +37,7 @@ jobs:
         with:
           version: 'v1.34.1'
       - run: bun --no-env-file install --frozen-lockfile
-      - run: node --import tsx --test scripts/check-deployment.test.ts
+      - run: bun --no-env-file run test scripts/check-deployment.test.ts
       - run: bun --no-env-file run deployment:check
 
   quality:
