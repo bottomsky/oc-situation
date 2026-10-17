@@ -346,5 +346,6 @@ export interface ApiError {
 }
 
 export * from './agent-ui';
+export * from './agent-map';
 export * from './vessel-tracks';
 export * from './dynamic-skills';

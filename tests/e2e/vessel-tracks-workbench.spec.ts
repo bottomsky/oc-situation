@@ -105,6 +105,7 @@ test('Agent 服务端命令绘制并确认，关闭独立批量层，历史需�
   fixture.issue('close');
   await expect(page.getByTestId('vessel-tracks-legend')).toHaveCount(0);
   await page.reload();
+  await page.getByRole('button', { name: '查看任务详情', exact: true }).click();
   await expect(page.getByRole('button', { name: '在海图展示此航线快照' })).toBeVisible();
   await expect(page.getByTestId('vessel-tracks-legend')).toHaveCount(0);
   await page.getByRole('button', { name: '在海图展示此航线快照' }).click();
@@ -122,7 +123,7 @@ test('Agent 无可用航线快照时返回 UNAVAILABLE', async ({ page }) => {
   await expect(page.getByTestId('vessel-tracks-legend')).toHaveCount(0);
 });
 
-test('Agent 等待地图绘制时人工关闭立即终止，迟到 idle 不恢复', async ({ page }) => {
+test('Agent 等待地图绘制时人工关闭立即终止，迟到绘制回执不恢复', async ({ page }) => {
   await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));
   const fixture = await vesselTracksFixture(page);
   await page.goto('/');
@@ -137,20 +138,22 @@ test('Agent 等待地图绘制时人工关闭立即终止，迟到 idle 不恢�
     if (!url) throw new Error('MapLibre module unavailable');
     const library = await import(url);
     const prototype = library.Map.prototype;
-    const original = prototype.once;
-    const delayed: (() => void)[] = [];
-    prototype.once = function (type: string, listener: (event: unknown) => void) {
-      if (type === 'idle' && typeof listener === 'function') {
-        delayed.push(() => listener.call(this, { type: 'idle', target: this }));
-        return this;
+    const original = prototype.isSourceLoaded;
+    let delayed = 0;
+    let repaint: (() => void) | undefined;
+    prototype.isSourceLoaded = function (id: string) {
+      if (id === 'ais-history-tracks') {
+        delayed++;
+        repaint = () => this.triggerRepaint();
+        return false;
       }
-      return original.call(this, type, listener);
+      return original.call(this, id);
     };
     Object.assign(globalThis, {
       releaseTracksPaint: () => {
-        prototype.once = original;
-        for (const callback of delayed) callback();
-        return delayed.length;
+        prototype.isSourceLoaded = original;
+        repaint?.();
+        return delayed;
       },
     });
   });

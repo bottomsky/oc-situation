@@ -36,6 +36,10 @@
 
 组件与动作清单、迁移及复核步骤见[界面控制验收记录](reports/agent-ui-verification-2026-10-16.md)。
 
+### 船舶高亮与镜头扩展
+
+`chart.vessel-highlights` 提供任务组高亮与清除，`chart.viewport/focus` 支持可信产物指定的点位、区域和缩放。迁移 `021` 为内置及动态技能统一登记界面产物。命令认领投影 `highlightsPresentation` 或 `cameraPresentation`，回执核对目标集合、保留组及实际镜头参数；原有已选船舶定位保留兼容。接口、人工优先规则与使用方法见[船舶高亮与镜头技能](agent-map-skills.md)。
+
 ## 对话条件选择与任务续作
 
 ### 请求、回答与界面

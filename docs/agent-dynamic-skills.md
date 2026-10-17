@@ -20,7 +20,7 @@
 
 技能包含中文说明 `body`、参考正文 `references`、必需输入 `requiredInputs`、工具集合 `toolIds` 和有序 `steps`。每步声明稳定 `id`、`toolId`、结构化 `input`，可追加产物类型 `artifactKind` 与白名单展示动作 `ui`。`expectedArtifacts` 和 `requiredDisplays` 由宿主根据步骤校验并固定。
 
-当前可信工具为 `query_vessels`、`query_vessel_tracks`、`query_ais_heatmap` 和 `search_intelligence`。工具权限取宿主目录、版本绑定和执行上下文的交集。动态定义禁止声明脚本、shell、任意 HTTP、MCP 或技能管理工具，正文与参考文件不能扩大宿主授权。
+当前可信工具为 `query_vessels`、`query_vessel_tracks`、`query_ais_heatmap`、`search_intelligence`、`prepare_vessel_highlights` 和 `prepare_map_camera`。后两项生成高亮与镜头产物，通过受控界面命令执行；参数和回执见[船舶高亮与镜头技能](agent-map-skills.md)。工具权限取宿主目录、版本绑定和执行上下文的交集。动态定义禁止声明脚本、shell、任意 HTTP、MCP 或技能管理工具，正文与参考文件不能扩大宿主授权。
 
 任务参数通过 `$ref` 取得。例如 `{"selection":{"$ref":"input.selection"}}` 引用当前任务输入；`{"vessels":{"$ref":"steps.cargo"}}` 引用已完成 `cargo` 步骤的完整船舶结果。宿主在本地抽取船舶集合供航线、热图使用，模型侧只接收批准的摘要投影。固定区域、时间、船舶标识和凭据禁止嵌入可复用定义。
 
@@ -42,7 +42,7 @@
 
 任务响应包含 `dynamicSkill` 和 `artifacts`：前者保存绑定版本、创建版本、调用记录，后者按步骤保留多个产物。相同产物类型的不同步骤分别展示，输入条件改变后按输入修订隔离旧结果。当前卡片支持船舶清单／详情、历史航线与热力图；其他持久产物保留记录并沿用已有结果展示入口。
 
-自动海图展示使用带 `stepId`、`artifactRef` 的持久命令。服务端认领时检查任务、账号、技能授权和产物类型，并投影实际航线或热力快照。浏览器只消费服务端投影，回执携带原命令的步骤和产物引用。持久产物缺少投影时拒绝回退旧快照；成功以执行回执及界面后置条件核验。
+自动海图展示使用带 `stepId`、`artifactRef` 的持久命令。服务端认领时检查任务、账号、技能授权和产物类型，投影实际航线、热图、高亮或镜头载荷。浏览器只消费服务端投影，回执携带原命令的步骤和产物引用。持久产物缺少投影时拒绝回退旧快照；成功以执行回执及对应产物的界面后置条件核验。
 
 ## 管理接口
 

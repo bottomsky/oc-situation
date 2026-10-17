@@ -119,14 +119,26 @@ export function validateDynamicSkillDefinition(
     }
     if (
       step.ui &&
-      (!step.artifactKind || !uiOperationAllowed(step.ui) || step.ui.action !== 'show')
+      (!step.artifactKind ||
+        !uiOperationAllowed(step.ui) ||
+        !['show', 'close', 'focus'].includes(step.ui.action))
     )
       throw new Error('技能展示操作无效');
     if (
       step.ui &&
       !(
-        (step.artifactKind === 'vessel_tracks' && step.ui.componentId === 'chart.vessel-tracks') ||
-        (step.artifactKind === 'ais_heatmap' && step.ui.componentId === 'chart.heatmap')
+        (step.artifactKind === 'vessel_tracks' &&
+          step.ui.componentId === 'chart.vessel-tracks' &&
+          step.ui.action === 'show') ||
+        (step.artifactKind === 'ais_heatmap' &&
+          step.ui.componentId === 'chart.heatmap' &&
+          step.ui.action === 'show') ||
+        (step.artifactKind === 'vessel_highlights' &&
+          step.ui.componentId === 'chart.vessel-highlights' &&
+          ['show', 'close'].includes(step.ui.action)) ||
+        (step.artifactKind === 'map_camera' &&
+          step.ui.componentId === 'chart.viewport' &&
+          step.ui.action === 'focus')
       )
     )
       throw new Error('展示组件与产物类型不匹配');

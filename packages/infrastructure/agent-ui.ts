@@ -2,6 +2,11 @@ import { isDeepStrictEqual } from 'node:util';
 import type { AgentSkillFence } from '../contracts/dynamic-skills';
 import { AgentHeatmapResultSchema } from '../contracts/heatmap';
 import { AgentVesselTracksResultSchema } from '../contracts/vessel-tracks';
+import {
+  AgentVesselHighlightsResultSchema,
+  AgentMapCameraResultSchema,
+} from '../contracts/agent-map';
+import type { AgentTask } from '../contracts/agent';
 import { assertDynamicSkillUiAvailable } from './dynamic-skills';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
@@ -10,7 +15,7 @@ import {
   UiOperationSchema,
   UiReceiptSchema,
   uiOperationAllowed,
-  uiPostcondition,
+  uiCommandPostcondition,
   type UiBinding,
   type UiState,
   type UiOperation,
@@ -120,6 +125,133 @@ const commandView = (row: Record<string, unknown>, token = false): UiCommand => 
   ...(row.artifact_ref ? { artifactRef: String(row.artifact_ref) } : {}),
   ...(token ? { claimToken: String(row.claim_token) } : {}),
 });
+const isBuiltinMap = (task: Record<string, unknown>) =>
+  ['vessel_highlights', 'map_camera'].includes(String(task.intent));
+async function mapArtifact(
+  c: PoolClient,
+  task: Record<string, unknown>,
+  stepId: string,
+  artifactRef: string,
+) {
+  const row = (
+    await c.query(
+      'SELECT output FROM agent_steps WHERE task_id=$1 AND input_revision=$2 AND step_key=$3',
+      [task.id, task.input_revision, stepId],
+    )
+  ).rows[0];
+  if (!row || row.output?.artifactRef !== artifactRef) return conflict('地图产物与任务不匹配。');
+  const payload = row.output.payload;
+  if (stepId === 'map_vessel_highlights' && task.intent === 'vessel_highlights') {
+    const result = AgentVesselHighlightsResultSchema.parse(payload);
+    if (result.inputRevision !== Number(task.input_revision)) return conflict();
+    return {
+      payload: result,
+      operation: {
+        componentId: 'chart.vessel-highlights',
+        action: result.operation === 'show' ? 'show' : 'close',
+      } as UiOperation,
+    };
+  }
+  if (
+    stepId === 'map_map_camera' &&
+    (task.intent === 'map_camera' ||
+      (task.intent === 'vessel_highlights' &&
+        (task.selection as { highlightAndFocus?: boolean })?.highlightAndFocus))
+  ) {
+    const result = AgentMapCameraResultSchema.parse(payload);
+    if (result.inputRevision !== Number(task.input_revision)) return conflict();
+    return {
+      payload: result,
+      operation: { componentId: 'chart.viewport', action: 'focus' } as UiOperation,
+    };
+  }
+  return conflict('地图步骤与任务不匹配。');
+}
+async function injectArtifact(
+  c: PoolClient,
+  task: Record<string, unknown>,
+  q: Record<string, unknown>,
+  view: UiCommand,
+) {
+  if (isBuiltinMap(task)) {
+    const artifact = await mapArtifact(c, task, String(q.step_id), String(q.artifact_ref));
+    if (!isDeepStrictEqual(artifact.operation, view.operation)) return conflict();
+    if (artifact.payload.kind === 'vessel_highlights')
+      view.highlightsPresentation = artifact.payload;
+    else view.cameraPresentation = artifact.payload;
+  } else if (task.intent === 'skill') {
+    const admitted = await assertDynamicSkillUiAvailable(
+      c,
+      task,
+      String(q.step_id),
+      String(q.artifact_ref),
+    );
+    if (admitted.artifact.kind === 'ais_heatmap')
+      view.presentation = AgentHeatmapResultSchema.parse(admitted.artifact.payload);
+    if (admitted.artifact.kind === 'vessel_tracks')
+      view.tracksPresentation = AgentVesselTracksResultSchema.parse(admitted.artifact.payload);
+    if (admitted.artifact.kind === 'vessel_highlights')
+      view.highlightsPresentation = AgentVesselHighlightsResultSchema.parse(
+        admitted.artifact.payload,
+      );
+    if (admitted.artifact.kind === 'map_camera')
+      view.cameraPresentation = AgentMapCameraResultSchema.parse(admitted.artifact.payload);
+  }
+  if (
+    view.highlightsPresentation &&
+    (!isDeepStrictEqual(view.operation, {
+      componentId: 'chart.vessel-highlights',
+      action: view.highlightsPresentation.operation === 'show' ? 'show' : 'close',
+    }) ||
+      view.highlightsPresentation.inputRevision !== Number(task.input_revision))
+  )
+    return conflict('高亮操作与已保存产物不一致。');
+  if (
+    view.cameraPresentation &&
+    (!isDeepStrictEqual(view.operation, { componentId: 'chart.viewport', action: 'focus' }) ||
+      view.cameraPresentation.inputRevision !== Number(task.input_revision))
+  )
+    return conflict('镜头操作与已保存产物不一致。');
+}
+
+/** Browser group reports only identify groups; persisted commands establish their authority. */
+async function validateHighlightGroups(
+  c: PoolClient,
+  task: Record<string, unknown>,
+  binding: UiBinding,
+  state: UiState,
+  ids?: string[],
+) {
+  const groups =
+    state.components.find((item) => item.id === 'chart.vessel-highlights')?.highlightGroups ?? [];
+  const chosen = ids ? groups.filter((g) => ids.includes(g.groupId)) : groups;
+  if (ids && chosen.length !== new Set(ids).size)
+    return conflict('指定高亮组已清除或不在当前页面。');
+  for (const group of chosen) {
+    const row = (
+      await c.query(
+        `SELECT q.* FROM agent_ui_commands q JOIN agent_tasks t ON t.id=q.task_id WHERE q.artifact_ref=$1 AND q.task_id=$2 AND t.owner_id=$3 AND q.client_id=$4 AND q.page_generation<=$5 AND q.status='succeeded' AND q.operation->>'componentId'='chart.vessel-highlights'`,
+        [group.groupId, group.taskId, task.owner_id, binding.clientId, binding.pageGeneration],
+      )
+    ).rows[0];
+    if (!row) return conflict('高亮组缺少当前用户与页面的可信来源。');
+    const evidence = UiStateSchema.parse(row.result)
+      .components.find((item) => item.id === 'chart.vessel-highlights')
+      ?.highlightGroups?.find((g) => g.groupId === group.groupId);
+    if (!evidence || !isDeepStrictEqual(evidence, group))
+      return conflict('高亮组目标与已验证来源不一致。');
+  }
+}
+export async function readTaskHighlightGroups(infra: Infrastructure, task: AgentTask) {
+  if (!task.uiBinding) return conflict('消息缺少当前页面绑定。');
+  const state = await readUiState(infra, task.ownerId, task.uiBinding, task.sessionId);
+  return transaction(infra, async (c) => {
+    await validateHighlightGroups(c, { owner_id: task.ownerId }, task.uiBinding!, state);
+    return (
+      state.components.find((item) => item.id === 'chart.vessel-highlights')?.highlightGroups ?? []
+    );
+  });
+}
 export async function getUiTaskCommand(
   infra: Infrastructure,
   taskId: string,
@@ -168,6 +300,21 @@ export async function createUiCommand(
     if (task.intent === 'skill') {
       const admitted = await assertDynamicSkillUiAvailable(c, task, stepId, options.artifactRef);
       if (!isDeepStrictEqual(admitted.operation, op)) return conflict('界面操作与技能声明不匹配。');
+    } else if (isBuiltinMap(task)) {
+      const admitted = await mapArtifact(c, task, stepId, String(options.artifactRef));
+      if (!isDeepStrictEqual(admitted.operation, op)) return conflict();
+      await c.query(
+        `INSERT INTO agent_ui_artifacts(id,task_id,owner_id,input_revision,step_id,kind,payload) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb) ON CONFLICT(task_id,input_revision,step_id) DO NOTHING`,
+        [
+          options.artifactRef,
+          task.id,
+          task.owner_id,
+          task.input_revision,
+          stepId,
+          admitted.payload.kind,
+          JSON.stringify(admitted.payload),
+        ],
+      );
     } else if (stepId !== 'legacy' || options.artifactRef) return conflict();
     const existing = (
       await c.query(
@@ -187,7 +334,13 @@ export async function createUiCommand(
     if (!row) return conflict();
     const state = UiStateSchema.parse(row.state);
     const component = state.components.find((x) => x.id === op.componentId);
-    if (task.intent === 'skill' && op.action === 'show') {
+    if (
+      (task.intent === 'skill' &&
+        (op.action === 'show' ||
+          op.componentId === 'chart.viewport' ||
+          op.componentId === 'chart.vessel-highlights')) ||
+      isBuiltinMap(task)
+    ) {
       const previous = (
         await c.query(
           "SELECT result FROM agent_ui_commands WHERE task_id=$1 AND input_revision=$2 AND status='succeeded' AND operation->>'componentId'=$3 ORDER BY created_at DESC,id DESC LIMIT 1",
@@ -200,9 +353,48 @@ export async function createUiCommand(
         : undefined;
       const baseline =
         acknowledged ??
-        (op.componentId === 'chart.heatmap' ? binding.heatmapVersion : binding.tracksVersion);
+        (op.componentId === 'chart.heatmap'
+          ? binding.heatmapVersion
+          : op.componentId === 'chart.vessel-highlights'
+            ? binding.highlightsVersion
+            : op.componentId === 'chart.viewport'
+              ? binding.cameraVersion
+              : binding.tracksVersion);
       if (baseline === undefined || baseline !== component?.version)
         return conflict('图层状态已被人工改变；已保存计算产物，请在新任务中确认展示。');
+    }
+    if (op.componentId === 'chart.vessel-highlights') {
+      const view = commandView({
+        id: randomUUID(),
+        task_id: task.id,
+        client_id: binding.clientId,
+        page_generation: binding.pageGeneration,
+        operation: op,
+        expected_version: component?.version,
+        status: 'queued',
+        step_id: stepId,
+        artifact_ref: options.artifactRef,
+      });
+      await injectArtifact(c, task, { step_id: stepId, artifact_ref: options.artifactRef }, view);
+      const presentation = view.highlightsPresentation;
+      if (!presentation) return conflict();
+      if (presentation.operation === 'clear')
+        await validateHighlightGroups(
+          c,
+          task,
+          binding,
+          state,
+          presentation.clear?.mode === 'groups' ? presentation.clear.groupIds : undefined,
+        );
+      else {
+        if ((component?.highlightGroups?.length ?? 0) >= 100)
+          return conflict('本页高亮组超过上限，请先清除部分高亮组。');
+        const mmsis = new Set([
+          ...(component?.highlightGroups ?? []).flatMap((g) => g.mmsis),
+          ...presentation.vessels.map((v) => v.mmsi),
+        ]);
+        if (mmsis.size > 100) return conflict('本页高亮船舶超过 100 艘，请先清除部分高亮组。');
+      }
     }
     if (
       task.intent === 'vessel_tracks' &&
@@ -322,18 +514,7 @@ export async function claimUiCommand(
       )
     ).rows[0];
     const view = commandView(row, true);
-    if (task.intent === 'skill') {
-      const admitted = await assertDynamicSkillUiAvailable(
-        c,
-        task,
-        String(q.step_id),
-        String(q.artifact_ref),
-      );
-      if (admitted.artifact.kind === 'ais_heatmap')
-        view.presentation = AgentHeatmapResultSchema.parse(admitted.artifact.payload);
-      if (admitted.artifact.kind === 'vessel_tracks')
-        view.tracksPresentation = AgentVesselTracksResultSchema.parse(admitted.artifact.payload);
-    }
+    await injectArtifact(c, task, q, view);
     if (
       task.intent === 'ais_heatmap' &&
       view.operation.componentId === 'chart.heatmap' &&
@@ -373,7 +554,7 @@ export async function receiptUiCommand(
   return transaction(infra, async (c) => {
     const { task, client, q } = await commandLocks(c, owner, id, receipt);
     if (
-      task.intent === 'skill' &&
+      (task.intent === 'skill' || isBuiltinMap(task)) &&
       (receipt.stepId !== q.step_id || receipt.artifactRef !== q.artifact_ref)
     )
       return conflict();
@@ -423,8 +604,23 @@ export async function receiptUiCommand(
       !(q.status === 'claimed' && receipt.status === 'rejected')
     )
       return conflict();
-    const status =
-      receipt.status === 'succeeded' && !uiPostcondition(op, state) ? 'failed' : receipt.status;
+    const view = commandView(q);
+    let postcondition = true;
+    if (receipt.status === 'succeeded') {
+      await injectArtifact(c, task, q, view);
+      const previous = (
+        await c.query(
+          "SELECT body->'state' AS state FROM agent_ui_receipts WHERE command_id=$1 AND body->>'status'='executing' ORDER BY created_at DESC LIMIT 1",
+          [id],
+        )
+      ).rows[0]?.state;
+      postcondition = uiCommandPostcondition(
+        view,
+        state,
+        previous ? UiStateSchema.parse(previous) : undefined,
+      );
+    }
+    const status = receipt.status === 'succeeded' && !postcondition ? 'failed' : receipt.status;
     await c.query(
       'INSERT INTO agent_ui_receipts(receipt_id,command_id,body) VALUES($1,$2,$3::jsonb)',
       [receipt.receiptId, id, JSON.stringify(receipt)],

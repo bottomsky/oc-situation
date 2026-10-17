@@ -6,7 +6,7 @@ import {
 } from './builtins';
 
 describe('bundled trusted skills', () => {
-  it('discovers five skill packages with runtime tool bindings and legacy directory metadata', async () => {
+  it('discovers seven skill packages with runtime tool bindings and legacy directory metadata', async () => {
     const catalog = await loadBuiltinSkillCatalog();
     expect(
       catalog
@@ -16,7 +16,9 @@ describe('bundled trusted skills', () => {
     ).toEqual([
       'ais-heatmap',
       'intelligence-search',
+      'map-camera',
       'ui-control',
+      'vessel-highlight',
       'vessel-query',
       'vessel-tracks',
     ]);

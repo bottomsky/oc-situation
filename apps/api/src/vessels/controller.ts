@@ -9,6 +9,9 @@ import {
   VesselSchema,
   TrackQuerySchema,
   TrackResponseSchema,
+  VesselPositionsQuerySchema,
+  VesselPositionsResponseSchema,
+  VesselPositionSchema,
 } from './schemas';
 export const TRACK_SQL = `WITH dedup AS (
  SELECT *,row_number() OVER (PARTITION BY observedAt ORDER BY sourcePriority DESC,eventId DESC) AS preference
@@ -57,6 +60,31 @@ export class VesselsController {
       latestPosition: r.observation ?? null,
     }));
     return { items, nextCursor: hasNext ? items.at(-1)!.mmsi : null };
+  }
+  @Get('positions')
+  @ApiQuery({ name: 'mmsis', description: 'Comma-separated MMSIs, at most 100', type: String })
+  @DocumentRoute(
+    'Batch latest valid vessel positions within retained recent 30 days',
+    VesselPositionsResponseSchema,
+  )
+  async positions(@Query() input: unknown) {
+    const { mmsis } = parse(VesselPositionsQuerySchema, input);
+    const result = await this.infra.pool.query(
+      "SELECT mmsi,observation FROM positions_latest WHERE mmsi=ANY($1::text[]) AND observed_at>=now()-interval '30 days'",
+      [mmsis],
+    );
+    const positions = new Map<
+      string,
+      { mmsi: string; lon: number; lat: number; observedAt: string }
+    >();
+    for (const row of result.rows) {
+      const parsed = VesselPositionSchema.safeParse({ ...row.observation, mmsi: row.mmsi });
+      if (parsed.success) positions.set(parsed.data.mmsi, parsed.data);
+    }
+    return {
+      items: mmsis.flatMap((mmsi) => (positions.has(mmsi) ? [positions.get(mmsi)!] : [])),
+      missing: mmsis.filter((mmsi) => !positions.has(mmsi)),
+    };
   }
   @Get(':mmsi')
   @ApiParam({ name: 'mmsi', schema: { type: 'string', pattern: '^[1-9][0-9]{8}$' } })

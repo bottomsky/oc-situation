@@ -1,4 +1,9 @@
 import { isDeepStrictEqual } from 'node:util';
+import {
+  AgentVesselHighlightsResultSchema,
+  AgentMapCameraResultSchema,
+} from '../../packages/contracts/agent-map';
+import { highlightsFromVessels, cameraFromVessels } from '../../packages/domain/agent-map';
 import { z } from 'zod';
 import { AgentQueryResultSchema, AgentSelectionSchema } from '../../packages/contracts/agent';
 import { AgentHeatmapResultSchema, HeatmapQuerySchema } from '../../packages/contracts/heatmap';
@@ -94,6 +99,109 @@ export function createBusinessToolRegistry(
     });
   const detailQuery =
     context.task.intent === 'vessel_detail' || selection.purpose === 'vessel_detail';
+  const mapVessels = async (input: z.infer<typeof inputSchema>) => {
+    const scope = scoped(input);
+    if (input.vessels) return input.vessels;
+    if (!ports.queryVessels) throw new Error('configuration');
+    const explicit =
+      scope.mmsis?.length ||
+      scope.vesselSelector?.mmsis?.length ||
+      scope.vesselSelector?.query ||
+      scope.vesselSelector?.model;
+    if (!explicit && !scope.bbox) throw new Error('region_required');
+    const effective = {
+      ...scope,
+      ...(explicit ? { bbox: undefined } : {}),
+      filters: { ...scope.filters, hours: 720 },
+    };
+    const result = await ports.queryVessels(explicit ? 'vessel_detail' : 'vessel_list', effective);
+    if (
+      scope.vesselSelector?.query &&
+      result.items.length > 1 &&
+      !/全部|所有|这些|多艘/.test(context.task.goal)
+    )
+      throw new Error('ambiguous_vessels');
+    return result;
+  };
+  add(
+    'vessel_highlights',
+    defineTool({
+      id: 'prepare_vessel_highlights',
+      description: '准备任务船舶高亮或清除当前页面的高亮组',
+      allowedPhases: ['query', 'skill'],
+      inputSchema,
+      outputSchema: AgentVesselHighlightsResultSchema,
+      handler: async (input) => {
+        const scope = scoped(input);
+        if (scope.highlightClear)
+          return {
+            kind: 'vessel_highlights' as const,
+            version: 0,
+            inputRevision: revision,
+            operation: 'clear' as const,
+            vessels: [],
+            missingMmsis: [],
+            clear: scope.highlightClear,
+          };
+        if (scope.highlightTaskIndex || scope.highlightClearUnclear) {
+          const groups = await ports.readHighlightGroups?.();
+          if (!groups) throw new Error('configuration');
+          let groupIds: string[];
+          if (scope.highlightTaskIndex) {
+            const group = groups[scope.highlightTaskIndex - 1];
+            if (!group) throw new Error('ambiguous_vessels');
+            groupIds = [group.groupId];
+          } else {
+            const query = await mapVessels(input);
+            if (query.truncated || query.total > 100) throw new Error('data_limit');
+            const selected = new Set(query.items.map((v) => v.mmsi));
+            const matching = groups.filter((g) => g.mmsis.some((id) => selected.has(id)));
+            if (!matching.length || matching.some((g) => g.mmsis.some((id) => !selected.has(id))))
+              throw new Error('ambiguous_vessels');
+            groupIds = matching.map((g) => g.groupId);
+          }
+          return {
+            kind: 'vessel_highlights' as const,
+            version: 0,
+            inputRevision: revision,
+            operation: 'clear' as const,
+            vessels: [],
+            missingMmsis: [],
+            clear: { mode: 'groups' as const, groupIds },
+          };
+        }
+        return highlightsFromVessels(await mapVessels(input), revision);
+      },
+      project: (output) => ({
+        operation: output.operation,
+        targetCount: output.vessels.length,
+        missingCount: output.missingMmsis.length,
+      }),
+    }),
+  );
+  add(
+    'map_camera',
+    defineTool({
+      id: 'prepare_map_camera',
+      description: '准备点位、区域、多船或当前海图的镜头聚焦与缩放',
+      allowedPhases: ['query', 'skill'],
+      inputSchema,
+      outputSchema: AgentMapCameraResultSchema,
+      handler: async (input) => {
+        const scope = scoped(input);
+        let request = scope.mapCamera ?? cameraFromVessels(await mapVessels(input));
+        if (scope.mapTargetZoom !== undefined)
+          request =
+            request.mode === 'point'
+              ? { ...request, zoom: scope.mapTargetZoom }
+              : request.mode === 'bounds'
+                ? { ...request, maxZoom: scope.mapTargetZoom }
+                : request;
+        return { kind: 'map_camera' as const, version: 0, inputRevision: revision, request };
+      },
+      project: (output) => ({ mode: output.request.mode }),
+    }),
+  );
   if (ports.queryVessels)
     add(
       detailQuery ? 'vessel_detail' : 'vessel_list',

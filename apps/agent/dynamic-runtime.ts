@@ -57,6 +57,7 @@ input仅支持 selection:{$ref:'input.selection'}，依赖船舶集合时使用 
 有类别时先 query_vessels，该步input增加 vesselClasses:目标类别数组；兼容单类vesselClass，二者互斥。航线和热力图都引用该步的完整船舶结果；真实参数由宿主绑定。
 每个目标操作必须生成目录声明的对应产物。航线 artifactKind=vessel_tracks；热力图=ais_heatmap；船舶列表=vessel_list；船舶详情=vessel_detail；情报=intelligence_search。
 需要展示时航线ui={componentId:'chart.vessel-tracks',action:'show'}，热力图ui={componentId:'chart.heatmap',action:'show'}。
+船舶高亮工具prepare_vessel_highlights产物vessel_highlights，展示ui={componentId:'chart.vessel-highlights',action:'show'}；清除高亮使用相同工具且action:'close'。镜头工具prepare_map_camera产物map_camera，ui={componentId:'chart.viewport',action:'focus'}。这两类地图操作必须声明ui回执。船舶依赖可引用先前query_vessels步骤，镜头参数由input.selection.mapCamera引用提供。
 只使用目录中工具，禁止嵌入脚本、HTTP、shell、MCP或技能管理工具。成功由宿主验证全部产物与展示回执。`;
 
 /** UUID-shaped deterministic operation identity survives a committed response being lost. */
@@ -140,8 +141,12 @@ function assertCoverage(
     const requiredDisplay =
       context.task.uiBinding &&
       (goal.presentation || goal.goalKind === 'compose') &&
-      ['vessel_tracks', 'ais_heatmap'].includes(step.artifactKind ?? '');
+      ['vessel_tracks', 'ais_heatmap', 'vessel_highlights', 'map_camera'].includes(
+        step.artifactKind ?? '',
+      );
     if (requiredDisplay && !step.ui) fail('missing_required_display');
+    if (['vessel_highlights', 'map_camera'].includes(step.artifactKind ?? '') && !step.ui)
+      fail('missing_required_display');
   }
   const declaredClasses = Array.isArray(vessels?.input.vesselClasses)
     ? vessels.input.vesselClasses.map(String)
@@ -563,6 +568,8 @@ export async function executeDynamicSkill(
       ais_heatmap: '热力图',
       intelligence_search: '情报检索',
       analysis: '区域研判',
+      vessel_highlights: '船舶高亮',
+      map_camera: '海图镜头',
     };
     const artifacts = definition.steps.flatMap((step) =>
       step.artifactKind ? [names[step.artifactKind]] : [],

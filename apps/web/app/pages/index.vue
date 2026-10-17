@@ -23,6 +23,7 @@ function mapContext(): AgentMapContext {
 }
 const heatmap = reactive(useAisHeatmap());
 const vesselTracks = reactive(useVesselTracks());
+const vesselHighlights = reactive(useVesselHighlights(toRef(workspace, 'paused')));
 const ui = useAgentUi();
 const agent = reactive(
   useAgentConversation(
@@ -119,6 +120,18 @@ function selectMapIntelligence(ids: string[]) {
 const { session } = usePlatform();
 const route = useRoute();
 const seaMap = useTemplateRef<ChartMapControls>('seaMap');
+// Capture user intent before network work; a later camera action cancels its right to focus.
+const loadTrack = workspace.loadTrack;
+workspace.loadTrack = async () => {
+  const focus = seaMap.value?.cameraIntent();
+  const previous = workspace.track;
+  await loadTrack();
+  const point =
+    workspace.track !== previous
+      ? workspace.track?.segments.flatMap((s) => s.points)[0]
+      : undefined;
+  if (point) focus?.({ mode: 'point', center: [point.lon, point.lat], zoom: 7 });
+};
 function currentMapBounds(): Bbox {
   return seaMap.value?.currentBounds() ?? workspace.bbox;
 }
@@ -240,6 +253,36 @@ useUiComponent('chart.vessel-tracks', {
   },
 });
 useUiComponent('chart.heatmap.legend', { read: () => uiProjection(!!heatmap.result, []) });
+useUiComponent('chart.vessel-highlights', {
+  read: () =>
+    uiProjection(!!vesselHighlights.groups.length, ['show', 'close'], {
+      mounted: !!seaMap.value?.interactionState().ready,
+      visible: !!vesselHighlights.groups.length && vesselHighlights.displayed,
+      revision: vesselHighlights.revision,
+      highlightGroups: vesselHighlights.groups,
+      ...(vesselHighlights.evidence ? { highlightEvidence: vesselHighlights.evidence } : {}),
+    }),
+  execute: async (_operation, command) => {
+    if (!command.highlightsPresentation || !command.artifactRef) throw { code: 'UNAVAILABLE' };
+    vesselHighlights.apply(
+      command.highlightsPresentation,
+      command.artifactRef,
+      command.taskId,
+      command.id,
+    );
+    const revision = vesselHighlights.revision;
+    const deadline = Date.now() + 10000;
+    while (
+      !vesselHighlights.displayed &&
+      vesselHighlights.revision === revision &&
+      Date.now() < deadline
+    )
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    if (vesselHighlights.revision !== revision) throw { code: 'STATE_CONFLICT' };
+    if (vesselHighlights.evidence?.artifactRef !== command.artifactRef)
+      throw { code: 'POSTCONDITION_FAILED' };
+  },
+});
 useUiComponent('agent.reply', {
   read: () => uiProjection(!!agent.currentReply, ['close', 'open'], { order: 10 }),
   execute: (op) => {
@@ -253,48 +296,38 @@ useUiComponent('chart.choices', {
     mapChoices.value = [];
   },
 });
-const viewportRevision = ref(0);
+const viewportRevision = ref(1);
 watch(
-  () => [workspace.bbox, workspace.detail?.mmsi],
+  () => workspace.detail?.mmsi,
   () => {
     viewportRevision.value++;
   },
-  { deep: true },
+  { flush: 'sync' },
 );
 useUiComponent('chart.viewport', {
-  read: () => {
-    const target = workspace.detail?.latestPosition;
-    const bounds = workspace.bbox;
-    const within =
-      !!target &&
-      target.lat >= bounds[1] &&
-      target.lat <= bounds[3] &&
-      (bounds[0] <= bounds[2]
-        ? target.lon >= bounds[0] && target.lon <= bounds[2]
-        : target.lon >= bounds[0] || target.lon <= bounds[2]);
-    const mapState = seaMap.value?.interactionState();
-    const interacting =
-      selectingAgentRegion.value ||
-      selectingHeatmapRegion.value ||
-      !!mapState?.moving ||
-      !!mapState?.drawing;
-    return uiProjection(true, target && mapState?.ready ? ['focus'] : [], {
-      mounted: !!mapState?.ready,
-      focused: within,
+  read: () =>
+    chartViewportSnapshot({
+      map: seaMap.value?.interactionState(),
+      cameraState: seaMap.value?.cameraState() ?? undefined,
+      cameraEvidence: seaMap.value?.currentCamera() ?? undefined,
+      target: workspace.detail?.latestPosition,
+      selecting: selectingAgentRegion.value || selectingHeatmapRegion.value,
       dirty: !!drawnGeometry.value,
-      interacting,
       revision: viewportRevision.value,
-      ...(interacting ? { blocked: 'drawing' as const } : {}),
-    });
-  },
-  execute: async () => {
+    }),
+  execute: async (_operation, command) => {
     const target = workspace.detail?.latestPosition;
-    if (!target) throw new Error('No selected position');
-    seaMap.value?.focusGeometry({ type: 'Point', coordinates: [target.lon, target.lat] });
-    const deadline = Date.now() + 5000;
-    do {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    } while (seaMap.value?.interactionState().moving && Date.now() < deadline);
+    const request =
+      command.cameraPresentation?.request ??
+      (target
+        ? {
+            mode: 'point' as const,
+            center: [target.lon, target.lat] as [number, number],
+            zoom: 10,
+          }
+        : undefined);
+    if (!request || !seaMap.value) throw { code: 'UNAVAILABLE' };
+    await seaMap.value.applyCamera({ ...request, commandId: command.id });
     await nextTick();
   },
 });
@@ -306,11 +339,24 @@ function selectVessel(mmsi: string) {
   detailHost.open('vessel', 'left');
   void workspace.select(mmsi);
 }
-function selectResult(result: AnalysisResult) {
+async function selectResult(result: AnalysisResult) {
+  const focus = seaMap.value?.cameraIntent();
   rightOpen.value = true;
   detailHost.open('evidence', 'right');
   rightTab.value = 'push';
-  void topics.select(result);
+  await topics.select(result);
+  if (topics.evidence?.id === result.id)
+    focus?.({ mode: 'bounds', bbox: topics.evidence.bbox, maxZoom: 11 });
+}
+function locateResult(result: AnalysisResult) {
+  topics.locate(result);
+  void seaMap.value
+    ?.applyCamera({ mode: 'bounds', bbox: result.bbox, maxZoom: 11 })
+    .catch(() => undefined);
+}
+function reviseResult(result: AnalysisResult) {
+  topics.revision(result);
+  locateResult(result);
 }
 async function toggleFullscreen() {
   if (!center.value) return;
@@ -511,6 +557,8 @@ watch(
               selectingHeatmapRegion = false;
             "
             :vessel-tracks="vesselTracks.result"
+            :vessel-highlights="vesselHighlights.targets"
+            @vessel-highlights-displayed="vesselHighlights.markDisplayed"
             @vessel-tracks-displayed="
               if (vesselTracks.result === $event) vesselTracks.displayed = true;
             "
@@ -548,6 +596,16 @@ watch(
           ><button @click="mapChoices = []">关闭</button>
         </div>
         <div class="chart-map-notices">
+          <ChartVesselHighlights
+            :groups="vesselHighlights.groups"
+            :count="vesselHighlights.targets.length"
+            :missing="vesselHighlights.missing"
+            :updated-at="vesselHighlights.updatedAt"
+            :error="vesselHighlights.error"
+            :paused="workspace.paused"
+            @clear-group="vesselHighlights.clearGroup"
+            @clear-all="vesselHighlights.clearAll"
+          />
           <section
             v-if="vesselTracks.result"
             class="vessel-tracks-legend"
@@ -698,8 +756,8 @@ watch(
         @select="selectResult"
         @retry="topics.load"
         @close-evidence="topics.close"
-        @locate="topics.locate"
-        @revision="topics.revision"
+        @locate="locateResult"
+        @revision="reviseResult"
       />
     </div>
     <ChartDetailFloat
@@ -775,9 +833,8 @@ watch(
   height: 5px;
   background: linear-gradient(90deg, #206ca5, #23c5bc, #f2d666, #e56244);
 }
-.chart-workspace:not(.left-open) .heatmap-legend,
-.chart-workspace:not(.left-open) .vessel-tracks-legend {
-  margin-top: 42px;
+.chart-workspace:not(.left-open) .chart-map-notices {
+  top: 50px;
 }
 .chart-agent-dock {
   --reply-dock-bottom: 40px;

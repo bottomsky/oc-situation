@@ -23,6 +23,24 @@ export const VesselSchema = z.object({
   staticFields: StaticFieldsSchema,
 });
 export const VesselDetailSchema = VesselSchema.extend({ provenance: ProvenanceSchema });
+export const VesselPositionsQuerySchema = z.strictObject({
+  mmsis: z
+    .string()
+    .max(1000)
+    .transform((value) => value.split(','))
+    .pipe(z.array(MmsiSchema).min(1).max(100))
+    .transform((values) => [...new Set(values)]),
+});
+export const VesselPositionSchema = z.object({
+  mmsi: MmsiSchema,
+  lon: z.number().min(-180).max(180),
+  lat: z.number().min(-90).max(90),
+  observedAt: Iso,
+});
+export const VesselPositionsResponseSchema = z.object({
+  items: z.array(VesselPositionSchema).max(100),
+  missing: z.array(MmsiSchema).max(100),
+});
 export const VesselQuerySchema = PageQuery.extend({
   query: z.string().max(100).optional(),
   mmsi: MmsiSchema.optional(),

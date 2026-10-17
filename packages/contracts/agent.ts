@@ -1,6 +1,7 @@
 import { VesselTracksSelectorSchema } from './vessel-tracks';
 import { UiBindingSchema, UiResultSchema } from './agent-ui';
 import { z } from 'zod';
+import { MapCameraRequestSchema, HighlightClearSchema } from './agent-map';
 import { DynamicSkillRefSchema } from './dynamic-skills';
 import { TopicDefinitionIdSchema } from './topics';
 import { IntelligenceSearchSpecSchema, IntelligenceTimeRangeSchema } from './intelligence-search';
@@ -38,6 +39,8 @@ export const AgentIntentSchema = z.enum([
   'intelligence_search',
   'ais_heatmap',
   'vessel_tracks',
+  'vessel_highlights',
+  'map_camera',
   'ui_control',
   'skill',
 ]);
@@ -82,6 +85,12 @@ export const AgentSelectionSchema = z.strictObject({
   heatmapTimeUnclear: z.boolean().optional(),
   tracksTimeUnclear: z.boolean().optional(),
   vesselSelector: VesselTracksSelectorSchema.optional(),
+  mapCamera: MapCameraRequestSchema.optional(),
+  highlightClear: HighlightClearSchema.optional(),
+  highlightAndFocus: z.boolean().optional(),
+  mapTargetZoom: z.number().min(0).max(22).optional(),
+  highlightTaskIndex: z.number().int().positive().max(100).optional(),
+  highlightClearUnclear: z.boolean().optional(),
   intelligenceObjectUnclear: z.boolean().optional(),
   intelligenceObjectCandidates: z
     .array(

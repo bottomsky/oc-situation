@@ -4,6 +4,9 @@ import type {
   VesselTracksResult,
 } from '../../packages/contracts/vessel-tracks';
 import { executeVesselTracks } from './vessel-tracks-runtime';
+import { executeMapSkill } from './map-runtime';
+import type { UiOperation } from '../../packages/contracts/agent-ui';
+import type { HighlightGroup } from '../../packages/contracts/agent-map';
 import { executeIntelligence } from './intelligence-runtime';
 import { executeHeatmap } from './heatmap-runtime';
 import { executeDynamicSkill, type DynamicRuntimePorts } from './dynamic-runtime';
@@ -67,6 +70,11 @@ import {
 } from './gateway';
 
 export interface RuntimePorts {
+  readHighlightGroups?(): Promise<HighlightGroup[]>;
+  mapUi?: {
+    command(stepId: string): Promise<{ status: string } | null>;
+    queue(stepId: string, artifactRef: string, operation: UiOperation): Promise<string | null>;
+  };
   dynamicSkills?: DynamicRuntimePorts;
   active(): Promise<boolean>;
   reserve(kind: 'model' | 'tool', maximum: number): Promise<boolean>;
@@ -439,6 +447,10 @@ export async function executeAgent(
 ): Promise<void> {
   let task = context.task;
   if (!(await ports.active())) return;
+  if (task.intent === 'vessel_highlights' || task.intent === 'map_camera') {
+    await executeMapSkill(context, ports, options);
+    return;
+  }
   if (
     task.intent === 'skill' ||
     shouldUseDynamicSkill(task.goal, {

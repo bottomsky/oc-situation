@@ -24,6 +24,8 @@ Agent 使用内置技能目录与个人版本目录组织任务选择与工具�
 
 历史航线支持按 AIS 船型、具体型号或船舶信息查询并叠加多船轨迹，提供人工生成、Agent 绘制与关闭；查询口径、档案字段和资源限制见[船舶历史航线](docs/vessel-tracks.md)。
 
+Agent 可用三连光圈和持续水波高亮任务船舶，并独立控制坐标聚焦、区域入镜与缩放；人工清除、船位刷新和动态技能接入见[船舶高亮与镜头技能](docs/agent-map-skills.md)。
+
 情报录入、审核、对象关联、影响认定和单条/批量海图标绘见[情报管理与海图标绘](docs/intelligence-chart.md)。定时入库、AI 本地工具与版本引用见[外部情报入库与 AI 检索](docs/intelligence-search.md)。真实公开来源与联网验证见[公开海事情报采集](docs/intelligence-ingestion.md)，本地开源参考清单见[开源情报参考仓库](docs/osint-reference.md)。
 
 ## 快速启动

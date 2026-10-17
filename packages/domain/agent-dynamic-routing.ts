@@ -99,6 +99,9 @@ export function dynamicGoalProjection(goal: string, purpose?: AgentPurpose): Dyn
   if (/航线|历史轨迹|船舶轨迹|vessel.?tracks/i.test(goal)) operations.push('query_vessel_tracks');
   if (/热力图|热度图|密度图|heatmap/i.test(goal)) operations.push('query_ais_heatmap');
   if (/情报|公告|新闻|海况|预报/.test(goal)) operations.push('search_intelligence');
+  if (/高亮|水波(?:提醒|扩散)/.test(goal)) operations.push('prepare_vessel_highlights');
+  if (/聚焦|镜头|(?:海图|地图).*(?:缩放|放大|缩小)/.test(goal))
+    operations.push('prepare_map_camera');
   const requestedCount = operations.length;
   const vesselClasses: DynamicGoalProjection['vesselClasses'] = [];
   for (const [pattern, vesselClass] of [
@@ -134,7 +137,7 @@ export function dynamicGoalProjection(goal: string, purpose?: AgentPurpose): Dyn
     vesselClasses,
     ...(vesselClasses.length === 1 ? { vesselClass: vesselClasses[0] } : {}),
     presentation:
-      /展示|显示|绘制|画出|海图|同时看/.test(goal) ||
+      /展示|显示|绘制|画出|海图|同时看|高亮|聚焦|镜头/.test(goal) ||
       (!!answeredPurpose && ['vessel_tracks', 'ais_heatmap'].includes(purpose ?? '')),
     ...(answeredPurpose ? { purpose } : {}),
     inputRefs: ['input.selection'],
@@ -152,6 +155,16 @@ export function shouldUseDynamicSkill(goal: string, options: DynamicRoutingOptio
   )
     return false;
   const derived = deriveAgentIntent(goal).intent;
+  if (
+    !/不要|不必|无需|不用|别再/.test(goal) &&
+    /(?:创建|生成|保存|编写).*(?:skill|技能)/i.test(goal)
+  )
+    return true;
+  if (
+    (derived === 'vessel_highlights' || derived === 'map_camera') &&
+    !/航线|轨迹|热力图|热度图|情报|公告|新闻|海况|预报/.test(goal)
+  )
+    return false;
   if (derived === 'conversation' || derived === 'explain') return false;
   // Closing existing windows remains a UI task, even if two chart names are present.
   if (derived === 'ui_control' && /关闭|隐藏|收起/.test(goal)) return false;

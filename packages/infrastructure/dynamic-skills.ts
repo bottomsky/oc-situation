@@ -33,6 +33,12 @@ export const DYNAMIC_SKILL_ADAPTER_VERSION = 'declarative-v1';
 /** Shared admission ceiling; implementations and argument schemas remain in the host registry. */
 export const DYNAMIC_SKILL_HOST_TOOLS: readonly DynamicSkillToolDescriptor[] = Object.freeze([
   {
+    id: 'prepare_vessel_highlights',
+    artifactKinds: ['vessel_highlights'],
+    allowedPhases: ['skill'],
+  },
+  { id: 'prepare_map_camera', artifactKinds: ['map_camera'], allowedPhases: ['skill'] },
+  {
     id: 'query_vessels',
     artifactKinds: ['vessel_list', 'vessel_detail'],
     allowedPhases: ['skill'],

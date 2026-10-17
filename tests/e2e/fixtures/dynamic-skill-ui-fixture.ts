@@ -1,12 +1,18 @@
 import type { Page } from '@playwright/test';
 import { UiCommandSchema, UiReceiptSchema, UiStateSchema } from '@ais/contracts';
-import type { UiCommand, UiReceipt, UiState } from '@ais/contracts';
+import type {
+  AgentMapCameraResult,
+  AgentVesselHighlightsResult,
+  UiCommand,
+  UiReceipt,
+  UiState,
+} from '@ais/contracts';
 import { chartFixture } from './chart-fixture';
 import { tracksResult } from './vessel-tracks-fixture';
 
 /** Runs the actual browser registry against a server that projects immutable step artifacts. */
-export async function dynamicSkillUiFixture(page: Page) {
-  await chartFixture(page, { role: 'operator' });
+export async function dynamicSkillUiFixture(page: Page, options: { clusters?: boolean } = {}) {
+  await chartFixture(page, { role: 'operator', ...options });
   const client = { clientId: crypto.randomUUID(), pageGeneration: 1 };
   const session = {
     id: crypto.randomUUID(),
@@ -80,7 +86,13 @@ export async function dynamicSkillUiFixture(page: Page) {
       json = client;
     } else if (path.endsWith('/commands')) {
       // Discovery only carries identity; rendering data arrives from the claim projection.
-      const { tracksPresentation: _tracks, presentation: _heatmap, ...identity } = command ?? {};
+      const {
+        tracksPresentation: _tracks,
+        presentation: _heatmap,
+        highlightsPresentation: _highlights,
+        cameraPresentation: _camera,
+        ...identity
+      } = command ?? {};
       json = { items: command ? [identity] : [] };
     } else if (path.endsWith('/claim')) {
       if (!command) throw new Error('No command to claim');
@@ -148,10 +160,39 @@ export async function dynamicSkillUiFixture(page: Page) {
     receipts,
     claims,
     issue,
+    issueMap(value: AgentVesselHighlightsResult | AgentMapCameraResult) {
+      if (!state || command) throw new Error('UI not ready or previous command unfinished');
+      const camera = value.kind === 'map_camera';
+      const componentId = camera ? 'chart.viewport' : 'chart.vessel-highlights';
+      command = UiCommandSchema.parse({
+        id: crypto.randomUUID(),
+        taskId,
+        ...client,
+        stepId: camera ? 'camera' : 'highlights',
+        artifactRef: crypto.randomUUID(),
+        operation: {
+          componentId,
+          action: camera ? 'focus' : value.operation === 'clear' ? 'close' : 'show',
+        },
+        expectedVersion: state.components.find((component) => component.id === componentId)
+          ?.version,
+        status: 'queued',
+        ...(camera ? { cameraPresentation: value } : { highlightsPresentation: value }),
+      });
+      return { ...command };
+    },
+    state: () => state,
     ready: () =>
       registrations > 0 &&
       boundSession === session.id &&
       !!state?.components.some((component) => component.id === 'chart.heatmap') &&
-      !!state.components.some((component) => component.id === 'chart.vessel-tracks'),
+      !!state.components.some((component) => component.id === 'chart.vessel-tracks') &&
+      !!state.components.some(
+        (component) =>
+          component.id === 'chart.viewport' &&
+          component.mounted &&
+          (component.revision ?? 0) >= 1 &&
+          !component.interacting,
+      ),
   };
 }

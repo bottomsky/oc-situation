@@ -5,6 +5,7 @@ import {
   createUiCommand,
   getUiTaskCommand,
   queueDynamicSkillUi,
+  readTaskHighlightGroups,
 } from '../../packages/infrastructure/agent-ui';
 import {
   getDynamicSkillExecution,
@@ -234,6 +235,16 @@ export async function processAgentTask(
     const previous = await getPreviousAgentTask(infra, task.id);
     let boundTask = task;
     const runtimePorts: RuntimePorts = {
+      readHighlightGroups: () => readTaskHighlightGroups(infra, boundTask),
+      mapUi: {
+        command: (stepId) => getUiTaskCommand(infra, task.id, task.inputRevision ?? 0, stepId),
+        queue: (stepId, artifactRef, operation) =>
+          createUiCommand(...fence, operation, {
+            stepId,
+            artifactRef,
+            inputRevision: task.inputRevision ?? 0,
+          }),
+      },
       active: async () => !controller.signal.aborted && (await renewAgentTask(...fence)),
       reserve: (kind, maximum) => reserveAgentCall(...fence, kind, maximum),
       setDefinition: (definition) => setAgentDefinition(...fence, definition),

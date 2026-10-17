@@ -45,7 +45,16 @@ import { registerChartBusinessLayers } from '../utils/chartBusinessLayers';
 import { heatmapGeoJson, registerHeatmapLayers, heatmapViewportBounds } from '../utils/heatmapMap';
 import { registerVesselTracksLayers, vesselTracksGeoJson } from '../utils/vesselTracksMap';
 import type { VesselTracksResult, HeatmapResult } from '@ais/contracts';
-import type { ChartLayerVisibility, ChartMapControls } from '../types/chart';
+import type { ChartLayerVisibility, ChartMapControls, ChartVesselHighlight } from '../types/chart';
+import type { MapCameraRequest, MapCameraResult } from '@ais/contracts';
+import { cameraError, cameraPadding, createMapCamera } from '../utils/mapCamera';
+import { createSourceRenderAcknowledgements } from '../utils/mapSourceRender';
+import {
+  createHighlightAnimation,
+  createHighlightTimeline,
+  highlightGeoJson,
+  registerVesselHighlightLayers,
+} from '../utils/vesselHighlightsMap';
 import {
   applyChartBusinessVisibility,
   chartHomeBounds,
@@ -66,6 +75,7 @@ const props = defineProps<{
   selectingRegion?: boolean;
   heatmap?: HeatmapResult | null;
   vesselTracks?: VesselTracksResult | null;
+  vesselHighlights?: ChartVesselHighlight[];
 }>();
 const emit = defineEmits<{
   viewport: [bbox: Bbox, zoom: number];
@@ -77,6 +87,7 @@ const emit = defineEmits<{
   regionCancelled: [];
   heatmapDisplayed: [result: HeatmapResult];
   vesselTracksDisplayed: [result: VesselTracksResult];
+  vesselHighlightsDisplayed: [targets: ChartVesselHighlight[]];
 }>();
 const host = useTemplateRef<HTMLElement>('mapHost');
 const mapError = ref('');
@@ -135,6 +146,70 @@ watch(
   },
 );
 let map: GLMap | undefined;
+let camera: ReturnType<typeof createMapCamera> | undefined;
+let sourceAcknowledgements: ReturnType<typeof createSourceRenderAcknowledgements> | undefined;
+let highlightAnimation: ReturnType<typeof createHighlightAnimation> | undefined;
+const highlightTimeline = createHighlightTimeline();
+let highlightSourceSignature = '';
+let reducedMotion: MediaQueryList | undefined;
+let automaticCameraAllowed = true;
+let cameraRevision = 0;
+function visibleCameraPadding() {
+  const view = host.value!.getBoundingClientRect();
+  const overlays = [
+    ...document.querySelectorAll<HTMLElement>('.chart-panel, .chart-agent-input, .chart-input-bar'),
+  ]
+    .filter(
+      (element) =>
+        element.getClientRects().length &&
+        getComputedStyle(element).visibility !== 'hidden' &&
+        !element.closest('[inert]'),
+    )
+    .map((element) => element.getBoundingClientRect());
+  return cameraPadding(view, overlays);
+}
+function applyCamera(
+  request: MapCameraRequest & { commandId?: string },
+  signal?: AbortSignal,
+): Promise<MapCameraResult> {
+  automaticCameraAllowed = false;
+  cameraRevision++;
+  if (!camera || !ready.value) return Promise.reject(cameraError('地图尚未就绪', 'UNAVAILABLE'));
+  if (drawMode.value !== 'cancel' || props.selectingRegion)
+    return Promise.reject(cameraError('地图正在绘图或框选', 'STATE_CONFLICT'));
+  return camera.apply(request, request.commandId ?? crypto.randomUUID(), signal);
+}
+function localCamera(request: MapCameraRequest) {
+  cameraRevision++;
+  if (camera) void camera.apply(request, crypto.randomUUID()).catch(() => {});
+}
+function interruptCamera() {
+  automaticCameraAllowed = false;
+  cameraRevision++;
+  camera?.interrupt();
+}
+function cameraIntent(): (request: MapCameraRequest) => void {
+  automaticCameraAllowed = false;
+  const revision = ++cameraRevision;
+  camera?.interrupt();
+  return (request) => {
+    if (
+      disposed ||
+      revision !== cameraRevision ||
+      drawMode.value !== 'cancel' ||
+      props.selectingRegion
+    )
+      return;
+    localCamera(request);
+  };
+}
+function updateAnimationState() {
+  highlightAnimation?.update({
+    active: !!props.vesselHighlights?.length,
+    hidden: document.hidden,
+    reduced: reducedMotion?.matches ?? false,
+  });
+}
 let heatmapPopup: maplibregl.Popup | undefined;
 const heatmapPopupOpen = ref(false);
 useUiComponent('chart.heatmap.popup', {
@@ -214,7 +289,12 @@ function editGeometry(value: IntelligenceGeometry) {
     drawing.setMode('select');
     if (features[0]?.id) drawing.selectFeature(features[0].id);
     const bounds = intelligenceFeatureBounds([{ geometry }]);
-    if (bounds) map.fitBounds(bounds, { padding: 100, maxZoom: 11 });
+    if (bounds)
+      localCamera({
+        mode: 'bounds',
+        bbox: [bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1]],
+        maxZoom: 11,
+      });
   } catch (e) {
     drawingError.value = (e as Error).message;
     drawingFamily = null;
@@ -331,7 +411,14 @@ function locateIntelligence(eventId?: string) {
       (f) => !eventId || f.properties.eventId === eventId,
     ),
   );
-  if (bounds) map?.fitBounds(bounds, { padding: 70, maxZoom: 11 });
+  if (bounds) {
+    automaticCameraAllowed = false;
+    localCamera({
+      mode: 'bounds',
+      bbox: [bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1]],
+      maxZoom: 11,
+    });
+  }
 }
 function draw(mode: 'point' | 'linestring' | 'polygon' | 'select' | 'cancel') {
   if (!drawing || (mode !== 'cancel' && !props.canDraw)) return;
@@ -515,6 +602,9 @@ function registerBusinessLayers() {
   registerChartBusinessLayers(map, grid);
   applyChartBusinessVisibility(map, props.layers);
   registerIntelligenceLayers(map);
+  registerVesselHighlightLayers(map);
+  highlightSourceSignature = '';
+  updateVesselHighlights();
   updateIntelligence();
   update();
   ready.value = true;
@@ -524,12 +614,15 @@ function updateVesselTracks() {
   const source = map?.getSource('ais-history-tracks') as GeoJSONSource | undefined;
   if (!source) return;
   const snapshot = props.vesselTracks;
-  source.setData(vesselTracksGeoJson(snapshot ?? null));
-  if (snapshot)
-    map?.once('idle', () => {
-      if (props.vesselTracks === snapshot && map?.getLayer('ais-history-tracks'))
-        emit('vesselTracksDisplayed', snapshot);
-    });
+  sourceAcknowledgements?.update(
+    'ais-history-tracks',
+    () => source.setData(vesselTracksGeoJson(snapshot ?? null)),
+    () => {
+      if (snapshot)
+        if (props.vesselTracks === snapshot && map?.getLayer('ais-history-tracks'))
+          emit('vesselTracksDisplayed', snapshot);
+    },
+  );
 }
 function updateHeatmap() {
   heatmapPopup?.remove();
@@ -537,12 +630,60 @@ function updateHeatmap() {
   const source = map?.getSource('ais-heatmap') as GeoJSONSource | undefined;
   if (!source) return;
   const snapshot = props.heatmap;
-  source.setData(heatmapGeoJson(snapshot ?? null));
-  if (snapshot)
-    map?.once('idle', () => {
-      if (props.heatmap === snapshot && map?.getLayer('ais-heatmap'))
-        emit('heatmapDisplayed', snapshot);
-    });
+  sourceAcknowledgements?.update(
+    'ais-heatmap',
+    () => source.setData(heatmapGeoJson(snapshot ?? null)),
+    () => {
+      if (snapshot)
+        if (props.heatmap === snapshot && map?.getLayer('ais-heatmap'))
+          emit('heatmapDisplayed', snapshot);
+    },
+  );
+}
+function updateVesselHighlights() {
+  const source = map?.getSource('vessel-highlights') as GeoJSONSource | undefined;
+  if (!source) return;
+  const targets = props.vesselHighlights ?? [];
+  const signature = JSON.stringify(
+    targets.map((target) => [
+      target.mmsi,
+      target.lon,
+      target.lat,
+      target.effectId,
+      target.headingDegrees,
+      target.cogDegrees,
+    ]),
+  );
+  if (signature === highlightSourceSignature) {
+    // Position metadata may refresh without a coordinate change. Confirm the
+    // current snapshot only after another actual frame; never rewrite its data.
+    sourceAcknowledgements?.update(
+      'vessel-highlights',
+      () => Promise.resolve(),
+      () => {
+        if ((props.vesselHighlights ?? targets) === targets)
+          emit('vesselHighlightsDisplayed', targets);
+      },
+    );
+  } else {
+    highlightSourceSignature = signature;
+    const data = highlightGeoJson(targets, highlightTimeline, highlightAnimation?.now() ?? 0);
+    highlightAnimation?.targets(
+      data.features.map((feature) => ({
+        mmsi: feature.properties.mmsi,
+        startedAt: feature.properties.startedAt,
+      })),
+    );
+    sourceAcknowledgements?.update(
+      'vessel-highlights',
+      () => source.setData(data),
+      () => {
+        if ((props.vesselHighlights ?? targets) === targets)
+          emit('vesselHighlightsDisplayed', targets);
+      },
+    );
+  }
+  updateAnimationState();
 }
 onMounted(async () => {
   await nextTick();
@@ -558,6 +699,20 @@ onMounted(async () => {
       fitBoundsOptions: { padding: 30, maxZoom: 8 },
       attributionControl: { compact: true },
     });
+    reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    camera = createMapCamera(map, visibleCameraPadding, () => reducedMotion?.matches ?? false);
+    sourceAcknowledgements = createSourceRenderAcknowledgements(map);
+    highlightAnimation = createHighlightAnimation(map, {
+      request: (callback) => requestAnimationFrame(callback),
+      cancel: (id) => cancelAnimationFrame(id),
+    });
+    document.addEventListener('visibilitychange', updateAnimationState);
+    reducedMotion.addEventListener('change', updateAnimationState);
+    const canvas = map.getCanvas();
+    canvas.addEventListener('pointerdown', interruptCamera);
+    canvas.addEventListener('wheel', interruptCamera, { passive: true });
+    canvas.addEventListener('touchstart', interruptCamera, { passive: true });
+    canvas.addEventListener('keydown', interruptCamera);
     ++mapInitializations.value;
     mapInstance.value = crypto.randomUUID();
     scheduling = createChartMapScheduling(
@@ -651,6 +806,7 @@ onMounted(async () => {
     resizeObserver.observe(host.value);
     map.on('movestart', () => {
       moving.value = true;
+      camera?.invalidate();
     });
     map.on('moveend', () => {
       moving.value = false;
@@ -687,7 +843,15 @@ onMounted(async () => {
       }
     });
     map.on('click', 'clusters', (e) => {
-      map!.flyTo({ center: e.lngLat, zoom: Math.min(9, map!.getZoom() + 2) });
+      localCamera({
+        mode: 'point',
+        center: [e.lngLat.lng, e.lngLat.lat],
+        zoom: Math.min(9, map!.getZoom() + 2),
+      });
+    });
+    map.on('click', 'vessel-highlight-marker', (e) => {
+      if (drawMode.value === 'cancel' && e.features?.[0]?.properties.mmsi)
+        emit('select', String(e.features[0].properties.mmsi));
     });
   } catch {
     mapError.value = map
@@ -707,6 +871,7 @@ function currentBounds(): Bbox | null {
 watch(() => [props.data, props.track, props.frame], update, { deep: true });
 watch(() => props.heatmap, updateHeatmap);
 watch(() => props.vesselTracks, updateVesselTracks);
+watch(() => props.vesselHighlights, updateVesselHighlights, { deep: true });
 watch(
   () => [props.intelligence, props.activeEventId, props.objects, props.intelligenceLayers],
   updateIntelligence,
@@ -722,19 +887,49 @@ watch(
   { deep: true },
 );
 defineExpose<ChartMapControls>({
+  applyCamera,
+  currentCamera: () => camera?.current() ?? null,
+  cameraState: () => (ready.value ? (camera?.state() ?? null) : null),
+  cameraIntent,
   interactionState: () => ({
     ready: ready.value,
     moving: moving.value,
     drawing: drawMode.value !== 'cancel',
   }),
   currentBounds,
-  resetView: () => map?.fitBounds(chartHomeBounds, { padding: 30, maxZoom: 8 }),
-  zoomIn: () => map?.zoomIn(),
-  zoomOut: () => map?.zoomOut(),
+  resetView: () => {
+    automaticCameraAllowed = false;
+    localCamera({
+      mode: 'bounds',
+      bbox: [
+        chartHomeBounds[0][0],
+        chartHomeBounds[0][1],
+        chartHomeBounds[1][0],
+        chartHomeBounds[1][1],
+      ],
+      maxZoom: 8,
+    });
+  },
+  zoomIn: () => {
+    automaticCameraAllowed = false;
+    localCamera({ mode: 'current', zoomDelta: 1 });
+  },
+  zoomOut: () => {
+    automaticCameraAllowed = false;
+    localCamera({ mode: 'current', zoomDelta: -1 });
+  },
   locateIntelligence,
   focusGeometry: (geometry) => {
     const bounds = intelligenceFeatureBounds([{ geometry }]);
-    if (bounds) map?.fitBounds(bounds, { padding: 70, maxZoom: 10 });
+    automaticCameraAllowed = false;
+    if (geometry.type === 'Point')
+      localCamera({ mode: 'point', center: geometry.coordinates as [number, number], zoom: 10 });
+    else if (bounds)
+      localCamera({
+        mode: 'bounds',
+        bbox: [bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1]],
+        maxZoom: 10,
+      });
   },
   draw,
   editGeometry,
@@ -743,15 +938,15 @@ watch(
   () => props.evidence,
   (result) => {
     updateEvidence();
-    if (!result || !map) return;
-    const [w, s, e, n] = result.bbox;
-    map.fitBounds(
-      [
-        [w, s],
-        [w > e ? e + 360 : e, n],
-      ],
-      { padding: 70, maxZoom: 11 },
-    );
+    if (
+      !result ||
+      !map ||
+      !automaticCameraAllowed ||
+      drawMode.value !== 'cancel' ||
+      props.selectingRegion
+    )
+      return;
+    localCamera({ mode: 'bounds', bbox: result.bbox, maxZoom: 11 });
   },
   { deep: true },
 );
@@ -759,11 +954,23 @@ watch(
   () => props.track,
   (t) => {
     const p = t?.segments.flatMap((s) => s.points)[0];
-    if (p) map?.flyTo({ center: [p.lon, p.lat], zoom: 7 });
+    if (p && automaticCameraAllowed && drawMode.value === 'cancel' && !props.selectingRegion)
+      localCamera({ mode: 'point', center: [p.lon, p.lat], zoom: 7 });
   },
 );
 onBeforeUnmount(() => {
   disposed = true;
+  camera?.dispose();
+  sourceAcknowledgements?.dispose();
+  highlightAnimation?.dispose();
+  highlightTimeline.clear();
+  document.removeEventListener('visibilitychange', updateAnimationState);
+  reducedMotion?.removeEventListener('change', updateAnimationState);
+  const canvas = map?.getCanvas();
+  canvas?.removeEventListener('pointerdown', interruptCamera);
+  canvas?.removeEventListener('wheel', interruptCamera);
+  canvas?.removeEventListener('touchstart', interruptCamera);
+  canvas?.removeEventListener('keydown', interruptCamera);
   drawing?.off('change', publishDrawing);
   drawing?.off('finish', finishDrawing);
   if (drawing?.enabled) {

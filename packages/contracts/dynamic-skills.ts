@@ -9,6 +9,8 @@ export const DynamicSkillArtifactKindSchema = z.enum([
   'vessel_tracks',
   'intelligence_search',
   'analysis',
+  'vessel_highlights',
+  'map_camera',
 ]);
 export type DynamicSkillArtifactKind = z.infer<typeof DynamicSkillArtifactKindSchema>;
 const StepId = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/);

@@ -38,7 +38,14 @@ export async function queryAgentVessels(
 ): Promise<AgentQueryResult> {
   const { kind, inputRevision, selection } = QueryInputSchema.parse(input);
   if (kind === 'vessel_list' && !selection.bbox) throw new Error('region_required');
-  if (kind === 'vessel_detail' && !selection.mmsis?.length) throw new Error('vessels_required');
+  if (
+    kind === 'vessel_detail' &&
+    !selection.mmsis?.length &&
+    !selection.vesselSelector?.mmsis?.length &&
+    !selection.vesselSelector?.query &&
+    !selection.vesselSelector?.model
+  )
+    throw new Error('vessels_required');
   let selectedMmsis: string[] | null = selection.mmsis?.length ? selection.mmsis : null;
   if (
     selection.vesselSelector &&

@@ -1,4 +1,15 @@
-import type { IntelligenceGeometry, Bbox } from '@ais/contracts';
+import type {
+  IntelligenceGeometry,
+  Bbox,
+  HighlightVessel,
+  MapCameraRequest,
+  MapCameraResult,
+} from '@ais/contracts';
+export interface ChartVesselHighlight extends HighlightVessel {
+  effectId: string;
+  headingDegrees?: number | null;
+  cogDegrees?: number | null;
+}
 export interface ChartLayerVisibility {
   ais: boolean;
   tracks: boolean;
@@ -6,6 +17,13 @@ export interface ChartLayerVisibility {
 }
 
 export interface ChartMapControls {
+  applyCamera(
+    request: MapCameraRequest & { commandId?: string },
+    signal?: AbortSignal,
+  ): Promise<MapCameraResult>;
+  currentCamera(): MapCameraResult | null;
+  cameraState(): Omit<MapCameraResult, 'commandId'> | null;
+  cameraIntent(): (request: MapCameraRequest) => void;
   interactionState(): { ready: boolean; moving: boolean; drawing: boolean };
   currentBounds(): Bbox | null;
   editGeometry(geometry: IntelligenceGeometry): void;

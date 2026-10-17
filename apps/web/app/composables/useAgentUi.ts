@@ -4,7 +4,7 @@ import { nextTick, onScopeDispose } from 'vue';
 import {
   UiStateSchema,
   uiOperationAllowed,
-  uiPostcondition,
+  uiCommandPostcondition,
   type UiBinding,
   type UiCommand,
   type UiComponent,
@@ -12,6 +12,7 @@ import {
   type UiOperation,
   type UiReceipt,
   type UiState,
+  type MapCameraResult,
 } from '@ais/contracts';
 
 type Projection = Omit<UiComponent, 'id' | 'version'>;
@@ -164,7 +165,7 @@ function createUiRegistry() {
       }
     }
     const after = snapshot();
-    if (status === 'succeeded' && !uiPostcondition(claimed.operation, after)) {
+    if (status === 'succeeded' && !uiCommandPostcondition(claimed, after, current)) {
       status = 'failed';
       failure = 'POSTCONDITION_FAILED';
     }
@@ -255,6 +256,10 @@ function createUiRegistry() {
               heatmapVersion: snapshot().components.find((c) => c.id === 'chart.heatmap')?.version,
               tracksVersion: snapshot().components.find((c) => c.id === 'chart.vessel-tracks')
                 ?.version,
+              highlightsVersion: snapshot().components.find(
+                (c) => c.id === 'chart.vessel-highlights',
+              )?.version,
+              cameraVersion: snapshot().components.find((c) => c.id === 'chart.viewport')?.version,
             }
           : undefined;
       });
@@ -319,6 +324,52 @@ export function uiProjection(
     actions,
     ...extra,
   };
+}
+
+/** Unsaved geometry keeps the viewport protected after its drawing gesture ends. */
+export function uiViewportProjection(
+  actions: UiComponent['actions'],
+  extra: Partial<Projection>,
+): Projection {
+  return uiProjection(true, actions, {
+    ...extra,
+    ...(extra.interacting
+      ? { blocked: 'drawing' as const }
+      : extra.dirty
+        ? { blocked: 'editing' as const }
+        : {}),
+  });
+}
+
+/** MapLibre owns camera truth; deferred data-query bounds are deliberately excluded. */
+export function chartViewportSnapshot(input: {
+  map?: { ready: boolean; moving: boolean; drawing: boolean };
+  cameraState?: Omit<MapCameraResult, 'commandId'>;
+  cameraEvidence?: MapCameraResult;
+  target?: { lon: number; lat: number } | null;
+  selecting: boolean;
+  dirty: boolean;
+  revision: number;
+}): Projection {
+  const { map, cameraState, cameraEvidence, target } = input;
+  const bounds = cameraState?.bbox;
+  const within =
+    !!target &&
+    !!bounds &&
+    target.lat >= bounds[1] &&
+    target.lat <= bounds[3] &&
+    (bounds[0] <= bounds[2]
+      ? target.lon >= bounds[0] && target.lon <= bounds[2]
+      : target.lon >= bounds[0] || target.lon <= bounds[2]);
+  return uiViewportProjection(map?.ready ? ['focus'] : [], {
+    mounted: !!map?.ready,
+    focused: within || !!cameraEvidence,
+    dirty: input.dirty,
+    interacting: input.selecting || !!map?.moving || !!map?.drawing,
+    revision: input.revision,
+    ...(cameraState ? { cameraState } : {}),
+    ...(cameraEvidence ? { cameraEvidence } : {}),
+  });
 }
 
 /** Form values are compared locally only; the registry receives a dirty boolean, never values. */

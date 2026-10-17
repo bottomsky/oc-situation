@@ -3,6 +3,18 @@ import { CapabilityError } from './errors';
 import type { CapabilityDirectoryEntry, CapabilityRoutingMetadata } from './metadata';
 
 const ROUTING: Readonly<Record<string, CapabilityRoutingMetadata>> = Object.freeze({
+  'vessel-highlight': Object.freeze({
+    intents: Object.freeze(['vessel_highlights'] as const),
+    requiredInputs: Object.freeze({ vessel_highlights: Object.freeze([]) }),
+    executionMode: 'local',
+    available: true,
+  }),
+  'map-camera': Object.freeze({
+    intents: Object.freeze(['map_camera'] as const),
+    requiredInputs: Object.freeze({ map_camera: Object.freeze([]) }),
+    executionMode: 'local',
+    available: true,
+  }),
   'ui-control': Object.freeze({
     intents: Object.freeze(['ui_control'] as const),
     requiredInputs: Object.freeze({ ui_control: Object.freeze([]) }),
@@ -53,6 +65,20 @@ export function getBuiltinCapabilityMetadata(capabilityId: string): CapabilityRo
 }
 
 export const BUILTIN_SKILL_BINDINGS: readonly SkillToolBinding[] = Object.freeze([
+  Object.freeze({
+    skillId: 'vessel-highlight',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: Object.freeze(['prepare_vessel_highlights']),
+    referencePaths: Object.freeze([]),
+  }),
+  Object.freeze({
+    skillId: 'map-camera',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: Object.freeze(['prepare_map_camera']),
+    referencePaths: Object.freeze([]),
+  }),
   Object.freeze({
     skillId: 'ui-control',
     version: '1.0.0',

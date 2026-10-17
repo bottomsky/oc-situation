@@ -1,4 +1,5 @@
 import { vesselTracksSelection } from '../domain/vessel-tracks-intent';
+import { mapTaskSelection } from '../domain/agent-map';
 import { dynamicTaskSelection, shouldUseDynamicSkill } from '../domain/agent-dynamic-routing';
 import {
   copyDynamicSkillBinding,
@@ -129,6 +130,17 @@ export class AgentInputError extends Error {
     message: string,
   ) {
     super(message);
+  }
+}
+/** Builtin and dynamically composed map tasks share the public input error boundary. */
+export function bindAgentMapSelection(goal: string, selection: AgentSelection): AgentSelection {
+  try {
+    return mapTaskSelection(goal, selection);
+  } catch {
+    throw new AgentInputError(
+      'invalid_input',
+      '镜头参数无效，请提供有效经纬度和 0～22 范围内的缩放。',
+    );
   }
 }
 function requestRow(r: Row): AgentInputRequest {
@@ -489,6 +501,8 @@ export async function submitAgentMessage(
         };
       }
       selection = dynamicTaskSelection(input.content, selection, now);
+      if (/高亮|聚焦|镜头/.test(input.content))
+        selection = bindAgentMapSelection(input.content, selection);
     }
     if (derived.intent === 'vessel_tracks') {
       delete selection.timeRange;
@@ -501,6 +515,17 @@ export async function submitAgentMessage(
         /选中|选定|这艘|该船|当前船舶/.test(input.content)
       )
         selection.vesselSelector = { mmsis: input.mapContext.selectedMmsis };
+    }
+    if (derived.intent === 'vessel_highlights' || derived.intent === 'map_camera') {
+      selection.bbox = input.bbox ?? input.mapContext?.bbox;
+      if (
+        input.mapContext?.selectedMmsis?.length &&
+        /选中|选定|这艘|该船|当前船舶/.test(input.content)
+      ) {
+        selection.mmsis = input.mapContext.selectedMmsis;
+        selection.vesselSelector = { mmsis: input.mapContext.selectedMmsis };
+      }
+      selection = bindAgentMapSelection(input.content, selection);
     }
     if (derived.intent === 'ais_heatmap') {
       delete selection.timeRange;
@@ -617,13 +642,22 @@ export async function submitAgentMessage(
       );
       if (!binding.rowCount) throw new AgentInputError('conflict', '当前页面绑定已失效，请重试。');
       const taskBinding = { ...input.uiBinding };
-      if (useDynamic && binding.rows[0].state) {
+      if (
+        (useDynamic || derived.intent === 'vessel_highlights' || derived.intent === 'map_camera') &&
+        binding.rows[0].state
+      ) {
         const state = UiStateSchema.parse(binding.rows[0].state);
         taskBinding.heatmapVersion ??= state.components.find(
           (component) => component.id === 'chart.heatmap',
         )?.version;
         taskBinding.tracksVersion ??= state.components.find(
           (component) => component.id === 'chart.vessel-tracks',
+        )?.version;
+        taskBinding.highlightsVersion ??= state.components.find(
+          (component) => component.id === 'chart.vessel-highlights',
+        )?.version;
+        taskBinding.cameraVersion ??= state.components.find(
+          (component) => component.id === 'chart.viewport',
         )?.version;
       }
       await client.query('UPDATE agent_tasks SET ui_binding=$2::jsonb WHERE id=$1', [

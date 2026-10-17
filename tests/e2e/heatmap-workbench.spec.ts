@@ -225,6 +225,7 @@ test('主动任务自动展示，刷新历史需手动点击快照', async ({ pa
     fullPage: true,
   });
   await page.reload();
+  await page.getByRole('button', { name: '查看任务详情', exact: true }).click();
   await expect(page.getByRole('button', { name: '在海图展示此快照' })).toBeVisible();
   await expect(page.getByTestId('heatmap-legend')).toHaveCount(0);
   await page.getByRole('button', { name: '在海图展示此快照' }).click();

@@ -251,6 +251,81 @@ function fixture(bound = true) {
 }
 
 describe('durable dynamic composition', () => {
+  it('composes a queried vessel set into highlight and camera artifacts with separate required receipts', async () => {
+    const m = fixture();
+    m.context.task.goal = '筛选当前区域货船并高亮聚焦';
+    m.version.definition = {
+      ...definition,
+      name: 'cargo-highlights-camera',
+      description: '查询船舶后高亮并聚焦',
+      body: '按宿主输入查询后高亮，聚焦同一查询快照。',
+      requiredInputs: ['region'],
+      toolIds: ['query_vessels', 'prepare_vessel_highlights', 'prepare_map_camera'],
+      steps: [
+        definition.steps[0]!,
+        {
+          id: 'highlights',
+          toolId: 'prepare_vessel_highlights',
+          input: { selection: { $ref: 'input.selection' }, vessels: { $ref: 'steps.cargo' } },
+          artifactKind: 'vessel_highlights',
+          ui: { componentId: 'chart.vessel-highlights', action: 'show' },
+        },
+        {
+          id: 'camera',
+          toolId: 'prepare_map_camera',
+          input: { selection: { $ref: 'input.selection' }, vessels: { $ref: 'steps.cargo' } },
+          artifactKind: 'map_camera',
+          ui: { componentId: 'chart.viewport', action: 'focus' },
+        },
+      ],
+      expectedArtifacts: [
+        { stepId: 'cargo', kind: 'vessel_list' },
+        { stepId: 'highlights', kind: 'vessel_highlights' },
+        { stepId: 'camera', kind: 'map_camera' },
+      ],
+      requiredDisplays: ['highlights', 'camera'],
+    };
+    m.execution.taskBinding!.toolCeiling = [...m.version.definition.toolIds];
+    const query = m.ports.queryVessels!;
+    m.ports.queryVessels = async (...args) => {
+      const result = await query(...args);
+      return {
+        ...result,
+        items: result.items.map((v) => ({
+          ...v,
+          latestPosition: {
+            lat: 31,
+            lon: 121,
+            observedAt: result.asOf,
+            sogKnots: 0,
+            sourceId: 'test',
+          },
+        })),
+      };
+    };
+    const complete = m.dynamic.complete;
+    m.dynamic.complete = async (...args) => {
+      const call = await complete(...args);
+      if (m.version.definition.steps.find((s) => s.id === call.stepId)?.ui)
+        call.status = 'waiting_ui';
+      return call;
+    };
+    const options = { apiKey: 'fixture', dynamicSkillsEnabled: true };
+    await executeDynamicSkill(m.context, m.ports, m.dynamic, options);
+    expect(m.commands.get('highlights')?.status).toBe('queued');
+    expect(
+      m.execution.artifacts.find((a) => a.kind === 'vessel_highlights')?.modelProjection,
+    ).toEqual({ operation: 'show', targetCount: 1, missingCount: 0 });
+    m.acknowledge('highlights');
+    await executeDynamicSkill(m.context, m.ports, m.dynamic, options);
+    expect(m.commands.get('camera')?.status).toBe('queued');
+    expect(m.execution.artifacts.find((a) => a.kind === 'map_camera')?.payload).toMatchObject({
+      request: { mode: 'point', center: [121, 31], zoom: 10 },
+    });
+    m.acknowledge('camera');
+    await executeDynamicSkill(m.context, m.ports, m.dynamic, options);
+    expect(m.counts).toMatchObject({ query: 1, models: 0, finish: 'completed' });
+  });
   it('waits for each presentation and resumes without repeating prior queries', async () => {
     const m = fixture();
     const options = { apiKey: 'fixture', dynamicSkillsEnabled: true };

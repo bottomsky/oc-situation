@@ -52,6 +52,15 @@ export function derivePurposeIntent(purpose: AgentPurpose): AgentIntent {
     : 'analysis';
 }
 export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?: AgentPurpose } {
+  if (!/不要|不必|无需|不用|别再/.test(goal)) {
+    if (/高亮|水波(?:提醒|扩散)/.test(goal)) return { intent: 'vessel_highlights' };
+    if (
+      /聚焦|镜头|(?:海图|地图).*(?:缩放|放大|缩小)|(?:放大|缩小).*(?:海图|地图)|(?:放大|缩小)\s*\d+\s*级/.test(
+        goal,
+      )
+    )
+      return { intent: 'map_camera' };
+  }
   if (
     /航线|历史轨迹|批量轨迹|船舶轨迹/.test(goal) &&
     /不要|别(?:再|帮我)?(?:绘制|显示|生成|查询|关闭)|无需|不用/.test(goal)
@@ -115,6 +124,12 @@ export function requiredAgentInputFields(
 ): AgentInputField[] {
   const actual = selection.purpose ? derivePurposeIntent(selection.purpose) : intent;
   if (actual === 'ui_control' || actual === 'conversation' || actual === 'explain') return [];
+  if (actual === 'vessel_highlights' || actual === 'map_camera') {
+    if (selection.highlightClear || selection.highlightTaskIndex || selection.mapCamera) return [];
+    if (selection.highlightClearUnclear && !selection.mmsis?.length && !selection.vesselSelector)
+      return ['vessel_selector'];
+    return selection.mmsis?.length || selection.vesselSelector ? [] : ['vessel_selector'];
+  }
   const fields: AgentInputField[] = [];
   if (
     actual === 'intelligence_search' &&
