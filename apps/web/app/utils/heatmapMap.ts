@@ -31,7 +31,10 @@ export function registerHeatmapLayers(map: {
   getLayer(id: string): unknown;
   addSource(id: string, source: GeoJSONSourceSpecification): unknown;
   addLayer(layer: LayerSpecification): unknown;
+  removeLayer(id: string): unknown;
 }) {
+  // A restored style may still contain the former grid-centre markers.
+  if (map.getLayer('ais-heatmap-cells')) map.removeLayer('ais-heatmap-cells');
   if (!map.getSource('ais-heatmap'))
     map.addSource('ais-heatmap', { type: 'geojson', data: heatmapGeoJson(null) });
   if (!map.getLayer('ais-heatmap'))
@@ -42,7 +45,7 @@ export function registerHeatmapLayers(map: {
       paint: {
         'heatmap-weight': ['get', 'count'],
         'heatmap-intensity': 0.6,
-        'heatmap-radius': 28,
+        'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 16, 5, 28, 10, 40, 14, 48],
         'heatmap-opacity': 0.65,
         'heatmap-color': [
           'interpolate',
@@ -59,19 +62,6 @@ export function registerHeatmapLayers(map: {
           1,
           '#e56244',
         ],
-      },
-    });
-  if (!map.getLayer('ais-heatmap-cells'))
-    map.addLayer({
-      id: 'ais-heatmap-cells',
-      type: 'circle',
-      source: 'ais-heatmap',
-      paint: {
-        'circle-radius': 7,
-        'circle-color': '#f2d666',
-        'circle-opacity': 0.12,
-        'circle-stroke-color': '#f2d666',
-        'circle-stroke-width': 1,
       },
     });
 }

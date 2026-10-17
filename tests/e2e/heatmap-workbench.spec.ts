@@ -159,6 +159,12 @@ test('人工生成锁定范围，缩放不重查，关闭移除图层', async ({
     const map = (globalThis as typeof globalThis & { heatmapTestMap: import('maplibre-gl').Map })
       .heatmapTestMap;
     const original = map.getStyle();
+    // Reproduce restoring a style saved before the grid-centre circles were removed.
+    original.layers.push({
+      id: 'ais-heatmap-cells',
+      type: 'circle',
+      source: 'ais-heatmap',
+    });
     await new Promise<void>((resolve) => {
       map.once('idle', () => resolve());
       map.setStyle(original, { diff: false });
@@ -171,6 +177,7 @@ test('人工生成锁定范围，缩放不重查，关闭移除图层', async ({
     };
   });
   expect(style.count).toBe(1);
+  expect(style.layers).not.toContain('ais-heatmap-cells');
   expect(style.layers.indexOf('ais-heatmap')).toBeLessThan(style.layers.indexOf('vessels'));
   expect(fixture.requests).toHaveLength(1);
   await page.screenshot({
