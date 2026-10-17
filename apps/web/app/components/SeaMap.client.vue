@@ -812,9 +812,6 @@ onBeforeUnmount(() => {
   >
     修订 {{ evidence.revision }} · ● 证据点 / 红色轨迹 · 虚线区域为公告适用范围
   </div>
-  <div v-if="intelligence?.features.length" class="intelligence-map-legend">
-    ● 青色位置 · 蓝色对象 · 红色影响 · 金色候选（待核实）
-  </div>
   <div v-if="drawMode !== 'cancel'" class="intelligence-draw-note">
     绘制 {{ drawModeLabel }} · 点选创建，线/面双击结束 · 完成后在详情保存关联<button
       @click="draw('cancel')"
@@ -919,7 +916,6 @@ onBeforeUnmount(() => {
 </style>
 
 <style scoped>
-.intelligence-map-legend,
 .intelligence-draw-note {
   position: absolute;
   z-index: 2;
