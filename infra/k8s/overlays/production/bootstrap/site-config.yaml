@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ais-config
+data:
+  PUBLIC_DOMAIN: ais.example.invalid
+  WEB_ORIGINS: https://ais.example.invalid
+  S3_ENDPOINT: https://s3.example.invalid
+  S3_REGION: us-east-1
+  S3_BUCKET: ais-production-dedicated
+  # Use the actual source CIDRs seen by Caddy from the cluster ingress controller.
+  # Multiple CIDRs are space-separated. Never use 0.0.0.0/0 or ::/0.
+  INGRESS_TRUSTED_CIDRS: 192.0.2.0/24

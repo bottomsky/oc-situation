@@ -7,3 +7,7 @@
     reverse_proxy web:13001
   }
 }
+
+http://:8081 {
+  respond /healthz 200
+}

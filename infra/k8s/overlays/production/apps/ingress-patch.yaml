@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ais
+spec:
+  ingressClassName: replace-with-ingress-class
+  tls:
+    - hosts: [ais.example.invalid]
+      secretName: ais-ingress-tls
+  rules:
+    - host: ais.example.invalid
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 8080

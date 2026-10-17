@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ais-config
+data:
+  NODE_ENV: production
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: ais
+  CLICKHOUSE_DATABASE: ais
+  NATS_URL: nats://nats:4222
+  S3_ENDPOINT: https://s3.example.invalid
+  S3_REGION: us-east-1
+  S3_BUCKET: ais-production-dedicated
+  METRICS_HOST: 0.0.0.0
+  WEB_ORIGINS: https://ais.example.invalid
+  PUBLIC_DOMAIN: ais.example.invalid
+  INGRESS_TRUSTED_CIDRS: 192.0.2.0/24
+  AGENT_ENABLED: 'false'
+  AGENT_UI_ENABLED: 'false'
+  AIS_ALLOW_LIVE: 'false'
+  CRAWL_RUN_TIMEOUT_SECONDS: '900'

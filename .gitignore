@@ -18,6 +18,7 @@ playwright/.cache/
 *.tsbuildinfo
 .env.*
 !.env.example
+!infra/.env.production.example
 *.log
 storage/
 references/osint/

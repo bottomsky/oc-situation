@@ -1,0 +1,17 @@
+# Copy into the chosen apps overlay, then add `patches: [{path: resources-patch.yaml}]`.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: '2'
+              memory: 2Gi

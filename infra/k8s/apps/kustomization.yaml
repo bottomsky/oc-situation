@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ais-platform
+resources:
+  - api.yaml
+  - web.yaml
+  - processor.yaml
+  - postgres-writer.yaml
+  - clickhouse-writer.yaml
+  - archiver.yaml
+  - collector.yaml
+  - crawler.yaml
+  - intelligence.yaml
+  - topic-port-restriction.yaml
+  - topic-low-speed.yaml
+  - ingress.yaml
+configMapGenerator:
+  - name: ais-caddy
+    files:
+      - Caddyfile

@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: ais-platform
+spec:
+  selector:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: ais-platform
+  ports:
+    - port: 8123
+      targetPort: 8123
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse-headless
+  labels:
+    app.kubernetes.io/name: clickhouse-headless
+    app.kubernetes.io/part-of: ais-platform
+spec:
+  selector:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: ais-platform
+  ports:
+    - port: 8123
+      targetPort: 8123
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: ais-platform
+spec:
+  serviceName: clickhouse-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: clickhouse
+      app.kubernetes.io/part-of: ais-platform
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: clickhouse
+        app.kubernetes.io/part-of: ais-platform
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:25.8
+          ports:
+            - name: service
+              containerPort: 8123
+          env:
+            - name: CLICKHOUSE_USER
+              value: ais
+            - name: CLICKHOUSE_DB
+              value: ais
+            - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+              value: '1'
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ais-databases
+                  key: CLICKHOUSE_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/clickhouse
+          resources:
+            requests:
+              cpu: '1'
+              memory: 4Gi
+            limits:
+              cpu: '6'
+              memory: 24Gi
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            periodSeconds: 20
+            failureThreshold: 3
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            periodSeconds: 15
+            failureThreshold: 3
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 500Gi

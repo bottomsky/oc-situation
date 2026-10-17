@@ -16,4 +16,9 @@ scrape_configs:
             'topic-port-restriction:13108',
             'topic-low-speed:13109',
           ]
+  - job_name: ais-agent
+    dns_sd_configs:
+      - names: ['agent']
+        type: A
+        port: 13110
 rule_files: ['/etc/prometheus/alerts.yaml']

@@ -1,0 +1,24 @@
+{
+  auto_https off
+  admin off
+  servers {
+    trusted_proxies static {$INGRESS_TRUSTED_CIDRS}
+    trusted_proxies_strict
+  }
+}
+:8080 {
+  respond /healthz 200
+  @site host {$PUBLIC_DOMAIN}
+  handle @site {
+    handle /api/* {
+      reverse_proxy 127.0.0.1:13000 {
+        header_up X-Forwarded-For {client_ip}
+        header_up X-Forwarded-Proto https
+      }
+    }
+    handle {
+      reverse_proxy web:13001
+    }
+  }
+  respond 421
+}

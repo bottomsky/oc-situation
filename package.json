@@ -13,6 +13,7 @@
     "packages/*"
   ],
   "scripts": {
+    "deployment:check": "node --import tsx scripts/check-deployment.ts",
     "lint": "node --import tsx scripts/workspace.ts lint",
     "format:check": "prettier --check apps packages scripts tests infra docs .github README.md package.json tsconfig.json tsconfig.base.json eslint.config.mjs vitest.config.ts playwright.config.ts .prettierrc.json",
     "format": "prettier --write apps packages scripts tests infra docs .github README.md package.json tsconfig.json tsconfig.base.json eslint.config.mjs vitest.config.ts playwright.config.ts .prettierrc.json",
