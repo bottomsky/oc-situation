@@ -269,6 +269,67 @@
   scrollbar-width: thin;
   scrollbar-color: #28617b #061623;
 }
+.chart-detail-float {
+  --control-bg: #081f32;
+  --control-line: #24516b;
+  --panel-bg: #092237;
+  --quote-bg: #082739;
+  --code-bg: #041421;
+  --hover-bg: #0d314b;
+  --selection-bg: #10394f;
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border-color: #28bddc;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #0a2a40f5, #061725fa 72%);
+  box-shadow:
+    0 12px 36px #0009,
+    inset 0 1px 0 #5bdfff30;
+  color-scheme: dark;
+}
+.chart-detail-float blockquote {
+  color: #bddce9;
+  border-color: #33c5ec;
+}
+.chart-detail-float .code-view {
+  color: #9bc8da;
+  border: 1px solid #1c4258;
+}
+.chart-detail-float .chart-panel-heading {
+  flex: 0 0 auto;
+  border-bottom: 1px solid #21536b;
+  margin-bottom: 10px;
+}
+.chart-detail-float .chart-panel-heading > div {
+  min-width: 0;
+}
+.chart-detail-float .chart-panel-heading h2 {
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.chart-detail-float .chart-detail-close {
+  flex: 0 0 30px;
+  height: 30px;
+}
+.chart-detail-scroll {
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+.chart-detail-scroll > .vessel-detail {
+  padding: 0 4px 10px;
+}
+.chart-detail-scroll .vessel-detail > .section-rule,
+.chart-detail-scroll .vessel-detail > h2 {
+  display: none;
+}
+.chart-detail-float .chart-evidence-container {
+  border: 0;
+  background: transparent;
+}
 .chart-section {
   padding: 10px 8px;
   border: 1px solid #193f55;

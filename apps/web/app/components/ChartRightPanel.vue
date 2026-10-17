@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentConversationState } from '../composables/useAgentConversation';
+import { useChartDetailHost } from '../composables/useChartDetail';
 import type {
   AnalysisResult,
   Bbox,
@@ -26,7 +27,18 @@ const emit = defineEmits<{
   heatmap: [result: AgentHeatmapResult];
   tracks: [result: AgentVesselTracksResult];
 }>();
+const detailHost = useChartDetailHost();
+const evidenceVisible = computed(() => detailHost?.isOpen('evidence') ?? !!props.evidence);
+const evidenceContent = useTemplateRef<HTMLElement>('evidenceContent');
+function closeEvidence() {
+  detailHost?.close('evidence');
+  emit('closeEvidence');
+}
 const tab = defineModel<'chat' | 'push' | 'tasks'>('tab', { default: 'push' });
+watch(tab, (value) => {
+  if (value !== 'push') detailHost?.close('evidence');
+  if (value !== 'chat') detailHost?.close('sources');
+});
 const expanded = ref(false);
 const evidenceDialog = useTemplateRef<HTMLDialogElement>('evidenceDialog');
 const expandTrigger = useTemplateRef<HTMLButtonElement>('expandTrigger');
@@ -35,18 +47,24 @@ async function openExpanded() {
   await nextTick();
   evidenceDialog.value?.showModal();
 }
-function closeExpanded() {
+function closeExpanded(restoreFocus = true) {
   evidenceDialog.value?.close();
   expanded.value = false;
-  void nextTick(() => expandTrigger.value?.focus());
+  if (restoreFocus) void nextTick(() => expandTrigger.value?.focus());
 }
 useUiComponent('chart.evidence', {
   read: () =>
-    uiProjection(expanded.value, ['close'], {
+    uiProjection(expanded.value || (!!props.evidence && evidenceVisible.value), ['close'], {
       order: 60,
-      focused: !!evidenceDialog.value?.contains(import.meta.client ? document.activeElement : null),
+      loading: !!props.selecting,
+      focused:
+        !!evidenceDialog.value?.contains(import.meta.client ? document.activeElement : null) ||
+        !!evidenceContent.value?.contains(import.meta.client ? document.activeElement : null),
     }),
-  execute: () => closeExpanded(),
+  execute: () => {
+    if (expanded.value) closeExpanded(false);
+    closeEvidence();
+  },
 });
 function dialogClosed() {
   if (expanded.value) closeExpanded();
@@ -84,11 +102,13 @@ function trapDialogTab(event: KeyboardEvent) {
   }
 }
 onBeforeUnmount(() => evidenceDialog.value?.close());
+watch(evidenceVisible, (visible) => {
+  if (!visible && expanded.value) closeExpanded(false);
+});
 watch(
   () => props.evidence,
   (value) => {
-    if (value) tab.value = 'push';
-    else if (expanded.value) closeExpanded();
+    if (!value && expanded.value) closeExpanded();
   },
 );
 </script>
@@ -129,22 +149,6 @@ watch(
             <p>船位观测与公告原文关联 · 规则结果需人工复核</p>
           </div>
         </div>
-        <div v-if="evidence" class="chart-evidence-container">
-          <button
-            ref="expandTrigger"
-            class="chart-evidence-expand"
-            :aria-expanded="expanded"
-            @click="openExpanded"
-          >
-            <ChartIcon name="Maximize" />放大阅读证据</button
-          ><AnalysisEvidence
-            v-if="!expanded"
-            :result="evidence"
-            @close="emit('closeEvidence')"
-            @locate="emit('locate', $event)"
-            @revision="emit('revision', $event)"
-          />
-        </div>
         <FusionEvents
           :items="items"
           :busy="busy"
@@ -159,24 +163,48 @@ watch(
     <footer class="chart-right-footer">
       <span class="status-dot" />按真实数据生成专题结果 · UTC
     </footer>
+    <ChartDetailFloat
+      :open="!!evidence && evidenceVisible"
+      side="right"
+      title="结论证据"
+      subtitle="ANALYSIS EVIDENCE"
+      @close="closeEvidence"
+    >
+      <div v-if="evidence" ref="evidenceContent" class="chart-evidence-container">
+        <button
+          ref="expandTrigger"
+          class="chart-evidence-expand"
+          :aria-expanded="expanded"
+          @click="openExpanded"
+        >
+          <ChartIcon name="Maximize" />放大阅读证据</button
+        ><AnalysisEvidence
+          v-if="!expanded"
+          :result="evidence"
+          @close="closeEvidence()"
+          @locate="emit('locate', $event)"
+          @revision="emit('revision', $event)"
+        />
+      </div>
+    </ChartDetailFloat>
     <dialog
       v-if="evidence"
       ref="evidenceDialog"
       class="chart-evidence-dialog chart-evidence-container"
       aria-label="结论证据放大阅读"
-      @cancel.prevent="closeExpanded"
+      @cancel.prevent="closeExpanded()"
       @close="dialogClosed"
       @keydown="trapDialogTab"
     >
       <template v-if="expanded">
-        <button class="chart-evidence-expand" autofocus @click="closeExpanded">
+        <button class="chart-evidence-expand" autofocus @click="closeExpanded()">
           <ChartIcon name="Minus" />返回紧凑视图
         </button>
         <AnalysisEvidence
           :result="evidence"
           @close="
             closeExpanded();
-            emit('closeEvidence');
+            closeEvidence();
           "
           @locate="emit('locate', $event)"
           @revision="emit('revision', $event)"

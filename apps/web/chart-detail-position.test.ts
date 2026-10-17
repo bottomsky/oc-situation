@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vitest';
+import { chartDetailPosition } from './app/utils/chartDetailPosition';
+
+describe('海图详情浮层定位', () => {
+  const workspace = { left: 8, right: 1912, top: 124, bottom: 992 };
+  it('人工详情紧随左面板，协同详情位于右面板左侧', () => {
+    expect(chartDetailPosition('left', workspace, { left: 8, right: 308 }, 1920)).toEqual({
+      left: 320,
+      top: 132,
+      width: 420,
+      height: 852,
+    });
+    expect(chartDetailPosition('right', workspace, { left: 1572, right: 1912 }, 1920)).toEqual({
+      left: 1140,
+      top: 132,
+      width: 420,
+      height: 852,
+    });
+  });
+  it('面板调整后以实际边缘重新定位', () => {
+    expect(chartDetailPosition('left', workspace, { left: 8, right: 448 }, 1920).left).toBe(460);
+    expect(chartDetailPosition('right', workspace, { left: 1432, right: 1912 }, 1920).left).toBe(
+      1000,
+    );
+  });
+  it('窄屏将完整浮层夹紧到视口并保留关闭区', () => {
+    const result = chartDetailPosition(
+      'left',
+      { left: 5, right: 385, top: 240, bottom: 776 },
+      { left: 4, right: 304 },
+      390,
+    );
+    expect(result.left).toBe(12);
+    expect(result.width).toBe(366);
+    expect(result.left + result.width).toBe(378);
+    expect(result.top + result.height).toBe(768);
+  });
+  it('短窗口以实际视口高度为界，工作区最小高度不会遮住关闭区', () => {
+    const result = chartDetailPosition(
+      'right',
+      { left: 5, right: 385, top: 300, bottom: 800 },
+      null,
+      390,
+      320,
+    );
+    expect(result.top).toBe(224);
+    expect(result.top + result.height).toBe(308);
+  });
+});

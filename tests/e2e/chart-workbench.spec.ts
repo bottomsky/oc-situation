@@ -249,6 +249,7 @@ test('聚合海图不请求单船详情，专题列表与证据保留历史修�
   await page.getByRole('button', { name: '返回紧凑视图' }).click();
   await expect(evidence.getByRole('heading', { name: '历史修订 1' })).toBeVisible();
   expect(calls.resultDetail).toBe(1);
+  await page.screenshot({ path: test.info().outputPath('push-details-regression.png') });
 });
 
 test('真实回放帧和AIS图层开关保留采集连接', async ({ page }) => {

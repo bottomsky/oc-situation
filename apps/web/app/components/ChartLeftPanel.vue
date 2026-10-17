@@ -3,18 +3,15 @@ import type { UnwrapNestedRefs } from 'vue';
 import type { ChartLayerVisibility } from '../types/chart';
 import ChartOverflowTabs from './ChartOverflowTabs.vue';
 import { dateLabel } from '../utils/display';
-import { resolveVesselDirection } from '../utils/vesselMarkers';
 const workspace = defineModel<UnwrapNestedRefs<ReturnType<typeof useChartWorkspace>>>('workspace', {
   required: true,
 });
 const props = defineProps<{ layers: ChartLayerVisibility }>();
 const emit = defineEmits<{
   close: [];
+  selectVessel: [mmsi: string];
   layer: [key: keyof ChartLayerVisibility, enabled: boolean];
 }>();
-const detailDirection = computed(() =>
-  resolveVesselDirection(workspace.value.detail?.latestPosition ?? {}),
-);
 // Mount heavy editors on first use, then retain their drafts while the panel or tab is hidden.
 const visitedTabs = reactive(new Set<string>());
 watch(
@@ -131,7 +128,7 @@ function applyLayers() {
           :key="v.mmsi"
           class="search-result"
           data-testid="vessel-result"
-          @click="workspace.select(v.mmsi)"
+          @click="emit('selectVessel', v.mmsi)"
         >
           <strong>{{ v.staticFields.name || '船名待补充' }}</strong
           ><small>{{ v.mmsi }} · {{ v.latestPosition?.sourceId || '暂无船位' }}</small></button
@@ -142,73 +139,7 @@ function applyLayers() {
         >
           加载更多</button
         ><FetchState :error="workspace.detailError" />
-        <div v-if="workspace.detail" class="vessel-detail">
-          <div class="section-rule" />
-          <h2>船舶详情</h2>
-          <button @click="workspace.leftTab = 'playback'">查询历史轨迹 →</button>
-          <h3>{{ workspace.detail.staticFields.name || workspace.detail.mmsi }}</h3>
-          <span
-            v-if="workspace.detail.latestPosition?.quality.includes('synthetic')"
-            class="badge sample"
-            >样例数据</span
-          >
-          <dl class="detail-grid">
-            <div>
-              <dt>MMSI</dt>
-              <dd class="mono">{{ workspace.detail.mmsi }}</dd>
-            </div>
-            <div>
-              <dt>IMO</dt>
-              <dd>{{ workspace.detail.staticFields.imo || '—' }}</dd>
-            </div>
-            <div>
-              <dt>航速 / 对地航向</dt>
-              <dd>
-                {{ workspace.detail.latestPosition?.sogKnots ?? '—' }} kn /
-                {{ workspace.detail.latestPosition?.cogDegrees ?? '—' }}°
-              </dd>
-            </div>
-            <div>
-              <dt>地图方向</dt>
-              <dd>{{ detailDirection.directionLabel }}</dd>
-            </div>
-            <div>
-              <dt>坐标</dt>
-              <dd>
-                {{ workspace.detail.latestPosition?.lon.toFixed(4) }},
-                {{ workspace.detail.latestPosition?.lat.toFixed(4) }}
-              </dd>
-            </div>
-            <div>
-              <dt>目的地</dt>
-              <dd>{{ workspace.detail.staticFields.destination || '—' }}</dd>
-            </div>
-            <div>
-              <dt>数据来源</dt>
-              <dd>{{ workspace.detail.latestPosition?.sourceId || '—' }}</dd>
-            </div>
-          </dl>
-          <div class="detail-time">
-            报告：{{ dateLabel(workspace.detail.latestPosition?.observedAt) }}<br />接收：{{
-              dateLabel(workspace.detail.latestPosition?.receivedAt)
-            }}<br />质量：{{ workspace.detail.latestPosition?.quality.join('、') || '有效观测' }}
-          </div>
-          <details>
-            <summary class="muted">静态资料与字段来源</summary>
-            <dl
-              v-for="(value, field) in workspace.detail.staticFields"
-              :key="field"
-              class="detail-time"
-            >
-              <dt>{{ field }}：{{ typeof value === 'object' ? JSON.stringify(value) : value }}</dt>
-              <dd>
-                {{ workspace.detail.provenance[field]?.sourceId || '—' }} ·
-                {{ dateLabel(workspace.detail.provenance[field]?.observedAt) }}
-              </dd>
-            </dl>
-          </details>
-        </div>
-        <p v-else-if="!workspace.results.length" class="muted" style="margin-top: 20px">
+        <p v-if="!workspace.results.length" class="muted" style="margin-top: 20px">
           在地图中选择单船，或搜索船舶查看详情与历史轨迹。
         </p>
       </section>

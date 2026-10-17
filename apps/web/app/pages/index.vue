@@ -6,6 +6,8 @@ import { chartLayoutDefaults } from '../utils/chartLayout';
 import { defaultChartVisibility } from '../utils/chartLayers';
 import { heatmapDateLabel } from '../utils/display';
 import { commandPresentation } from '../utils/agentArtifacts';
+import { provideChartDetailHost } from '../composables/useChartDetail';
+const detailHost = provideChartDetailHost();
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
 function mapContext(): AgentMapContext {
@@ -60,14 +62,12 @@ function finishAgentRegion(bbox: Bbox) {
   selectingAgentRegion.value = false;
 }
 const rightTab = ref<'chat' | 'push' | 'tasks'>('chat');
-const rightContent = ref<'collaboration' | 'intelligence'>('collaboration');
 function openAgent() {
   rightOpen.value = true;
   prepareAgentConversation();
 }
 function prepareAgentConversation() {
   rightTab.value = 'chat';
-  rightContent.value = 'collaboration';
 }
 const agentDock = useTemplateRef<HTMLElement>('agentDock');
 async function closeCurrentReply() {
@@ -101,8 +101,8 @@ const intelligence = reactive(useIntelligenceWorkspace());
 const drawnGeometry = ref<unknown>();
 const mapChoices = ref<string[]>([]);
 async function selectIntelligence(id: string) {
-  rightOpen.value = true;
-  rightContent.value = 'intelligence';
+  leftOpen.value = true;
+  detailHost.open('intelligence', 'left');
   workspace.leftTab = 'intelligence';
   await intelligence.select(id);
 }
@@ -126,6 +126,19 @@ const center = useTemplateRef<HTMLElement>('center');
 const workspaceElement = useTemplateRef<HTMLElement>('workspaceElement');
 const leftOpen = ref(false);
 const rightOpen = ref(true);
+watch(leftOpen, (open) => {
+  if (!open && detailHost.active.value?.side === 'left') detailHost.close();
+});
+watch(rightOpen, (open) => {
+  if (!open && detailHost.active.value?.side === 'right') detailHost.close();
+});
+watch(
+  () => workspace.leftTab,
+  (tab) => {
+    if (tab !== 'intelligence') detailHost.close('intelligence');
+    if (tab !== 'search') detailHost.close('vessel');
+  },
+);
 const {
   layout,
   style: layoutStyle,
@@ -149,18 +162,12 @@ useUiComponent('workspace.left', {
   },
 });
 useUiComponent('workspace.right', {
-  read: () =>
-    uiProjection(
-      rightOpen.value,
-      ['open', 'close', ...(ui.readComponent('intelligence.draft')?.dirty ? [] : ['tab' as const])],
-      { tab: rightTab.value, dirty: ui.readComponent('intelligence.draft')?.dirty ?? false },
-    ),
+  read: () => uiProjection(rightOpen.value, ['open', 'close', 'tab'], { tab: rightTab.value }),
   execute: async (op) => {
     agentPanelChange = true;
     try {
       rightOpen.value = op.action !== 'close';
       if (op.action === 'tab') {
-        rightContent.value = 'collaboration';
         rightTab.value = op.tab as typeof rightTab.value;
       }
       await nextTick();
@@ -296,11 +303,12 @@ function layer(key: keyof ChartLayerVisibility, enabled: boolean) {
 }
 function selectVessel(mmsi: string) {
   leftOpen.value = true;
+  detailHost.open('vessel', 'left');
   void workspace.select(mmsi);
 }
 function selectResult(result: AnalysisResult) {
   rightOpen.value = true;
-  rightContent.value = 'collaboration';
+  detailHost.open('evidence', 'right');
   rightTab.value = 'push';
   void topics.select(result);
 }
@@ -416,6 +424,7 @@ watch(
         v-model:workspace="workspace"
         :layers="layers"
         @close="leftOpen = false"
+        @select-vessel="selectVessel"
         @layer="layer"
         ><template #intelligence
           ><IntelligenceList
@@ -673,38 +682,7 @@ watch(
         @change="resizePanel('right', $event)"
         @commit="saveLayout"
       />
-      <aside
-        v-if="intelligence.detail && rightContent === 'intelligence'"
-        class="chart-right chart-panel"
-        aria-label="情报证据面板"
-      >
-        <header class="chart-panel-heading">
-          <div>
-            <h2>情报证据</h2>
-            <small>INTELLIGENCE EVIDENCE</small>
-          </div>
-          <button @click="rightOpen = false" aria-label="折叠情报详情">×</button>
-        </header>
-        <div class="chart-panel-scroll">
-          <IntelligenceDetail
-            :detail="intelligence.detail"
-            :panel-visible="rightOpen && rightContent === 'intelligence'"
-            :geometry="drawnGeometry"
-            :can-draw="session?.user.role !== 'viewer'"
-            @history="selectIntelligence"
-            @draw="seaMap?.draw($event)"
-            @edit-geometry="seaMap?.editGeometry($event)"
-            @refresh="
-              intelligence.select(intelligence.activeId, false);
-              intelligence.refreshPlot();
-            "
-            @locate="locateIntelligence(intelligence.activeId)"
-            @revise="navigateTo('/intelligence?revise=' + $event.id)"
-          />
-        </div>
-      </aside>
       <ChartRightPanel
-        v-else
         v-model:tab="rightTab"
         :agent="agent"
         @heatmap="heatmap.showSnapshot($event)"
@@ -724,6 +702,56 @@ watch(
         @revision="topics.revision"
       />
     </div>
+    <ChartDetailFloat
+      :open="detailHost.isOpen('intelligence')"
+      side="left"
+      title="情报证据"
+      subtitle="INTELLIGENCE EVIDENCE"
+      aria-label="情报证据面板"
+      @close="detailHost.close('intelligence')"
+    >
+      <FetchState
+        v-if="!intelligence.detail"
+        :busy="!intelligence.error"
+        :error="intelligence.error"
+      />
+      <IntelligenceDetail
+        v-if="intelligence.detail"
+        :detail="intelligence.detail"
+        :panel-visible="detailHost.isOpen('intelligence')"
+        :geometry="drawnGeometry"
+        :can-draw="session?.user.role !== 'viewer'"
+        @history="selectIntelligence"
+        @draw="seaMap?.draw($event)"
+        @edit-geometry="seaMap?.editGeometry($event)"
+        @refresh="
+          intelligence.select(intelligence.activeId, false);
+          intelligence.refreshPlot();
+        "
+        @locate="locateIntelligence(intelligence.activeId)"
+        @revise="navigateTo('/intelligence?revise=' + $event.id)"
+      />
+    </ChartDetailFloat>
+    <ChartDetailFloat
+      :open="detailHost.isOpen('vessel')"
+      side="left"
+      title="船舶详情"
+      subtitle="VESSEL INFORMATION"
+      @close="detailHost.close('vessel')"
+    >
+      <FetchState
+        :busy="!workspace.detail && !workspace.detailError"
+        :error="workspace.detailError"
+      />
+      <ChartVesselDetail
+        v-if="workspace.detail"
+        :detail="workspace.detail"
+        @playback="
+          workspace.leftTab = 'playback';
+          detailHost.close('vessel');
+        "
+      />
+    </ChartDetailFloat>
   </section>
 </template>
 

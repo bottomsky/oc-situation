@@ -13,6 +13,8 @@ import {
   createAgentMessageFollow,
 } from '../composables/useAgentConversation';
 import { dateLabel, heatmapDateLabel } from '../utils/display';
+import ChartDetailFloat from './ChartDetailFloat.vue';
+import { useChartDetailHost } from '../composables/useChartDetail';
 
 const props = defineProps<{ bbox: Bbox; state: AgentConversationState }>();
 const emit = defineEmits<{
@@ -21,6 +23,16 @@ const emit = defineEmits<{
   tracks: [result: AgentVesselTracksResult];
 }>();
 const state = props.state;
+const detailHost = useChartDetailHost();
+function openTask(id: string) {
+  detailHost?.open('task', 'right');
+  void state.loadTask(id);
+}
+watch(
+  () => state.activeSession?.id,
+  () => detailHost?.close('task'),
+);
+onBeforeUnmount(() => detailHost?.close('task'));
 const selectedTask = computed(() => state.detail?.task);
 const hasAnalysis = computed(
   () =>
@@ -248,7 +260,7 @@ function changeSession(event: Event) {
           <button
             class="agent-task-select"
             :aria-pressed="state.selectedTaskId === task.id"
-            @click="state.loadTask(task.id)"
+            @click="openTask(task.id)"
           >
             <span>{{ task.goal }}</span
             ><small>{{ agentStatusLabel[task.status] }}</small>
@@ -270,219 +282,257 @@ function changeSession(event: Event) {
           </button>
         </div>
       </section>
-      <p v-if="state.detailLoading" role="status">正在读取任务证据…</p>
-      <section v-if="state.detail && selectedTask" class="agent-detail" aria-label="智能体任务详情">
-        <div class="agent-row">
-          <h4>{{ agentStatusLabel[selectedTask.status] }}</h4>
-          <small>结果版本 {{ selectedTask.resultVersion }}</small>
-        </div>
-        <p v-if="selectedTask.error" class="agent-error">{{ selectedTask.error }}</p>
-        <AgentSkillResults
-          :execution="state.detail.dynamicSkill"
-          :artifacts="state.detail.artifacts ?? state.detail.dynamicSkill?.artifacts ?? []"
-          :input-revision="selectedTask.inputRevision ?? 0"
-          @heatmap="emit('heatmap', $event)"
-          @tracks="emit('tracks', $event)"
-        />
-        <p
-          v-if="
-            selectedTask.status === 'awaiting_input' &&
-            !state.inputRequests.some((item) => item.taskId === selectedTask?.id)
-          "
-          class="agent-note"
+      <button v-if="detailHost && selectedTask" @click="detailHost.open('task', 'right')">
+        查看任务详情
+      </button>
+      <component
+        :is="detailHost ? ChartDetailFloat : 'div'"
+        :open="detailHost?.isOpen('task')"
+        side="right"
+        title="智能体任务详情"
+        subtitle="AGENT TASK EVIDENCE"
+        aria-label="智能体任务详情浮层"
+        anchor-id="chart-right-slot"
+        data-detail-kind="task"
+        @close="detailHost?.close('task')"
+      >
+        <div
+          :class="detailHost ? 'agent-panel agent-task-detail-content' : undefined"
+          @keydown="if (detailHost && $event.key !== 'Escape') $event.stopPropagation();"
         >
-          请按助手提示补充本次分析所需条件后继续发送；区域分析可在上方确认范围。
-          <button
-            v-if="state.canWrite"
-            :disabled="state.busy || state.activeTask"
-            @click="state.retryTask(selectedTask.id)"
+          <p v-if="state.detailLoading" role="status">正在读取任务证据…</p>
+          <section
+            v-if="state.detail && selectedTask"
+            class="agent-detail"
+            aria-label="智能体任务详情"
           >
-            按原条件重新开始
-          </button>
-        </p>
-        <details>
-          <summary>任务参数与调用记录</summary>
-          <p v-if="hasAnalysis">
-            分析时段：{{ dateLabel(selectedTask.from) }} → {{ dateLabel(selectedTask.to) }}
-          </p>
-          <p>
-            模型 {{ selectedTask.modelCalls }}/{{ state.config.maxModelCalls }} 次 · 工具
-            {{ selectedTask.toolCalls }}/{{ state.config.maxToolCalls }} 次
-          </p>
-          <p v-if="selectedTask.definitionId">
-            算法：{{
-              selectedTask.definitionId === 'port-restriction'
-                ? '港口限制船舶识别'
-                : '区域低速活动与公告关联'
-            }}
-          </p>
-          <ol v-if="state.detail.steps.length">
-            <li v-for="step in state.detail.steps" :key="step.key">
-              {{ tools[step.name] ?? step.name }} · 已完成
-            </li>
-          </ol>
-          <p v-else>暂无工具调用记录。</p>
-        </details>
-        <div v-if="summaryCurrent" class="agent-summary">
-          <h4>{{ hasAnalysis ? '智能体研判' : '助手回复' }}</h4>
-          <p>{{ selectedTask.summary }}</p>
-          <small v-if="hasAnalysis"
-            >结合下方证据复核观测事实、规则匹配与推测；共现关联需要额外证据支持原因判断。</small
-          >
-        </div>
-        <p v-else-if="selectedTask.summary" class="agent-note">结果已更新，摘要正在重新核对。</p>
-        <p
-          v-if="hasAnalysis && selectedTask.status === 'completed' && !state.detail.results.length"
-          class="agent-note"
-        >
-          本次算法未形成匹配结果，请结合数据覆盖说明调整范围。
-        </p>
-        <section v-if="intelligenceResult" class="agent-summary" aria-label="情报检索结果">
-          <h4>情报检索结果</h4>
-          <p>共 {{ intelligenceResult.total }} 条 · {{ dateLabel(intelligenceResult.asOf) }}</p>
-          <p v-if="intelligenceResult.spec.locationKeyword" class="agent-note">
-            {{
-              intelligenceResult.spec.locationKeyword
-            }}：粗略检索范围，非官方海域界线；文字提及不代表已确认位置。
-          </p>
-          <p v-for="note in intelligenceResult.coverageNotes" :key="note" class="agent-note">
-            {{ note }}
-          </p>
-          <p v-if="intelligenceResult.truncated" class="agent-note">
-            当前展示部分结果，请缩小主题或时间范围。
-          </p>
-          <p v-if="!intelligenceResult.evidence.length">
-            未找到匹配的已入库情报，请结合来源覆盖与采集状态调整条件。
-          </p>
-          <IntelligenceSourceHealth :sources="intelligenceResult.sourceHealth" />
-          <button
-            v-for="item in intelligenceResult.evidence"
-            :key="item.reference"
-            @click="state.openSource(item.reference, selectedTask.id, intelligenceResult.version)"
-          >
-            [{{ item.reference }}]
-            {{ item.kind === 'event' ? item.event.title : item.forecast.pointName + ' · 海况预报' }}
-          </button>
-        </section>
-        <section v-if="tracksResult" class="agent-summary" aria-label="历史航线结果">
-          <h4>历史航线 · {{ tracksResult.returnedVessels }} 艘</h4>
-          <p>
-            {{ heatmapDateLabel(tracksResult.query.from) }} ～
-            {{ heatmapDateLabel(tracksResult.query.to) }}
-          </p>
-          <p>按历史经过区域选船，展示时段完整可用航线；AIS 船型按当前资料。</p>
-          <p v-if="tracksResult.hasMoreVessels">
-            至少匹配 {{ tracksResult.matchedVesselsLowerBound }} 艘，已达展示数量上限。
-          </p>
-          <p v-if="!tracksResult.tracks.length">
-            没有匹配观测；具体型号资料尚未收录也可能导致空结果。
-          </p>
-          <p v-for="track in tracksResult.tracks" :key="track.mmsi">
-            {{ track.name || track.mmsi }} · {{ track.returned }}/{{ track.total }} 点<span
-              v-if="track.sampled"
+            <div class="agent-row">
+              <h4>{{ agentStatusLabel[selectedTask.status] }}</h4>
+              <small>结果版本 {{ selectedTask.resultVersion }}</small>
+            </div>
+            <p v-if="selectedTask.error" class="agent-error">{{ selectedTask.error }}</p>
+            <AgentSkillResults
+              :execution="state.detail.dynamicSkill"
+              :artifacts="state.detail.artifacts ?? state.detail.dynamicSkill?.artifacts ?? []"
+              :input-revision="selectedTask.inputRevision ?? 0"
+              @heatmap="emit('heatmap', $event)"
+              @tracks="emit('tracks', $event)"
+            />
+            <p
+              v-if="
+                selectedTask.status === 'awaiting_input' &&
+                !state.inputRequests.some((item) => item.taskId === selectedTask?.id)
+              "
+              class="agent-note"
             >
-              · 已抽样</span
-            ><span v-if="track.truncated"> · 已截断</span>
-          </p>
-          <button @click="emit('tracks', tracksResult)">在海图展示此航线快照</button>
-        </section>
-        <section v-if="heatmapResult" class="agent-summary" aria-label="AIS 热力图结果">
-          <h4>AIS 热力图计算完成</h4>
-          <p>
-            {{ heatmapResult.totalVessels }} 艘去重船舶 ·
-            {{ heatmapResult.cells.length }} 个非空网格
-          </p>
-          <p>
-            {{ heatmapDateLabel(heatmapResult.query.from) }} ～
-            {{ heatmapDateLabel(heatmapResult.query.to) }}
-          </p>
-          <p>每格去重船数；全区总数独立去重，船型按当前资料筛选。地图绘制状态请查看海图图例。</p>
-          <p>生成于 {{ heatmapDateLabel(heatmapResult.generatedAt) }}</p>
-          <p v-if="!heatmapResult.cells.length">所选区域和时段没有符合条件的观测。</p>
-          <button @click="emit('heatmap', heatmapResult)">在海图展示此快照</button>
-        </section>
-        <section v-if="queryResult" class="agent-summary" aria-label="船舶查询结果">
-          <h4>{{ queryResult.kind === 'vessel_detail' ? '船舶基本信息' : '区域船舶列表' }}</h4>
-          <p>共 {{ queryResult.total }} 艘 · {{ dateLabel(queryResult.asOf) }}</p>
-          <p v-if="queryResult.selection.bbox">
-            范围：{{ queryResult.selection.bbox.map((value) => value.toFixed(3)).join('，') }}
-          </p>
-          <p v-if="queryResult.selection.filters?.hours">
-            最新报告：最近 {{ queryResult.selection.filters.hours }} 小时
-          </p>
-          <p v-if="queryResult.truncated" class="agent-note">
-            仅展示前 {{ queryResult.items.length }} 艘，请缩小范围查看其余船舶。
-          </p>
-          <p v-if="queryResult.selection.filters?.sourceId">
-            数据来源：{{ queryResult.selection.filters.sourceId }}
-          </p>
-          <p v-if="queryResult.selection.filters?.shipType">
-            船型筛选：{{ queryResult.selection.filters.shipType }}
-          </p>
-          <p v-if="!queryResult.items.length">所选范围和条件内没有匹配船舶。</p>
-          <article v-for="vessel in queryResult.items" :key="vessel.mmsi" class="agent-result">
-            <strong>{{ vessel.name || '未命名船舶' }}</strong>
-            <p>
-              MMSI {{ vessel.mmsi }} · IMO {{ vessel.imo || '—' }} · 船型
-              {{ vessel.shipType ?? '—' }}
+              请按助手提示补充本次分析所需条件后继续发送；区域分析可在上方确认范围。
+              <button
+                v-if="state.canWrite"
+                :disabled="state.busy || state.activeTask"
+                @click="state.retryTask(selectedTask.id)"
+              >
+                按原条件重新开始
+              </button>
             </p>
-            <p v-if="vessel.latestPosition">
-              {{ vessel.latestPosition.lon.toFixed(4) }}°，{{
-                vessel.latestPosition.lat.toFixed(4)
-              }}° · {{ vessel.latestPosition.sogKnots ?? '—' }} kn<br />最新报告
-              {{ dateLabel(vessel.latestPosition.observedAt) }}
-            </p>
-            <p v-else>暂无船位报告</p>
-          </article>
-        </section>
-        <p v-if="!currentResults && state.detail.results.length" class="agent-note">
-          分析条件已更新，等待新的结果。
-        </p>
-        <article
-          v-for="(result, resultIndex) in currentResults ? state.detail.results : []"
-          :key="result.id"
-          class="agent-result"
-        >
-          <div class="agent-row">
-            <h4>[E{{ resultIndex + 1 }}] {{ result.title }}</h4>
-            <button @click="emit('locate', result)">定位海图</button>
-          </div>
-          <p>{{ result.summary }}</p>
-          <p v-for="limitation in result.evidence.limitations" :key="limitation" class="agent-note">
-            {{ limitation }}
-          </p>
-          <details>
-            <summary>本地证据 · {{ result.evidence.ais.length }} 条观测</summary>
-            <p>MMSI {{ result.mmsi }} · 规则版本 {{ result.definitionVersion }}</p>
-            <h5>观测事实</h5>
-            <ul>
-              <li v-for="point in result.evidence.ais" :key="point.recordId">
-                {{ dateLabel(point.occurredAt) }}<br />{{ point.longitude.toFixed(4) }}°,
-                {{ point.latitude.toFixed(4) }}° · {{ point.speedOverGround ?? '—' }} kn
-              </li>
-            </ul>
-            <h5>规则匹配</h5>
-            <ol>
-              <li v-for="step in result.evidence.steps" :key="step.id">
-                <strong>{{ step.rule }}</strong>
-                <p>{{ step.outcome }}</p>
-                <small>证据：{{ step.references.join(' · ') }}</small>
-              </li>
-            </ol>
-            <h5>公告依据</h5>
-            <article v-for="document in result.evidence.documents" :key="document.id">
-              <strong>{{ document.title }}</strong>
-              <p v-for="paragraph in document.paragraphs" :key="paragraph.id">
-                {{ paragraph.text }}
-              </p>
-            </article>
             <details>
-              <summary>实际运行参数</summary>
-              <pre>{{ JSON.stringify(result.evidence.parameters, null, 2) }}</pre>
+              <summary>任务参数与调用记录</summary>
+              <p v-if="hasAnalysis">
+                分析时段：{{ dateLabel(selectedTask.from) }} → {{ dateLabel(selectedTask.to) }}
+              </p>
+              <p>
+                模型 {{ selectedTask.modelCalls }}/{{ state.config.maxModelCalls }} 次 · 工具
+                {{ selectedTask.toolCalls }}/{{ state.config.maxToolCalls }} 次
+              </p>
+              <p v-if="selectedTask.definitionId">
+                算法：{{
+                  selectedTask.definitionId === 'port-restriction'
+                    ? '港口限制船舶识别'
+                    : '区域低速活动与公告关联'
+                }}
+              </p>
+              <ol v-if="state.detail.steps.length">
+                <li v-for="step in state.detail.steps" :key="step.key">
+                  {{ tools[step.name] ?? step.name }} · 已完成
+                </li>
+              </ol>
+              <p v-else>暂无工具调用记录。</p>
             </details>
-          </details>
-        </article>
-      </section>
+            <div v-if="summaryCurrent" class="agent-summary">
+              <h4>{{ hasAnalysis ? '智能体研判' : '助手回复' }}</h4>
+              <p>{{ selectedTask.summary }}</p>
+              <small v-if="hasAnalysis"
+                >结合下方证据复核观测事实、规则匹配与推测；共现关联需要额外证据支持原因判断。</small
+              >
+            </div>
+            <p v-else-if="selectedTask.summary" class="agent-note">
+              结果已更新，摘要正在重新核对。
+            </p>
+            <p
+              v-if="
+                hasAnalysis && selectedTask.status === 'completed' && !state.detail.results.length
+              "
+              class="agent-note"
+            >
+              本次算法未形成匹配结果，请结合数据覆盖说明调整范围。
+            </p>
+            <section v-if="intelligenceResult" class="agent-summary" aria-label="情报检索结果">
+              <h4>情报检索结果</h4>
+              <p>共 {{ intelligenceResult.total }} 条 · {{ dateLabel(intelligenceResult.asOf) }}</p>
+              <p v-if="intelligenceResult.spec.locationKeyword" class="agent-note">
+                {{
+                  intelligenceResult.spec.locationKeyword
+                }}：粗略检索范围，非官方海域界线；文字提及不代表已确认位置。
+              </p>
+              <p v-for="note in intelligenceResult.coverageNotes" :key="note" class="agent-note">
+                {{ note }}
+              </p>
+              <p v-if="intelligenceResult.truncated" class="agent-note">
+                当前展示部分结果，请缩小主题或时间范围。
+              </p>
+              <p v-if="!intelligenceResult.evidence.length">
+                未找到匹配的已入库情报，请结合来源覆盖与采集状态调整条件。
+              </p>
+              <IntelligenceSourceHealth :sources="intelligenceResult.sourceHealth" />
+              <button
+                v-for="item in intelligenceResult.evidence"
+                :key="item.reference"
+                @click="
+                  state.openSource(item.reference, selectedTask.id, intelligenceResult.version)
+                "
+              >
+                [{{ item.reference }}]
+                {{
+                  item.kind === 'event' ? item.event.title : item.forecast.pointName + ' · 海况预报'
+                }}
+              </button>
+            </section>
+            <section v-if="tracksResult" class="agent-summary" aria-label="历史航线结果">
+              <h4>历史航线 · {{ tracksResult.returnedVessels }} 艘</h4>
+              <p>
+                {{ heatmapDateLabel(tracksResult.query.from) }} ～
+                {{ heatmapDateLabel(tracksResult.query.to) }}
+              </p>
+              <p>按历史经过区域选船，展示时段完整可用航线；AIS 船型按当前资料。</p>
+              <p v-if="tracksResult.hasMoreVessels">
+                至少匹配 {{ tracksResult.matchedVesselsLowerBound }} 艘，已达展示数量上限。
+              </p>
+              <p v-if="!tracksResult.tracks.length">
+                没有匹配观测；具体型号资料尚未收录也可能导致空结果。
+              </p>
+              <p v-for="track in tracksResult.tracks" :key="track.mmsi">
+                {{ track.name || track.mmsi }} · {{ track.returned }}/{{ track.total }} 点<span
+                  v-if="track.sampled"
+                >
+                  · 已抽样</span
+                ><span v-if="track.truncated"> · 已截断</span>
+              </p>
+              <button @click="emit('tracks', tracksResult)">在海图展示此航线快照</button>
+            </section>
+            <section v-if="heatmapResult" class="agent-summary" aria-label="AIS 热力图结果">
+              <h4>AIS 热力图计算完成</h4>
+              <p>
+                {{ heatmapResult.totalVessels }} 艘去重船舶 ·
+                {{ heatmapResult.cells.length }} 个非空网格
+              </p>
+              <p>
+                {{ heatmapDateLabel(heatmapResult.query.from) }} ～
+                {{ heatmapDateLabel(heatmapResult.query.to) }}
+              </p>
+              <p>
+                每格去重船数；全区总数独立去重，船型按当前资料筛选。地图绘制状态请查看海图图例。
+              </p>
+              <p>生成于 {{ heatmapDateLabel(heatmapResult.generatedAt) }}</p>
+              <p v-if="!heatmapResult.cells.length">所选区域和时段没有符合条件的观测。</p>
+              <button @click="emit('heatmap', heatmapResult)">在海图展示此快照</button>
+            </section>
+            <section v-if="queryResult" class="agent-summary" aria-label="船舶查询结果">
+              <h4>{{ queryResult.kind === 'vessel_detail' ? '船舶基本信息' : '区域船舶列表' }}</h4>
+              <p>共 {{ queryResult.total }} 艘 · {{ dateLabel(queryResult.asOf) }}</p>
+              <p v-if="queryResult.selection.bbox">
+                范围：{{ queryResult.selection.bbox.map((value) => value.toFixed(3)).join('，') }}
+              </p>
+              <p v-if="queryResult.selection.filters?.hours">
+                最新报告：最近 {{ queryResult.selection.filters.hours }} 小时
+              </p>
+              <p v-if="queryResult.truncated" class="agent-note">
+                仅展示前 {{ queryResult.items.length }} 艘，请缩小范围查看其余船舶。
+              </p>
+              <p v-if="queryResult.selection.filters?.sourceId">
+                数据来源：{{ queryResult.selection.filters.sourceId }}
+              </p>
+              <p v-if="queryResult.selection.filters?.shipType">
+                船型筛选：{{ queryResult.selection.filters.shipType }}
+              </p>
+              <p v-if="!queryResult.items.length">所选范围和条件内没有匹配船舶。</p>
+              <article v-for="vessel in queryResult.items" :key="vessel.mmsi" class="agent-result">
+                <strong>{{ vessel.name || '未命名船舶' }}</strong>
+                <p>
+                  MMSI {{ vessel.mmsi }} · IMO {{ vessel.imo || '—' }} · 船型
+                  {{ vessel.shipType ?? '—' }}
+                </p>
+                <p v-if="vessel.latestPosition">
+                  {{ vessel.latestPosition.lon.toFixed(4) }}°，{{
+                    vessel.latestPosition.lat.toFixed(4)
+                  }}° · {{ vessel.latestPosition.sogKnots ?? '—' }} kn<br />最新报告
+                  {{ dateLabel(vessel.latestPosition.observedAt) }}
+                </p>
+                <p v-else>暂无船位报告</p>
+              </article>
+            </section>
+            <p v-if="!currentResults && state.detail.results.length" class="agent-note">
+              分析条件已更新，等待新的结果。
+            </p>
+            <article
+              v-for="(result, resultIndex) in currentResults ? state.detail.results : []"
+              :key="result.id"
+              class="agent-result"
+            >
+              <div class="agent-row">
+                <h4>[E{{ resultIndex + 1 }}] {{ result.title }}</h4>
+                <button @click="emit('locate', result)">定位海图</button>
+              </div>
+              <p>{{ result.summary }}</p>
+              <p
+                v-for="limitation in result.evidence.limitations"
+                :key="limitation"
+                class="agent-note"
+              >
+                {{ limitation }}
+              </p>
+              <details>
+                <summary>本地证据 · {{ result.evidence.ais.length }} 条观测</summary>
+                <p>MMSI {{ result.mmsi }} · 规则版本 {{ result.definitionVersion }}</p>
+                <h5>观测事实</h5>
+                <ul>
+                  <li v-for="point in result.evidence.ais" :key="point.recordId">
+                    {{ dateLabel(point.occurredAt) }}<br />{{ point.longitude.toFixed(4) }}°,
+                    {{ point.latitude.toFixed(4) }}° · {{ point.speedOverGround ?? '—' }} kn
+                  </li>
+                </ul>
+                <h5>规则匹配</h5>
+                <ol>
+                  <li v-for="step in result.evidence.steps" :key="step.id">
+                    <strong>{{ step.rule }}</strong>
+                    <p>{{ step.outcome }}</p>
+                    <small>证据：{{ step.references.join(' · ') }}</small>
+                  </li>
+                </ol>
+                <h5>公告依据</h5>
+                <article v-for="document in result.evidence.documents" :key="document.id">
+                  <strong>{{ document.title }}</strong>
+                  <p v-for="paragraph in document.paragraphs" :key="paragraph.id">
+                    {{ paragraph.text }}
+                  </p>
+                </article>
+                <details>
+                  <summary>实际运行参数</summary>
+                  <pre>{{ JSON.stringify(result.evidence.parameters, null, 2) }}</pre>
+                </details>
+              </details>
+            </article>
+          </section>
+        </div>
+      </component>
     </template>
   </section>
 </template>

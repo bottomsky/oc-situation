@@ -320,6 +320,19 @@ async function openAgent(page: Page) {
   return page.getByTestId('agent-panel');
 }
 
+async function openTaskDetails(page: Page) {
+  await page
+    .getByTestId('agent-panel')
+    .getByRole('button', { name: '查看任务详情', exact: true })
+    .click();
+  const detail = page
+    .getByTestId('chart-detail-float')
+    .filter({ visible: true })
+    .filter({ has: page.getByLabel('智能体任务详情', { exact: true }) });
+  await expect(detail).toHaveAttribute('data-side', 'right');
+  return detail;
+}
+
 test('结构化补问收起不重弹，确认后原任务自动继续展示船舶', async ({ page }) => {
   const calls = await agentFixture(page, { interactive: true });
   await openAgent(page);
@@ -337,7 +350,8 @@ test('结构化补问收起不重弹，确认后原任务自动继续展示船�
   await dialog.getByRole('button', { name: '使用当前视野', exact: true }).click();
   await dialog.getByRole('button', { name: '确认并继续', exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByLabel('船舶查询结果')).toContainText('示例船舶');
+  const detail = await openTaskDetails(page);
+  await expect(detail.getByLabel('船舶查询结果')).toContainText('示例船舶');
   expect(calls.submitted).toHaveLength(1);
   expect(calls.answers).toHaveLength(1);
   expect(calls.answers[0]!.body).toMatchObject({
@@ -671,7 +685,9 @@ test('历史与浮卡情报引用绑定版本，归档按文本展示且仅已�
     .locator('[data-message-id="old-intel-message"]')
     .getByRole('button', { name: '查看情报来源 [I1]', exact: true })
     .click();
-  const dialog = page.getByRole('dialog', { name: '查看情报引用' });
+  const dialog = page.locator(
+    '[data-testid="chart-detail-float"][data-detail-kind="sources"]:visible',
+  );
   await expect(dialog).toContainText('历史来源标题');
   await expect(dialog).toContainText('候选情报 · 待核实');
   await expect(dialog).toContainText('索引观测时间');
@@ -688,7 +704,7 @@ test('历史与浮卡情报引用绑定版本，归档按文本展示且仅已�
     'href',
     'https://example.com/news',
   );
-  await dialog.getByRole('button', { name: '关闭来源卡' }).click();
+  await dialog.getByRole('button', { name: '关闭详情', exact: true }).click();
   const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
   await input.fill('再查当前公告');
   await input.press('Enter');
@@ -844,20 +860,22 @@ test('区域补问、明确选区、结果证据及恢复会话', async ({ page 
     .getByTestId('chart-agent-composer')
     .getByRole('button', { name: '发送分析问题' })
     .click();
-  await expect(panel.getByRole('heading', { name: '智能体研判' })).toBeVisible();
+  let detail = await openTaskDetails(page);
+  await expect(detail.getByRole('heading', { name: '智能体研判' })).toBeVisible();
   await panel.screenshot({ path: test.info().outputPath('agent-panel.png') });
   expect(calls.submitted[1]!.body.historyHours).toBe(24);
   expect(calls.submitted[1]!.body.bbox).toHaveLength(4);
   expect(calls.submitted[1]!.headers['x-csrf-token']).toBe('fixture-csrf');
   expect(calls.submitted[1]!.headers['idempotency-key']).toBeTruthy();
-  await panel.getByText(/本地证据 ·/).click();
-  await expect(panel.getByText(`MMSI ${chartResult.mmsi}`, { exact: false })).toBeVisible();
-  await panel.getByRole('button', { name: '定位海图' }).click();
+  await detail.getByText(/本地证据 ·/).click();
+  await expect(detail.getByText(`MMSI ${chartResult.mmsi}`, { exact: false })).toBeVisible();
+  await detail.getByRole('button', { name: '定位海图' }).click();
   await page.reload();
   await page.getByRole('tab', { name: 'AI 对话' }).click();
   panel = page.getByTestId('agent-panel');
-  await expect(panel.getByRole('heading', { name: '智能体研判' })).toBeVisible();
   await expect(panel.getByLabel('研判会话')).toHaveValue('session-a');
+  detail = await openTaskDetails(page);
+  await expect(detail.getByRole('heading', { name: '智能体研判' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -874,14 +892,16 @@ test('普通问候与北京时间查询无选区完成并持久恢复助手回�
   for (const [question, reply] of Object.entries(replies)) {
     await input.fill(question);
     await input.press('Enter');
-    await expect(panel.getByRole('heading', { name: '等待执行', exact: true })).toBeVisible();
+    const detail = await openTaskDetails(page);
+    await expect(detail.getByRole('heading', { name: '等待执行', exact: true })).toBeVisible();
     await expect(panel.getByLabel('研判对话记录').getByText(reply, { exact: true })).toBeVisible();
-    await expect(panel.getByRole('heading', { name: '助手回复', exact: true })).toBeVisible();
-    await expect(panel.getByText(/本次算法未形成匹配结果/)).toHaveCount(0);
-    await expect(panel.getByText(/确认区域后继续发送/)).toHaveCount(0);
-    await expect(panel.getByText(/结合下方证据复核/)).toHaveCount(0);
-    await expect(panel.getByText('结果版本 0', { exact: true })).toBeVisible();
+    await expect(detail.getByRole('heading', { name: '助手回复', exact: true })).toBeVisible();
+    await expect(detail.getByText(/本次算法未形成匹配结果/)).toHaveCount(0);
+    await expect(detail.getByText(/确认区域后继续发送/)).toHaveCount(0);
+    await expect(detail.getByText(/结合下方证据复核/)).toHaveCount(0);
+    await expect(detail.getByText('结果版本 0', { exact: true })).toBeVisible();
     await expect(composer.getByRole('button', { name: '发送分析问题' })).toBeDisabled();
+    await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
   }
   expect(calls.submitted).toHaveLength(2);
   expect(calls.submitted.every((call) => !Object.hasOwn(call.body, 'bbox'))).toBe(true);
@@ -1195,8 +1215,8 @@ test('新增回复跟随底部，历史阅读保持位置，主动发送重新�
   const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
   await input.fill('你好');
   await input.press('Enter');
-  await expect(panel.getByRole('heading', { name: '助手回复', exact: true })).toBeVisible();
   const history = panel.getByLabel('研判对话记录');
+  await expect(history.getByText('你好，有什么可以帮助你？', { exact: true })).toBeVisible();
   const scroll = page.getByTestId('chart-right-panel').locator('.chart-panel-scroll');
   await scroll.evaluate((el) => {
     el.scrollTop = el.scrollHeight;
@@ -1249,7 +1269,9 @@ test('取消任务后可以继续追问', async ({ page }) => {
     page.getByTestId('chart-agent-composer').getByText(/助手正在处理问题/),
   ).toBeVisible();
   await panel.getByRole('button', { name: '取消分析任务' }).click();
-  await expect(panel.getByRole('heading', { name: '已取消', exact: true })).toBeVisible();
+  const detail = await openTaskDetails(page);
+  await expect(detail.getByRole('heading', { name: '已取消', exact: true })).toBeVisible();
+  await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
   await page
     .getByTestId('chart-agent-composer')
     .getByLabel('分析问题或继续追问')
