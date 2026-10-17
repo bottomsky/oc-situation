@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { openLeftPanel } from './chart-helpers';
+import { openLeftPanel, selectLeftTab } from './chart-helpers';
 async function login(page: Page, username: string, password: string) {
   await page.goto('/login');
   await page.getByLabel('用户名', { exact: true }).fill(username);
@@ -80,7 +80,7 @@ test('真实 API 情报、对象关联、单海图绘制和按用户恢复标绘
   await page.goto('/?eventId=' + event.id);
   await expect(page.getByRole('heading', { name: event.title, exact: true })).toBeVisible();
   await openLeftPanel(page);
-  await page.getByRole('tab', { name: '情报标绘' }).click();
+  await selectLeftTab(page, '情报标绘');
   await expect(page.getByText('当前标绘集合')).toBeVisible();
   await expect
     .poll(async () =>
@@ -113,7 +113,7 @@ test('真实 API 情报、对象关联、单海图绘制和按用户恢复标绘
   await expect(map).toHaveAttribute('data-map-instance', instance!);
   await page.reload();
   await openLeftPanel(page);
-  await page.getByRole('tab', { name: '情报标绘' }).click();
+  await selectLeftTab(page, '情报标绘');
   await expect(page.getByText(event.title, { exact: true }).first()).toBeVisible();
   await expect(page.getByTestId('sea-map')).toHaveAttribute('data-map-initializations', '1');
   await page.screenshot({ path: 'test-results/intelligence-real-map.png', fullPage: true });

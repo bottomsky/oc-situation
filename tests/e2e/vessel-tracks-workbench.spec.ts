@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { vesselTracksFixture } from './fixtures/vessel-tracks-fixture';
-import { openLeftPanel } from './chart-helpers';
+import { openLeftPanel, selectLeftTab } from './chart-helpers';
 
 async function openTracks(page: Page) {
   await openLeftPanel(page);
-  await page.getByRole('tab', { name: '历史航线', exact: true }).click();
+  await selectLeftTab(page, '历史航线');
 }
 async function captureMap(page: Page) {
   await page.evaluate(async () => {
@@ -36,7 +36,7 @@ test('人工查询冻结条件，独立单船轨迹，样式重载和关闭', as
   await page.getByLabel('船舶搜索', { exact: true }).fill('夹具船舶');
   await page.getByRole('button', { name: '搜索', exact: true }).click();
   await page.getByTestId('vessel-result').first().click();
-  await page.getByRole('tab', { name: '时间回放', exact: true }).click();
+  await selectLeftTab(page, '时间回放');
   await page.getByRole('button', { name: '查询轨迹', exact: true }).click();
   await expect(page.getByRole('button', { name: '播放轨迹', exact: true })).toBeVisible();
   await captureMap(page);

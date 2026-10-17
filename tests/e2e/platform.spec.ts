@@ -1,4 +1,4 @@
-import { openConsolePage, openLeftPanel } from './chart-helpers';
+import { openConsolePage, openLeftPanel, selectLeftTab } from './chart-helpers';
 import { test, expect } from '@playwright/test';
 import type { Page as BrowserPage } from '@playwright/test';
 const username = process.env.E2E_USERNAME;
@@ -30,7 +30,7 @@ test('登录、真实样例船位、轨迹和治理页面', async ({ page }) => 
   await vessel.click();
   await expect(page.getByRole('heading', { name: '船舶详情' })).toBeVisible();
   await expect(page.getByText('样例数据', { exact: true }).first()).toBeVisible();
-  await page.getByRole('tab', { name: '时间回放', exact: true }).click();
+  await selectLeftTab(page, '时间回放');
   await page.getByRole('button', { name: '查询轨迹', exact: true }).click();
   await expect(page.getByTestId('track-summary')).toContainText('点');
   await page.evaluate(() => window.scrollTo(0, 0));

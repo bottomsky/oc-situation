@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
-import { openLeftPanel } from './chart-helpers';
+import { openLeftPanel, selectLeftTab } from './chart-helpers';
 
 function result() {
   const to = new Date().toISOString();
@@ -102,7 +102,7 @@ async function heatmapFixture(page: Page, delayed = false) {
 }
 async function openHeatmap(page: Page) {
   await openLeftPanel(page);
-  await page.getByRole('tab', { name: 'AIS 热力图' }).click();
+  await selectLeftTab(page, 'AIS 热力图');
 }
 test('人工生成锁定范围，缩放不重查，关闭移除图层', async ({ page }) => {
   await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));

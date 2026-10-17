@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { openLeftPanel } from './chart-helpers';
+import { openLeftPanel, selectLeftTab } from './chart-helpers';
 import { chartFixture } from './fixtures/chart-fixture';
 const event = {
   id: 'event-a',
@@ -23,7 +23,9 @@ const event = {
   recordedAt: '2026-10-11T08:00:00Z',
   originalArchiveId: 'a'.repeat(64),
 };
-async function intelligenceFixture(page: Page) {
+async function intelligenceFixture(page: Page, overrides: Partial<typeof event> = {}) {
+  const record = { ...event, ...overrides };
+  const detailRequests: string[] = [];
   const chart = await chartFixture(page);
   let set = { eventIds: [] as string[], hiddenEventIds: [] as string[] };
   const writes: unknown[] = [];
@@ -50,14 +52,14 @@ async function intelligenceFixture(page: Page) {
             reviewStatus: 'confirmed',
             origin: 'manual',
             basis: '原文位置',
-            observedAt: event.publishedAt,
+            observedAt: record.publishedAt,
             status: 'active',
-            title: id === 'event-a' ? event.title : '港口气象公告',
+            title: id === 'event-a' ? record.title : '港口气象公告',
           },
         })),
         items: body.eventIds.map((id: string) => ({
           eventId: id,
-          title: id === 'event-a' ? event.title : '港口气象公告',
+          title: id === 'event-a' ? record.title : '港口气象公告',
           featureCount: 1,
         })),
       };
@@ -73,7 +75,7 @@ async function intelligenceFixture(page: Page) {
             aliases: [],
             geometry: { type: 'Point', coordinates: [122, 31] },
             metadata: {},
-            updatedAt: event.publishedAt,
+            updatedAt: record.publishedAt,
           },
         ],
       };
@@ -82,25 +84,26 @@ async function intelligenceFixture(page: Page) {
       if (route.request().method() === 'GET') queries.push(url);
       if (route.request().method() === 'POST') {
         writes.push(body);
-        json = { ...event, ...body };
+        json = { ...record, ...body };
       } else
         json = {
           items: [
             url.searchParams.has('cursor')
-              ? { ...event, id: 'event-b', title: '港口气象公告' }
-              : event,
+              ? { ...record, id: 'event-b', title: '港口气象公告' }
+              : record,
           ],
           nextCursor: url.searchParams.has('cursor') ? null : 'next',
         };
     } else if (path.endsWith('/relations')) {
       writes.push(body);
       json = { id: 'new-relation' };
-    } else if (path.includes('/events/'))
+    } else if (path.includes('/events/')) {
+      detailRequests.push(path);
       json = {
         event: {
-          ...event,
+          ...record,
           id: path.split('/').at(-1),
-          title: path.endsWith('event-b') ? '港口气象公告' : event.title,
+          title: path.endsWith('event-b') ? '港口气象公告' : record.title,
         },
         relations: [
           {
@@ -113,15 +116,108 @@ async function intelligenceFixture(page: Page) {
             paragraphIds: ['p1'],
             reviewStatus: 'confirmed',
             origin: 'manual',
-            recordedAt: event.publishedAt,
+            recordedAt: record.publishedAt,
           },
         ],
-        history: [{ action: 'created', recordedAt: event.publishedAt, version: 1 }],
+        history: [{ action: 'created', recordedAt: record.publishedAt, version: 1 }],
       };
+    }
     await route.fulfill({ json });
   });
-  return { writes, queries, chart, getSet: () => set };
+  return { writes, queries, chart, detailRequests, getSet: () => set };
 }
+const longCardTitle = '港口临时管制公告：跨海航道施工及船舶交通组织调整与气象海况联合提醒'.repeat(
+  3,
+);
+for (const width of [240, 300, 440])
+  test(`情报卡片在 ${width}px 面板内包含左上勾选和右下定位，长文本自然换行`, async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1000 });
+    await intelligenceFixture(page, {
+      title: longCardTitle,
+      summary: 'NAVIGATION_NOTICE_'.repeat(18) + ' 请按公告要求绕行并持续关注港口最新通知。',
+      sourceId: 'maritime_source_'.repeat(9),
+    });
+    await page.goto('/');
+    await openLeftPanel(page);
+    await selectLeftTab(page, '情报标绘');
+    const resize = page.getByRole('separator', { name: '调整操作面板宽度' });
+    await resize.press('Home');
+    for (let step = 0; step < Math.abs(width - 300) / 10; step++)
+      await resize.press(width < 300 ? 'ArrowLeft' : 'ArrowRight');
+    await expect(resize).toHaveAttribute('aria-valuenow', String(width));
+    const panel = page.getByTestId('chart-left-panel');
+    await expect.poll(async () => Math.round((await panel.boundingBox())!.width)).toBe(width);
+    const card = panel.locator('.intelligence-row').first();
+    await card.scrollIntoViewIfNeeded();
+    const checkbox = card.getByRole('checkbox', { name: `勾选 ${longCardTitle}`, exact: true });
+    const locate = card.getByRole('button', { name: `定位 ${longCardTitle}`, exact: true });
+    await expect(locate).toHaveText('⌖ 定位');
+    const bounds = (await card.boundingBox())!;
+    const checkBounds = (await checkbox.boundingBox())!;
+    const locateBounds = (await locate.boundingBox())!;
+    const titleBounds = (await card.locator('strong').boundingBox())!;
+    expect(checkBounds.x - bounds.x).toBeGreaterThanOrEqual(8);
+    expect(checkBounds.y - bounds.y).toBeGreaterThanOrEqual(8);
+    expect(checkBounds.y - bounds.y).toBeLessThanOrEqual(20);
+    expect(titleBounds.x).toBeGreaterThanOrEqual(checkBounds.x + checkBounds.width + 8);
+    expect(locateBounds.x + locateBounds.width).toBeLessThanOrEqual(bounds.x + bounds.width - 8);
+    expect(locateBounds.y).toBeGreaterThan(titleBounds.y + titleBounds.height + 8);
+    expect(bounds.y + bounds.height - locateBounds.y - locateBounds.height).toBeGreaterThanOrEqual(
+      8,
+    );
+    expect(bounds.y + bounds.height - locateBounds.y - locateBounds.height).toBeLessThanOrEqual(16);
+    const layout = await card.evaluate((element) => ({
+      width: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      nestedControls: element.querySelectorAll('button button, button input').length,
+      overflowingText: [...element.querySelectorAll('strong, span, small')].some(
+        (text) => text.scrollWidth > text.clientWidth + 1,
+      ),
+    }));
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.width + 1);
+    expect(layout.overflowingText).toBe(false);
+    expect(layout.nestedControls).toBe(0);
+    await card.screenshot({ path: `.data/intelligence-card-browser-results/card-${width}.png` });
+  });
+
+test('情报卡片的勾选、详情与定位独立操作，激活详情保持卡片尺寸', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  const fixture = await intelligenceFixture(page);
+  await page.goto('/');
+  await openLeftPanel(page);
+  await selectLeftTab(page, '情报标绘');
+  await page.getByRole('button', { name: '加载更多情报' }).click();
+  const card = page.locator('.intelligence-row').first();
+  const secondCard = page.locator('.intelligence-row').nth(1);
+  const checkbox = card.getByRole('checkbox', { name: `勾选 ${event.title}`, exact: true });
+  await checkbox.focus();
+  await checkbox.press('Space');
+  await expect(checkbox).toBeChecked();
+  expect(fixture.detailRequests).toEqual([]);
+  expect(fixture.getSet().eventIds).toEqual([]);
+  await expect(card).not.toHaveClass(/selected/);
+  const originalBounds = (await card.boundingBox())!;
+  const originalTitleBounds = (await card.locator('strong').boundingBox())!;
+  const detail = card.getByRole('button').filter({ has: page.locator('strong') });
+  await detail.click();
+  await expect(page.getByRole('heading', { name: event.title, exact: true })).toBeVisible();
+  await expect(card).toHaveClass(/selected/);
+  await expect(checkbox).toBeChecked();
+  expect(fixture.detailRequests).toHaveLength(1);
+  const activeBounds = (await card.boundingBox())!;
+  expect(activeBounds.width).toBe(originalBounds.width);
+  expect(activeBounds.height).toBe(originalBounds.height);
+  expect((await card.locator('strong').boundingBox())!.x).toBe(originalTitleBounds.x);
+  await secondCard.getByRole('button', { name: '定位 港口气象公告', exact: true }).click();
+  await expect.poll(() => fixture.getSet().eventIds).toEqual(['event-a', 'event-b']);
+  expect(fixture.detailRequests).toHaveLength(1);
+  await expect(page.getByRole('heading', { name: event.title, exact: true })).toBeVisible();
+  await expect(secondCard.getByRole('checkbox')).not.toBeChecked();
+  await expect(secondCard).not.toHaveClass(/selected/);
+  await checkbox.uncheck();
+  await expect(card).toHaveClass(/selected/);
+});
+
 test('情报跨页勾选与标绘持久化，筛选保留集合，单海图绘制取消', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1000 });
   const errors: string[] = [];
@@ -147,7 +243,7 @@ test('情报跨页勾选与标绘持久化，筛选保留集合，单海图绘�
   await expect(map).toHaveAttribute('data-ready', 'true');
   const instance = await map.getAttribute('data-map-instance');
   await openLeftPanel(page);
-  await page.getByRole('tab', { name: '情报标绘' }).click();
+  await selectLeftTab(page, '情报标绘');
   await page.getByRole('checkbox', { name: '勾选 港口临时管制' }).check();
   await page.getByRole('button', { name: '加载更多情报' }).click();
   await page.getByRole('checkbox', { name: '勾选 港口气象公告' }).check();
@@ -199,7 +295,7 @@ test('筛选摘要与独立设置支持取消、应用、移除和重置', async
   await page.setViewportSize({ width: 1600, height: 900 });
   await page.goto('/');
   await openLeftPanel(page);
-  await page.getByRole('tab', { name: '情报标绘' }).click();
+  await selectLeftTab(page, '情报标绘');
   const summary = page.getByRole('region', { name: '筛选条件', exact: true });
   await expect(summary).toContainText('无');
   await expect(page.getByLabel('情报关键词', { exact: true })).not.toBeVisible();

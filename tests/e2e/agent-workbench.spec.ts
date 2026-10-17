@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
 import { chartResult } from './fixtures/chart-data';
-import { openLeftPanel } from './chart-helpers';
+import { openLeftPanel, selectLeftTab } from './chart-helpers';
 import type { AgentInputRequest, AgentIntelligenceResult, AgentSelection } from '@ais/contracts';
 
 async function agentFixture(
@@ -1422,7 +1422,7 @@ test('悬浮输入取代底部表格并复用右侧会话与请求生命周期',
   expect(calls.reads.events).toBe(reads);
   await openLeftPanel(page);
   const intelligenceTab = page.getByRole('tab', { name: '情报标绘', exact: true });
-  await intelligenceTab.click();
+  await selectLeftTab(page, '情报标绘');
   await composer.getByRole('button', { name: '打开智能体对话', exact: true }).click();
   await expect(intelligenceTab).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('tab', { name: 'AI 对话', exact: true })).toHaveAttribute(

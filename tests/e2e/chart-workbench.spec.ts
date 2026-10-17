@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
 import { chartResult, chartTopic } from './fixtures/chart-data';
-import { openLeftPanel, openConsolePage } from './chart-helpers';
+import { openLeftPanel, openConsolePage, selectLeftTab } from './chart-helpers';
 
 test('面板拖动、键盘调整、持久化与窗口缩放保留同一海图', async ({ page }) => {
   const pageErrors: string[] = [];
@@ -256,12 +256,12 @@ test('真实回放帧和AIS图层开关保留采集连接', async ({ page }) => 
   const calls = await chartFixture(page);
   await page.goto('/?q=回放船&searchRevision=1');
   await page.getByTestId('vessel-result').click();
-  await page.getByRole('tab', { name: '时间回放', exact: true }).click();
+  await selectLeftTab(page, '时间回放');
   await page.getByRole('button', { name: '查询轨迹', exact: true }).click();
   await expect(page.getByTestId('track-summary')).toContainText('2 / 2 点');
   await page.getByRole('button', { name: '播放轨迹', exact: true }).click();
   await expect(page.getByLabel('轨迹播放位置')).toHaveValue('1');
-  await page.getByRole('tab', { name: '图层控制', exact: true }).click();
+  await selectLeftTab(page, '图层控制');
   await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('AIS 船位', { exact: true }).uncheck();
   await page
@@ -408,7 +408,7 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
     .toBe(true);
   await expect(page.locator('.map-status')).toContainText('1 艘船');
   await openLeftPanel(page);
-  await page.getByRole('tab', { name: '图层控制', exact: true }).click();
+  await selectLeftTab(page, '图层控制');
   await page.getByRole('button', { name: '设置海图图层' }).click();
   await expect(
     page.getByRole('dialog', { name: '海图图层设置' }).getByRole('checkbox'),
@@ -429,10 +429,10 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
   await page.getByLabel('搜索船名、MMSI或IMO').fill('底图回归船');
   await page.getByRole('button', { name: '搜索船舶', exact: true }).click();
   await page.getByTestId('vessel-result').click();
-  await page.getByRole('tab', { name: '时间回放', exact: true }).click();
+  await selectLeftTab(page, '时间回放');
   await page.getByRole('button', { name: '查询轨迹', exact: true }).click();
   await expect.poll(async () => (await renderedColors()).tracks).toBeGreaterThan(20);
-  await page.getByRole('tab', { name: '图层控制', exact: true }).click();
+  await selectLeftTab(page, '图层控制');
   await page.getByRole('button', { name: '设置海图图层' }).click();
   await page.getByLabel('船舶轨迹', { exact: true }).uncheck();
   await page

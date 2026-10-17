@@ -329,7 +329,7 @@ function removeLayer(key: string) {
         :aria-label="'勾选 ' + item.title"
         @change="state.toggleSelection(item.id)"
       />
-      <button class="fusion-event" @click="emit('select', item.id)">
+      <button class="intelligence-content" type="button" @click="emit('select', item.id)">
         <strong>{{ item.title }}</strong
         ><span>{{ item.summary }}</span
         ><small>{{ item.sourceId }} · v{{ item.version }} · {{ dateLabel(item.publishedAt) }}</small
@@ -338,7 +338,14 @@ function removeLayer(key: string) {
           {{ state.plottedIds.includes(item.id) ? '已标绘' : '未标绘' }}</small
         >
       </button>
-      <button :aria-label="'定位 ' + item.title" @click="emit('locate', item.id)">⌖</button>
+      <button
+        class="intelligence-locate"
+        type="button"
+        :aria-label="'定位 ' + item.title"
+        @click="emit('locate', item.id)"
+      >
+        <span aria-hidden="true">⌖</span> 定位
+      </button>
     </div>
     <p v-if="!state.items.length && !state.busy" class="empty-copy">当前条件没有情报记录。</p>
     <button v-if="state.cursor" :disabled="state.busy" @click="state.load(true)">
@@ -366,25 +373,80 @@ function removeLayer(key: string) {
   padding: 6px 9px;
 }
 .intelligence-row {
-  display: flex;
-  align-items: start;
-  gap: 7px;
-  border-bottom: 1px solid #183e51;
-  padding: 8px 0;
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 9px 0;
+  padding: 12px;
+  border: 1px solid #23658a;
+  border-left: 3px solid #22b9e9;
+  border-radius: 4px;
+  background: linear-gradient(120deg, #112f46, #081f30);
 }
 .intelligence-row.selected {
-  border-left: 3px solid #5ad4df;
-  padding-left: 6px;
+  border-color: #5ad4df;
 }
 .intelligence-row > input {
-  margin-top: 14px;
-}
-.intelligence-row .fusion-event {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  top: 15px;
+  left: 12px;
+  width: 16px;
+  height: 16px;
   margin: 0;
+  padding: 0;
+  accent-color: #5ad4df;
 }
-.intelligence-row small {
-  display: block;
+.intelligence-content {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  line-height: 1.6;
+}
+.intelligence-content strong {
+  min-height: 20px;
+  margin-left: 25px;
+  color: #88dcfb;
+  font-size: 12px;
+}
+.intelligence-content span {
+  font-size: 11px;
+}
+.intelligence-content small {
+  color: #8eaabc;
+  font-size: 11px;
+}
+.intelligence-content > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.intelligence-locate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  gap: 4px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 3px 8px;
+  border-color: #23658a;
+  background: #0b2b40;
+  color: #88dcfb;
+  font-size: 12px;
+  line-height: 1;
+}
+.intelligence-locate > span {
+  font-size: 18px;
+}
+.intelligence-content:focus-visible,
+.intelligence-locate:focus-visible {
+  outline: 2px solid #5ad4df;
 }
 </style>

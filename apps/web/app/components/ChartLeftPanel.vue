@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UnwrapNestedRefs } from 'vue';
 import type { ChartLayerVisibility } from '../types/chart';
+import ChartOverflowTabs from './ChartOverflowTabs.vue';
 import { dateLabel } from '../utils/display';
 import { resolveVesselDirection } from '../utils/vesselMarkers';
 const workspace = defineModel<UnwrapNestedRefs<ReturnType<typeof useChartWorkspace>>>('workspace', {
@@ -95,24 +96,7 @@ function applyLayers() {
       </div>
       <button aria-label="折叠操作面板" @click="emit('close')">×</button>
     </header>
-    <div class="chart-tabs" role="tablist" aria-label="操作面板功能">
-      <button
-        v-for="tab in [
-          { id: 'search', name: '船舶搜索' },
-          { id: 'intelligence', name: '情报标绘' },
-          { id: 'layers', name: '图层控制' },
-          { id: 'playback', name: '时间回放' },
-          { id: 'history-tracks', name: '历史航线' },
-          { id: 'heatmap', name: 'AIS 热力图' },
-        ] as const"
-        :key="tab.id"
-        role="tab"
-        :aria-selected="workspace.leftTab === tab.id"
-        @click="workspace.leftTab = tab.id"
-      >
-        {{ tab.name }}
-      </button>
-    </div>
+    <ChartOverflowTabs v-model="workspace.leftTab" />
     <div class="chart-panel-scroll">
       <div v-if="visitedTabs.has('intelligence')" v-show="workspace.leftTab === 'intelligence'">
         <slot name="intelligence" />
