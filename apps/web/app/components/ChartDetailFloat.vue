@@ -9,6 +9,9 @@ const props = defineProps<{
   subtitle?: string;
   ariaLabel?: string;
   anchorId?: string;
+  width?: number;
+  motion?: 'slide-left';
+  closeLabel?: string;
 }>();
 const emit = defineEmits<{ close: [] }>();
 const panel = useTemplateRef<HTMLElement>('panel');
@@ -37,6 +40,7 @@ function measure() {
     !fullscreen && anchor?.getClientRects().length ? anchor.getBoundingClientRect() : null,
     window.innerWidth,
     window.innerHeight,
+    props.width,
   );
   positioned.value = true;
 }
@@ -114,7 +118,7 @@ watch(
     }
   },
 );
-watch(() => props.side, schedule);
+watch(() => [props.side, props.width], schedule);
 onMounted(() => {
   observer = new ResizeObserver(schedule);
   observe();
@@ -137,30 +141,62 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport v-if="teleportTarget" :to="teleportTarget">
-    <aside
-      v-show="open && positioned"
-      ref="panel"
-      v-bind="$attrs"
-      class="chart-detail-float chart-panel"
-      :style="style"
-      :aria-label="ariaLabel ?? title"
-      :data-side="side"
-      data-testid="chart-detail-float"
-      role="dialog"
-      aria-modal="false"
-      @keydown="keydown"
-      @wheel.stop
-    >
-      <header class="chart-panel-heading">
-        <div>
-          <h2>{{ title }}</h2>
-          <small v-if="subtitle">{{ subtitle }}</small>
-        </div>
-        <button type="button" class="chart-detail-close" aria-label="关闭详情" @click="close">
-          ×
-        </button>
-      </header>
-      <div class="chart-detail-scroll chart-panel-scroll"><slot /></div>
-    </aside>
+    <Transition name="chart-detail-slide-left" :css="motion === 'slide-left'">
+      <aside
+        v-show="open && positioned"
+        ref="panel"
+        v-bind="$attrs"
+        class="chart-detail-float chart-panel"
+        :style="style"
+        :aria-label="ariaLabel ?? title"
+        :inert="!open"
+        :aria-hidden="!open ? 'true' : undefined"
+        :data-side="side"
+        data-testid="chart-detail-float"
+        role="dialog"
+        aria-modal="false"
+        @keydown="keydown"
+        @wheel.stop
+      >
+        <header class="chart-panel-heading">
+          <div>
+            <h2>{{ title }}</h2>
+            <small v-if="subtitle">{{ subtitle }}</small>
+          </div>
+          <button
+            type="button"
+            class="chart-detail-close"
+            :aria-label="closeLabel ?? '关闭详情'"
+            @click="close"
+          >
+            ×
+          </button>
+        </header>
+        <div class="chart-detail-scroll chart-panel-scroll"><slot /></div>
+      </aside>
+    </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.chart-detail-slide-left-enter-active,
+.chart-detail-slide-left-leave-active {
+  transition:
+    transform 180ms ease-out,
+    opacity 180ms ease-out;
+}
+.chart-detail-slide-left-enter-from,
+.chart-detail-slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}
+.chart-detail-slide-left-leave-active {
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-detail-slide-left-enter-active,
+  .chart-detail-slide-left-leave-active {
+    transition: none;
+  }
+}
+</style>

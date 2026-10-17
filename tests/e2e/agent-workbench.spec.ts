@@ -873,7 +873,10 @@ test('区域补问、明确选区、结果证据及恢复会话', async ({ page 
   await page.reload();
   await page.getByRole('tab', { name: 'AI 对话' }).click();
   panel = page.getByTestId('agent-panel');
-  await expect(panel.getByLabel('研判会话')).toHaveValue('session-a');
+  await expect(panel.getByTestId('agent-current-session')).toHaveAttribute(
+    'data-session-id',
+    'session-a',
+  );
   detail = await openTaskDetails(page);
   await expect(detail.getByRole('heading', { name: '智能体研判' })).toBeVisible();
   expect(errors).toEqual([]);
@@ -910,7 +913,10 @@ test('普通问候与北京时间查询无选区完成并持久恢复助手回�
   panel = page.getByTestId('agent-panel');
   for (const reply of Object.values(replies))
     await expect(panel.getByLabel('研判对话记录').getByText(reply, { exact: true })).toBeVisible();
-  await expect(panel.getByLabel('研判会话')).toHaveValue('session-a');
+  await expect(panel.getByTestId('agent-current-session')).toHaveAttribute(
+    'data-session-id',
+    'session-a',
+  );
   expect(calls.reads.creates).toBe(1);
 });
 
@@ -1426,7 +1432,10 @@ test('悬浮输入取代底部表格并复用右侧会话与请求生命周期',
   await expect(input).toHaveValue('');
   expect(calls.submitted).toHaveLength(1);
   expect(calls.submitted[0]!.body).not.toHaveProperty('bbox');
-  await expect(panel.getByLabel('研判会话')).toHaveValue('session-a');
+  await expect(panel.getByTestId('agent-current-session')).toHaveAttribute(
+    'data-session-id',
+    'session-a',
+  );
   await expect(panel.getByLabel('分析问题或继续追问')).toHaveCount(0);
   await page.getByRole('tab', { name: /^主动推送/ }).click();
   await composer.getByRole('button', { name: '打开智能体对话', exact: true }).click();

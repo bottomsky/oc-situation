@@ -321,7 +321,10 @@ for (const width of [1920, 390]) {
     await visibleInViewport(page, detail);
     await expect(detail).toContainText('右侧来源引用：港口公告原文');
     await expect(panel).toBeVisible();
-    await expect(panel.getByLabel('研判会话')).toHaveValue('popover-session');
+    await expect(panel.getByTestId('agent-current-session')).toHaveAttribute(
+      'data-session-id',
+      'popover-session',
+    );
     await page.screenshot({ path: test.info().outputPath(`agent-source-${width}.png`) });
     await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
     await expect(citation).toBeFocused();

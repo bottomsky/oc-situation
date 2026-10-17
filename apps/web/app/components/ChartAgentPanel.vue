@@ -14,6 +14,7 @@ import {
 } from '../composables/useAgentConversation';
 import { dateLabel, heatmapDateLabel } from '../utils/display';
 import ChartDetailFloat from './ChartDetailFloat.vue';
+import ChartAgentHistoryPanel from './ChartAgentHistoryPanel.vue';
 import { useChartDetailHost } from '../composables/useChartDetail';
 
 const props = defineProps<{ bbox: Bbox; state: AgentConversationState }>();
@@ -32,7 +33,10 @@ watch(
   () => state.activeSession?.id,
   () => detailHost?.close('task'),
 );
-onBeforeUnmount(() => detailHost?.close('task'));
+onBeforeUnmount(() => {
+  detailHost?.close('task');
+  detailHost?.close('history');
+});
 const selectedTask = computed(() => state.detail?.task);
 const hasAnalysis = computed(
   () =>
@@ -143,10 +147,47 @@ const tools: Record<string, string> = {
   query_vessels: '查询船舶',
   search_intelligence: '检索本地情报',
 };
-function changeSession(event: Event) {
-  const id = (event.target as HTMLSelectElement).value;
-  if (id) void state.openSession(id);
-  else state.newSession();
+const localHistoryOpen = ref(false);
+const historyOpen = computed(() => detailHost?.isOpen('history') ?? localHistoryOpen.value);
+function openHistory() {
+  if (detailHost) detailHost.open('history', 'right');
+  else localHistoryOpen.value = true;
+}
+function closeHistory() {
+  detailHost?.close('history');
+  localHistoryOpen.value = false;
+}
+const suggestions = [
+  '查询当前海域的船舶动态',
+  '显示过去 24 小时的 AIS 热力图',
+  '绘制当前海域货船过去 24 小时的航线',
+  '查询近期相关海事公告',
+];
+async function chooseSuggestion(question: string) {
+  state.setDraft(question);
+  await nextTick();
+  document.querySelector<HTMLTextAreaElement>('.composer-input')?.focus();
+}
+function messageTime(createdAt: string) {
+  const date = new Date(createdAt);
+  if (!Number.isFinite(date.getTime())) return '时间未知';
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
+}
+const copiedMessageId = ref('');
+const copyError = ref('');
+async function copyMessage(id: string, content: string) {
+  copyError.value = '';
+  try {
+    await navigator.clipboard.writeText(content);
+    copiedMessageId.value = id;
+  } catch {
+    copyError.value = '复制失败，请选择回复文字后手动复制。';
+  }
 }
 </script>
 
@@ -159,8 +200,8 @@ function changeSession(event: Event) {
     tabindex="-1"
     @keydown.stop
   >
-    <div class="agent-intro">
-      <ChartIcon name="Bot" />
+    <div class="agent-intro" data-testid="agent-chat-intro">
+      <span class="agent-avatar agent-avatar-intro"><ChartIcon name="Bot" /></span>
       <div>
         <h3>区域研判助手</h3>
         <p>咨询信息，选定海域，循证研判。</p>
@@ -174,20 +215,43 @@ function changeSession(event: Event) {
     </p>
     <template v-if="state.config?.enabled">
       <div class="agent-session-bar">
-        <label for="agent-session">研判会话</label>
-        <select
-          id="agent-session"
-          :value="state.activeSession?.id ?? ''"
-          :disabled="state.busy"
-          @change="changeSession"
+        <button
+          id="chart-agent-history-trigger"
+          class="agent-history-trigger"
+          aria-label="历史会话"
+          aria-controls="chart-agent-history"
+          :aria-expanded="historyOpen"
+          @click="openHistory"
         >
-          <option value="">新会话</option>
-          <option v-for="item in state.sessions" :key="item.id" :value="item.id">
-            {{ item.title }}
-          </option>
-        </select>
-        <button :disabled="state.busy" @click="state.newSession">新建</button>
+          <ChartIcon name="History" :size="17" />历史会话
+          <span class="agent-session-count">{{ state.sessions.length }}</span>
+        </button>
+        <button class="agent-new-session" :disabled="state.busy" @click="state.newSession">
+          <ChartIcon name="Plus" :size="15" />新建
+        </button>
+        <p
+          class="agent-current-session"
+          data-testid="agent-current-session"
+          :data-session-id="state.activeSession?.id ?? ''"
+          :title="state.activeSession?.title ?? '新会话'"
+        >
+          <span />{{ state.activeSession?.title ?? '新会话' }}
+        </p>
       </div>
+      <section v-if="!state.messages.length" class="agent-welcome" aria-label="你可以这样问我">
+        <h4><span aria-hidden="true">✧</span>你可以这样问我</h4>
+        <p>从海图出发，查询船舶、航线与海事情报。</p>
+        <button
+          v-for="question in suggestions"
+          :key="question"
+          :disabled="!state.canWrite || state.busy || state.loading"
+          @click="chooseSuggestion(question)"
+        >
+          <span>{{ question }}</span
+          ><ChartIcon name="ChevronRight" :size="15" />
+        </button>
+        <small>点击填入海图下方输入框，可修改后发送。</small>
+      </section>
       <p v-if="!state.canWrite" class="agent-note">当前账号为只读权限，可查看已有会话与证据。</p>
       <div class="agent-region">
         <div class="agent-row">
@@ -229,15 +293,56 @@ function changeSession(event: Event) {
           v-for="message in state.messages"
           :key="message.id"
           class="agent-message"
+          data-testid="agent-chat-message"
+          :data-role="message.role"
           :class="message.role"
           :data-message-id="message.id"
           :data-task-id="message.taskId"
           tabindex="-1"
         >
-          <small>{{ message.role === 'user' ? '你' : '研判助手' }}</small>
-          <p><AgentMessageText :message="message" @reference="state.openSource" /></p>
+          <span class="agent-avatar agent-message-avatar" aria-hidden="true">
+            <ChartIcon v-if="message.role !== 'user'" name="Bot" :size="20" />
+            <svg v-else viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <circle cx="12" cy="7" r="4" />
+              <path d="M4 21v-3a8 8 0 0 1 16 0v3Z" />
+            </svg>
+          </span>
+          <div class="agent-message-body">
+            <div class="agent-message-meta">
+              <small>{{ message.role === 'user' ? '你' : '研判助手' }}</small>
+              <time :datetime="message.createdAt" :title="dateLabel(message.createdAt)">
+                {{ messageTime(message.createdAt) }} UTC
+              </time>
+            </div>
+            <div class="agent-message-bubble">
+              <p><AgentMessageText :message="message" @reference="state.openSource" /></p>
+              <div v-if="message.role === 'assistant'" class="agent-message-actions">
+                <button
+                  :aria-label="copiedMessageId === message.id ? '已复制回复' : '复制回复'"
+                  @click="copyMessage(message.id, message.content)"
+                >
+                  <ChartIcon v-if="copiedMessageId === message.id" name="Check" :size="15" />
+                  <svg
+                    v-else
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    aria-hidden="true"
+                  >
+                    <rect x="8" y="7" width="12" height="15" rx="2" />
+                    <path d="M16 7V3H4v15h4M11 11h6M11 15h6" />
+                  </svg>
+                  {{ copiedMessageId === message.id ? '已复制' : '复制' }}
+                </button>
+              </div>
+            </div>
+          </div>
         </article>
       </div>
+      <p v-if="copyError" class="agent-note" role="status">{{ copyError }}</p>
       <small
         >在海图下方输入问题或继续追问。区域研判的坐标与船舶标识由本地平台处理，模型接收脱敏摘要和证据引用。</small
       >
@@ -533,6 +638,7 @@ function changeSession(event: Event) {
           </section>
         </div>
       </component>
+      <ChartAgentHistoryPanel :state="state" :open="historyOpen" @close="closeHistory" />
     </template>
   </section>
 </template>
@@ -540,8 +646,9 @@ function changeSession(event: Event) {
 <style scoped>
 .agent-panel {
   display: grid;
-  gap: 16px;
-  padding: 16px 12px 24px;
+  gap: 18px;
+  min-width: 0;
+  padding: 18px 7px 24px;
   font-size: 12px;
   color: #c1d9e7;
 }
@@ -567,23 +674,148 @@ function changeSession(event: Event) {
   display: flex;
   gap: 12px;
   align-items: center;
-  border-bottom: 1px solid #19485d;
-  padding-bottom: 12px;
+  padding: 2px 0 0;
 }
-.agent-intro > svg {
-  width: 30px;
-  height: 30px;
-  color: #45d4ff;
+.agent-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
+  border: 1px solid #427591;
+  border-radius: 50%;
+  color: #b9edff;
+  background: radial-gradient(circle at 35% 20%, #1c526e, #071c2b 72%);
+}
+.agent-avatar-intro {
+  width: 42px;
+  height: 42px;
+  color: #cff8ff;
+  border: 3px solid #3d8caf;
+  box-shadow:
+    0 0 0 3px #3e507c55,
+    0 0 18px #17b8dc33;
+}
+.agent-avatar-intro svg {
+  width: 23px;
+  height: 23px;
 }
 .agent-intro h3 {
-  font-size: 15px;
+  font-size: 17px;
+  letter-spacing: 0.6px;
+}
+.agent-intro p {
+  font-size: 11px;
+  color: #8db8ca;
 }
 .agent-session-bar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  gap: 9px;
+  margin-top: -4px;
+}
+.agent-history-trigger,
+.agent-new-session {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  border-radius: 7px;
+}
+.agent-history-trigger {
+  color: #c7efff;
+  border-color: #2786a3;
+  background: linear-gradient(115deg, #10415a, #0a2537);
+}
+.agent-new-session {
+  color: #9fc7da;
+  border-color: #23465b;
+  background: #071d2b;
+  padding-inline: 10px;
+}
+.agent-session-count {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  color: #7de3f5;
+  background: #092b3d;
+  font-variant-numeric: tabular-nums;
+}
+.agent-current-session {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  grid-column: 1 / -1;
+  min-width: 0;
+  color: #83adbf;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+.agent-current-session > span {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #29bfd6;
+  box-shadow: 0 0 7px #29bfd655;
+}
+.agent-welcome {
+  display: grid;
+  gap: 9px;
+  padding: 15px 12px;
+  border: 1px solid #3a486e;
+  border-radius: 13px;
+  background: radial-gradient(ellipse at top left, #18364470, transparent 70%), #091b29;
+  box-shadow: inset 0 1px 0 #b2d8fc08;
+}
+.agent-welcome h4 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+}
+.agent-welcome h4 > span {
+  color: #f7ce63;
+  font-size: 24px;
+  line-height: 1;
+}
+.agent-welcome > p {
+  font-size: 11px;
+  color: #90aebe;
+}
+.agent-welcome > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  border-radius: 19px;
+  border-color: #344b70;
+  color: #c5dce9;
+  background: linear-gradient(100deg, #172f40, #10283a);
+}
+.agent-welcome > button > span {
+  overflow-wrap: anywhere;
+}
+.agent-welcome > button > svg {
+  flex-shrink: 0;
+  color: #70bed8;
+}
+.agent-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+.agent-panel button:not(:disabled):hover {
+  border-color: #39b2d0;
+  color: #e2faff;
 }
 .agent-panel select,
 .agent-panel textarea,
@@ -608,9 +840,10 @@ function changeSession(event: Event) {
 .agent-region {
   display: grid;
   gap: 8px;
-  padding: 10px;
-  border: 1px solid #1b4a60;
-  border-radius: 5px;
+  padding: 11px;
+  border: 1px solid #1c3c50;
+  border-radius: 9px;
+  background: #081b2a99;
 }
 .agent-row {
   display: flex;
@@ -630,34 +863,89 @@ function changeSession(event: Event) {
 }
 .agent-messages {
   display: grid;
-  gap: 10px;
+  gap: 22px;
+  min-width: 0;
+  padding-top: 3px;
 }
 .agent-message {
-  padding: 10px 12px;
-  background: #0b2b40;
-  border-left: 2px solid #3ba7ba;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
 .agent-message.user {
-  background: #10354a;
-  border-left-color: #557c95;
-  margin-left: 16px;
+  flex-direction: row-reverse;
+  margin-left: 20px;
+}
+.agent-message-avatar {
+  width: 28px;
+  height: 28px;
+  margin-top: 23px;
+}
+.agent-message.assistant .agent-message-avatar {
+  border: 2px solid #397f9f;
+  box-shadow:
+    0 0 0 2px #3e507c55,
+    0 0 12px #17b8dc2b;
+}
+.agent-message.user .agent-message-avatar {
+  color: #a8cce9;
+  border-color: #31506d;
+  background: #102536;
+}
+.agent-message-body {
+  min-width: 0;
+  max-width: calc(100% - 36px);
+}
+.agent-message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0 4px 6px;
+  color: #7198ae;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.agent-message-meta > small {
+  font-size: 10px;
+}
+.agent-message.user .agent-message-meta {
+  justify-content: flex-end;
+}
+.agent-message-bubble {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #203e50;
+  border-radius: 3px 12px 12px;
+  background: linear-gradient(135deg, #102a3a, #0b1e2c);
+  box-shadow: 0 5px 16px #00000016;
+}
+.agent-message.user .agent-message-bubble {
+  border-color: #18a9d5;
+  border-radius: 12px 12px 3px;
+  color: #e7f8ff;
+  background: linear-gradient(115deg, #075b7f, #08405e);
+  box-shadow: inset 0 0 16px #049bc822;
 }
 .agent-message p,
 .agent-summary p {
   white-space: pre-wrap;
 }
-.agent-compose {
-  display: grid;
-  gap: 8px;
+.agent-message-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
-.agent-compose textarea {
-  width: 100%;
-  resize: vertical;
-}
-.agent-compose button {
-  background: #125068;
-  border-color: #2389a3;
-  padding: 9px;
+.agent-message-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #8bb2ca;
+  font-size: 10px;
 }
 .agent-tasks,
 .agent-detail {

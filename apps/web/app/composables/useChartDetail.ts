@@ -1,6 +1,7 @@
 import { inject, provide, ref, type InjectionKey } from 'vue';
 
-export type ChartDetailKind = 'intelligence' | 'vessel' | 'evidence' | 'sources' | 'task';
+export type ChartDetailKind =
+  'intelligence' | 'vessel' | 'evidence' | 'sources' | 'task' | 'history';
 export type ChartDetailSide = 'left' | 'right';
 
 export function createChartDetailHost() {

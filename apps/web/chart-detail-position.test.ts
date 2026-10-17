@@ -23,6 +23,28 @@ describe('海图详情浮层定位', () => {
       1000,
     );
   });
+  it('历史会话使用紧凑宽度，窄窗口继续限制在视口内', () => {
+    const desktop = chartDetailPosition(
+      'right',
+      workspace,
+      { left: 1572, right: 1912 },
+      1920,
+      1080,
+      288,
+    );
+    expect(desktop.width).toBe(288);
+    expect(desktop.left).toBe(1272);
+    const compact = chartDetailPosition(
+      'right',
+      { left: 0, right: 260, top: 80, bottom: 600 },
+      null,
+      260,
+      640,
+      288,
+    );
+    expect(compact.left).toBe(12);
+    expect(compact.width).toBe(236);
+  });
   it('窄屏将完整浮层夹紧到视口并保留关闭区', () => {
     const result = chartDetailPosition(
       'left',

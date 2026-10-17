@@ -37,7 +37,10 @@ function closeEvidence() {
 const tab = defineModel<'chat' | 'push' | 'tasks'>('tab', { default: 'push' });
 watch(tab, (value) => {
   if (value !== 'push') detailHost?.close('evidence');
-  if (value !== 'chat') detailHost?.close('sources');
+  if (value !== 'chat') {
+    detailHost?.close('sources');
+    detailHost?.close('history');
+  }
 });
 const expanded = ref(false);
 const evidenceDialog = useTemplateRef<HTMLDialogElement>('evidenceDialog');
@@ -115,9 +118,12 @@ watch(
 <template>
   <aside class="chart-right chart-panel" aria-label="智能体协同" data-testid="chart-right-panel">
     <header class="chart-panel-heading">
-      <div>
-        <h2>智能体协同</h2>
-        <small>INTELLIGENCE COLLABORATION</small>
+      <div class="collaboration-heading">
+        <span class="collaboration-mark"><ChartIcon name="Bot" :size="24" /></span>
+        <div>
+          <h2>智能体协同</h2>
+          <small>INTELLIGENCE COLLABORATION</small>
+        </div>
       </div>
       <button aria-label="关闭协同面板" @click="emit('close')">×</button>
     </header>
@@ -213,3 +219,92 @@ watch(
     </dialog>
   </aside>
 </template>
+
+<style scoped>
+.chart-right {
+  container-type: inline-size;
+  background: radial-gradient(ellipse at 90% 0%, #0b355040, transparent 35%), #061824;
+}
+.chart-panel-heading {
+  min-height: 69px;
+  border-bottom: 1px solid #16405a;
+  background: linear-gradient(110deg, #09283bba, #06172455);
+}
+.collaboration-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.collaboration-mark {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 35px;
+  flex-shrink: 0;
+  color: #5edbff;
+  border-left: 2px solid #20c4e9;
+}
+.chart-panel-heading h2 {
+  padding-left: 0;
+  border-left: 0;
+  font-size: 18px;
+}
+.chart-panel-heading small {
+  padding-left: 0;
+  font-size: 7px;
+  letter-spacing: 1.2px;
+}
+.chart-tabs {
+  gap: 5px;
+  padding: 8px 8px 10px;
+}
+.chart-tabs > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 40px;
+  border-radius: 6px;
+  background: #061a29;
+  border-color: #23465a;
+}
+.chart-tabs > button > svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.chart-tabs > button[aria-selected='true'] {
+  background: linear-gradient(125deg, #075376, #07344d);
+  border-color: #20c8f4;
+  box-shadow:
+    inset 0 -2px 0 #20c8f4,
+    0 0 12px #14b5d416;
+}
+.chart-tabs > button:focus-visible {
+  outline: 2px solid #6de8ff;
+  outline-offset: 2px;
+}
+.chart-panel-scroll {
+  margin: 0 6px;
+  padding-inline: 3px;
+  border: 1px solid #163c51;
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(160deg, #071f2e80, #03121c40);
+}
+.chart-right-footer {
+  color: #6596ab;
+  border-top-color: #18394c;
+}
+@container (max-width: 290px) {
+  .chart-tabs > button {
+    gap: 3px;
+    font-size: 10px;
+  }
+  .chart-tabs > button > svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+</style>

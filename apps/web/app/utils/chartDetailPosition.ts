@@ -11,10 +11,11 @@ export function chartDetailPosition(
   anchor: Pick<ChartDetailBounds, 'left' | 'right'> | null,
   viewportWidth: number,
   viewportHeight = Number.POSITIVE_INFINITY,
+  preferredWidth = 420,
 ) {
   const minLeft = Math.max(12, workspace.left + 4);
   const maxRight = Math.min(viewportWidth - 12, workspace.right - 4);
-  const width = Math.max(0, Math.min(420, maxRight - minLeft));
+  const width = Math.max(0, Math.min(preferredWidth, maxRight - minLeft));
   const requestedLeft =
     side === 'left'
       ? (anchor?.right ?? workspace.left) + 12
