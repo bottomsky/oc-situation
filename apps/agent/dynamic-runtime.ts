@@ -12,6 +12,8 @@ import type { RuntimeContext, RuntimeOptions, RuntimePorts } from './runtime';
 import type { AgentInputField } from '../../packages/contracts/agent';
 import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
+import { parseCircleRegion } from '../../packages/domain/agent-focus';
 import { Type, createModels, createInitialSystemMessage } from '@earendil-works/pi-ai';
 import { deepseekProvider } from '@earendil-works/pi-ai/providers/deepseek';
 import { z } from 'zod';
@@ -397,6 +399,17 @@ export async function executeDynamicSkill(
   let currentStep: string | undefined;
   try {
     await check();
+    let circle;
+    try {
+      circle = parseCircleRegion(context.task.goal);
+    } catch {
+      fail('circle_scope_invalid');
+    }
+    if (
+      circle &&
+      (!isDeepStrictEqual(context.task.selection?.region, circle) || context.task.selection?.bbox)
+    )
+      fail('circle_scope_mismatch');
     const target = dynamicGoalProjection(context.task.goal, context.task.selection?.purpose);
     const scope = context.task.selection ?? {};
     context = {
@@ -480,9 +493,12 @@ export async function executeDynamicSkill(
       required.add('vessel_selector');
     if (definition.toolIds.includes('search_intelligence')) required.add('topic');
     const input = context.task.selection ?? {};
+    const requiresBbox = definition.toolIds.some((id) =>
+      ['query_vessel_tracks', 'query_ais_heatmap'].includes(id),
+    );
     const missing = [...required].filter((field) =>
       field === 'region'
-        ? !input.bbox
+        ? !input.bbox && (requiresBbox || !input.region)
         : field === 'time'
           ? !input.timeRange || input.heatmapTimeUnclear || input.tracksTimeUnclear
           : field === 'vessel_selector'
@@ -640,11 +656,15 @@ export async function executeDynamicSkill(
       status: 'failed',
       errorCode: code === 'budget' ? 'budget_exhausted' : code,
       error:
-        code === 'ui_unknown'
-          ? '展示回执未确认，请核对当前页面后发起新尝试。'
-          : code === 'candidate_limit'
-            ? '两次技能候选均未通过完整目标校验，请补充目标或调整条件。'
-            : '本次技能执行未完成，已保存结果可在任务记录查看。',
+        code === 'circle_scope_mismatch'
+          ? '本任务保存的范围与原文圆形范围不一致，请点击“重新尝试”按原坐标和半径执行。'
+          : code === 'circle_scope_invalid'
+            ? '圆形范围不明确，请重新发送唯一有效的经度、纬度及半径。'
+            : code === 'ui_unknown'
+              ? '展示回执未确认，请核对当前页面后发起新尝试。'
+              : code === 'candidate_limit'
+                ? '两次技能候选均未通过完整目标校验，请补充目标或调整条件。'
+                : '本次技能执行未完成，已保存结果可在任务记录查看。',
     });
   } finally {
     clearTimeout(timer);

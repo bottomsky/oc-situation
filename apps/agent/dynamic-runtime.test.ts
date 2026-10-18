@@ -251,6 +251,67 @@ function fixture(bound = true) {
 }
 
 describe('durable dynamic composition', () => {
+  it('accepts a trusted circle for vessel lists while bbox-only tools still request a bbox', async () => {
+    const m = fixture();
+    m.context.task.goal = '查询113.8751,22.0843方圆100公里内有哪些船舶';
+    m.context.task.uiBinding = null;
+    m.context.task.selection = {
+      region: { kind: 'circle', center: [113.8751, 22.0843], radiusMeters: 100000 },
+    };
+    m.version.definition = {
+      ...definition,
+      requiredInputs: ['region'],
+      toolIds: ['query_vessels'],
+      steps: [
+        {
+          id: 'cargo',
+          toolId: 'query_vessels',
+          input: { selection: { $ref: 'input.selection' } },
+          artifactKind: 'vessel_list',
+        },
+      ],
+      expectedArtifacts: [{ stepId: 'cargo', kind: 'vessel_list' }],
+      requiredDisplays: [],
+    };
+    m.execution.taskBinding!.toolCeiling = ['query_vessels'];
+    await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+      apiKey: 'unused',
+      dynamicSkillsEnabled: true,
+    });
+    expect(m.counts.finish).toBe('completed');
+    expect(m.counts.query).toBe(1);
+    const tracks = fixture();
+    tracks.context.task.selection!.region = m.context.task.selection.region;
+    delete tracks.context.task.selection!.bbox;
+    await executeDynamicSkill(tracks.context, tracks.ports, tracks.dynamic, {
+      apiKey: 'unused',
+      dynamicSkillsEnabled: true,
+    });
+    expect(tracks.counts.finish).toBe('awaiting_input');
+    expect(tracks.counts.query).toBe(0);
+  });
+  it('rejects legacy circular requests with absent or mismatched scope before any query or restore', async () => {
+    for (const region of [
+      undefined,
+      { kind: 'circle' as const, center: [120, 30] as [number, number], radiusMeters: 100000 },
+    ]) {
+      const m = fixture();
+      m.context.task.goal = '聚集 113.8751, 22.0843 方圆 100公里';
+      m.context.task.selection = {
+        bbox: [-180, -80, 180, 80],
+        purpose: 'vessel_list',
+        ...(region ? { region } : {}),
+      };
+      await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+        apiKey: 'unused',
+        dynamicSkillsEnabled: true,
+      });
+      expect(m.counts.error).toBe('circle_scope_mismatch');
+      expect(m.counts.query).toBe(0);
+      expect(m.counts.tools).toBe(0);
+      expect(m.counts.models).toBe(0);
+    }
+  });
   it('rejects a skill that multiplies a single explicit business write across steps', async () => {
     const prior = process.env.AGENT_BUSINESS_WRITE_ENABLED;
     process.env.AGENT_BUSINESS_WRITE_ENABLED = 'true';

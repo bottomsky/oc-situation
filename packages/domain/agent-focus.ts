@@ -103,19 +103,83 @@ export function bboxFocusGeometry(input: [number, number, number, number]): Inte
   return { type: 'Polygon', coordinates: [ring] };
 }
 
-/** Explicit coordinate + radius only; captured viewport never supplies the center. */
-export function parseCircleRegion(goal: string): CircleRegion | undefined {
-  const radius = goal.match(/(?:方圆|半径)\s*(\d+(?:\.\d+)?)\s*(公里|千米|km|米)/i);
-  if (!radius) return undefined;
-  const pair = goal.match(
-    /(?:坐标|点位)\s*[:：]?\s*[（(]?\s*(-?\d+(?:\.\d+)?)\s*[,，]\s*(-?\d+(?:\.\d+)?)/,
-  );
-  const lon = goal.match(/(?:经度|lon(?:gitude)?)\s*[:：]?\s*(-?\d+(?:\.\d+)?)/i);
-  const lat = goal.match(/(?:纬度|lat(?:itude)?)\s*[:：]?\s*(-?\d+(?:\.\d+)?)/i);
-  if (!pair && !(lon && lat)) return undefined;
-  return CircleRegionSchema.parse({
+const circleNumber = '[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)';
+const circleFocusPrefix = /^(?:请(?:帮我)?|帮我)?\s*(?:聚焦|定位|关注|聚集)(?:到)?\s*/;
+
+function circleRequest(goal: string) {
+  if (
+    !/(?:方圆|半径)\s*[+\-\d.]/.test(goal) &&
+    !(
+      /方圆|半径/.test(goal) &&
+      (circleFocusPrefix.test(goal.trim()) ||
+        /坐标|点位|经度|纬度|\d\s*[,，]\s*[+\-\d.]/.test(goal))
+    )
+  )
+    return undefined;
+  const radii = [
+    ...goal.matchAll(
+      new RegExp(`(?:方圆|半径)\\s*(${circleNumber})\\s*(公里|千米|km\\b|米)`, 'gi'),
+    ),
+  ];
+  const pairs = [
+    ...goal.matchAll(
+      new RegExp(`(?<![\\w.+-])(${circleNumber})\\s*[,，]\\s*(${circleNumber})(?![\\w.+-])`, 'g'),
+    ),
+  ];
+  const longitudes = [
+    ...goal.matchAll(
+      new RegExp(`(?:经度|lon(?:gitude)?)\\s*[:：]?\\s*(${circleNumber})(?![\\w.+-])`, 'gi'),
+    ),
+  ];
+  const latitudes = [
+    ...goal.matchAll(
+      new RegExp(`(?:纬度|lat(?:itude)?)\\s*[:：]?\\s*(${circleNumber})(?![\\w.+-])`, 'gi'),
+    ),
+  ];
+  if (
+    radii.length !== 1 ||
+    (goal.match(/方圆|半径/g)?.length ?? 0) !== 1 ||
+    !(
+      (pairs.length === 1 && !longitudes.length && !latitudes.length) ||
+      (!pairs.length && longitudes.length === 1 && latitudes.length === 1)
+    ) ||
+    new RegExp(`${circleNumber}\\s*[,，]\\s*${circleNumber}\\s*[,，]\\s*${circleNumber}`).test(goal)
+  )
+    throw new Error('circle_requires_one_center_and_radius');
+  const pair = pairs[0],
+    radius = radii[0]!;
+  const region = CircleRegionSchema.parse({
     kind: 'circle',
-    center: pair ? [Number(pair[1]), Number(pair[2])] : [Number(lon![1]), Number(lat![1])],
+    center: pair
+      ? [Number(pair[1]), Number(pair[2])]
+      : [Number(longitudes[0]![1]), Number(latitudes[0]![1])],
     radiusMeters: Number(radius[1]) * (radius[2] === '米' ? 1 : 1000),
   });
+  let remaining = goal;
+  for (const match of [radius, ...pairs, ...longitudes, ...latitudes])
+    remaining = remaining.replace(match[0], '');
+  return { region, remaining };
+}
+
+/** A single explicit longitude/latitude pair and radius; malformed requests never inherit the viewport. */
+export function parseCircleRegion(goal: string): CircleRegion | undefined {
+  return circleRequest(goal)?.region;
+}
+
+/** Only the standalone focus command accepts 聚集 as a common typo; analysis retains its own intent. */
+export function isCircleFocusRequest(goal: string): boolean {
+  if (!circleFocusPrefix.test(goal.trim())) return false;
+  try {
+    const parsed = circleRequest(goal);
+    return (
+      !!parsed &&
+      parsed.remaining
+        .trim()
+        .replace(circleFocusPrefix, '')
+        .replace(/坐标|点位|为中心|中心|区域|范围|周围|以|的|内|到/g, '')
+        .replace(/[\s[\]()（）,，:：。.!！]/g, '') === ''
+    );
+  } catch {
+    return false;
+  }
 }

@@ -33,7 +33,7 @@ export function dynamicTaskSelection(
     }
   }
   const mmsis = [
-    ...new Set([...goal.matchAll(/(?<!\d)([1-9]\d{8})(?!\d)/g)].map((match) => match[1]!)),
+    ...new Set([...goal.matchAll(/(?<![\d.])([1-9]\d{8})(?![\d.])/g)].map((match) => match[1]!)),
   ];
   const selector = { ...output.vesselSelector };
   const types = new Set<number>();

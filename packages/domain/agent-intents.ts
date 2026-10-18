@@ -1,4 +1,5 @@
 import { isUiIntent } from './agent-ui-intent';
+import { isCircleFocusRequest } from './agent-focus';
 import { parseBusinessRequest } from './agent-business';
 import { isIntelligenceQuestion } from './intelligence-intent';
 import type { TopicDefinitionId } from '../contracts/topics';
@@ -53,6 +54,7 @@ export function derivePurposeIntent(purpose: AgentPurpose): AgentIntent {
     : 'analysis';
 }
 export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?: AgentPurpose } {
+  if (isCircleFocusRequest(goal)) return { intent: 'map_focus' };
   const business = parseBusinessRequest(goal);
   if (business)
     return {

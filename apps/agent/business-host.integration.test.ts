@@ -59,6 +59,100 @@ describe('trusted business host PostgreSQL recovery', () => {
       [ownerId],
     );
   });
+  it('binds bare coordinate focus locally and repairs legacy global-query retries without old results', async () => {
+    const previousDynamic = process.env.AGENT_DYNAMIC_SKILLS_ENABLED;
+    const previousUi = process.env.AGENT_UI_ENABLED;
+    process.env.AGENT_DYNAMIC_SKILLS_ENABLED = 'true';
+    process.env.AGENT_UI_ENABLED = 'false';
+    try {
+      const session = await createAgentSession(infra, ownerId, 'coordinate focus repair');
+      const goal = '聚集 113.8751, 22.0843 方圆 100公里';
+      const input = {
+        content: goal,
+        historyHours: 24,
+        mapContext: {
+          bbox: [-180, -80, 180, 80] as [number, number, number, number],
+          capturedAt: new Date().toISOString(),
+        },
+      };
+      const submitted = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), input);
+      const circle = { kind: 'circle', center: [113.8751, 22.0843], radiusMeters: 100000 };
+      expect(submitted.task.intent).toBe('map_focus');
+      expect(submitted.task.selection?.region).toEqual(circle);
+      expect(submitted.task.selection?.bbox).toBeUndefined();
+      expect(submitted.pendingInputRequests).toEqual([]);
+      const precise = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), {
+        ...input,
+        content: '聚焦113.875112345,22.084312345方圆100公里',
+      });
+      expect(precise.task.selection?.focusTargets).toBeUndefined();
+      expect(precise.task.selection?.mmsis).toBeUndefined();
+      expect(precise.task.selection?.region).toMatchObject({
+        center: [113.875112345, 22.084312345],
+      });
+      await processAgentTask(infra, submitted.task.id, { apiKey: 'unused' }, 'circle-worker');
+      const completed = (await getAgentTaskContext(infra, submitted.task.id))!;
+      expect(completed.task.status).toBe('completed');
+      expect(completed.task.modelCalls).toBe(0);
+      expect(completed.focusResult?.targets).toHaveLength(1);
+      expect(completed.focusResult?.targets[0]?.region).toEqual(circle);
+      await pool.query(
+        "UPDATE agent_tasks SET intent='skill',status='failed',input_revision=1,selection=$2::jsonb,bbox=$3::jsonb WHERE id=$1",
+        [
+          submitted.task.id,
+          JSON.stringify({ bbox: input.mapContext.bbox, purpose: 'vessel_list' }),
+          JSON.stringify(input.mapContext.bbox),
+        ],
+      );
+      await pool.query(
+        "INSERT INTO agent_steps(task_id,input_revision,step_key,name,input,output) VALUES($1,1,'input_snapshot','old global input','null'::jsonb,$2::jsonb)",
+        [submitted.task.id, JSON.stringify({ bbox: input.mapContext.bbox })],
+      );
+      // The corrected builtin retry must also work when dynamic composition has been disabled.
+      process.env.AGENT_DYNAMIC_SKILLS_ENABLED = 'false';
+      const retry = await retryAgentTask(infra, ownerId, submitted.task.id, randomUUID());
+      expect(retry.task.intent).toBe('map_focus');
+      expect(retry.task.selection).toMatchObject({ region: circle });
+      expect(retry.task.selection?.bbox).toBeUndefined();
+      expect(retry.task.selection?.purpose).toBeUndefined();
+      expect(retry.task.bbox).toBeNull();
+      const fresh = (await getAgentTaskContext(infra, retry.task.id))!;
+      expect(fresh.steps).toEqual([]);
+      expect(fresh.queryResult).toBeNull();
+      expect(fresh.focusResult).toBeNull();
+      await processAgentTask(infra, retry.task.id, { apiKey: 'unused' }, 'circle-retry-worker');
+      const recovered = (await getAgentTaskContext(infra, retry.task.id))!;
+      expect(recovered.task.status).toBe('completed');
+      expect(recovered.focusResult?.targets).toHaveLength(1);
+      expect(recovered.focusResult?.targets[0]?.region).toEqual(circle);
+      for (const content of [
+        '聚焦181,22方圆100公里',
+        '聚焦113,22和114,23方圆100公里',
+        '定位113,方圆100公里',
+        '查询113,22方圆一百公里内有哪些船',
+        '查询坐标113,22半径abc公里内有哪些船',
+      ]) {
+        await expect(
+          submitAgentMessage(infra, ownerId, session.id, randomUUID(), { ...input, content }),
+        ).rejects.toMatchObject({ code: 'invalid_input' });
+      }
+      await pool.query('UPDATE agent_tasks SET goal=$2 WHERE id=$1', [
+        submitted.task.id,
+        '聚集181,22方圆100公里',
+      ]);
+      await expect(
+        retryAgentTask(infra, ownerId, submitted.task.id, randomUUID()),
+      ).rejects.toMatchObject({ code: 'invalid_input' });
+    } finally {
+      for (const [key, value] of [
+        ['AGENT_DYNAMIC_SKILLS_ENABLED', previousDynamic],
+        ['AGENT_UI_ENABLED', previousUi],
+      ] as const) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
   afterAll(async () => {
     for (const [key, value] of Object.entries({
       AGENT_ENABLED: original.enabled,

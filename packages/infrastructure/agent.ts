@@ -1,4 +1,5 @@
-import { parseCircleRegion } from '../domain/agent-focus';
+import { isCircleFocusRequest, parseCircleRegion } from '../domain/agent-focus';
+import { isDeepStrictEqual } from 'node:util';
 import { parseBusinessRequest } from '../domain/agent-business';
 import { vesselTracksSelection } from '../domain/vessel-tracks-intent';
 import { mapTaskSelection } from '../domain/agent-map';
@@ -132,6 +133,16 @@ export class AgentInputError extends Error {
     message: string,
   ) {
     super(message);
+  }
+}
+function validatedCircleRegion(goal: string) {
+  try {
+    return parseCircleRegion(goal);
+  } catch {
+    throw new AgentInputError(
+      'invalid_input',
+      '请提供唯一有效的经度、纬度和 0.1～2000 公里半径，例如：聚焦 113.8751,22.0843 方圆100公里。',
+    );
   }
 }
 /** Builtin and dynamically composed map tasks share the public input error boundary. */
@@ -465,6 +476,7 @@ export async function submitAgentMessage(
       };
     }
     const id = randomUUID();
+    const circleRegion = validatedCircleRegion(input.content);
     const useDynamic = shouldUseDynamicSkill(input.content, {
       enabled: process.env.AGENT_DYNAMIC_SKILLS_ENABLED === 'true',
       skillRef: input.skillRef,
@@ -481,12 +493,6 @@ export async function submitAgentMessage(
       },
       ...(derived.purpose ? { purpose: derived.purpose } : {}),
     };
-    let circleRegion;
-    try {
-      circleRegion = parseCircleRegion(input.content);
-    } catch {
-      throw new AgentInputError('invalid_input', '圆形范围需要有效经纬度和 0.1～2000 公里半径。');
-    }
     if (circleRegion && derived.intent === 'vessel_list') {
       selection.region = circleRegion;
       delete selection.bbox;
@@ -551,7 +557,7 @@ export async function submitAgentMessage(
       const explicitId = input.content.match(
         /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
       )?.[0];
-      const explicitMmsis = [...input.content.matchAll(/(?<!\d)([1-9]\d{8})(?!\d)/g)].map(
+      const explicitMmsis = [...input.content.matchAll(/(?<![\d.])([1-9]\d{8})(?![\d.])/g)].map(
         (m) => m[1]!,
       );
       if (explicitId) {
@@ -580,7 +586,7 @@ export async function submitAgentMessage(
           kind: 'vessel' as const,
           id,
         }));
-      const region = parseCircleRegion(input.content);
+      const region = circleRegion;
       if (region) {
         selection.region = region;
         delete selection.bbox;
@@ -653,6 +659,7 @@ export async function submitAgentMessage(
         ...(hours !== undefined ? { hours } : {}),
       };
     }
+    if (circleRegion && selection.region?.kind === 'circle') delete selection.bbox;
     if (derived.intent === 'vessel_detail') {
       const explicit = input.content.match(/\b\d{9}\b/g);
       if (explicit) selection.mmsis = [...new Set(explicit)].slice(0, 100);
@@ -1749,8 +1756,6 @@ export async function retryAgentTask(
       throw new AgentInputError('not_found', 'Task not found');
     if (!(await canWrite(client, ownerId)))
       throw new AgentInputError('forbidden', 'Agent write permission required');
-    if (source.intent === 'skill' && process.env.AGENT_DYNAMIC_SKILLS_ENABLED !== 'true')
-      throw new AgentInputError('forbidden', '动态技能执行尚未启用');
     const existing = (
       await client.query('SELECT * FROM agent_tasks WHERE owner_id=$1 AND idempotency_key=$2', [
         ownerId,
@@ -1786,20 +1791,39 @@ export async function retryAgentTask(
       : undefined;
     if (uiBinding && !retryUiClient) throw new AgentInputError('conflict', '页面绑定已失效');
     const derived = deriveAgentIntent(String(source.goal));
-    const selection = canonicalSelection({
+    const circleRegion = validatedCircleRegion(String(source.goal));
+    const circleFocus = isCircleFocusRequest(String(source.goal));
+    let selection = canonicalSelection({
       ...(source.bbox ? { bbox: source.bbox as AgentSelection['bbox'] } : {}),
       timeRange: { from: iso(source.from_time), to: iso(source.to_time) },
       ...(derived.purpose ? { purpose: derived.purpose } : {}),
       ...(source.selection as AgentSelection),
     });
-    const intent =
-      source.intent === 'skill'
+    const repairCircle =
+      !!circleRegion &&
+      !/^(create|update)_/.test(
+        parseBusinessRequest(String(source.goal), selection.focusTargets)?.toolId ?? '',
+      ) &&
+      (!isDeepStrictEqual(selection.region, circleRegion) ||
+        !!selection.bbox ||
+        (circleFocus && (source.intent !== 'map_focus' || !!selection.purpose)));
+    if (repairCircle) {
+      // Changed scope starts a fresh read; legacy global query artifacts cannot be restored.
+      selection = circleFocus
+        ? canonicalSelection({ region: circleRegion, timeRange: selection.timeRange })
+        : canonicalSelection({ ...selection, region: circleRegion, bbox: undefined });
+    }
+    const intent = circleFocus
+      ? 'map_focus'
+      : source.intent === 'skill'
         ? 'skill'
         : selection.purpose
           ? derivePurposeIntent(selection.purpose)
           : source.intent === 'unresolved'
             ? derived.intent
             : source.intent;
+    if (intent === 'skill' && process.env.AGENT_DYNAMIC_SKILLS_ENABLED !== 'true')
+      throw new AgentInputError('forbidden', '动态技能执行尚未启用');
     const id = randomUUID();
     const task = (
       await client.query(
@@ -1812,7 +1836,7 @@ export async function retryAgentTask(
           key,
           hash,
           source.goal,
-          JSON.stringify(source.bbox),
+          JSON.stringify(repairCircle ? null : source.bbox),
           source.history_hours,
           source.from_time,
           source.to_time,
@@ -1822,12 +1846,12 @@ export async function retryAgentTask(
           taskId,
           source.input_revision,
           source.result_version,
-          JSON.stringify(source.skill_ref ?? null),
+          JSON.stringify(circleFocus ? null : (source.skill_ref ?? null)),
           skillVersionPolicy,
         ],
       )
     ).rows[0];
-    if (source.intent === 'skill') {
+    if (intent === 'skill') {
       await copyDynamicSkillBinding(
         client,
         ownerId,
@@ -1851,10 +1875,11 @@ export async function retryAgentTask(
         ]);
       }
     }
-    await client.query(
-      `INSERT INTO agent_steps(task_id,input_revision,step_key,name,input,output) SELECT $1,0,step_key,name,input,output FROM agent_steps WHERE task_id=$2 AND input_revision=$3 AND step_key IN ('input_snapshot','input_digest','overview')`,
-      [id, taskId, source.input_revision],
-    );
+    if (!repairCircle)
+      await client.query(
+        `INSERT INTO agent_steps(task_id,input_revision,step_key,name,input,output) SELECT $1,0,step_key,name,input,output FROM agent_steps WHERE task_id=$2 AND input_revision=$3 AND step_key IN ('input_snapshot','input_digest','overview')`,
+        [id, taskId, source.input_revision],
+      );
     // Retries replay one business operation while receiving their own UI artifacts.
     // A changed input revision has no inherited origin and starts a new operation.
     if (
@@ -1870,6 +1895,7 @@ export async function retryAgentTask(
         [id, taskId, source.input_revision],
       );
     if (
+      !repairCircle &&
       source.intent !== 'skill' &&
       Number(source.result_version) > 0 &&
       source.result_input_revision === source.input_revision

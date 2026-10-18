@@ -314,10 +314,8 @@ export async function createUiCommand(
     )
       return null;
     const stepId = options.stepId ?? 'legacy';
-    if (task.intent === 'skill') {
-      const admitted = await assertDynamicSkillUiAvailable(c, task, stepId, options.artifactRef);
-      if (!isDeepStrictEqual(admitted.operation, op)) return conflict('界面操作与技能声明不匹配。');
-    } else if (isBuiltinMap(task) || stepId === 'map_map_focus') {
+    // Automatic focus is a host-owned artifact, including when its parent task executes a dynamic skill.
+    if (isBuiltinMap(task) || stepId === 'map_map_focus') {
       const admitted = await mapArtifact(c, task, stepId, String(options.artifactRef));
       if (!isDeepStrictEqual(admitted.operation, op)) return conflict();
       await c.query(
@@ -332,6 +330,9 @@ export async function createUiCommand(
           JSON.stringify(admitted.payload),
         ],
       );
+    } else if (task.intent === 'skill') {
+      const admitted = await assertDynamicSkillUiAvailable(c, task, stepId, options.artifactRef);
+      if (!isDeepStrictEqual(admitted.operation, op)) return conflict('界面操作与技能声明不匹配。');
     } else if (stepId !== 'legacy' || options.artifactRef) return conflict();
     const existing = (
       await c.query(
@@ -597,7 +598,10 @@ export async function receiptUiCommand(
         return conflict();
       return { status: q.status };
     }
-    if (task.intent === 'skill')
+    if (q.step_id === 'map_map_focus') {
+      const admitted = await mapArtifact(c, task, String(q.step_id), String(q.artifact_ref));
+      if (!isDeepStrictEqual(admitted.operation, q.operation)) return conflict();
+    } else if (task.intent === 'skill')
       await assertDynamicSkillUiAvailable(c, task, String(q.step_id), String(q.artifact_ref));
     if (
       task.status !== 'waiting_ui' ||
@@ -660,7 +664,7 @@ export async function receiptUiCommand(
       componentId: op.componentId,
     });
     if (status !== 'executing') {
-      if (task.intent === 'skill')
+      if (task.intent === 'skill' && q.step_id !== 'map_map_focus')
         await c.query(
           "UPDATE agent_skill_calls SET status=$4,error_code=$5,updated_at=now() WHERE task_id=$1 AND input_revision=$2 AND step_id=$3 AND status='waiting_ui'",
           [
@@ -699,7 +703,7 @@ export async function expireUiCommands(infra: Infrastructure) {
       if (result.rowCount && task.status === 'waiting_ui') {
         if (task.intent === 'skill')
           await c.query(
-            "UPDATE agent_skill_calls s SET status=CASE WHEN q.status='unknown' THEN 'unknown' ELSE 'failed' END,error_code='ui_outcome_unknown',updated_at=now() FROM agent_ui_commands q WHERE q.id=$1 AND s.task_id=q.task_id AND s.input_revision=q.input_revision AND s.step_id=q.step_id AND s.status='waiting_ui'",
+            "UPDATE agent_skill_calls s SET status=CASE WHEN q.status='unknown' THEN 'unknown' ELSE 'failed' END,error_code='ui_outcome_unknown',updated_at=now() FROM agent_ui_commands q WHERE q.id=$1 AND q.step_id<>'map_map_focus' AND s.task_id=q.task_id AND s.input_revision=q.input_revision AND s.step_id=q.step_id AND s.status='waiting_ui'",
             [item.id],
           );
         await c.query(
