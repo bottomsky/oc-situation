@@ -17,6 +17,9 @@ import type {
   DynamicSkillToolDescriptor,
 } from '../../packages/contracts/dynamic-skills';
 import type { RuntimeContext, RuntimePorts } from './runtime';
+import { parseBusinessRequest, BusinessToolInputSchema } from './business-request';
+import { AgentFocusResultSchema } from '../../packages/contracts/agent-focus';
+import { focusFromContext } from './focus-runtime';
 import { defineTool, type RegisteredTool, type ToolExecutionContext } from './capabilities';
 
 const vesselClassSchema = z.enum(['cargo', 'tanker', 'passenger', 'fishing']);
@@ -42,7 +45,8 @@ export interface BusinessToolAdapter {
   readonly tool: RegisteredTool;
   readonly artifactKind: DynamicSkillArtifactKind;
   readonly artifactKinds: readonly DynamicSkillArtifactKind[];
-  readonly recoverableRead: true;
+  readonly recoverableRead: boolean;
+  readonly execution: 'read' | 'idempotent_write';
 }
 
 /** A single host registry owns validation, implementation and model projection. */
@@ -79,6 +83,7 @@ export function createBusinessToolRegistry(
   context: RuntimeContext,
   ports: RuntimePorts,
   signal?: AbortSignal,
+  stepId?: string,
 ): BusinessToolRegistry {
   const selection = context.task.selection ?? {};
   const revision = context.task.inputRevision ?? 0;
@@ -91,11 +96,24 @@ export function createBusinessToolRegistry(
   };
   const add = (artifactKind: DynamicSkillArtifactKind, tool: RegisteredTool) =>
     adapters.push({
-      tool,
+      tool: {
+        ...tool,
+        handler: async (input, execution) => {
+          const output = await tool.handler(input, execution);
+          if (artifactKind === 'vessel_list' || artifactKind === 'vessel_detail')
+            context.queryResult = AgentQueryResultSchema.parse(output);
+          if (artifactKind === 'vessel_tracks')
+            context.tracksResult = AgentVesselTracksResultSchema.parse(output);
+          if (artifactKind === 'intelligence_search')
+            context.intelligenceResult = AgentIntelligenceResultSchema.parse(output);
+          return output;
+        },
+      },
       artifactKind,
       artifactKinds:
         tool.id === 'query_vessels' ? ['vessel_list', 'vessel_detail'] : [artifactKind],
       recoverableRead: true,
+      execution: 'read',
     });
   const detailQuery =
     context.task.intent === 'vessel_detail' || selection.purpose === 'vessel_detail';
@@ -359,6 +377,74 @@ export function createBusinessToolRegistry(
         project: (output) => ({ total: output.total, truncated: output.truncated }),
       }),
     );
+  if (process.env.AGENT_SPATIAL_FOCUS_ENABLED !== 'false')
+    add(
+      'map_focus',
+      defineTool({
+        id: 'prepare_map_focus',
+        description: '解析本轮真实对象的可信完整几何并准备关注结果',
+        allowedPhases: ['query', 'skill'],
+        inputSchema: BusinessToolInputSchema,
+        outputSchema: AgentFocusResultSchema,
+        handler: async (input) => {
+          if (input.selection && !isDeepStrictEqual(input.selection, selection))
+            throw new Error('task_scope_mismatch');
+          return focusFromContext(context, ports);
+        },
+        project: (output) => ({
+          located: output.targets.length,
+          missing: output.missing.length,
+          displayStatus: output.displayStatus,
+        }),
+      }),
+    );
+  const business = parseBusinessRequest(context.task.goal, selection.focusTargets);
+  if (business && ports.businessTool) {
+    const write = /^(create|update)_/.test(business.toolId);
+    if (!write || process.env.AGENT_BUSINESS_WRITE_ENABLED === 'true') {
+      const artifactKind =
+        business.toolId === 'plan_route'
+          ? 'route_plan'
+          : business.toolId === 'query_events'
+            ? 'operational_events'
+            : business.toolId.includes('event')
+              ? 'operational_event'
+              : 'route';
+      const tool = defineTool({
+        id: business.toolId,
+        description: '执行用户本轮明确请求的航线或事件操作，参数由可信宿主绑定',
+        allowedPhases: ['query', 'skill'],
+        inputSchema: BusinessToolInputSchema,
+        outputSchema: z.record(z.string(), z.unknown()),
+        handler: async (input) => {
+          if (input.selection && !isDeepStrictEqual(input.selection, selection))
+            throw new Error('task_scope_mismatch');
+          return z
+            .record(z.string(), z.unknown())
+            .parse(
+              await ports.businessTool!(business.toolId, stepId ?? `business_${business.toolId}`),
+            );
+        },
+        project: (output) => ({
+          kind: output.kind,
+          saved: write,
+          ...(Array.isArray(output.items)
+            ? { count: output.items.length }
+            : Array.isArray(output.routes)
+              ? { count: output.routes.length }
+              : {}),
+        }),
+      });
+      const idempotent = write || business.toolId === 'plan_route';
+      adapters.push({
+        tool,
+        artifactKind,
+        artifactKinds: [artifactKind],
+        recoverableRead: !idempotent,
+        execution: idempotent ? 'idempotent_write' : 'read',
+      });
+    }
+  }
   return new BusinessToolRegistry(adapters, {
     identity: {
       ownerId: context.task.ownerId,

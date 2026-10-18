@@ -19,6 +19,9 @@ import {
   failDynamicSkillCall,
 } from '../../packages/infrastructure/dynamic-skills';
 import { createBusinessToolRegistry } from './business-tool-registry';
+import { createBusinessHost, persistBuiltinArtifact } from './business-host';
+import { createFocusResolver } from './focus-host';
+import { prepareTaskFocus } from './focus-runtime';
 import {
   searchAgentIntelligence,
   getIntelligenceSourceHealth,
@@ -235,6 +238,20 @@ export async function processAgentTask(
     const previous = await getPreviousAgentTask(infra, task.id);
     let boundTask = task;
     const runtimePorts: RuntimePorts = {
+      resolveFocus: createFocusResolver(infra, controller.signal),
+      saveFocus: async (payload) => {
+        const latest = await getAgentTaskContext(infra, task.id);
+        const existing = latest?.steps.find((s) => s.key === 'map_map_focus')?.output as
+          { artifactRef?: string } | undefined;
+        const artifactRef = existing?.artifactRef ?? randomUUID();
+        await saveAgentStep(...fence, {
+          key: 'map_map_focus',
+          name: 'map-focus',
+          input: null,
+          output: { artifactRef, payload },
+        });
+        await persistBuiltinArtifact(infra, skillFence, 'map_map_focus', payload, artifactRef);
+      },
       readHighlightGroups: () => readTaskHighlightGroups(infra, boundTask),
       mapUi: {
         command: (stepId) => getUiTaskCommand(infra, task.id, task.inputRevision ?? 0, stepId),
@@ -253,10 +270,20 @@ export async function processAgentTask(
         if (reused) boundTask = reused;
         return reused;
       },
-      saveStep: (key, name, output) => saveAgentStep(...fence, { key, name, input: null, output }),
+      saveStep: async (key, name, output) => {
+        const saved = await saveAgentStep(...fence, { key, name, input: null, output });
+        if (saved && key.startsWith('business_'))
+          await persistBuiltinArtifact(
+            infra,
+            skillFence,
+            key,
+            (output as { payload: unknown }).payload,
+          );
+        return saved;
+      },
       requestInput: (spec) => requestAgentInput(...fence, spec),
-      queryVessels: (kind, selection) =>
-        queryAgentVessels(
+      queryVessels: async (kind, selection) => {
+        const result = await queryAgentVessels(
           infra,
           {
             kind,
@@ -264,14 +291,38 @@ export async function processAgentTask(
             inputRevision: boundTask.inputRevision ?? 0,
           },
           { signal: controller.signal },
-        ),
-      searchIntelligence: (selection) => searchAgentIntelligence(infra, selection),
+        );
+        context.queryResult = result;
+        return result;
+      },
+      searchIntelligence: async (selection) => {
+        const result = await searchAgentIntelligence(infra, selection);
+        context.intelligenceResult = result;
+        return result;
+      },
       intelligenceSourceHealth: () => getIntelligenceSourceHealth(infra),
-      saveIntelligenceResult: (result) => saveAgentIntelligenceResult(...fence, result),
-      saveQueryResult: (result) => saveAgentQueryResult(...fence, result),
-      queryVesselTracks: (query, signal) =>
-        queryVesselTracks(infra, query, { ownerId: task.ownerId, signal }),
-      saveTracksResult: (result) => saveAgentVesselTracksResult(...fence, result),
+      saveIntelligenceResult: (result) => {
+        context.intelligenceResult = result;
+        return saveAgentIntelligenceResult(...fence, result);
+      },
+      saveQueryResult: (result) => {
+        context.queryResult = result;
+        return saveAgentQueryResult(...fence, result);
+      },
+      queryVesselTracks: async (query, signal) => {
+        const result = await queryVesselTracks(infra, query, { ownerId: task.ownerId, signal });
+        context.tracksResult = {
+          ...result,
+          kind: 'vessel_tracks',
+          version: 0,
+          inputRevision: task.inputRevision ?? 0,
+        };
+        return result;
+      },
+      saveTracksResult: (result) => {
+        context.tracksResult = result;
+        return saveAgentVesselTracksResult(...fence, result);
+      },
       queryHeatmap: (query, signal) =>
         queryAisHeatmap(infra, query, { ownerId: task.ownerId, signal }),
       saveHeatmapResult: (result) => saveAgentHeatmapResult(...fence, result),
@@ -295,8 +346,60 @@ export async function processAgentTask(
           intelligence: dataset.intelligence.map((d) => ({ ...d, kind: d.category })),
         };
       },
-      saveResults: (results) => saveAgentResults(...fence, results),
+      saveResults: (results) => {
+        context.results = results;
+        return saveAgentResults(...fence, results);
+      },
       finish: async (outcome) => {
+        if (
+          outcome.status === 'completed' &&
+          task.intent !== 'map_focus' &&
+          process.env.AGENT_SPATIAL_FOCUS_ENABLED !== 'false'
+        ) {
+          await prepareTaskFocus(context, runtimePorts);
+          const latestFocusContext = await getAgentTaskContext(infra, task.id);
+          const focus = latestFocusContext?.focusResult;
+          if (
+            focus &&
+            task.uiBinding &&
+            process.env.AGENT_UI_ENABLED === 'true' &&
+            (focus.targets.length || focus.missing.length)
+          ) {
+            const command = await getUiTaskCommand(
+              infra,
+              task.id,
+              task.inputRevision ?? 0,
+              'map_map_focus',
+            );
+            if (!command) {
+              const latest = await getAgentTaskContext(infra, task.id);
+              const saved = latest?.steps.find((s) => s.key === 'map_map_focus')?.output as
+                { artifactRef?: string } | undefined;
+              if (saved?.artifactRef)
+                return !!(await createUiCommand(
+                  ...fence,
+                  { componentId: 'chart.focus', action: 'show' },
+                  {
+                    stepId: 'map_map_focus',
+                    artifactRef: saved.artifactRef,
+                    inputRevision: task.inputRevision ?? 0,
+                  },
+                ));
+            }
+            if (command && command.status !== 'succeeded')
+              return finishAgentTask(...fence, {
+                ...outcome,
+                status: 'failed',
+                errorCode: `ui_${command.status}`,
+                error:
+                  (latestFocusContext.steps.some((step) =>
+                    /^business_(create|update)_/.test(step.key),
+                  )
+                    ? '业务对象已保存；'
+                    : '') + '关注对象的界面绘制尚未确认。',
+              });
+          }
+        }
         if (
           (task.intent === 'ais_heatmap' || task.intent === 'vessel_tracks') &&
           outcome.status === 'completed' &&
@@ -334,6 +437,7 @@ export async function processAgentTask(
       generation: task.generation,
       workerId,
     };
+    runtimePorts.businessTool = createBusinessHost(infra, skillFence, context, controller.signal);
     const readDynamic = async () => {
       const execution = await getDynamicSkillExecution(
         infra,
@@ -373,7 +477,9 @@ export async function processAgentTask(
           toolId,
           input,
           maxToolCalls: maximum,
-          recoverableRead: true,
+          execution: createBusinessToolRegistry(context, runtimePorts, controller.signal).get(
+            toolId,
+          ).execution,
         }),
       complete: (stepId, localResult, modelProjection, artifact) =>
         completeDynamicSkillCall(infra, skillFence, {
@@ -477,6 +583,7 @@ export async function runAgentWorker(
         continue;
       }
       stage = 'task';
+      let throttle = batch.length === 0;
       for (const message of batch) {
         if (signal.aborted) {
           message.nak();
@@ -484,14 +591,25 @@ export async function runAgentWorker(
         }
         try {
           const job = JobSchema.parse(message.json());
-          await processAgentTask(infra, job.taskId, { ...options, skillCatalog, signal }, workerId);
+          const claimed = await processAgentTask(
+            infra,
+            job.taskId,
+            { ...options, skillCatalog, signal },
+            workerId,
+          );
+          throttle ||= claimed;
           message.ack();
         } catch (error) {
           if (error instanceof z.ZodError) message.term('invalid task envelope');
-          else message.nak(5000);
+          else {
+            throttle = true;
+            message.nak(5000);
+          }
         }
       }
-      if (!signal.aborted) await delay(500, undefined, { signal }).catch(() => {});
+      // Durable notifications may outlive their tasks. Drain these immediately so
+      // retries cannot make a new runnable task wait behind obsolete deliveries.
+      if (!signal.aborted && throttle) await delay(500, undefined, { signal }).catch(() => {});
     }
   } catch (error) {
     throw new WorkerOperationError(stage, error);

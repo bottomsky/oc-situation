@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { getBusinessSkillCatalog } from './business-capabilities';
+import { randomUUID } from 'node:crypto';
 import { AckPolicy, RetentionPolicy, StorageType } from '@nats-io/jetstream';
 import type { Infrastructure } from '../../packages/infrastructure/clients';
 import * as worker from './index';
@@ -86,6 +87,46 @@ describe('worker pull heartbeat recovery', () => {
     maxToolCalls: 1,
     maxRecords: 10,
   };
+  it.each(['deleted', 'completed'])(
+    'drains %s task notifications without imposing the real-work throttle',
+    async (status) => {
+      vi.useFakeTimers();
+      const signal = new AbortController();
+      const messages = Array.from({ length: 40 }, () => ({
+        json: () => ({ taskId: randomUUID() }),
+        ack: vi.fn(),
+        nak: vi.fn(),
+      }));
+      let cursor = 0;
+      const fetch = vi.fn(async () => ({
+        close: vi.fn(async () => {}),
+        async *[Symbol.asyncIterator]() {
+          const message = messages[cursor++];
+          if (message) yield message;
+          else signal.abort();
+        },
+      }));
+      const { infra } = infrastructure(fetch);
+      const query = vi.fn(async (sql: string) => {
+        if (status === 'completed' && sql.startsWith('SELECT session_id'))
+          return { rows: [{ session_id: randomUUID() }], rowCount: 1 };
+        if (status === 'completed' && sql.startsWith('SELECT *,lease_until'))
+          return { rows: [{ status: 'completed' }], rowCount: 1 };
+        return { rows: [], rowCount: 0 };
+      });
+      infra.pool.connect = vi.fn(async () => ({ query, release: vi.fn() })) as never;
+      const running = worker.runAgentWorker(infra, signal.signal, options);
+      try {
+        await vi.advanceTimersByTimeAsync(0);
+        expect(fetch).toHaveBeenCalledTimes(41);
+        for (const message of messages) expect(message.ack).toHaveBeenCalledOnce();
+      } finally {
+        signal.abort();
+        await running;
+      }
+      expect(vi.getTimerCount()).toBe(0);
+    },
+  );
   it('reacquires the consumer after iterator heartbeat loss and releases an already received job', async () => {
     vi.useFakeTimers();
     const signal = new AbortController();

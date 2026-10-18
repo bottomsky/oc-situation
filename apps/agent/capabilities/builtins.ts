@@ -3,6 +3,37 @@ import { CapabilityError } from './errors';
 import type { CapabilityDirectoryEntry, CapabilityRoutingMetadata } from './metadata';
 
 const ROUTING: Readonly<Record<string, CapabilityRoutingMetadata>> = Object.freeze({
+  'map-focus': {
+    intents: ['map_focus'],
+    requiredInputs: { map_focus: [] },
+    executionMode: 'local',
+    available: true,
+  },
+  'route-plan': {
+    intents: ['route_plan'],
+    requiredInputs: { route_plan: [] },
+    executionMode: 'local',
+    available: true,
+  },
+  'route-manage': {
+    intents: ['route_manage'],
+    requiredInputs: { route_manage: [] },
+    executionMode: 'local',
+    available: true,
+  },
+  'event-query': {
+    intents: ['event_query'],
+    requiredInputs: { event_query: [] },
+    executionMode: 'local',
+    available: true,
+  },
+  'event-manage': {
+    intents: ['event_manage'],
+    requiredInputs: { event_manage: [] },
+    executionMode: 'local',
+    available: true,
+  },
+
   'vessel-highlight': Object.freeze({
     intents: Object.freeze(['vessel_highlights'] as const),
     requiredInputs: Object.freeze({ vessel_highlights: Object.freeze([]) }),
@@ -65,6 +96,42 @@ export function getBuiltinCapabilityMetadata(capabilityId: string): CapabilityRo
 }
 
 export const BUILTIN_SKILL_BINDINGS: readonly SkillToolBinding[] = Object.freeze([
+  {
+    skillId: 'map-focus',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: ['prepare_map_focus'],
+    referencePaths: [],
+  },
+  {
+    skillId: 'route-plan',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: ['query_routes', 'read_route', 'plan_route'],
+    referencePaths: [],
+  },
+  {
+    skillId: 'route-manage',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: ['create_route', 'update_route'],
+    referencePaths: [],
+  },
+  {
+    skillId: 'event-query',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: ['query_events', 'read_event'],
+    referencePaths: [],
+  },
+  {
+    skillId: 'event-manage',
+    version: '1.0.0',
+    adapterVersion: '1',
+    toolIds: ['create_event', 'update_event'],
+    referencePaths: [],
+  },
+
   Object.freeze({
     skillId: 'vessel-highlight',
     version: '1.0.0',

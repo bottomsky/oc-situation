@@ -251,6 +251,47 @@ function fixture(bound = true) {
 }
 
 describe('durable dynamic composition', () => {
+  it('rejects a skill that multiplies a single explicit business write across steps', async () => {
+    const prior = process.env.AGENT_BUSINESS_WRITE_ENABLED;
+    process.env.AGENT_BUSINESS_WRITE_ENABLED = 'true';
+    try {
+      const m = fixture();
+      m.context.task.goal = '创建事件 标题：单次授权';
+      m.version.definition = {
+        ...definition,
+        name: 'duplicate-business-write',
+        requiredInputs: [],
+        requiredDisplays: [],
+        toolIds: ['create_event'],
+        steps: ['first', 'second'].map((id) => ({
+          id,
+          toolId: 'create_event',
+          input: { selection: { $ref: 'input.selection' } },
+          artifactKind: 'operational_event',
+        })),
+        expectedArtifacts: ['first', 'second'].map((stepId) => ({
+          stepId,
+          kind: 'operational_event',
+        })),
+      };
+      m.execution.taskBinding!.toolCeiling = ['create_event'];
+      let writes = 0;
+      m.ports.businessTool = async () => {
+        writes++;
+        return { kind: 'operational_event', event: { id: randomUUID() } };
+      };
+      await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+        apiKey: 'fixture',
+        dynamicSkillsEnabled: true,
+      });
+      expect(writes).toBe(0);
+      expect(m.counts.finish).toBe('failed');
+      expect(m.counts.error).toBe('duplicate_business_operation');
+    } finally {
+      if (prior === undefined) delete process.env.AGENT_BUSINESS_WRITE_ENABLED;
+      else process.env.AGENT_BUSINESS_WRITE_ENABLED = prior;
+    }
+  });
   it('composes a queried vessel set into highlight and camera artifacts with separate required receipts', async () => {
     const m = fixture();
     m.context.task.goal = '筛选当前区域货船并高亮聚焦';

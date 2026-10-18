@@ -58,6 +58,8 @@ input仅支持 selection:{$ref:'input.selection'}，依赖船舶集合时使用 
 每个目标操作必须生成目录声明的对应产物。航线 artifactKind=vessel_tracks；热力图=ais_heatmap；船舶列表=vessel_list；船舶详情=vessel_detail；情报=intelligence_search。
 需要展示时航线ui={componentId:'chart.vessel-tracks',action:'show'}，热力图ui={componentId:'chart.heatmap',action:'show'}。
 船舶高亮工具prepare_vessel_highlights产物vessel_highlights，展示ui={componentId:'chart.vessel-highlights',action:'show'}；清除高亮使用相同工具且action:'close'。镜头工具prepare_map_camera产物map_camera，ui={componentId:'chart.viewport',action:'focus'}。这两类地图操作必须声明ui回执。船舶依赖可引用先前query_vessels步骤，镜头参数由input.selection.mapCamera引用提供。
+对象关注使用prepare_map_focus，artifactKind=map_focus，ui={componentId:'chart.focus',action:'show'}；仅引用selection，真实对象完整几何由宿主解析，模型不提供坐标。
+航线工具query_routes/read_route/create_route/update_route产物route，plan_route产物route_plan；事件工具query_events产物operational_events，read_event/create_event/update_event产物operational_event。业务工具input只引用selection，具体字段和稳定操作身份由宿主绑定。仅当本轮明确创建或修改且宿主目录开放时才可声明对应写工具。
 只使用目录中工具，禁止嵌入脚本、HTTP、shell、MCP或技能管理工具。成功由宿主验证全部产物与展示回执。`;
 
 /** UUID-shaped deterministic operation identity survives a committed response being lost. */
@@ -105,8 +107,14 @@ function assertCoverage(
       fail('missing_required_artifact');
   }
   const vessels = definition.steps.find((step) => step.toolId === 'query_vessels');
+  const businessOperations = new Set<string>();
   for (const step of definition.steps) {
-    registry.get(step.toolId);
+    const adapter = registry.get(step.toolId);
+    // A task admits one host-bound request; skill steps cannot multiply its side effects.
+    if (adapter.execution === 'idempotent_write') {
+      if (businessOperations.has(step.toolId)) fail('duplicate_business_operation');
+      businessOperations.add(step.toolId);
+    }
     if (!step.artifactKind || !registry.get(step.toolId).artifactKinds.includes(step.artifactKind))
       fail('missing_required_artifact');
     if (
@@ -145,7 +153,10 @@ function assertCoverage(
         step.artifactKind ?? '',
       );
     if (requiredDisplay && !step.ui) fail('missing_required_display');
-    if (['vessel_highlights', 'map_camera'].includes(step.artifactKind ?? '') && !step.ui)
+    if (
+      ['vessel_highlights', 'map_camera', 'map_focus'].includes(step.artifactKind ?? '') &&
+      !step.ui
+    )
       fail('missing_required_display');
   }
   const declaredClasses = Array.isArray(vessels?.input.vesselClasses)
@@ -504,9 +515,12 @@ export async function executeDynamicSkill(
       await check(step.toolId);
       if (!binding.toolCeiling.includes(step.toolId)) fail('tool_ceiling');
       let call = execution.calls.find((entry) => entry.stepId === step.id);
-      if (call?.status === 'unknown' || call?.status === 'failed')
+      if (
+        (call?.status === 'unknown' || call?.status === 'failed') &&
+        registry.get(step.toolId).execution !== 'idempotent_write'
+      )
         fail(call.errorCode ?? 'unknown');
-      if (!call || call.status === 'running') {
+      if (!call || ['running', 'unknown', 'failed'].includes(call.status)) {
         const resolved = resolveInput(step.input, context.task.selection, completed);
         const input =
           step.toolId === 'query_vessels'
@@ -518,7 +532,8 @@ export async function executeDynamicSkill(
         call = await dynamic.begin(step.id, step.toolId, input, options.maxToolCalls ?? 24);
         if (call.status === 'unknown') fail('unknown');
         if (call.localResult === null) {
-          const output = await registry.execute(step.toolId, input);
+          const stepRegistry = createBusinessToolRegistry(context, ports, options.signal, step.id);
+          const output = await stepRegistry.execute(step.toolId, input);
           await check(step.toolId);
           const local = z.json().parse(output.local),
             model = z.json().parse(output.model);
@@ -570,6 +585,11 @@ export async function executeDynamicSkill(
       analysis: '区域研判',
       vessel_highlights: '船舶高亮',
       map_camera: '海图镜头',
+      map_focus: '对象关注',
+      route_plan: '航线规划',
+      route: '计划航线',
+      operational_event: '业务事件',
+      operational_events: '业务事件查询',
     };
     const artifacts = definition.steps.flatMap((step) =>
       step.artifactKind ? [names[step.artifactKind]] : [],

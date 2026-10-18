@@ -5,6 +5,14 @@ import type {
 } from '../../packages/contracts/vessel-tracks';
 import { executeVesselTracks } from './vessel-tracks-runtime';
 import { executeMapSkill } from './map-runtime';
+import { executeFocusSkill } from './focus-runtime';
+import { executeBusinessRequest } from './business-runtime';
+import type { BusinessToolId } from './business-request';
+import type {
+  AgentFocusResult,
+  FocusTargetRef,
+  FocusTargetSnapshot,
+} from '../../packages/contracts/agent-focus';
 import type { UiOperation } from '../../packages/contracts/agent-ui';
 import type { HighlightGroup } from '../../packages/contracts/agent-map';
 import { executeIntelligence } from './intelligence-runtime';
@@ -70,9 +78,15 @@ import {
 } from './gateway';
 
 export interface RuntimePorts {
+  businessTool?(toolId: BusinessToolId, stepId: string): Promise<unknown>;
+  resolveFocus?(
+    ref: FocusTargetRef,
+    context: RuntimeContext,
+  ): Promise<FocusTargetSnapshot | FocusTargetSnapshot[] | null>;
+  saveFocus?(result: AgentFocusResult): Promise<void>;
   readHighlightGroups?(): Promise<HighlightGroup[]>;
   mapUi?: {
-    command(stepId: string): Promise<{ status: string } | null>;
+    command(stepId: string): Promise<{ status: string; result?: unknown } | null>;
     queue(stepId: string, artifactRef: string, operation: UiOperation): Promise<string | null>;
   };
   dynamicSkills?: DynamicRuntimePorts;
@@ -119,6 +133,7 @@ export interface RuntimeOptions {
   dynamicSkillsAllowed?: () => boolean;
 }
 export interface RuntimeContext {
+  focusOmittedCount?: number;
   task: AgentTask;
   results: AnalysisResult[];
   steps: AgentStep[];
@@ -447,6 +462,17 @@ export async function executeAgent(
 ): Promise<void> {
   let task = context.task;
   if (!(await ports.active())) return;
+  if (task.intent !== 'skill' && (await executeBusinessRequest(context, ports, options))) return;
+  if (task.intent === 'map_focus') {
+    if (process.env.AGENT_SPATIAL_FOCUS_ENABLED === 'false')
+      await ports.finish({
+        status: 'failed',
+        errorCode: 'spatial_focus_disabled',
+        error: '空间关注功能当前未启用。',
+      });
+    else await executeFocusSkill(context, ports, options);
+    return;
+  }
   if (task.intent === 'vessel_highlights' || task.intent === 'map_camera') {
     await executeMapSkill(context, ports, options);
     return;

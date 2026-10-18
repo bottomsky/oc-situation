@@ -5,7 +5,7 @@ import request from 'supertest';
 import { chromium } from 'playwright';
 import { createApi } from '../../apps/api/src/app';
 import { hashPassword } from '../../apps/api/src/auth/service';
-import { ensureAgentBus, runAgentWorker } from '../../apps/agent';
+import { AGENT_SUBJECT, ensureAgentBus, runAgentWorker } from '../../apps/agent';
 import {
   createInfrastructure,
   runMigrations,
@@ -152,6 +152,9 @@ describe('real API, durable input responses and queue worker', () => {
   });
 
   it('uses a send-time viewport snapshot and completes a local vessel query without a model', async () => {
+    // Old durable wake-ups must not delay a new task after their rows were removed.
+    for (let index = 0; index < 40; index++)
+      await infra.js.publish(AGENT_SUBJECT, JSON.stringify({ taskId: randomUUID() }));
     const { taskId } = await submit('当前视野有哪些船舶', {
       mapContext: { bbox, capturedAt: new Date().toISOString(), sourceId, hours: 24 },
     });
