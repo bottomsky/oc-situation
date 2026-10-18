@@ -1,4 +1,5 @@
 import { AgentUiController } from './agent/ui-controller';
+import { AgentMemoryController } from './agent/memory-controller';
 import { SkillsController } from './agent/skills-controller';
 import { RoutesController } from './routes/controller';
 import { RoutePlanningService } from './routes/service';
@@ -59,6 +60,7 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
       AnalysisController,
       AgentController,
       AgentUiController,
+      AgentMemoryController,
       SkillsController,
       RoutesController,
       OperationalEventsController,

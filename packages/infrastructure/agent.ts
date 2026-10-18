@@ -54,6 +54,35 @@ import {
 } from '../domain/agent-intents';
 import type { Infrastructure } from './clients';
 import { resolveIntelligenceObjects } from './intelligence-search';
+import {
+  deriveMemoryIntent,
+  resolveMemorySelection,
+  parseMemoryInstruction,
+  stablePreferenceCandidate,
+  preferenceKey,
+  applyAccountMemoryDefaults,
+  hasExplicitTime,
+  isMemoryContinuation,
+  type MemoryInstruction,
+} from '../domain/agent-memory';
+import { memoryObjectsFromTask } from '../domain/agent-memory-result';
+import { localMemoryProvider, type AgentMemoryProvider } from '../domain/agent-memory-context';
+import {
+  isNamedMemoryInstruction,
+  namedMemoryFromInstruction,
+  resolveNamedMemory,
+} from '../domain/agent-memory-named';
+import {
+  agentMemoryFeatures,
+  captureAgentMemoryContext,
+  getAgentTaskMemoryContext,
+  getAgentSessionMemory,
+  getAgentAccountMemory,
+  getAgentMemorySettings,
+  saveAgentSessionMemory,
+  resetAgentSessionMemory,
+  mutateAgentAccountMemory,
+} from './agent-memory';
 
 type Row = Record<string, unknown>;
 const iso = (v: unknown) => new Date(v as string | Date).toISOString();
@@ -440,12 +469,114 @@ export async function getAgentSession(infra: Infrastructure, ownerId: string, se
     true,
   );
 }
+async function applyMemoryInstruction(
+  infra: Infrastructure,
+  client: PoolClient,
+  ownerId: string,
+  sessionId: string,
+  taskId: string,
+  messageId: string,
+  instruction: MemoryInstruction,
+  input: AgentMessageInput,
+): Promise<string> {
+  if (instruction.action === 'forget_session_objects') {
+    const session = await getAgentSessionMemory(infra, ownerId, sessionId, client);
+    if (session)
+      await resetAgentSessionMemory(
+        infra,
+        ownerId,
+        sessionId,
+        { operationId: randomUUID(), expectedRevision: session.revision },
+        client,
+      );
+    return '已忘掉本会话刚才的对象集合与续接条件。下一次聚焦请明确指定目标。';
+  }
+  const state = await getAgentAccountMemory(infra, ownerId, { includeProposed: true }, client);
+  const source = { taskId, messageId };
+  if (instruction.action === 'confirm') {
+    const proposed = state.entries.filter((entry) => entry.status === 'proposed');
+    if (proposed.length !== 1)
+      return proposed.length
+        ? '有多个待确认偏好，请在记忆管理中选择本次要保存的一条。'
+        : '当前没有待确认偏好。';
+    if (!agentMemoryFeatures().account) return '账户长期记忆当前未启用。';
+    await mutateAgentAccountMemory(
+      infra,
+      ownerId,
+      {
+        operationId: randomUUID(),
+        expectedRevision: state.revision,
+        action: 'accept',
+        entryId: proposed[0]!.id,
+      },
+      client,
+    );
+    return `已确认并保存偏好：${String(proposed[0]!.value)}。`;
+  }
+  if (instruction.action === 'forget') {
+    const content = instruction.content;
+    const exact = state.entries.filter(
+      (entry) =>
+        entry.key === content || (typeof entry.value === 'string' && entry.value === content),
+    );
+    const matches = exact.length
+      ? exact
+      : state.entries.filter(
+          (entry) => typeof entry.value === 'string' && entry.value.includes(content),
+        );
+    if (!matches.length) return `没有找到匹配的偏好：${content}。`;
+    if (matches.length > 1)
+      return '找到多条匹配偏好，请补充完整内容，或在记忆管理中选择要删除的一条。';
+    await mutateAgentAccountMemory(
+      infra,
+      ownerId,
+      {
+        operationId: randomUUID(),
+        expectedRevision: state.revision,
+        action: 'delete',
+        entryId: matches[0]!.id,
+      },
+      client,
+    );
+    return `已忘记偏好：${String(matches[0]!.value)}。`;
+  }
+  if (!agentMemoryFeatures().account) return '账户长期记忆当前未启用。';
+  const content = instruction.content;
+  const currentSession = await getAgentSessionMemory(infra, ownerId, sessionId, client);
+  const named = namedMemoryFromInstruction(content, input, currentSession);
+  if (isNamedMemoryInstruction(content) && !named)
+    return '请先选择明确区域或对象集合，再指定保存名称。';
+  const key = named?.key ?? preferenceKey(content);
+  const matches = state.entries.filter((entry) => entry.key === key && entry.status === 'active');
+  if (instruction.action === 'update' && matches.length !== 1)
+    return matches.length
+      ? '存在多条匹配偏好，请明确要修改的内容。'
+      : '尚未找到这类已保存偏好。请使用“记住：偏好内容”保存。';
+  await mutateAgentAccountMemory(
+    infra,
+    ownerId,
+    {
+      operationId: randomUUID(),
+      expectedRevision: state.revision,
+      action: 'remember',
+      ...(instruction.action === 'update' ? { entryId: matches[0]!.id } : {}),
+      category: named?.category ?? 'user_preference',
+      key,
+      value: named ? JSON.parse(JSON.stringify(named.value)) : content,
+      source,
+    },
+    client,
+  );
+  return `${instruction.action === 'update' ? '已更新' : '已记住'}偏好：${content}。可在记忆管理中查看、修改或删除。`;
+}
+
 export async function submitAgentMessage(
   infra: Infrastructure,
   ownerId: string,
   sessionId: string,
   key: string,
   input: AgentMessageInput,
+  options: { memoryProvider?: AgentMemoryProvider } = {},
 ) {
   const hash = createHash('sha256')
     .update(
@@ -492,6 +623,18 @@ export async function submitAgentMessage(
       };
     }
     const id = randomUUID();
+    const memoryInstruction = parseMemoryInstruction(input.content);
+    const preferenceStatement = stablePreferenceCandidate(input.content);
+    const memorySettings = await getAgentMemorySettings(infra, ownerId, client);
+    const accountMemory = await getAgentAccountMemory(
+      infra,
+      ownerId,
+      { includeProposed: true },
+      client,
+    );
+    const sessionMemory = agentMemoryFeatures().session
+      ? await getAgentSessionMemory(infra, ownerId, sessionId, client)
+      : null;
     const circleInput = validatedCircleSelection(input.content);
     const circleRegion = circleInput?.region;
     const useDynamic = shouldUseDynamicSkill(input.content, {
@@ -500,7 +643,12 @@ export async function submitAgentMessage(
     });
     if (input.skillRef && !useDynamic)
       throw new AgentInputError('forbidden', '动态技能执行尚未启用');
-    const derived = useDynamic ? { intent: 'skill' as const } : deriveAgentIntent(input.content);
+    let derived =
+      memoryInstruction || preferenceStatement
+        ? { intent: 'conversation' as const }
+        : useDynamic
+          ? { intent: 'skill' as const }
+          : deriveMemoryIntent(input.content, deriveAgentIntent(input.content), sessionMemory);
     const now = new Date();
     let selection: AgentSelection = {
       ...(input.bbox ? { bbox: input.bbox } : {}),
@@ -694,16 +842,85 @@ export async function submitAgentMessage(
       )
         selection.mmsis = input.mapContext.selectedMmsis;
     }
+    // The task's immutable input is resolved before required-field validation and publication.
+    if (sessionMemory && isMemoryContinuation(input.content) && !hasExplicitTime(input.content)) {
+      const previousSelection = AgentSelectionSchema.safeParse(
+        sessionMemory.conditions.selection,
+      ).data;
+      if (previousSelection?.timeRange && sessionMemory.conditions.timeMode === 'absolute')
+        selection.timeRange = previousSelection.timeRange;
+      else if (typeof sessionMemory.conditions.relativeHours === 'number')
+        selection.timeRange = {
+          from: new Date(
+            now.getTime() - sessionMemory.conditions.relativeHours * 3_600_000,
+          ).toISOString(),
+          to: now.toISOString(),
+        };
+    }
+    const namedResolution =
+      memorySettings.readEnabled && agentMemoryFeatures().account
+        ? resolveNamedMemory(input.content, selection, accountMemory.entries)
+        : { selection, ambiguous: false, tooMany: false, matched: false };
+    selection = namedResolution.selection;
+    if (
+      namedResolution.matched &&
+      /聚焦|定位|关注/.test(input.content) &&
+      !namedResolution.ambiguous &&
+      !namedResolution.tooMany
+    ) {
+      derived = { intent: 'map_focus' };
+      delete selection.vesselSelector;
+      if (selection.mmsis?.length) selection.vesselSelector = { mmsis: selection.mmsis };
+      delete selection.mapCamera;
+    }
+    const memoryResolution = resolveMemorySelection(
+      input.content,
+      selection,
+      derived.intent,
+      sessionMemory,
+      input.mapContext,
+      {
+        explicitScope:
+          !!circleInput ||
+          (namedResolution.matched && !!selection.region) ||
+          (!!input.bbox && !input.mapContext),
+      },
+    );
+    selection = memoryResolution.selection;
+    memoryResolution.ambiguous ||= namedResolution.ambiguous;
+    memoryResolution.tooMany ||= namedResolution.tooMany;
+    if (
+      derived.intent === 'map_camera' &&
+      selection.focusTargets?.some((ref) => ref.kind !== 'vessel')
+    )
+      derived = { intent: 'map_focus' };
+    if (
+      !memoryInstruction &&
+      memorySettings.readEnabled &&
+      agentMemoryFeatures().account &&
+      ['vessel_tracks', 'ais_heatmap', 'analysis', 'vessel_list'].includes(derived.intent) &&
+      !(sessionMemory && isMemoryContinuation(input.content) && sessionMemory.conditions.selection)
+    )
+      selection = applyAccountMemoryDefaults(input.content, selection, accountMemory.entries, now);
     // Legacy text continuations still create an independent task and retain their parent chain.
     const legacyContinuation =
       /^(?:已确认区域(?:请执行)?|确认区域|已选择区域请执行|请执行|开始|继续(?:分析)?)$/.test(
         input.content.replace(/[，,。！!\s]/g, ''),
       );
     const fields =
-      useDynamic || (legacyContinuation && input.bbox)
+      memoryInstruction || preferenceStatement
         ? []
-        : requiredAgentInputFields(selection, derived.intent);
-    const status = fields.length ? 'awaiting_input' : 'queued';
+        : memoryResolution.ambiguous || memoryResolution.tooMany
+          ? ['vessel_selector' as const]
+          : useDynamic || (legacyContinuation && input.bbox)
+            ? []
+            : requiredAgentInputFields(selection, derived.intent);
+    const status =
+      memoryInstruction || preferenceStatement
+        ? 'completed'
+        : fields.length
+          ? 'awaiting_input'
+          : 'queued';
     const parent =
       (
         await client.query(
@@ -773,10 +990,93 @@ export async function submitAgentMessage(
       "INSERT INTO agent_messages(id,session_id,task_id,role,content) VALUES($1,$2,$3,'user',$4) RETURNING *",
       [randomUUID(), sessionId, id, input.content],
     );
+    if (memoryInstruction) {
+      const summary = await applyMemoryInstruction(
+        infra,
+        client,
+        ownerId,
+        sessionId,
+        id,
+        String(message.rows[0].id),
+        memoryInstruction,
+        input,
+      );
+      await client.query(
+        'UPDATE agent_tasks SET summary=$2,summary_result_version=0,summary_input_revision=0 WHERE id=$1',
+        [id, summary],
+      );
+      await client.query(
+        "INSERT INTO agent_messages(id,session_id,task_id,role,content,input_revision) VALUES($1,$2,$3,'assistant',$4,0)",
+        [randomUUID(), sessionId, id, summary],
+      );
+      result.rows[0].summary = summary;
+      result.rows[0].summary_result_version = 0;
+      result.rows[0].summary_input_revision = 0;
+    } else if (
+      preferenceStatement &&
+      memorySettings.proposalsEnabled &&
+      agentMemoryFeatures().account &&
+      agentMemoryFeatures().proposals
+    ) {
+      const preferences = await (options.memoryProvider ?? localMemoryProvider).extract(
+        input.content,
+      );
+      let revision = accountMemory.revision;
+      for (const preference of preferences.slice(0, 5)) {
+        const updatedMemory = await mutateAgentAccountMemory(
+          infra,
+          ownerId,
+          {
+            operationId: randomUUID(),
+            expectedRevision: revision,
+            expectedGeneration: memorySettings.generation,
+            action: 'propose',
+            category: preference.category,
+            key: preference.key,
+            value: preference.value,
+            source: { taskId: id, messageId: String(message.rows[0].id) },
+          },
+          client,
+        );
+        revision = updatedMemory.revision;
+      }
+    }
+    if (preferenceStatement && !memoryInstruction) {
+      const state = await getAgentAccountMemory(infra, ownerId, { includeProposed: true }, client);
+      const proposed = state.entries.filter(
+        (entry) => entry.status === 'proposed' && entry.source.taskId === id,
+      );
+      const summary = proposed.length
+        ? `已提出偏好候选：${proposed.map((entry) => String(entry.value)).join('；')}。确认后会用于后续任务，可回复“确认记住这个偏好”或在记忆管理中选择。`
+        : memorySettings.proposalsEnabled &&
+            agentMemoryFeatures().account &&
+            agentMemoryFeatures().proposals
+          ? '已收到你的偏好表达。已有明确保存的同类偏好会继续生效；需要修改时可说“把我的偏好改为：具体内容”。'
+          : '已收到你的偏好表达。自动偏好提议当前已暂停；可使用“记住：具体内容”明确保存。';
+      await client.query(
+        'UPDATE agent_tasks SET summary=$2,summary_result_version=0,summary_input_revision=0 WHERE id=$1',
+        [id, summary],
+      );
+      await client.query(
+        "INSERT INTO agent_messages(id,session_id,task_id,role,content,input_revision) VALUES($1,$2,$3,'assistant',$4,0)",
+        [randomUUID(), sessionId, id, summary],
+      );
+      result.rows[0].summary = summary;
+      result.rows[0].summary_result_version = 0;
+      result.rows[0].summary_input_revision = 0;
+    }
     // Partial results remain resumable; cancelled denotes an explicit user cancellation.
     await event(client, sessionId, id, 'task.created', { status });
+    await captureAgentMemoryContext(infra, ownerId, sessionId, id, 0, client);
+    if (memoryInstruction || preferenceStatement)
+      await event(client, sessionId, id, 'task.completed', { status });
     const requests = fields.length
-      ? [await insertInputRequest(client, result.rows[0], { fields, reason: reasonFor(fields) })]
+      ? [
+          await insertInputRequest(client, result.rows[0], {
+            fields,
+            reason: memoryResolution.tooMany ? 'data_limit' : reasonFor(fields),
+          }),
+        ]
       : [];
     return {
       message: messageRow(message.rows[0]),
@@ -786,6 +1086,7 @@ export async function submitAgentMessage(
   });
 }
 async function readTaskContext(
+  infra: Infrastructure,
   client: PoolClient,
   taskId: string,
   ownerId?: string,
@@ -839,6 +1140,15 @@ async function readTaskContext(
   }));
   return {
     task: taskRow(task),
+    memory: await getAgentTaskMemoryContext(
+      infra,
+      String(task.owner_id),
+      taskId,
+      resultVersion === undefined
+        ? Number(task.input_revision)
+        : Number(result.rows[0]?.input_revision ?? task.input_revision),
+      client,
+    ),
     dynamicSkill,
     artifacts: [...dynamicSkill.artifacts, ...builtinArtifacts],
     messages: messages.rows.map(messageRow),
@@ -864,7 +1174,7 @@ async function readTaskContext(
   };
 }
 export async function getAgentTaskContext(infra: Infrastructure, taskId: string) {
-  return transaction(infra, (client) => readTaskContext(client, taskId), true);
+  return transaction(infra, (client) => readTaskContext(infra, client, taskId), true);
 }
 export async function getOwnedAgentTask(
   infra: Infrastructure,
@@ -875,7 +1185,8 @@ export async function getOwnedAgentTask(
 ) {
   return transaction(
     infra,
-    (client) => readTaskContext(client, taskId, ownerId, resultVersion, dynamicInputRevision),
+    (client) =>
+      readTaskContext(infra, client, taskId, ownerId, resultVersion, dynamicInputRevision),
     true,
   );
 }
@@ -885,7 +1196,31 @@ export async function getPreviousAgentTask(infra: Infrastructure, taskId: string
     WHERE current_task.id=$1 AND (previous.status='awaiting_input' OR (previous.status IN ('completed','failed') AND previous.result_version>0))`,
     [taskId],
   );
-  return previous.rows[0] ? getAgentTaskContext(infra, previous.rows[0].id) : null;
+  if (previous.rows[0]) return getAgentTaskContext(infra, previous.rows[0].id);
+  const current = await getAgentTaskContext(infra, taskId);
+  if (current?.task.intent !== 'explain' || !current.memory?.session) return null;
+  const sets = current.memory.session.objectSets;
+  const latest = Math.max(-1, ...sets.map((set) => set.turnSeq));
+  const sources = [
+    ...new Set(
+      sets
+        .filter((set) => set.turnSeq === latest)
+        .map((set) => set.source.taskId)
+        .filter((id): id is string => !!id),
+    ),
+  ];
+  if (sources.length !== 1) return null;
+  const owned = await infra.pool.query(
+    'SELECT id FROM agent_tasks WHERE id=$1 AND owner_id=$2 AND session_id=$3',
+    [sources[0], current.task.ownerId, current.task.sessionId],
+  );
+  if (!owned.rowCount) return null;
+  const source = await getAgentTaskContext(infra, sources[0]!);
+  if (!source) return null;
+  const snapshot = AgentQueryResultSchema.safeParse(
+    source.steps.findLast((step) => step.key === 'map_vessel_snapshot')?.output,
+  ).data;
+  return snapshot ? { ...source, queryResult: snapshot } : source;
 }
 export async function reusePreviousAgentTask(
   infra: Infrastructure,
@@ -1054,6 +1389,114 @@ export async function setAgentDefinition(
     return true;
   });
 }
+async function recordTaskMemory(
+  infra: Infrastructure,
+  client: PoolClient,
+  row: Row,
+  completed = false,
+) {
+  if (!agentMemoryFeatures().session) return;
+  const taskId = String(row.id),
+    ownerId = String(row.owner_id),
+    sessionId = String(row.session_id);
+  const snapshot = await getAgentTaskMemoryContext(
+    infra,
+    ownerId,
+    taskId,
+    Number(row.input_revision),
+    client,
+  );
+  if (!snapshot) return;
+  const current = await getAgentSessionMemory(infra, ownerId, sessionId, client);
+  if (
+    !current ||
+    current.generation !== snapshot.sessionGeneration ||
+    snapshot.turnSeq < current.turnSeq
+  )
+    return;
+  const context = await readTaskContext(infra, client, taskId);
+  if (!context) return;
+  const commands = await client.query(
+    'SELECT status FROM agent_ui_commands WHERE task_id=$1 AND input_revision=$2',
+    [taskId, row.input_revision],
+  );
+  const uiSucceeded =
+    commands.rowCount! > 0 && commands.rows.every((command) => command.status === 'succeeded');
+  const extracted = memoryObjectsFromTask(context, snapshot.turnSeq, uiSucceeded);
+  const queried =
+    !!context.queryResult ||
+    !!context.tracksResult ||
+    !!context.intelligenceResult ||
+    (row.intent === 'analysis' && Number(row.result_version) > 0);
+  const businessResult = extracted.objectSets.length > 0 || queried;
+  const mapSnapshot = context.steps.findLast((step) => step.key === 'map_vessel_snapshot')
+    ?.output as AgentQueryResult | undefined;
+  const selection =
+    context.queryResult?.selection ?? mapSnapshot?.selection ?? context.task.selection ?? {};
+  const relative = String(row.goal).match(/(?:最近|过去|近)\s*(\d+(?:\.\d+)?)\s*(小时|天)/);
+  const relativeHours = relative
+    ? Number(relative[1]) * (relative[2] === '天' ? 24 : 1)
+    : selection.timeRange && !/\d{4}-\d{2}-\d{2}/.test(String(row.goal))
+      ? (Date.parse(selection.timeRange.to) - Date.parse(selection.timeRange.from)) / 3_600_000
+      : undefined;
+  const conditions = businessResult
+    ? {
+        selection: JSON.parse(JSON.stringify(selection)),
+        intent: context.task.intent ?? 'unresolved',
+        timeMode: /\d{4}-\d{2}-\d{2}/.test(String(row.goal)) ? 'absolute' : 'relative',
+        ...(relativeHours ? { relativeHours } : {}),
+      }
+    : current.conditions;
+  const preserve = !businessResult;
+  const latestSets = extracted.objectSets.length
+    ? extracted.objectSets
+    : queried
+      ? [
+          {
+            id: `${taskId}:${row.input_revision}:incomplete`,
+            label: '最近查询集合未完整保存，请缩小范围',
+            kind: 'vessels' as const,
+            turnSeq: snapshot.turnSeq,
+            members: [],
+            source: { taskId },
+            querySucceeded: true,
+            uiSucceeded,
+          },
+        ]
+      : [];
+  const objectSets = preserve
+    ? current.objectSets
+    : [...current.objectSets.filter((set) => set.source.taskId !== taskId), ...latestSets]
+        .sort((a, b) => a.turnSeq - b.turnSeq)
+        .slice(-32);
+  // Summaries retain business constraints and result provenance; raw model/tool text is excluded.
+  const conclusion =
+    completed || businessResult
+      ? `最近任务：${context.task.intent ?? 'unresolved'}。${selection.vesselSelector?.model ? `型号条件：${selection.vesselSelector.model}。` : ''}${selection.filters?.shipType ? `AIS船型条件：${selection.filters.shipType}。` : ''}${relativeHours ? `相对时间：过去${relativeHours}小时。` : ''}结果来源：本地持久化任务${Number(row.result_version) > 0 ? '结果' : '工具快照'}。${objectSets.map((set) => `${set.label}${set.members.length}项，查询${set.querySucceeded ? '成功' : '待确认'}，界面${set.uiSucceeded ? '成功' : '尚未确认'}`).join('；')}`
+      : current.summary;
+  const summary =
+    completed || businessResult
+      ? await localMemoryProvider.summarize(
+          { ...snapshot, session: current },
+          { goal: context.task.goal, intent: context.task.intent ?? 'unresolved', conclusion },
+        )
+      : current.summary;
+  await saveAgentSessionMemory(
+    infra,
+    ownerId,
+    sessionId,
+    {
+      expectedRevision: current.revision,
+      expectedGeneration: snapshot.sessionGeneration,
+      expectedAccountGeneration: snapshot.settingsGeneration,
+      turnSeq: snapshot.turnSeq,
+      ...(businessResult ? { objectSets, conditions, references: extracted.references } : {}),
+      summary,
+    },
+    client,
+  );
+}
+
 export async function saveAgentStep(
   infra: Infrastructure,
   taskId: string,
@@ -1080,11 +1523,18 @@ export async function saveAgentStep(
         row.input_revision,
       ],
     );
-    if (inserted.rowCount)
+    if (inserted.rowCount) {
       await event(client, String(row.session_id), taskId, 'tool.completed', {
         name: step.name,
         key: step.key,
       });
+      if (
+        step.key === 'map_vessel_snapshot' ||
+        step.key.startsWith('business_') ||
+        step.key === 'map_map_focus'
+      )
+        await recordTaskMemory(infra, client, row);
+    }
     return true;
   });
 }
@@ -1121,6 +1571,11 @@ export async function saveAgentResults(
     await event(client, String(row.session_id), taskId, 'results.saved', {
       version,
       count: results.length,
+    });
+    await recordTaskMemory(infra, client, {
+      ...row,
+      result_version: version,
+      result_input_revision: row.input_revision,
     });
     return version;
   });
@@ -1192,6 +1647,7 @@ export async function finishAgentTask(
     await event(client, String(row.session_id), taskId, `task.${outcome.status}`, {
       status: outcome.status,
     });
+    await recordTaskMemory(infra, client, row, outcome.status === 'completed');
     return true;
   });
 }
@@ -1267,6 +1723,11 @@ export async function saveAgentHeatmapResult(
       kind: stored.kind,
       count: stored.totalVessels,
     });
+    await recordTaskMemory(infra, client, {
+      ...row,
+      result_version: version,
+      result_input_revision: row.input_revision,
+    });
     return version;
   });
 }
@@ -1303,6 +1764,11 @@ export async function saveAgentVesselTracksResult(
       kind: stored.kind,
       count: stored.returnedVessels,
     });
+    await recordTaskMemory(infra, client, {
+      ...row,
+      result_version: version,
+      result_input_revision: row.input_revision,
+    });
     return version;
   });
 }
@@ -1338,6 +1804,11 @@ export async function saveAgentQueryResult(
       inputRevision: row.input_revision,
       kind: stored.kind,
       count: stored.total,
+    });
+    await recordTaskMemory(infra, client, {
+      ...row,
+      result_version: version,
+      result_input_revision: row.input_revision,
     });
     return version;
   });
@@ -1420,6 +1891,11 @@ export async function saveAgentIntelligenceResult(
       inputRevision: row.input_revision,
       kind: stored.kind,
       count: stored.total,
+    });
+    await recordTaskMemory(infra, client, {
+      ...row,
+      result_version: version,
+      result_input_revision: row.input_revision,
     });
     return version;
   });
@@ -1750,6 +2226,14 @@ export async function respondAgentInput(
       await event(client, String(task.session_id), taskId, 'task.queued', {
         inputRevision: revision,
       });
+      await captureAgentMemoryContext(
+        infra,
+        ownerId,
+        String(task.session_id),
+        taskId,
+        revision,
+        client,
+      );
     }
     const result = { task: taskRow(updated), request };
     await client.query(
@@ -1983,6 +2467,7 @@ export async function retryAgentTask(
       sourceInputRevision: source.input_revision,
       sourceResultVersion: source.result_version,
     });
+    await captureAgentMemoryContext(infra, ownerId, String(source.session_id), id, 0, client);
     return { task: taskRow(task), message: messageRow(message) };
   });
 }

@@ -2,6 +2,7 @@ import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
 import { Type, createModels, createInitialSystemMessage } from '@earendil-works/pi-ai';
 import { deepseekProvider } from '@earendil-works/pi-ai/providers/deepseek';
 import { z } from 'zod';
+import { boundedMemoryProjection } from './memory-context';
 import { SPATIAL_PRESENTATION_POLICY } from './spatial-presentation-policy';
 import { CapabilityError, defineTool } from './capabilities';
 import { bindBusinessCapability } from './business-capabilities';
@@ -469,6 +470,7 @@ export async function executeIntelligence(
                 content: JSON.stringify({
                   action: previous ? 'explain_saved_snapshot' : 'summarize_local_search',
                   replyMode,
+                  memory: boundedMemoryProjection(context.memory, context.task.goal),
                   skillReferences,
                   queryKind: result.spec.kind ?? 'events',
                   category: result.spec.category ?? null,

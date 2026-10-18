@@ -1188,6 +1188,113 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/agent/memories': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 读取当前账号的正式记忆和待确认候选 */
+    get: operations['AgentMemoryController_list'];
+    put?: never;
+    /** 明确保存一条个人记忆 */
+    post: operations['AgentMemoryController_create'];
+    /** 清空当前账号正式记忆和候选 */
+    delete: operations['AgentMemoryController_clear'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/memories/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 读取个人记忆设置与系统可用性 */
+    get: operations['AgentMemoryController_settings'];
+    /** 更新个人读取与自动候选提取设置 */
+    put: operations['AgentMemoryController_setSettings'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/memories/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** 编辑个人记忆并校验目录修订 */
+    put: operations['AgentMemoryController_update'];
+    post?: never;
+    /** 遗忘一条个人记忆 */
+    delete: operations['AgentMemoryController_remove'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/memories/{id}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 将待确认候选纳入个人记忆 */
+    post: operations['AgentMemoryController_confirm'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/memories/{id}/dismiss': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 拒绝候选并移除候选正文 */
+    post: operations['AgentMemoryController_dismiss'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions/{id}/memory': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 读取私有会话的讨论对象摘要和最近一轮检索记忆 */
+    get: operations['AgentMemoryController_session'];
+    put?: never;
+    post?: never;
+    /** 重置私有会话讨论对象和上下文 */
+    delete: operations['AgentMemoryController_resetSession'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/agent/skills': {
     parameters: {
       query?: never;
@@ -12824,6 +12931,856 @@ export interface operations {
       };
       /** @description Role, origin or CSRF denied */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            revision: number;
+            entries: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+          category: string;
+          key: string;
+          value: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            revision: number;
+            entries: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_clear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            revision: number;
+            entries: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_settings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            readEnabled: boolean;
+            proposalsEnabled: boolean;
+            generation: number;
+            revision: number;
+            features: {
+              session: boolean;
+              account: boolean;
+              proposals: boolean;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_setSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+          readEnabled: boolean;
+          proposalsEnabled: boolean;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            readEnabled: boolean;
+            proposalsEnabled: boolean;
+            generation: number;
+            revision: number;
+            features: {
+              session: boolean;
+              account: boolean;
+              proposals: boolean;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+          category: string;
+          key: string;
+          value: unknown;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            revision: number;
+            entries: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            revision: number;
+            entries: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_confirm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            revision: number;
+            entries: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_dismiss: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            revision: number;
+            entries: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_session: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            sessionId: string;
+            revision: number;
+            turnSeq: number;
+            generation: number;
+            summary: string;
+            conditions: {
+              [key: string]: unknown;
+            };
+            references: {
+              refType: string;
+              refId: string;
+              label?: string;
+            }[];
+            updatedAt: string;
+            objectSets: {
+              id: string;
+              label: string;
+              kind: string;
+              memberCount: number;
+              turnSeq: number;
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+            }[];
+            appliedAccountMemories: {
+              /** Format: uuid */
+              id: string;
+              category: string;
+              key: string;
+              value: unknown;
+              /** @enum {string} */
+              status: 'active' | 'proposed';
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+              revision: number;
+              createdAt: string;
+              updatedAt: string;
+              expiresAt: string | null;
+            }[];
+            /** Format: uuid */
+            appliedTaskId: string | null;
+            features: {
+              session: boolean;
+              account: boolean;
+              proposals: boolean;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentMemoryController_resetSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            sessionId: string;
+            revision: number;
+            turnSeq: number;
+            generation: number;
+            summary: string;
+            conditions: {
+              [key: string]: unknown;
+            };
+            references: {
+              refType: string;
+              refId: string;
+              label?: string;
+            }[];
+            updatedAt: string;
+            objectSets: {
+              id: string;
+              label: string;
+              kind: string;
+              memberCount: number;
+              turnSeq: number;
+              source: {
+                /** Format: uuid */
+                taskId?: string;
+                /** Format: uuid */
+                messageId?: string;
+                description?: string;
+              };
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Memory revision or operationId conflicts; refresh before retrying */
+      409: {
         headers: {
           [name: string]: unknown;
         };

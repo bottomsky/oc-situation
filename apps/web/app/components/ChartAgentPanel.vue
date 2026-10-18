@@ -15,6 +15,7 @@ import {
 import { dateLabel, heatmapDateLabel } from '../utils/display';
 import ChartDetailFloat from './ChartDetailFloat.vue';
 import ChartAgentHistoryPanel from './ChartAgentHistoryPanel.vue';
+import AgentMemoryPanel from './AgentMemoryPanel.vue';
 import { useChartDetailHost } from '../composables/useChartDetail';
 
 const props = defineProps<{ bbox: Bbox; state: AgentConversationState }>();
@@ -238,6 +239,10 @@ async function copyMessage(id: string, content: string) {
           <span />{{ state.activeSession?.title ?? '新会话' }}
         </p>
       </div>
+      <AgentMemoryPanel
+        :session-id="state.activeSession?.id"
+        :revision-key="state.tasks.map((task) => `${task.id}:${task.status}`).join(',')"
+      />
       <section v-if="!state.messages.length" class="agent-welcome" aria-label="你可以这样问我">
         <h4><span aria-hidden="true">✧</span>你可以这样问我</h4>
         <p>从海图出发，查询船舶、航线与海事情报。</p>

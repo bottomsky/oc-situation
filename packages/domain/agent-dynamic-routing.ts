@@ -63,8 +63,8 @@ export function dynamicTaskSelection(
     selector.mmsis = mmsis;
   }
   const model =
-    goal.match(/(?:型号|船舶型号)(?:为)?\s*[:：]?\s*[“「"']?([A-Za-z0-9][A-Za-z0-9-]{1,30})/) ??
-    goal.match(/([A-Za-z0-9][A-Za-z0-9-]{1,30})型(?:船舶|舰艇|船|舰)/);
+    goal.match(/(?:型号|船舶型号)(?:为)?\s*[:：]?\s*[“「"']?([A-Za-z0-9][A-Za-z0-9-]{0,30})/) ??
+    goal.match(/([A-Za-z0-9][A-Za-z0-9-]{0,30})型(?:船舶|舰艇|船|舰)/);
   if (model) selector.model = model[1];
   const name =
     goal.match(/(?:船名|名称|呼号)\s*[:：]?\s*[“「"']([^”」"']{1,200})[”」"']/) ??

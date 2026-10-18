@@ -32,6 +32,7 @@ const groups: NavigationGroup[] = [
       { path: '/intelligence', label: '情报公告' },
       { path: '/events', label: '事件中心' },
       { path: '/skills', label: '我的技能' },
+      { path: '/memories', label: '我的记忆' },
     ],
   },
   {

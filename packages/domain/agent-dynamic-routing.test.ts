@@ -6,6 +6,11 @@ import {
 } from './agent-dynamic-routing';
 
 describe('dynamic skill routing', () => {
+  it('preserves explicit single-character model identifiers when continuing a prior task', () => {
+    expect(dynamicTaskSelection('继续高亮型号B的船舶', {}, new Date()).vesselSelector).toEqual({
+      model: 'B',
+    });
+  });
   it('routes composite vessel selection, tracks and heatmap before single intent fast paths', () => {
     expect(
       shouldUseDynamicSkill('筛选当前区域货船，再展示历史航线和热力图', {

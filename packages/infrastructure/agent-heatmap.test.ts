@@ -3,6 +3,20 @@ import * as agent from './agent';
 import type { Infrastructure } from './clients';
 import type { AgentHeatmapResult } from '../contracts/heatmap';
 
+// These focused SQL fixtures exercise heatmap admission/persistence, with memory as an independent port.
+vi.mock('./agent-memory', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./agent-memory')>()),
+  getAgentMemorySettings: async () => ({
+    readEnabled: true,
+    proposalsEnabled: true,
+    generation: 0,
+    revision: 0,
+  }),
+  getAgentAccountMemory: async () => ({ revision: 0, entries: [] }),
+  getAgentSessionMemory: async () => null,
+  getAgentTaskMemoryContext: async () => null,
+}));
+
 const result: AgentHeatmapResult = {
   kind: 'ais_heatmap',
   version: 0,

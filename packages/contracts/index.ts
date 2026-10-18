@@ -3,6 +3,7 @@ export * from './intelligence';
 export * from './intelligence-spatial';
 export * from './topics';
 export * from './agent';
+export * from './agent-memory';
 export * from './intelligence-search';
 export * from './heatmap';
 export * from './agent-capabilities';

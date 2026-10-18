@@ -9,6 +9,7 @@ import type {
 } from '../../packages/contracts/dynamic-skills';
 import type { UiOperation } from '../../packages/contracts/agent-ui';
 import type { RuntimeContext, RuntimeOptions, RuntimePorts } from './runtime';
+import { boundedMemoryProjection } from './memory-context';
 import type { AgentInputField } from '../../packages/contracts/agent';
 import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
 import { createHash } from 'node:crypto';
@@ -307,6 +308,7 @@ async function generateAndBind(
     ];
     const prompt = JSON.stringify({
       target: dynamicGoalProjection(context.task.goal, context.task.selection?.purpose),
+      memory: boundedMemoryProjection(context.memory, context.task.goal),
       requiredDisplay: !!context.task.uiBinding,
       toolCatalog: registry.descriptors().filter((tool) => ceiling.includes(tool.id)),
       inputRefs: ['input.selection'],

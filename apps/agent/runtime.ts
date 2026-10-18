@@ -10,6 +10,9 @@ import { executeBusinessRequest } from './business-runtime';
 import type { BusinessToolId } from './business-request';
 import type { DynamicSkillArtifact } from '../../packages/contracts/dynamic-skills';
 import { SPATIAL_PRESENTATION_POLICY } from './spatial-presentation-policy';
+import type { AgentMemorySnapshot } from '../../packages/contracts/agent-memory';
+import { isMemoryRecall } from '../../packages/domain/agent-memory';
+import { boundedMemoryProjection } from './memory-context';
 import type {
   AgentFocusResult,
   FocusTargetRef,
@@ -135,6 +138,7 @@ export interface RuntimeOptions {
   dynamicSkillsAllowed?: () => boolean;
 }
 export interface RuntimeContext {
+  memory?: AgentMemorySnapshot | null;
   focusResult?: AgentFocusResult | null;
   artifacts?: Pick<DynamicSkillArtifact, 'taskId' | 'inputRevision' | 'kind' | 'payload'>[];
   focusOmittedCount?: number;
@@ -323,6 +327,7 @@ async function executeConversation(
   intent: ConversationIntent,
   ports: RuntimePorts,
   options: RuntimeOptions,
+  memory?: AgentMemorySnapshot | null,
 ): Promise<void> {
   if (!options.apiKey) {
     await ports.finish({ status: 'failed', error: '智能体服务尚未配置模型密钥。' });
@@ -351,6 +356,7 @@ async function executeConversation(
     const transport = guardedFetch(ports, options, controller.signal);
     const prompt = JSON.stringify({
       intent,
+      memory: boundedMemoryProjection(memory),
       capabilities: buildCapabilityDirectory(
         options.skillCatalog ?? (await getBusinessSkillCatalog()),
       ),
@@ -377,7 +383,7 @@ async function executeConversation(
             }
           },
         }),
-      // The request contains no original message, history, geographic data or analysis state.
+      // History enters only as the shared allowlisted memory projection.
       prepareRequest: async ({ context: current }) => ({
         context: {
           ...current,
@@ -474,6 +480,21 @@ export async function executeAgent(
 ): Promise<void> {
   let task = context.task;
   if (!(await ports.active())) return;
+  if (isMemoryRecall(task.goal)) {
+    const prior = context.memory?.recentTurns
+      .filter((turn) => turn.role === 'user' && turn.taskId !== task.id)
+      .at(-1);
+    const preferences = context.memory?.account.filter((entry) => entry.status === 'active') ?? [];
+    const summary = /偏好|习惯|记忆/.test(task.goal)
+      ? preferences.length
+        ? `已保存的偏好：${preferences.map((entry) => String(entry.value)).join('；')}。`
+        : '当前没有可读取的已保存偏好。'
+      : prior
+        ? `你刚才说：“${prior.content.slice(0, 2000)}”`
+        : '本会话目前没有可供回顾的上一条用户消息。';
+    await ports.finish({ status: 'completed', summary });
+    return;
+  }
   if (task.intent !== 'skill' && (await executeBusinessRequest(context, ports, options))) return;
   if (task.intent === 'map_focus') {
     if (process.env.AGENT_SPATIAL_FOCUS_ENABLED === 'false')
@@ -638,7 +659,7 @@ export async function executeAgent(
   }
   const conversation = classifyConversationIntent(task.goal);
   if (conversation && !selectedPurpose) {
-    await executeConversation(conversation, ports, options);
+    await executeConversation(conversation, ports, options, context.memory);
     return;
   }
   const previousDefinition =
@@ -1023,6 +1044,7 @@ export async function executeAgent(
             role: 'user',
             content: JSON.stringify({
               request: { ...JSON.parse(safePrompt(intent, true)), action: request.action },
+              memory: boundedMemoryProjection(context.memory, task.goal),
               completedTools: [...done],
               toolStatuses,
               overview: overview ?? null,
