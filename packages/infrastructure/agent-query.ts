@@ -31,14 +31,39 @@ const QueryInputSchema = z.strictObject({
   selection: AgentSelectionSchema,
 });
 
+export class AgentCircleAnchorUnavailableError extends Error {
+  readonly code = 'anchor_position_unavailable';
+  constructor(readonly mmsi: string) {
+    super(`船舶 ${mmsi} 在当前船位时间窗口内没有有效船位，暂时无法确定圆形区域中心。`);
+  }
+}
+
 /** Query real vessels, never rendered map clusters. Count and rows share one SQL snapshot. */
 export async function queryAgentVessels(
   infra: Infrastructure,
   input: z.infer<typeof QueryInputSchema>,
   options: { signal?: AbortSignal } = {},
 ): Promise<AgentQueryResult> {
-  const { kind, inputRevision, selection } = QueryInputSchema.parse(input);
-  if (kind === 'vessel_list' && !selection.bbox && !selection.region)
+  const parsed = QueryInputSchema.parse(input);
+  const { kind, inputRevision } = parsed;
+  const vesselCircle = parsed.selection.vesselCircle;
+  // A host-resolved vessel anchor takes precedence over every captured or previously resolved region.
+  const selection = vesselCircle
+    ? { ...parsed.selection, bbox: undefined, region: undefined }
+    : parsed.selection;
+  if (vesselCircle) {
+    if (selection.mmsis?.length === 1 && selection.mmsis[0] === vesselCircle.mmsi)
+      selection.mmsis = undefined;
+    if (
+      selection.vesselSelector?.mmsis?.length === 1 &&
+      selection.vesselSelector.mmsis[0] === vesselCircle.mmsi
+    ) {
+      const remaining = { ...selection.vesselSelector, mmsis: undefined };
+      selection.vesselSelector =
+        remaining.model || remaining.query || remaining.shipTypes?.length ? remaining : undefined;
+    }
+  }
+  if (kind === 'vessel_list' && !selection.bbox && !selection.region && !vesselCircle)
     throw new Error('region_required');
   if (
     kind === 'vessel_detail' &&
@@ -76,6 +101,8 @@ export async function queryAgentVessels(
     '($3::integer IS NULL OR v.ship_type=$3)',
     '($4::text[] IS NULL OR v.mmsi=ANY($4::text[]))',
   ];
+  let anchorCte = '';
+  let anchorProjection = 'NULL AS anchor_position,';
   if (kind === 'vessel_list') filters.push('p.mmsi IS NOT NULL');
   if (selection.bbox) {
     const [west, south, east, north] = selection.bbox;
@@ -84,7 +111,20 @@ export async function queryAgentVessels(
       `p.latitude BETWEEN $6 AND $8 AND (p.longitude >= $5 ${west <= east ? 'AND' : 'OR'} p.longitude <= $7)`,
     );
   }
-  if (selection.region?.kind === 'circle') {
+  if (vesselCircle) {
+    values.push(vesselCircle.mmsi, vesselCircle.radiusMeters);
+    const n = values.length;
+    anchorCte = `anchor AS MATERIALIZED (
+      SELECT p.longitude,p.latitude,p.observed_at,p.source_id FROM positions_latest p
+      WHERE p.mmsi=$${n - 1} AND p.observed_at>=now()-make_interval(hours=>$1)
+        AND p.observed_at<=now()
+    ), `;
+    anchorProjection = `(SELECT jsonb_build_object('longitude',longitude,'latitude',latitude,
+      'observedAt',observed_at,'sourceId',source_id) FROM anchor) AS anchor_position,`;
+    filters.push(`EXISTS (SELECT 1 FROM anchor a WHERE
+      ST_DWithin(ST_SetSRID(ST_MakePoint(p.longitude,p.latitude),4326)::geography,
+        ST_SetSRID(ST_MakePoint(a.longitude,a.latitude),4326)::geography,$${n}))`);
+  } else if (selection.region?.kind === 'circle') {
     const { center, radiusMeters } = selection.region;
     values.push(center[0], center[1], radiusMeters);
     const n = values.length;
@@ -112,8 +152,14 @@ export async function queryAgentVessels(
     total: string;
     items: AgentQueryResult['items'];
     as_of: Date;
+    anchor_position?: {
+      longitude: number;
+      latitude: number;
+      observedAt: string;
+      sourceId: string;
+    } | null;
   }>(
-    `WITH eligible AS MATERIALIZED (
+    `WITH ${anchorCte}eligible AS MATERIALIZED (
       SELECT v.mmsi,v.name,v.imo,v.ship_type AS "shipType",
         CASE WHEN p.mmsi IS NULL THEN NULL ELSE jsonb_build_object(
           'lat',p.latitude,'lon',p.longitude,'observedAt',p.observed_at,
@@ -122,12 +168,36 @@ export async function queryAgentVessels(
         AND p.observed_at>=now()-make_interval(hours=>$1) AND p.observed_at<=now()
       WHERE ${filters.join(' AND ')}
     ), selected AS (SELECT * FROM eligible ORDER BY mmsi LIMIT 100)
-    SELECT (SELECT count(*) FROM eligible)::text AS total,
+    SELECT ${anchorProjection} (SELECT count(*) FROM eligible)::text AS total,
       COALESCE((SELECT jsonb_agg(to_jsonb(selected) ORDER BY mmsi) FROM selected),'[]'::jsonb) AS items,
       statement_timestamp() AS as_of`,
     values,
   );
   const row = result.rows[0]!;
+  if (vesselCircle && !row.anchor_position)
+    throw new AgentCircleAnchorUnavailableError(vesselCircle.mmsi);
+  const regionAnchor =
+    vesselCircle && row.anchor_position
+      ? {
+          mmsi: vesselCircle.mmsi,
+          observedAt: new Date(row.anchor_position.observedAt).toISOString(),
+          sourceId: row.anchor_position.sourceId,
+        }
+      : undefined;
+  const resolvedSelection =
+    vesselCircle && row.anchor_position
+      ? {
+          ...selection,
+          region: {
+            kind: 'circle' as const,
+            center: [row.anchor_position.longitude, row.anchor_position.latitude] as [
+              number,
+              number,
+            ],
+            radiusMeters: vesselCircle.radiusMeters,
+          },
+        }
+      : selection;
   const items = row.items.map((item) => ({
     ...item,
     latestPosition: item.latestPosition
@@ -138,11 +208,12 @@ export async function queryAgentVessels(
       : null,
   }));
   const regionGeometry =
-    selection.region?.kind === 'circle'
-      ? await projectCircleRegion(infra, selection.region)
+    resolvedSelection.region?.kind === 'circle'
+      ? await projectCircleRegion(infra, resolvedSelection.region)
       : undefined;
   return AgentQueryResultSchema.parse({
     ...(regionGeometry ? { regionGeometry } : {}),
+    ...(regionAnchor ? { regionAnchor } : {}),
     kind,
     version: 0,
     inputRevision,
@@ -150,6 +221,6 @@ export async function queryAgentVessels(
     truncated: Number(row.total) > items.length,
     items,
     asOf: row.as_of.toISOString(),
-    selection,
+    selection: resolvedSelection,
   });
 }

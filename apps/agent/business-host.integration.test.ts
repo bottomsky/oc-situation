@@ -8,6 +8,8 @@ import {
   claimAgentTask,
   getAgentTaskContext,
   retryAgentTask,
+  requestAgentInput,
+  respondAgentInput,
 } from '../../packages/infrastructure/agent';
 import { createBusinessHost } from './business-host';
 import { processAgentTask } from './index';
@@ -40,6 +42,7 @@ import { CreateOperationalEventSchema } from '../../packages/contracts/operation
 import type { AgentFocusResult } from '../../packages/contracts/agent-focus';
 import type { RuntimePorts } from './runtime';
 import { executeBusinessRequest } from './business-runtime';
+import { AgentSelectionSchema, type AgentSelection } from '../../packages/contracts/agent';
 
 describe('trusted business host PostgreSQL recovery', () => {
   const ownerId = randomUUID();
@@ -58,6 +61,190 @@ describe('trusted business host PostgreSQL recovery', () => {
       "INSERT INTO users(id,username,password_hash,role) VALUES($1::uuid,$1::text,'unused','operator')",
       [ownerId],
     );
+  });
+  it('rejects conflicting circle scope in structured input while keeping resolved result selections compatible', async () => {
+    const region = {
+      kind: 'circle' as const,
+      center: [113, 22] as [number, number],
+      radiusMeters: 100000,
+    };
+    const vesselCircle = { mmsi: '257288000', radiusMeters: 100000 };
+    // Result selections legitimately retain both the reference and its resolved geometry.
+    expect(AgentSelectionSchema.parse({ region, vesselCircle })).toEqual({ region, vesselCircle });
+    const cases: { goal: string; conflicts: AgentSelection[]; accepted: AgentSelection }[] = [
+      {
+        goal: '查询113,22方圆100公里内有哪些船',
+        conflicts: [
+          { vesselCircle },
+          { region: { ...region, center: [114, 23] } },
+          { region: { ...region, radiusMeters: 200000 } },
+          { bbox: [-180, -80, 180, 80] },
+          {
+            purpose: 'intelligence_search',
+            intelligenceQuery: { bbox: [-180, -80, 180, 80] },
+          },
+        ],
+        accepted: { filters: { hours: 48 } },
+      },
+      {
+        goal: '以船舶257288000为中心半径100公里内多少船',
+        conflicts: [
+          { region },
+          { vesselCircle: { ...vesselCircle, mmsi: '257288001' } },
+          { vesselCircle: { ...vesselCircle, radiusMeters: 200000 } },
+          { bbox: [-180, -80, 180, 80] },
+          {
+            purpose: 'intelligence_search',
+            intelligenceQuery: { bbox: [-180, -80, 180, 80] },
+          },
+        ],
+        accepted: { filters: { hours: 48 } },
+      },
+      {
+        goal: '查询区域内有哪些船舶',
+        conflicts: [
+          { region, vesselCircle },
+          { bbox: [-180, -80, 180, 80], vesselCircle },
+        ],
+        accepted: { vesselCircle },
+      },
+    ];
+    for (const entry of cases) {
+      const session = await createAgentSession(infra, ownerId, 'circle input authority');
+      const submitted = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), {
+        content: entry.goal,
+        historyHours: 24,
+      });
+      if (submitted.task.status !== 'awaiting_input') {
+        const claimed = (await claimAgentTask(infra, 'circle-input-worker', submitted.task.id))!;
+        expect(
+          await requestAgentInput(infra, claimed.id, 'circle-input-worker', claimed.generation, {
+            fields: ['time'],
+            reason: 'missing_time',
+          }),
+        ).toBe(true);
+      }
+      const request = (
+        await pool.query(
+          "SELECT id,input_revision FROM agent_input_requests WHERE task_id=$1 AND status='pending'",
+          [submitted.task.id],
+        )
+      ).rows[0];
+      for (const values of entry.conflicts) {
+        await expect(
+          respondAgentInput(infra, ownerId, submitted.task.id, request.id, randomUUID(), {
+            action: 'accept',
+            inputRevision: request.input_revision,
+            values,
+          }),
+        ).rejects.toMatchObject({ code: 'invalid_input' });
+        const unchanged = (await getAgentTaskContext(infra, submitted.task.id))!.task;
+        expect(unchanged.inputRevision).toBe(0);
+        expect(unchanged.status).toBe('awaiting_input');
+        expect(unchanged.selection).toEqual(submitted.task.selection);
+      }
+      const accepted = await respondAgentInput(
+        infra,
+        ownerId,
+        submitted.task.id,
+        request.id,
+        randomUUID(),
+        {
+          action: 'accept',
+          inputRevision: request.input_revision,
+          values: entry.accepted,
+        },
+      );
+      expect(accepted.task.status).toBe('queued');
+      expect(accepted.task.inputRevision).toBe(1);
+    }
+  });
+  it('repairs coordinate query retries by removing conflicting vessel centers and stale snapshots', async () => {
+    const region = { kind: 'circle', center: [113, 22], radiusMeters: 100000 };
+    for (const changed of [false, true]) {
+      const session = await createAgentSession(infra, ownerId, 'coordinate retry authority');
+      const submitted = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), {
+        content: '查询113,22方圆100公里内有哪些船',
+        historyHours: 24,
+      });
+      await pool.query("UPDATE agent_tasks SET status='failed',selection=$2::jsonb WHERE id=$1", [
+        submitted.task.id,
+        JSON.stringify({
+          ...submitted.task.selection,
+          region: changed ? { ...region, radiusMeters: 200000 } : region,
+          vesselCircle: { mmsi: '257288000', radiusMeters: 100000 },
+        }),
+      ]);
+      await pool.query(
+        "INSERT INTO agent_steps(task_id,input_revision,step_key,name,input,output) VALUES($1,0,'input_snapshot','conflicting scope','null'::jsonb,'{}'::jsonb)",
+        [submitted.task.id],
+      );
+      const retry = await retryAgentTask(infra, ownerId, submitted.task.id, randomUUID());
+      expect(retry.task.selection?.region).toEqual(region);
+      expect(retry.task.selection?.vesselCircle).toBeUndefined();
+      expect((await getAgentTaskContext(infra, retry.task.id))?.steps).toEqual([]);
+    }
+  });
+  it('persists a vessel-centered circle request and retries its own scope without narrowing results to the anchor MMSI', async () => {
+    const priorDynamic = process.env.AGENT_DYNAMIC_SKILLS_ENABLED;
+    process.env.AGENT_DYNAMIC_SKILLS_ENABLED = 'true';
+    try {
+      const session = await createAgentSession(infra, ownerId, 'vessel circle input');
+      const goal = '船舶257288000 中心及半径 100 公里的圆形区域多少 传船舶';
+      const input = {
+        content: goal,
+        historyHours: 24,
+        mapContext: {
+          bbox: [-180, -80, 180, 80] as [number, number, number, number],
+          capturedAt: new Date().toISOString(),
+          selectedMmsis: ['257288000'],
+        },
+      };
+      const submitted = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), input);
+      const expected = { mmsi: '257288000', radiusMeters: 100000 };
+      expect(submitted.task.intent).toBe('vessel_list');
+      expect(submitted.pendingInputRequests).toEqual([]);
+      expect(submitted.task.selection?.vesselCircle).toEqual(expected);
+      expect(submitted.task.selection?.region).toBeUndefined();
+      expect(submitted.task.selection?.bbox).toBeUndefined();
+      expect(submitted.task.selection?.mmsis).toBeUndefined();
+      expect(submitted.task.selection?.vesselSelector?.mmsis).toBeUndefined();
+      expect(submitted.task.bbox).toBeNull();
+      await pool.query(
+        "UPDATE agent_tasks SET status='failed',intent='skill',selection=$2::jsonb,bbox=$3::jsonb WHERE id=$1",
+        [
+          submitted.task.id,
+          JSON.stringify({
+            bbox: input.mapContext.bbox,
+            purpose: 'vessel_detail',
+            mmsis: ['257288000'],
+          }),
+          JSON.stringify(input.mapContext.bbox),
+        ],
+      );
+      const retry = await retryAgentTask(infra, ownerId, submitted.task.id, randomUUID());
+      expect(retry.task.intent).toBe('vessel_list');
+      expect(retry.task.selection).toMatchObject({
+        vesselCircle: expected,
+        purpose: 'vessel_list',
+      });
+      expect(retry.task.selection?.bbox).toBeUndefined();
+      expect(retry.task.selection?.mmsis).toBeUndefined();
+      expect(retry.task.selection?.region).toBeUndefined();
+      expect(retry.task.bbox).toBeNull();
+      expect((await getAgentTaskContext(infra, retry.task.id))?.queryResult).toBeNull();
+      for (const content of [
+        '船舶257288000和257288001为中心半径100公里内多少船',
+        '船舶25728800中心半径100公里内多少船',
+        '船舶257288000中心半径一百公里内多少船',
+      ])
+        await expect(
+          submitAgentMessage(infra, ownerId, session.id, randomUUID(), { ...input, content }),
+        ).rejects.toMatchObject({ code: 'invalid_input' });
+    } finally {
+      if (priorDynamic === undefined) delete process.env.AGENT_DYNAMIC_SKILLS_ENABLED;
+      else process.env.AGENT_DYNAMIC_SKILLS_ENABLED = priorDynamic;
+    }
   });
   it('binds bare coordinate focus locally and repairs legacy global-query retries without old results', async () => {
     const previousDynamic = process.env.AGENT_DYNAMIC_SKILLS_ENABLED;

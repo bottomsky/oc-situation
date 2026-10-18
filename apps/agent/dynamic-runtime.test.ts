@@ -251,6 +251,62 @@ function fixture(bound = true) {
 }
 
 describe('durable dynamic composition', () => {
+  it('rejects competing coordinate and vessel circle centers before any tool or restored result', async () => {
+    for (const goal of ['查询113,22方圆100公里内有哪些船', '执行已有船舶查询技能']) {
+      const m = fixture();
+      m.context.task.goal = goal;
+      m.context.task.selection = {
+        region: { kind: 'circle', center: [113, 22], radiusMeters: 100000 },
+        vesselCircle: { mmsi: '257288000', radiusMeters: 100000 },
+      };
+      await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+        apiKey: 'unused',
+        dynamicSkillsEnabled: true,
+      });
+      expect(m.counts.error).toBe('circle_scope_mismatch');
+      expect(m.counts.query).toBe(0);
+      expect(m.counts.tools).toBe(0);
+    }
+  });
+  it('accepts a vessel center reference as query scope and reports an unavailable anchor explicitly', async () => {
+    const m = fixture();
+    m.context.task.goal = '以MMSI257288000为中心半径100公里内多少船';
+    m.context.task.uiBinding = null;
+    m.context.task.selection = { vesselCircle: { mmsi: '257288000', radiusMeters: 100000 } };
+    m.version.definition = {
+      ...definition,
+      requiredInputs: ['region'],
+      toolIds: ['query_vessels'],
+      steps: [
+        {
+          id: 'cargo',
+          toolId: 'query_vessels',
+          input: { selection: { $ref: 'input.selection' } },
+          artifactKind: 'vessel_list',
+        },
+      ],
+      expectedArtifacts: [{ stepId: 'cargo', kind: 'vessel_list' }],
+      requiredDisplays: [],
+    };
+    m.execution.taskBinding!.toolCeiling = ['query_vessels'];
+    m.ports.queryVessels = async () => {
+      m.counts.query++;
+      throw Object.assign(new Error('missing anchor'), { code: 'anchor_position_unavailable' });
+    };
+    let error = '';
+    const finish = m.ports.finish;
+    m.ports.finish = (outcome) => {
+      error = outcome.error ?? '';
+      return finish(outcome);
+    };
+    await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+      apiKey: 'unused',
+      dynamicSkillsEnabled: true,
+    });
+    expect(m.counts.query).toBe(1);
+    expect(m.counts.error).toBe('anchor_position_unavailable');
+    expect(error).toContain('无法解析圆心');
+  });
   it('accepts a trusted circle for vessel lists while bbox-only tools still request a bbox', async () => {
     const m = fixture();
     m.context.task.goal = '查询113.8751,22.0843方圆100公里内有哪些船舶';

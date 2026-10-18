@@ -151,13 +151,16 @@ async function requestInput(ports: RuntimePorts, spec: AgentInputSpec, summary: 
 }
 
 function querySummary(result: AgentQueryResult, historical = false): string {
-  const scope = result.selection.bbox ? '所选区域' : '所选船舶';
+  const scope = result.selection.bbox || result.selection.region ? '所选区域' : '所选船舶';
   const prefix = historical ? '以下说明基于上次已保存的查询快照。' : '';
   const coverage = result.total
     ? `${scope}共查询到 ${result.total} 艘船舶${result.truncated ? '，列表展示前 100 艘' : ''}。`
     : `${scope}没有符合条件的船舶。`;
   const missing = result.items.filter((item) => !item.latestPosition).length;
-  return `${prefix}${coverage}${missing ? `其中 ${missing} 艘在所选最新报告窗口内没有船位。` : ''}查询时间：${new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', dateStyle: 'short', timeStyle: 'medium' }).format(new Date(result.asOf))}（北京时间）。这是最新船位快照；船舶基本信息与船位见下方结果。`;
+  const anchor = result.regionAnchor
+    ? `圆心采用船舶 ${result.regionAnchor.mmsi} 的有效 AIS 船位，定位时间：${new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', dateStyle: 'short', timeStyle: 'medium' }).format(new Date(result.regionAnchor.observedAt))}（北京时间）。符合筛选条件的中心船计入区域数量。`
+    : '';
+  return `${prefix}${anchor}${coverage}${missing ? `其中 ${missing} 艘在所选最新报告窗口内没有船位。` : ''}查询时间：${new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', dateStyle: 'short', timeStyle: 'medium' }).format(new Date(result.asOf))}（北京时间）。这是最新船位快照；船舶基本信息与船位见下方结果。`;
 }
 
 async function executeVesselQuery(
@@ -217,21 +220,25 @@ async function executeVesselQuery(
   } catch (error) {
     const code = timedOut
       ? 'timeout'
-      : error instanceof RuntimeStop || error instanceof CapabilityError
-        ? error.code
-        : 'provider';
+      : (error as { code?: string })?.code === 'anchor_position_unavailable'
+        ? 'anchor_position_unavailable'
+        : error instanceof RuntimeStop || error instanceof CapabilityError
+          ? error.code
+          : 'provider';
     if (code === 'fenced') return;
     await ports.finish({
       status: 'failed',
       errorCode: code === 'budget' ? 'budget_exhausted' : code,
       error:
-        code === 'skill_changed'
-          ? '本次任务绑定的技能内容已更新，请创建新的尝试；已保存结果仍可查看。'
-          : code === 'budget'
-            ? '本任务调用预算已用尽，请重试为新任务。'
-            : code === 'timeout'
-              ? '船舶查询超时，请重试。'
-              : '船舶查询暂不可用，请稍后重试。',
+        code === 'anchor_position_unavailable'
+          ? `船舶 ${selection.vesselCircle?.mmsi ?? ''} 在最近 ${selection.filters?.hours ?? 24} 小时内没有有效船位，无法确定圆形区域中心。请确认船舶标识或调整船位时间范围。`
+          : code === 'skill_changed'
+            ? '本次任务绑定的技能内容已更新，请创建新的尝试；已保存结果仍可查看。'
+            : code === 'budget'
+              ? '本任务调用预算已用尽，请重试为新任务。'
+              : code === 'timeout'
+                ? '船舶查询超时，请重试。'
+                : '船舶查询暂不可用，请稍后重试。',
     });
   } finally {
     clearTimeout(timer);

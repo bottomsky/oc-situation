@@ -71,3 +71,39 @@ it('leaves ordinary radius terminology outside coordinate request parsing', () =
   expect(parseCircleRegion('什么是半径')).toBeUndefined();
   expect(parseCircleRegion('某事件摘要谈方圆')).toBeUndefined();
 });
+
+it.each([
+  '船舶257288000 中心及半径 100 公里的圆形区域多少 传船舶',
+  '以MMSI257288000为中心，半径100公里内有多少船舶',
+  '查询船舶257288000周围方圆100公里内有哪些船',
+])('keeps a vessel circle anchor separate from the vessels being counted: %s', (goal) => {
+  expect(() => parseCircleRegion(goal)).not.toThrow();
+  expect(parseCircleRegion(goal)).toBeUndefined();
+  expect(deriveAgentIntent(goal)).toEqual({ intent: 'vessel_list', purpose: 'vessel_list' });
+  expect(shouldUseDynamicSkill(goal, { enabled: true })).toBe(false);
+  const selected = dynamicTaskSelection(
+    goal,
+    {
+      bbox: [-180, -80, 180, 80],
+      region: { kind: 'bbox', bbox: [-180, -80, 180, 80] },
+      mmsis: ['257288000'],
+      vesselSelector: { mmsis: ['257288000'] },
+    },
+    new Date(),
+  );
+  expect(selected).toMatchObject({ vesselCircle: { mmsi: '257288000', radiusMeters: 100000 } });
+  expect(selected.region).toBeUndefined();
+  expect(selected.bbox).toBeUndefined();
+  expect(selected.mmsis).toBeUndefined();
+  expect(selected.vesselSelector?.mmsis).toBeUndefined();
+  expect(requiredAgentInputFields(selected, 'vessel_list')).toEqual([]);
+});
+
+it.each([
+  '以船舶257288000和257288001为中心半径100公里内多少船',
+  '以船舶257288000和坐标113,22为中心半径100公里内多少船',
+  '船舶25728800中心半径100公里内多少船',
+  '船舶257288000中心半径一百公里内多少船',
+])('rejects ambiguous or malformed vessel circle anchors: %s', (goal) => {
+  expect(() => dynamicTaskSelection(goal, { bbox: [-180, -80, 180, 80] }, new Date())).toThrow();
+});

@@ -112,3 +112,60 @@ it('does not claim complete focus when the source query omitted matching vessels
   expect(result.displayStatus).toBe('partial');
   expect(result.omittedCount).toBe(149);
 });
+it('keeps the resolved vessel circle first and reuses its immutable geometry and anchor observation time', async () => {
+  const region = { kind: 'circle', center: [121, 30], radiusMeters: 100000 };
+  const geometry = {
+    type: 'Polygon',
+    coordinates: [
+      [
+        [121, 30],
+        [122, 30],
+        [121, 31],
+        [121, 30],
+      ],
+    ],
+  };
+  const result = await focusFromContext(
+    {
+      task: {
+        id: 'task',
+        sessionId: 'session',
+        inputRevision: 0,
+        selection: {
+          vesselCircle: { mmsi: '257288000', radiusMeters: 100000 },
+          bbox: [-10, -10, 10, 10],
+        },
+      },
+      queryResult: {
+        inputRevision: 0,
+        total: 105,
+        selection: { region },
+        regionGeometry: geometry,
+        regionAnchor: {
+          mmsi: '257288000',
+          observedAt: '2026-10-18T00:00:00.000Z',
+          sourceId: 'anchor-source',
+        },
+        items: Array.from({ length: 100 }, (_, i) => ({
+          mmsi: String(800000000 + i),
+          latestPosition: { lon: 121, lat: 30 },
+        })),
+      },
+    } as never,
+    {
+      resolveFocus: async () => {
+        throw new Error('must reuse saved region, never resolve the anchor twice');
+      },
+    } as never,
+  );
+  expect(result.targets[0]).toMatchObject({
+    ref: { kind: 'region' },
+    geometry,
+    region,
+    observedAt: '2026-10-18T00:00:00.000Z',
+  });
+  expect(result.targets[0]?.label).toContain('257288000');
+  expect(result.targets).toHaveLength(100);
+  expect(result.omittedCount).toBe(6);
+  expect(result.displayStatus).toBe('partial');
+});

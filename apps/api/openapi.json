@@ -11298,6 +11298,22 @@
                           "selection": {
                             "type": "object",
                             "properties": {
+                              "vesselCircle": {
+                                "type": "object",
+                                "properties": {
+                                  "mmsi": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  },
+                                  "radiusMeters": {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 2000000
+                                  }
+                                },
+                                "required": ["mmsi", "radiusMeters"],
+                                "additionalProperties": false
+                              },
                               "region": {
                                 "oneOf": [
                                   {
@@ -12276,6 +12292,22 @@
                           "prefill": {
                             "type": "object",
                             "properties": {
+                              "vesselCircle": {
+                                "type": "object",
+                                "properties": {
+                                  "mmsi": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  },
+                                  "radiusMeters": {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 2000000
+                                  }
+                                },
+                                "required": ["mmsi", "radiusMeters"],
+                                "additionalProperties": false
+                              },
                               "region": {
                                 "oneOf": [
                                   {
@@ -13138,6 +13170,22 @@
                             "nullable": true,
                             "type": "object",
                             "properties": {
+                              "vesselCircle": {
+                                "type": "object",
+                                "properties": {
+                                  "mmsi": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  },
+                                  "radiusMeters": {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 2000000
+                                  }
+                                },
+                                "required": ["mmsi", "radiusMeters"],
+                                "additionalProperties": false
+                              },
                               "region": {
                                 "oneOf": [
                                   {
@@ -15231,6 +15279,22 @@
                         "selection": {
                           "type": "object",
                           "properties": {
+                            "vesselCircle": {
+                              "type": "object",
+                              "properties": {
+                                "mmsi": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                },
+                                "radiusMeters": {
+                                  "type": "number",
+                                  "minimum": 100,
+                                  "maximum": 2000000
+                                }
+                              },
+                              "required": ["mmsi", "radiusMeters"],
+                              "additionalProperties": false
+                            },
                             "region": {
                               "oneOf": [
                                 {
@@ -16208,6 +16272,22 @@
                           "prefill": {
                             "type": "object",
                             "properties": {
+                              "vesselCircle": {
+                                "type": "object",
+                                "properties": {
+                                  "mmsi": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  },
+                                  "radiusMeters": {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 2000000
+                                  }
+                                },
+                                "required": ["mmsi", "radiusMeters"],
+                                "additionalProperties": false
+                              },
                               "region": {
                                 "oneOf": [
                                   {
@@ -17070,6 +17150,22 @@
                             "nullable": true,
                             "type": "object",
                             "properties": {
+                              "vesselCircle": {
+                                "type": "object",
+                                "properties": {
+                                  "mmsi": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  },
+                                  "radiusMeters": {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 2000000
+                                  }
+                                },
+                                "required": ["mmsi", "radiusMeters"],
+                                "additionalProperties": false
+                              },
                               "region": {
                                 "oneOf": [
                                   {
@@ -19307,6 +19403,22 @@
                         "selection": {
                           "type": "object",
                           "properties": {
+                            "vesselCircle": {
+                              "type": "object",
+                              "properties": {
+                                "mmsi": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                },
+                                "radiusMeters": {
+                                  "type": "number",
+                                  "minimum": 100,
+                                  "maximum": 2000000
+                                }
+                              },
+                              "required": ["mmsi", "radiusMeters"],
+                              "additionalProperties": false
+                            },
                             "region": {
                               "oneOf": [
                                 {
@@ -20313,6 +20425,22 @@
                           "prefill": {
                             "type": "object",
                             "properties": {
+                              "vesselCircle": {
+                                "type": "object",
+                                "properties": {
+                                  "mmsi": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  },
+                                  "radiusMeters": {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 2000000
+                                  }
+                                },
+                                "required": ["mmsi", "radiusMeters"],
+                                "additionalProperties": false
+                              },
                               "region": {
                                 "oneOf": [
                                   {
@@ -21175,6 +21303,22 @@
                             "nullable": true,
                             "type": "object",
                             "properties": {
+                              "vesselCircle": {
+                                "type": "object",
+                                "properties": {
+                                  "mmsi": {
+                                    "type": "string",
+                                    "pattern": "^[1-9]\\d{8}$"
+                                  },
+                                  "radiusMeters": {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 2000000
+                                  }
+                                },
+                                "required": ["mmsi", "radiusMeters"],
+                                "additionalProperties": false
+                              },
                               "region": {
                                 "oneOf": [
                                   {
@@ -22064,6 +22208,27 @@
                       "nullable": true,
                       "type": "object",
                       "properties": {
+                        "regionAnchor": {
+                          "type": "object",
+                          "properties": {
+                            "mmsi": {
+                              "type": "string",
+                              "pattern": "^[1-9]\\d{8}$"
+                            },
+                            "observedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            },
+                            "sourceId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          },
+                          "required": ["mmsi", "observedAt", "sourceId"],
+                          "additionalProperties": false
+                        },
                         "regionGeometry": {
                           "oneOf": [
                             {
@@ -22374,6 +22539,22 @@
                         "selection": {
                           "type": "object",
                           "properties": {
+                            "vesselCircle": {
+                              "type": "object",
+                              "properties": {
+                                "mmsi": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                },
+                                "radiusMeters": {
+                                  "type": "number",
+                                  "minimum": 100,
+                                  "maximum": 2000000
+                                }
+                              },
+                              "required": ["mmsi", "radiusMeters"],
+                              "additionalProperties": false
+                            },
                             "region": {
                               "oneOf": [
                                 {
@@ -25390,6 +25571,22 @@
                       "values": {
                         "type": "object",
                         "properties": {
+                          "vesselCircle": {
+                            "type": "object",
+                            "properties": {
+                              "mmsi": {
+                                "type": "string",
+                                "pattern": "^[1-9]\\d{8}$"
+                              },
+                              "radiusMeters": {
+                                "type": "number",
+                                "minimum": 100,
+                                "maximum": 2000000
+                              }
+                            },
+                            "required": ["mmsi", "radiusMeters"],
+                            "additionalProperties": false
+                          },
                           "region": {
                             "oneOf": [
                               {
@@ -26852,6 +27049,22 @@
                         "selection": {
                           "type": "object",
                           "properties": {
+                            "vesselCircle": {
+                              "type": "object",
+                              "properties": {
+                                "mmsi": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                },
+                                "radiusMeters": {
+                                  "type": "number",
+                                  "minimum": 100,
+                                  "maximum": 2000000
+                                }
+                              },
+                              "required": ["mmsi", "radiusMeters"],
+                              "additionalProperties": false
+                            },
                             "region": {
                               "oneOf": [
                                 {
@@ -27827,6 +28040,22 @@
                         "prefill": {
                           "type": "object",
                           "properties": {
+                            "vesselCircle": {
+                              "type": "object",
+                              "properties": {
+                                "mmsi": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                },
+                                "radiusMeters": {
+                                  "type": "number",
+                                  "minimum": 100,
+                                  "maximum": 2000000
+                                }
+                              },
+                              "required": ["mmsi", "radiusMeters"],
+                              "additionalProperties": false
+                            },
                             "region": {
                               "oneOf": [
                                 {
@@ -28689,6 +28918,22 @@
                           "nullable": true,
                           "type": "object",
                           "properties": {
+                            "vesselCircle": {
+                              "type": "object",
+                              "properties": {
+                                "mmsi": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                },
+                                "radiusMeters": {
+                                  "type": "number",
+                                  "minimum": 100,
+                                  "maximum": 2000000
+                                }
+                              },
+                              "required": ["mmsi", "radiusMeters"],
+                              "additionalProperties": false
+                            },
                             "region": {
                               "oneOf": [
                                 {
@@ -30252,6 +30497,22 @@
                         "selection": {
                           "type": "object",
                           "properties": {
+                            "vesselCircle": {
+                              "type": "object",
+                              "properties": {
+                                "mmsi": {
+                                  "type": "string",
+                                  "pattern": "^[1-9]\\d{8}$"
+                                },
+                                "radiusMeters": {
+                                  "type": "number",
+                                  "minimum": 100,
+                                  "maximum": 2000000
+                                }
+                              },
+                              "required": ["mmsi", "radiusMeters"],
+                              "additionalProperties": false
+                            },
                             "region": {
                               "oneOf": [
                                 {
@@ -31809,6 +32070,22 @@
                     "selection": {
                       "type": "object",
                       "properties": {
+                        "vesselCircle": {
+                          "type": "object",
+                          "properties": {
+                            "mmsi": {
+                              "type": "string",
+                              "pattern": "^[1-9]\\d{8}$"
+                            },
+                            "radiusMeters": {
+                              "type": "number",
+                              "minimum": 100,
+                              "maximum": 2000000
+                            }
+                          },
+                          "required": ["mmsi", "radiusMeters"],
+                          "additionalProperties": false
+                        },
                         "region": {
                           "oneOf": [
                             {

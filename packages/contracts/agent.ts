@@ -79,7 +79,13 @@ export const AgentFiltersSchema = z.strictObject({
   shipType: z.number().int().min(1).max(99).optional(),
   hours: z.number().int().min(1).max(720).optional(),
 });
+export const VesselCircleRequestSchema = z.strictObject({
+  mmsi: z.string().regex(/^[1-9]\d{8}$/),
+  radiusMeters: z.number().min(100).max(2000000),
+});
+export type VesselCircleRequest = z.infer<typeof VesselCircleRequestSchema>;
 export const AgentSelectionSchema = z.strictObject({
+  vesselCircle: VesselCircleRequestSchema.optional(),
   region: SpatialRegionSchema.optional(),
   focusTargets: z.array(FocusTargetRefSchema).max(100).optional(),
   skillRef: DynamicSkillRefSchema.optional(),
@@ -202,6 +208,13 @@ export const AgentVesselItemSchema = z.object({
 });
 export type AgentVesselItem = z.infer<typeof AgentVesselItemSchema>;
 export const AgentQueryResultSchema = z.object({
+  regionAnchor: z
+    .strictObject({
+      mmsi: z.string().regex(/^[1-9]\d{8}$/),
+      observedAt: z.iso.datetime(),
+      sourceId: z.string().min(1).max(200),
+    })
+    .optional(),
   regionGeometry: GeometrySchema.optional(),
   kind: z.enum(['vessel_list', 'vessel_detail']),
   version: z.number().int().nonnegative(),

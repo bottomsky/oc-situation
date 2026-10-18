@@ -13,7 +13,7 @@ import type { AgentInputField } from '../../packages/contracts/agent';
 import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { parseCircleRegion } from '../../packages/domain/agent-focus';
+import { parseCircleSelection } from '../../packages/domain/agent-focus';
 import { Type, createModels, createInitialSystemMessage } from '@earendil-works/pi-ai';
 import { deepseekProvider } from '@earendil-works/pi-ai/providers/deepseek';
 import { z } from 'zod';
@@ -401,13 +401,20 @@ export async function executeDynamicSkill(
     await check();
     let circle;
     try {
-      circle = parseCircleRegion(context.task.goal);
+      circle = parseCircleSelection(context.task.goal);
     } catch {
       fail('circle_scope_invalid');
     }
     if (
-      circle &&
-      (!isDeepStrictEqual(context.task.selection?.region, circle) || context.task.selection?.bbox)
+      (context.task.selection?.vesselCircle &&
+        (context.task.selection.region || context.task.selection.bbox)) ||
+      (circle &&
+        ((circle.vesselCircle
+          ? !isDeepStrictEqual(context.task.selection?.vesselCircle, circle.vesselCircle) ||
+            !!context.task.selection?.region
+          : !isDeepStrictEqual(context.task.selection?.region, circle.region) ||
+            !!context.task.selection?.vesselCircle) ||
+          context.task.selection?.bbox))
     )
       fail('circle_scope_mismatch');
     const target = dynamicGoalProjection(context.task.goal, context.task.selection?.purpose);
@@ -498,7 +505,7 @@ export async function executeDynamicSkill(
     );
     const missing = [...required].filter((field) =>
       field === 'region'
-        ? !input.bbox && (requiresBbox || !input.region)
+        ? !input.bbox && (requiresBbox || (!input.region && !input.vesselCircle))
         : field === 'time'
           ? !input.timeRange || input.heatmapTimeUnclear || input.tracksTimeUnclear
           : field === 'vessel_selector'
@@ -656,15 +663,17 @@ export async function executeDynamicSkill(
       status: 'failed',
       errorCode: code === 'budget' ? 'budget_exhausted' : code,
       error:
-        code === 'circle_scope_mismatch'
-          ? '本任务保存的范围与原文圆形范围不一致，请点击“重新尝试”按原坐标和半径执行。'
-          : code === 'circle_scope_invalid'
-            ? '圆形范围不明确，请重新发送唯一有效的经度、纬度及半径。'
-            : code === 'ui_unknown'
-              ? '展示回执未确认，请核对当前页面后发起新尝试。'
-              : code === 'candidate_limit'
-                ? '两次技能候选均未通过完整目标校验，请补充目标或调整条件。'
-                : '本次技能执行未完成，已保存结果可在任务记录查看。',
+        code === 'anchor_position_unavailable'
+          ? '指定船舶在当前船位窗口内无有效船位，无法解析圆心。请确认 MMSI 或调整船位时间窗口后重试。'
+          : code === 'circle_scope_mismatch'
+            ? '本任务保存的范围与原文圆形范围不一致，请点击“重新尝试”按原坐标和半径执行。'
+            : code === 'circle_scope_invalid'
+              ? '圆形范围不明确，请重新发送唯一有效的经纬度或中心船舶 MMSI 及半径。'
+              : code === 'ui_unknown'
+                ? '展示回执未确认，请核对当前页面后发起新尝试。'
+                : code === 'candidate_limit'
+                  ? '两次技能候选均未通过完整目标校验，请补充目标或调整条件。'
+                  : '本次技能执行未完成，已保存结果可在任务记录查看。',
     });
   } finally {
     clearTimeout(timer);

@@ -35,9 +35,11 @@ export async function focusFromContext(
     context.tracksResult?.inputRevision === undefined
       ? context.tracksResult
       : undefined;
+  const region = query?.selection?.region ?? context.task.selection?.region;
   const refs: FocusTargetRef[] = context.task.selection?.focusTargets?.length
     ? context.task.selection.focusTargets
     : [
+        ...(region ? [{ kind: 'region' as const, id: 'task-region' }] : []),
         ...(tracks?.tracks.map((t) => ({ kind: 'track' as const, id: t.mmsi })) ?? []),
         ...(query?.items.map((v) => ({ kind: 'vessel' as const, id: v.mmsi })) ?? []),
         ...(context.intelligenceResult?.inputRevision === revision
@@ -46,13 +48,24 @@ export async function focusFromContext(
               .map((e) => ({ kind: 'intelligence' as const, id: e.event.id }))
           : []),
         ...(context.results?.map((r) => ({ kind: 'vessel' as const, id: r.mmsi })) ?? []),
-        ...(context.task.selection?.region ? [{ kind: 'region' as const, id: 'task-region' }] : []),
       ];
   const unique = [...new Map(refs.map((ref) => [`${ref.kind}:${ref.id}`, ref])).values()];
   const targets: FocusTargetSnapshot[] = [],
     missing: FocusTargetRef[] = [];
   for (const ref of unique.slice(0, FOCUS_TARGET_LIMIT)) {
     let snapshot: FocusTargetSnapshot | null = null;
+    if (ref.kind === 'region' && region && query?.regionGeometry) {
+      const anchor = query.regionAnchor;
+      snapshot = {
+        ref,
+        label: anchor ? `以船舶 ${anchor.mmsi} 船位为中心的圆形区域` : '本轮区域',
+        geometry: query.regionGeometry,
+        region,
+        ...(anchor
+          ? { observedAt: anchor.observedAt, source: anchor.sourceId }
+          : { source: 'query-region-snapshot' }),
+      };
+    }
     if (ref.kind === 'vessel') {
       const vessel = query?.items.find((v) => v.mmsi === ref.id);
       const p = vessel?.latestPosition;
@@ -115,7 +128,18 @@ export async function focusFromContext(
           };
       }
     }
-    const resolved = snapshot ?? (await ports.resolveFocus?.(ref, context)) ?? null;
+    const resolved =
+      snapshot ??
+      (await ports.resolveFocus?.(
+        ref,
+        region && ref.kind === 'region'
+          ? {
+              ...context,
+              task: { ...context.task, selection: { ...context.task.selection, region } },
+            }
+          : context,
+      )) ??
+      null;
     if (Array.isArray(resolved)) targets.push(...resolved);
     else if (resolved) targets.push(resolved);
     else missing.push(ref);

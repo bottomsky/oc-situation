@@ -1,5 +1,6 @@
 import { CircleRegionSchema, SpatialBboxSchema, type CircleRegion } from '../contracts/spatial';
 import type { IntelligenceGeometry } from '../contracts/intelligence-spatial';
+import { VesselCircleRequestSchema, type VesselCircleRequest } from '../contracts/agent';
 export function focusCoordinates(geometry: IntelligenceGeometry): [number, number][][] {
   switch (geometry.type) {
     case 'Point':
@@ -105,6 +106,10 @@ export function bboxFocusGeometry(input: [number, number, number, number]): Inte
 
 const circleNumber = '[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)';
 const circleFocusPrefix = /^(?:请(?:帮我)?|帮我)?\s*(?:聚焦|定位|关注|聚集)(?:到)?\s*/;
+export interface CircleSelection {
+  region?: CircleRegion;
+  vesselCircle?: VesselCircleRequest;
+}
 
 function circleRequest(goal: string) {
   if (
@@ -112,7 +117,7 @@ function circleRequest(goal: string) {
     !(
       /方圆|半径/.test(goal) &&
       (circleFocusPrefix.test(goal.trim()) ||
-        /坐标|点位|经度|纬度|\d\s*[,，]\s*[+\-\d.]/.test(goal))
+        /坐标|点位|经度|纬度|\d\s*[,，]\s*[+\-\d.]|(?:船舶?|MMSI)\s*[:：]?\s*\d|中心/.test(goal))
     )
   )
     return undefined;
@@ -136,34 +141,53 @@ function circleRequest(goal: string) {
       new RegExp(`(?:纬度|lat(?:itude)?)\\s*[:：]?\\s*(${circleNumber})(?![\\w.+-])`, 'gi'),
     ),
   ];
+  const vesselIds = /船|MMSI|中心|周围|附近/i.test(goal)
+    ? [...goal.matchAll(/(?<![\d.])([1-9]\d{8})(?![\d.])/g)]
+    : [];
+  const vesselCenter =
+    vesselIds.length === 1 && !pairs.length && !longitudes.length && !latitudes.length;
   if (
     radii.length !== 1 ||
     (goal.match(/方圆|半径/g)?.length ?? 0) !== 1 ||
     !(
-      (pairs.length === 1 && !longitudes.length && !latitudes.length) ||
-      (!pairs.length && longitudes.length === 1 && latitudes.length === 1)
+      vesselCenter ||
+      (!vesselIds.length &&
+        ((pairs.length === 1 && !longitudes.length && !latitudes.length) ||
+          (!pairs.length && longitudes.length === 1 && latitudes.length === 1)))
     ) ||
     new RegExp(`${circleNumber}\\s*[,，]\\s*${circleNumber}\\s*[,，]\\s*${circleNumber}`).test(goal)
   )
     throw new Error('circle_requires_one_center_and_radius');
   const pair = pairs[0],
     radius = radii[0]!;
-  const region = CircleRegionSchema.parse({
-    kind: 'circle',
-    center: pair
-      ? [Number(pair[1]), Number(pair[2])]
-      : [Number(longitudes[0]![1]), Number(latitudes[0]![1])],
-    radiusMeters: Number(radius[1]) * (radius[2] === '米' ? 1 : 1000),
-  });
+  const radiusMeters = Number(radius[1]) * (radius[2] === '米' ? 1 : 1000);
+  const selection: CircleSelection = vesselCenter
+    ? {
+        vesselCircle: VesselCircleRequestSchema.parse({ mmsi: vesselIds[0]![1], radiusMeters }),
+      }
+    : {
+        region: CircleRegionSchema.parse({
+          kind: 'circle',
+          center: pair
+            ? [Number(pair[1]), Number(pair[2])]
+            : [Number(longitudes[0]![1]), Number(latitudes[0]![1])],
+          radiusMeters,
+        }),
+      };
   let remaining = goal;
   for (const match of [radius, ...pairs, ...longitudes, ...latitudes])
     remaining = remaining.replace(match[0], '');
-  return { region, remaining };
+  return { selection, remaining };
+}
+
+/** Persist a coordinate circle or a vessel anchor reference; only the host resolves vessel positions. */
+export function parseCircleSelection(goal: string): CircleSelection | undefined {
+  return circleRequest(goal)?.selection;
 }
 
 /** A single explicit longitude/latitude pair and radius; malformed requests never inherit the viewport. */
 export function parseCircleRegion(goal: string): CircleRegion | undefined {
-  return circleRequest(goal)?.region;
+  return circleRequest(goal)?.selection.region;
 }
 
 /** Only the standalone focus command accepts 聚集 as a common typo; analysis retains its own intent. */
@@ -172,7 +196,7 @@ export function isCircleFocusRequest(goal: string): boolean {
   try {
     const parsed = circleRequest(goal);
     return (
-      !!parsed &&
+      !!parsed?.selection.region &&
       parsed.remaining
         .trim()
         .replace(circleFocusPrefix, '')

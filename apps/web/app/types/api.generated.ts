@@ -6505,6 +6505,10 @@ export interface operations {
                 | 'ui_control'
                 | 'skill';
               selection?: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -6717,6 +6721,10 @@ export interface operations {
                 | 'missing_vessel_selector'
                 | 'ambiguous_skill';
               prefill: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -6896,6 +6904,10 @@ export interface operations {
               /** @enum {string} */
               status: 'pending' | 'answered' | 'cancelled' | 'superseded';
               response: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -7395,6 +7407,10 @@ export interface operations {
                 | 'ui_control'
                 | 'skill';
               selection?: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -7607,6 +7623,10 @@ export interface operations {
                 | 'missing_vessel_selector'
                 | 'ambiguous_skill';
               prefill: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -7786,6 +7806,10 @@ export interface operations {
               /** @enum {string} */
               status: 'pending' | 'answered' | 'cancelled' | 'superseded';
               response: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -8297,6 +8321,10 @@ export interface operations {
                 | 'ui_control'
                 | 'skill';
               selection?: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -8520,6 +8548,10 @@ export interface operations {
                 | 'missing_vessel_selector'
                 | 'ambiguous_skill';
               prefill: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -8699,6 +8731,10 @@ export interface operations {
               /** @enum {string} */
               status: 'pending' | 'answered' | 'cancelled' | 'superseded';
               response: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -8882,6 +8918,12 @@ export interface operations {
             }[];
             snapshotCursor: string;
             queryResult: {
+              regionAnchor?: {
+                mmsi: string;
+                /** Format: date-time */
+                observedAt: string;
+                sourceId: string;
+              };
               regionGeometry?:
                 | {
                     /** @enum {string} */
@@ -8936,6 +8978,10 @@ export interface operations {
               /** Format: date-time */
               asOf: string;
               selection: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -9756,6 +9802,10 @@ export interface operations {
               action: 'accept';
               inputRevision: number;
               values: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -10120,6 +10170,10 @@ export interface operations {
                 | 'ui_control'
                 | 'skill';
               selection?: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -10332,6 +10386,10 @@ export interface operations {
                 | 'missing_vessel_selector'
                 | 'ambiguous_skill';
               prefill: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -10511,6 +10569,10 @@ export interface operations {
               /** @enum {string} */
               status: 'pending' | 'answered' | 'cancelled' | 'superseded';
               response: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -10924,6 +10986,10 @@ export interface operations {
                 | 'ui_control'
                 | 'skill';
               selection?: {
+                vesselCircle?: {
+                  mmsi: string;
+                  radiusMeters: number;
+                };
                 region?:
                   | {
                       /** @enum {string} */
@@ -11338,6 +11404,10 @@ export interface operations {
               | 'ui_control'
               | 'skill';
             selection?: {
+              vesselCircle?: {
+                mmsi: string;
+                radiusMeters: number;
+              };
               region?:
                 | {
                     /** @enum {string} */

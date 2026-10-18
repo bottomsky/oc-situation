@@ -1,4 +1,4 @@
-import { parseCircleRegion } from './agent-focus';
+import { parseCircleSelection } from './agent-focus';
 import { parseBusinessRequest } from './agent-business';
 import type { AgentIntent, AgentSelection, AgentPurpose } from '../contracts/agent';
 import { deriveAgentIntent } from './agent-intents';
@@ -15,9 +15,15 @@ export function dynamicTaskSelection(
   now: Date,
 ): AgentSelection {
   const output = { ...selection };
-  const circle = parseCircleRegion(goal);
+  const circle = parseCircleSelection(goal);
   if (circle) {
-    output.region = circle;
+    if (circle.region) output.region = circle.region;
+    if (circle.vesselCircle) {
+      output.vesselCircle = circle.vesselCircle;
+      delete output.region;
+      delete output.mmsis;
+      delete output.vesselSelector;
+    } else delete output.vesselCircle;
     delete output.bbox;
   }
   if (!output.timeRange || /最近|过去|昨天|今天|小时|天|时间|时段|\d{4}-\d{2}-\d{2}/.test(goal)) {
@@ -34,7 +40,7 @@ export function dynamicTaskSelection(
   }
   const mmsis = [
     ...new Set([...goal.matchAll(/(?<![\d.])([1-9]\d{8})(?![\d.])/g)].map((match) => match[1]!)),
-  ];
+  ].filter((mmsi) => mmsi !== circle?.vesselCircle?.mmsi);
   const selector = { ...output.vesselSelector };
   const types = new Set<number>();
   for (const [pattern, first, last] of [
@@ -77,7 +83,10 @@ export function hasUnresolvedDynamicSelector(goal: string, selection: AgentSelec
   return (
     (/型号|[A-Za-z0-9-]{2,}型(?:船舶|船|舰)/.test(goal) && !selector?.model) ||
     (/船名|名称|呼号|IMO/i.test(goal) && !selector?.query) ||
-    (/MMSI/i.test(goal) && !selector?.mmsis?.length && !selection.mmsis?.length)
+    (/MMSI/i.test(goal) &&
+      !selector?.mmsis?.length &&
+      !selection.mmsis?.length &&
+      !selection.vesselCircle)
   );
 }
 
@@ -109,7 +118,8 @@ export function dynamicGoalProjection(goal: string, purpose?: AgentPurpose): Dyn
     /筛选|找出|列出|船舶列表|哪些船|多少船|(?:查询|查看).{0,12}(?:船舶|货船|油轮).{0,4}(?:并|再|然后)/.test(
       goal,
     ) ||
-    (!chartRequest && /(?:查询|查看).{0,12}(?:船舶|货船|油轮|列表)|当前区域货船/.test(goal))
+    (!chartRequest && /(?:查询|查看).{0,12}(?:船舶|货船|油轮|列表)|当前区域货船/.test(goal)) ||
+    deriveAgentIntent(goal).intent === 'vessel_list'
   )
     operations.push('query_vessels');
   if (/航线|历史轨迹|船舶轨迹|vessel.?tracks/i.test(goal)) operations.push('query_vessel_tracks');

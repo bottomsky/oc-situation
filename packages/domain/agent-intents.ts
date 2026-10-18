@@ -1,5 +1,5 @@
 import { isUiIntent } from './agent-ui-intent';
-import { isCircleFocusRequest } from './agent-focus';
+import { isCircleFocusRequest, parseCircleSelection } from './agent-focus';
 import { parseBusinessRequest } from './agent-business';
 import { isIntelligenceQuestion } from './intelligence-intent';
 import type { TopicDefinitionId } from '../contracts/topics';
@@ -66,6 +66,16 @@ export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?
           ? 'route_manage'
           : 'route_plan',
     };
+  try {
+    if (
+      parseCircleSelection(goal)?.vesselCircle &&
+      /多少|哪些|数量|船数|统计|查询|查看|列出/.test(goal) &&
+      !/分析|研判|轨迹|热力|航线/.test(goal)
+    )
+      return { intent: 'vessel_list', purpose: 'vessel_list' };
+  } catch {
+    /* Submission validates malformed circle requests through the public input boundary. */
+  }
   if (
     /^(?:请)?(?:(?:关注|定位)(?:选中|这些|该|这|船|事件|航线|情报|区域|MMSI|\d)|聚焦(?:选中的?)?(?:事件|计划航线|情报))/i.test(
       goal.trim(),
@@ -166,7 +176,7 @@ export function requiredAgentInputFields(
       actual === 'ais_heatmap' ||
       actual === 'vessel_tracks') &&
     !selection.bbox &&
-    !(actual === 'vessel_list' && selection.region)
+    !(actual === 'vessel_list' && (selection.region || selection.vesselCircle))
   )
     fields.push('region');
   if (actual === 'vessel_detail' && !selection.mmsis?.length) fields.push('vessels');

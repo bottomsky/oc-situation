@@ -1,4 +1,4 @@
-import { isCircleFocusRequest, parseCircleRegion } from '../domain/agent-focus';
+import { isCircleFocusRequest, parseCircleSelection } from '../domain/agent-focus';
 import { isDeepStrictEqual } from 'node:util';
 import { parseBusinessRequest } from '../domain/agent-business';
 import { vesselTracksSelection } from '../domain/vessel-tracks-intent';
@@ -135,15 +135,31 @@ export class AgentInputError extends Error {
     super(message);
   }
 }
-function validatedCircleRegion(goal: string) {
+function validatedCircleSelection(goal: string) {
   try {
-    return parseCircleRegion(goal);
+    return parseCircleSelection(goal);
   } catch {
     throw new AgentInputError(
       'invalid_input',
-      '请提供唯一有效的经度、纬度和 0.1～2000 公里半径，例如：聚焦 113.8751,22.0843 方圆100公里。',
+      '请提供唯一有效的经纬度或中心船舶 MMSI，以及 0.1～2000 公里半径；例如：以船舶257288000为中心，半径100公里内多少船舶。',
     );
   }
+}
+/** Task inputs retain one center; resolved query snapshots may contain both representations. */
+function validateTaskCircleScope(goal: string, selection: AgentSelection) {
+  const requested = validatedCircleSelection(goal);
+  if (
+    (selection.vesselCircle && (selection.region || selection.bbox)) ||
+    (requested &&
+      (selection.bbox ||
+        (requested.vesselCircle
+          ? !isDeepStrictEqual(selection.vesselCircle, requested.vesselCircle) || !!selection.region
+          : !isDeepStrictEqual(selection.region, requested.region) || !!selection.vesselCircle)))
+  )
+    throw new AgentInputError(
+      'invalid_input',
+      '补充条件应保留原问题的唯一圆心和半径；如需更改，请发送新问题。',
+    );
 }
 /** Builtin and dynamically composed map tasks share the public input error boundary. */
 export function bindAgentMapSelection(goal: string, selection: AgentSelection): AgentSelection {
@@ -476,7 +492,8 @@ export async function submitAgentMessage(
       };
     }
     const id = randomUUID();
-    const circleRegion = validatedCircleRegion(input.content);
+    const circleInput = validatedCircleSelection(input.content);
+    const circleRegion = circleInput?.region;
     const useDynamic = shouldUseDynamicSkill(input.content, {
       enabled: process.env.AGENT_DYNAMIC_SKILLS_ENABLED === 'true',
       skillRef: input.skillRef,
@@ -660,6 +677,17 @@ export async function submitAgentMessage(
       };
     }
     if (circleRegion && selection.region?.kind === 'circle') delete selection.bbox;
+    if (circleInput?.vesselCircle) {
+      selection.vesselCircle = circleInput.vesselCircle;
+      delete selection.region;
+      delete selection.bbox;
+      delete selection.mmsis;
+      if (selection.vesselSelector) {
+        delete selection.vesselSelector.mmsis;
+        if (!Object.keys(selection.vesselSelector).length) delete selection.vesselSelector;
+      }
+      delete selection.focusTargets;
+    }
     if (derived.intent === 'vessel_detail') {
       const explicit = input.content.match(/\b\d{9}\b/g);
       if (explicit) selection.mmsis = [...new Set(explicit)].slice(0, 100);
@@ -1600,6 +1628,7 @@ export async function respondAgentInput(
           delete selection.intelligenceQuery.locationKeyword;
         } else if (values.intelligenceQuery?.bbox) selection.bbox = values.intelligenceQuery.bbox;
       }
+      validateTaskCircleScope(String(task.goal), selection);
       selection = canonicalSelection(selection);
       if (selection.mmsis?.length) {
         const found = await client.query('SELECT mmsi FROM vessels WHERE mmsi=ANY($1::text[])', [
@@ -1791,7 +1820,8 @@ export async function retryAgentTask(
       : undefined;
     if (uiBinding && !retryUiClient) throw new AgentInputError('conflict', '页面绑定已失效');
     const derived = deriveAgentIntent(String(source.goal));
-    const circleRegion = validatedCircleRegion(String(source.goal));
+    const circleInput = validatedCircleSelection(String(source.goal));
+    const circleRegion = circleInput?.region;
     const circleFocus = isCircleFocusRequest(String(source.goal));
     let selection = canonicalSelection({
       ...(source.bbox ? { bbox: source.bbox as AgentSelection['bbox'] } : {}),
@@ -1800,28 +1830,48 @@ export async function retryAgentTask(
       ...(source.selection as AgentSelection),
     });
     const repairCircle =
-      !!circleRegion &&
+      !!circleInput &&
       !/^(create|update)_/.test(
         parseBusinessRequest(String(source.goal), selection.focusTargets)?.toolId ?? '',
       ) &&
-      (!isDeepStrictEqual(selection.region, circleRegion) ||
+      ((circleInput.vesselCircle
+        ? !isDeepStrictEqual(selection.vesselCircle, circleInput.vesselCircle) ||
+          !!selection.region ||
+          !!selection.mmsis?.length ||
+          !!selection.vesselSelector?.mmsis?.length
+        : !isDeepStrictEqual(selection.region, circleRegion) || !!selection.vesselCircle) ||
         !!selection.bbox ||
         (circleFocus && (source.intent !== 'map_focus' || !!selection.purpose)));
     if (repairCircle) {
       // Changed scope starts a fresh read; legacy global query artifacts cannot be restored.
-      selection = circleFocus
-        ? canonicalSelection({ region: circleRegion, timeRange: selection.timeRange })
-        : canonicalSelection({ ...selection, region: circleRegion, bbox: undefined });
+      selection = circleInput?.vesselCircle
+        ? canonicalSelection({
+            vesselCircle: circleInput.vesselCircle,
+            timeRange: selection.timeRange,
+            filters: selection.filters,
+            ...(derived.purpose ? { purpose: derived.purpose } : {}),
+          })
+        : circleFocus
+          ? canonicalSelection({ region: circleRegion, timeRange: selection.timeRange })
+          : canonicalSelection({
+              ...selection,
+              region: circleRegion,
+              bbox: undefined,
+              vesselCircle: undefined,
+            });
     }
+    const vesselCircleQuery = !!circleInput?.vesselCircle && derived.intent === 'vessel_list';
     const intent = circleFocus
       ? 'map_focus'
-      : source.intent === 'skill'
-        ? 'skill'
-        : selection.purpose
-          ? derivePurposeIntent(selection.purpose)
-          : source.intent === 'unresolved'
-            ? derived.intent
-            : source.intent;
+      : vesselCircleQuery
+        ? 'vessel_list'
+        : source.intent === 'skill'
+          ? 'skill'
+          : selection.purpose
+            ? derivePurposeIntent(selection.purpose)
+            : source.intent === 'unresolved'
+              ? derived.intent
+              : source.intent;
     if (intent === 'skill' && process.env.AGENT_DYNAMIC_SKILLS_ENABLED !== 'true')
       throw new AgentInputError('forbidden', '动态技能执行尚未启用');
     const id = randomUUID();
@@ -1846,7 +1896,7 @@ export async function retryAgentTask(
           taskId,
           source.input_revision,
           source.result_version,
-          JSON.stringify(circleFocus ? null : (source.skill_ref ?? null)),
+          JSON.stringify(circleFocus || vesselCircleQuery ? null : (source.skill_ref ?? null)),
           skillVersionPolicy,
         ],
       )
