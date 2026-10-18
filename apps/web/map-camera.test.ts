@@ -1,5 +1,26 @@
 import { expect, it, vi } from 'vitest';
 import { cameraBounds, cameraPadding, createMapCamera } from './app/utils/mapCamera';
+it('短图区为输入胶囊保留真实底部空间，减少上下装饰留白', () => {
+  const padding = cameraPadding({ left: 0, right: 378, top: 280, bottom: 568 }, [
+    { left: 20, right: 358, top: 444, bottom: 504, gap: 8 },
+  ]);
+  expect(padding.top).toBe(8);
+  expect(padding.bottom).toBe(132);
+  expect(288 - padding.top - padding.bottom).toBe(148);
+});
+it('600px右侧drawer按身份保留真实左侧空间，高遮挡不虚增可用宽度', () => {
+  const view = { left: 5, right: 595, top: 200, bottom: 800 };
+  const padding = cameraPadding(view, [
+    { side: 'right', left: 256, right: 596, top: 170, bottom: 800 },
+  ]);
+  expect(padding.left).toBe(24);
+  expect(padding.right).toBe(363);
+  expect(590 - padding.left - padding.right).toBe(203);
+  const blocked = cameraPadding({ left: 0, right: 390, top: 0, bottom: 600 }, [
+    { side: 'right', left: 24, right: 390, top: 0, bottom: 600 },
+  ]);
+  expect(390 - blocked.left - blocked.right).toBeCloseTo(1);
+});
 
 it('跨日期线范围使用短弧，并为实际覆盖区域保留可用空间', () => {
   expect(cameraBounds([179, 10, -179, 20])).toEqual([

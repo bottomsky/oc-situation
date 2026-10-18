@@ -4,9569 +4,16115 @@
  */
 
 export interface paths {
-    "/api/v1/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create an eight hour session; Origin required */
-        post: operations["AuthController_login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read current session and CSRF token */
-        get: operations["AuthController_me"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke current session */
-        post: operations["AuthController_logout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Administrative user directory */
-        get: operations["UsersController_list"];
-        put?: never;
-        /** Create an account with Argon2id password hashing */
-        post: operations["UsersController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/users/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Change role, disable account or rotate password and revoke sessions */
-        put: operations["UsersController_update"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/vessels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search vessel static fields with MMSI cursor */
-        get: operations["VesselsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/vessels/{mmsi}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Latest position, static fields and field provenance */
-        get: operations["VesselsController_detail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/vessels/{mmsi}/track": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Bounded native observations grouped by gaps and date line */
-        get: operations["VesselsController_track"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/map/heatmap": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Historical AIS unique-vessel heatmap */
-        get: operations["MapController_heatmap"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/map": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Current vessel positions or server side spatial grid */
-        get: operations["MapController_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/map/vessel-tracks/query": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Bounded historical vessel tracks selected by recorded vessel information */
-        post: operations["VesselTracksController_query"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Source configurations and receipt health */
-        get: operations["SourcesController_list"];
-        put?: never;
-        /** Create authorized source configuration */
-        post: operations["SourcesController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sources/{sourceId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace source configuration */
-        put: operations["SourcesController_update"];
-        post?: never;
-        /** Delete a source with no referenced jobs or runs */
-        delete: operations["SourcesController_remove"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Scheduled and manual job configurations */
-        get: operations["JobsController_list"];
-        put?: never;
-        /** Create a job; null schedule means manual dispatch */
-        post: operations["JobsController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/jobs/{jobId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace job configuration */
-        put: operations["JobsController_update"];
-        post?: never;
-        /** Delete job without referenced run history */
-        delete: operations["JobsController_remove"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/jobs/{jobId}/run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Queue durable run and outbox command */
-        post: operations["JobsController_run"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/jobs/{jobId}/pause": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pause future job scheduling */
-        post: operations["JobsController_pause"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/jobs/{jobId}/resume": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resume future job scheduling */
-        post: operations["JobsController_resume"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read durable worker run states */
-        get: operations["RunsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/runs/{runId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read one worker run state */
-        get: operations["RunsController_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/quality": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Committed raw archive minute bucket counts (up to 60s lag) and independent normalized event counts */
-        get: operations["QualityController_quality"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/quarantine": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Paged rejected normalized events for a bounded reception range */
-        get: operations["QualityController_quarantine"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/captures/{captureId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read retained raw capture safely as JSON; source/time locates archive */
-        get: operations["QualityController_capture"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/replays": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read archive replay records with associated runId */
-        get: operations["ReplayController_list"];
-        put?: never;
-        /** Queue a retained archive replay using cleaning version 1 */
-        post: operations["ReplayController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Real dependency and source health */
-        get: operations["SystemController_health"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/ready": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Readiness returns 503 when a dependency is unavailable */
-        get: operations["SystemController_ready"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/system/metrics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Prometheus process metrics with no credentials or session labels */
-        get: operations["SystemController_getMetrics"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search locally stored intelligence with versioned source evidence */
-        get: operations["IntelligenceController_search"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/sources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Intelligence source configurations and polling status */
-        get: operations["IntelligenceController_sources"];
-        put?: never;
-        /** Register authorized intelligence source */
-        post: operations["IntelligenceController_createSource"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/sources/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace intelligence source configuration */
-        put: operations["IntelligenceController_updateSource"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/archives": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Raw intelligence archives awaiting operator structuring */
-        get: operations["IntelligenceController_archives"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/archives/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read immutable raw intelligence as inert text */
-        get: operations["IntelligenceController_archive"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Versioned intelligence evidence */
-        get: operations["IntelligenceController_events"];
-        put?: never;
-        /** Ingest structured intelligence with immutable raw archive */
-        post: operations["IntelligenceController_createEvent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/events/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read immutable evidence, current relations and audit history */
-        get: operations["IntelligenceController_eventDetail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/events/{id}/review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Record evidence review without altering source text */
-        post: operations["IntelligenceController_reviewEvent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/events/{id}/relations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Append evidence relation */
-        post: operations["IntelligenceController_addRelation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/relations/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Append relation revision */
-        put: operations["IntelligenceController_editRelation"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/relations/{id}/review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Record relation confirmation or rejection */
-        post: operations["IntelligenceController_reviewRelation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/objects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search geographical objects and aliases */
-        get: operations["IntelligenceController_objects"];
-        put?: never;
-        /** Create geographical object */
-        post: operations["IntelligenceController_createObject"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/objects/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update geographical object */
-        put: operations["IntelligenceController_editObject"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/objects/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Atomically import GeoJSON objects */
-        post: operations["IntelligenceController_importObjects"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/plot": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Plot selected evidence versions */
-        post: operations["IntelligenceController_plot"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/intelligence/plot-set": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read personal plot version references */
-        get: operations["IntelligenceController_plotSet"];
-        /** Save personal plot version references */
-        put: operations["IntelligenceController_savePlotSet"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/topics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Registered analysis definitions and independently managed instances */
-        get: operations["TopicsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/topics/instances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a durable topic instance; enabling schedules historical warmup */
-        post: operations["TopicsController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/topics/instances/{id}/state": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Enable or disable a topic and fence earlier generation work */
-        put: operations["TopicsController_state"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/topics/instances/{id}/run": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Queue an idempotent durable manual analysis run */
-        post: operations["TopicsController_run"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/topics/instances/{id}/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Recent topic execution history */
-        get: operations["TopicsController_runs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/topics/runs/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Run snapshot including exact input dataset and algorithm configuration */
-        get: operations["TopicsController_runDetail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/topics/instances/{id}/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update configuration and restart historical warmup with a fenced generation */
-        put: operations["TopicsController_config"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analysis/results": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Latest analysis results including revisions and withdrawals */
-        get: operations["AnalysisController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analysis/results/{id}/revisions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Immutable result revisions with original AIS and document evidence */
-        get: operations["AnalysisController_revisions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analysis/results/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Result with immutable evidence snapshots, rules and limitations */
-        get: operations["AnalysisController_detail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/analysis/feed": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Replay durable analysis notifications after a cursor */
-        get: operations["AnalysisController_feed"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Agent availability and bounded execution defaults */
-        get: operations["AgentController_config"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List sessions owned by the current user */
-        get: operations["AgentController_sessions"];
-        put?: never;
-        /** Create a private analysis conversation */
-        post: operations["AgentController_createSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/sessions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read a private conversation and its tasks */
-        get: operations["AgentController_session"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/sessions/{id}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Submit an idempotent message and queue one independent analysis */
-        post: operations["AgentController_message"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/tasks/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read owned task, immutable results and tool ledger */
-        get: operations["AgentController_task"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/tasks/{id}/input-requests/{requestId}/responses": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Answer a persisted input request and resume the same task */
-        post: operations["AgentController_respond"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/tasks/{id}/retry": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a visible new attempt with confirmed inputs and an independent budget */
-        post: operations["AgentController_retry"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/tasks/{id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cancel an owned task and fence late results */
-        post: operations["AgentController_cancel"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/sessions/{id}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Recover persisted conversation events after a cursor */
-        get: operations["AgentController_events"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/ui/clients": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Register this browser instance for semantic UI control */
-        post: operations["AgentUiController_register"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/ui/clients/{id}/state": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Publish semantic state and renew the current page lease */
-        put: operations["AgentUiController_state"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/ui/clients/{id}/commands": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Discover pending UI commands for this page only */
-        get: operations["AgentUiController_commands"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/ui/commands/{id}/claim": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Atomically claim a UI command */
-        post: operations["AgentUiController_claim"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/ui/commands/{id}/receipts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Persist execution acknowledgement and verified postcondition */
-        post: operations["AgentUiController_receipt"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/skills": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read the current account private skill catalog, including disabled history */
-        get: operations["SkillsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/skills/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read one owned skill and all immutable versions */
-        get: operations["SkillsController_detail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/skills/{id}/versions/{version}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read an owned immutable skill version */
-        get: operations["SkillsController_version"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/skills/publish": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Validate and idempotently publish a private skill version */
-        post: operations["SkillsController_publish"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/skills/{id}/state": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Enable or disable an owned skill with catalog revision protection */
-        put: operations["SkillsController_state"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/skills/{id}/versions/{version}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Activate one non-revoked private skill version */
-        post: operations["SkillsController_activate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/agent/skills/{id}/versions/{version}/revoke": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke an owned version while preserving its task history */
-        post: operations["SkillsController_revoke"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+  '/api/v1/auth/login': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create an eight hour session; Origin required */
+    post: operations['AuthController_login'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/auth/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read current session and CSRF token */
+    get: operations['AuthController_me'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/auth/logout': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Revoke current session */
+    post: operations['AuthController_logout'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Administrative user directory */
+    get: operations['UsersController_list'];
+    put?: never;
+    /** Create an account with Argon2id password hashing */
+    post: operations['UsersController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/users/{userId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Change role, disable account or rotate password and revoke sessions */
+    put: operations['UsersController_update'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/vessels': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search vessel static fields with MMSI cursor */
+    get: operations['VesselsController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/vessels/positions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Batch latest valid vessel positions within retained recent 30 days */
+    get: operations['VesselsController_positions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/vessels/{mmsi}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Latest position, static fields and field provenance */
+    get: operations['VesselsController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/vessels/{mmsi}/track': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Bounded native observations grouped by gaps and date line */
+    get: operations['VesselsController_track'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/map/heatmap': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Historical AIS unique-vessel heatmap */
+    get: operations['MapController_heatmap'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/map': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current vessel positions or server side spatial grid */
+    get: operations['MapController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/map/vessel-tracks/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Bounded historical vessel tracks selected by recorded vessel information */
+    post: operations['VesselTracksController_query'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/sources': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Source configurations and receipt health */
+    get: operations['SourcesController_list'];
+    put?: never;
+    /** Create authorized source configuration */
+    post: operations['SourcesController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/sources/{sourceId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Replace source configuration */
+    put: operations['SourcesController_update'];
+    post?: never;
+    /** Delete a source with no referenced jobs or runs */
+    delete: operations['SourcesController_remove'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/jobs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Scheduled and manual job configurations */
+    get: operations['JobsController_list'];
+    put?: never;
+    /** Create a job; null schedule means manual dispatch */
+    post: operations['JobsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/jobs/{jobId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Replace job configuration */
+    put: operations['JobsController_update'];
+    post?: never;
+    /** Delete job without referenced run history */
+    delete: operations['JobsController_remove'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/jobs/{jobId}/run': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Queue durable run and outbox command */
+    post: operations['JobsController_run'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/jobs/{jobId}/pause': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Pause future job scheduling */
+    post: operations['JobsController_pause'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/jobs/{jobId}/resume': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Resume future job scheduling */
+    post: operations['JobsController_resume'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/runs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read durable worker run states */
+    get: operations['RunsController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/runs/{runId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read one worker run state */
+    get: operations['RunsController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/quality': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Committed raw archive minute bucket counts (up to 60s lag) and independent normalized event counts */
+    get: operations['QualityController_quality'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/quarantine': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Paged rejected normalized events for a bounded reception range */
+    get: operations['QualityController_quarantine'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/captures/{captureId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read retained raw capture safely as JSON; source/time locates archive */
+    get: operations['QualityController_capture'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/replays': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read archive replay records with associated runId */
+    get: operations['ReplayController_list'];
+    put?: never;
+    /** Queue a retained archive replay using cleaning version 1 */
+    post: operations['ReplayController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/system/health': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Real dependency and source health */
+    get: operations['SystemController_health'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/system/ready': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Readiness returns 503 when a dependency is unavailable */
+    get: operations['SystemController_ready'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/system/metrics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Prometheus process metrics with no credentials or session labels */
+    get: operations['SystemController_getMetrics'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search locally stored intelligence with versioned source evidence */
+    get: operations['IntelligenceController_search'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/sources': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Intelligence source configurations and polling status */
+    get: operations['IntelligenceController_sources'];
+    put?: never;
+    /** Register authorized intelligence source */
+    post: operations['IntelligenceController_createSource'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/sources/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Replace intelligence source configuration */
+    put: operations['IntelligenceController_updateSource'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/archives': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Raw intelligence archives awaiting operator structuring */
+    get: operations['IntelligenceController_archives'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/archives/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read immutable raw intelligence as inert text */
+    get: operations['IntelligenceController_archive'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Versioned intelligence evidence */
+    get: operations['IntelligenceController_events'];
+    put?: never;
+    /** Ingest structured intelligence with immutable raw archive */
+    post: operations['IntelligenceController_createEvent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/events/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read immutable evidence, current relations and audit history */
+    get: operations['IntelligenceController_eventDetail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/events/{id}/review': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Record evidence review without altering source text */
+    post: operations['IntelligenceController_reviewEvent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/events/{id}/relations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Append evidence relation */
+    post: operations['IntelligenceController_addRelation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/relations/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Append relation revision */
+    put: operations['IntelligenceController_editRelation'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/relations/{id}/review': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Record relation confirmation or rejection */
+    post: operations['IntelligenceController_reviewRelation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/objects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search geographical objects and aliases */
+    get: operations['IntelligenceController_objects'];
+    put?: never;
+    /** Create geographical object */
+    post: operations['IntelligenceController_createObject'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/objects/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update geographical object */
+    put: operations['IntelligenceController_editObject'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/objects/import': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Atomically import GeoJSON objects */
+    post: operations['IntelligenceController_importObjects'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/plot': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Plot selected evidence versions */
+    post: operations['IntelligenceController_plot'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/intelligence/plot-set': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read personal plot version references */
+    get: operations['IntelligenceController_plotSet'];
+    /** Save personal plot version references */
+    put: operations['IntelligenceController_savePlotSet'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Registered analysis definitions and independently managed instances */
+    get: operations['TopicsController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/instances': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a durable topic instance; enabling schedules historical warmup */
+    post: operations['TopicsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/instances/{id}/state': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Enable or disable a topic and fence earlier generation work */
+    put: operations['TopicsController_state'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/instances/{id}/run': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Queue an idempotent durable manual analysis run */
+    post: operations['TopicsController_run'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/instances/{id}/runs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recent topic execution history */
+    get: operations['TopicsController_runs'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/runs/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Run snapshot including exact input dataset and algorithm configuration */
+    get: operations['TopicsController_runDetail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/instances/{id}/config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update configuration and restart historical warmup with a fenced generation */
+    put: operations['TopicsController_config'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/analysis/results': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Latest analysis results including revisions and withdrawals */
+    get: operations['AnalysisController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/analysis/results/{id}/revisions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Immutable result revisions with original AIS and document evidence */
+    get: operations['AnalysisController_revisions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/analysis/results/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Result with immutable evidence snapshots, rules and limitations */
+    get: operations['AnalysisController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/analysis/feed': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Replay durable analysis notifications after a cursor */
+    get: operations['AnalysisController_feed'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Agent availability and bounded execution defaults */
+    get: operations['AgentController_config'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List sessions owned by the current user */
+    get: operations['AgentController_sessions'];
+    put?: never;
+    /** Create a private analysis conversation */
+    post: operations['AgentController_createSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read a private conversation and its tasks */
+    get: operations['AgentController_session'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions/{id}/messages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit an idempotent message and queue one independent analysis */
+    post: operations['AgentController_message'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read owned task, immutable results and tool ledger */
+    get: operations['AgentController_task'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}/input-requests/{requestId}/responses': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Answer a persisted input request and resume the same task */
+    post: operations['AgentController_respond'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}/retry': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a visible new attempt with confirmed inputs and an independent budget */
+    post: operations['AgentController_retry'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/tasks/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel an owned task and fence late results */
+    post: operations['AgentController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/sessions/{id}/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recover persisted conversation events after a cursor */
+    get: operations['AgentController_events'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/ui/clients': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Register this browser instance for semantic UI control */
+    post: operations['AgentUiController_register'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/ui/clients/{id}/state': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Publish semantic state and renew the current page lease */
+    put: operations['AgentUiController_state'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/ui/clients/{id}/commands': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Discover pending UI commands for this page only */
+    get: operations['AgentUiController_commands'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/ui/commands/{id}/claim': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Atomically claim a UI command */
+    post: operations['AgentUiController_claim'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/ui/commands/{id}/receipts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Persist execution acknowledgement and verified postcondition */
+    post: operations['AgentUiController_receipt'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/skills': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read the current account private skill catalog, including disabled history */
+    get: operations['SkillsController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/skills/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read one owned skill and all immutable versions */
+    get: operations['SkillsController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/skills/{id}/versions/{version}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read an owned immutable skill version */
+    get: operations['SkillsController_version'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/skills/publish': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Validate and idempotently publish a private skill version */
+    post: operations['SkillsController_publish'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/skills/{id}/state': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Enable or disable an owned skill with catalog revision protection */
+    put: operations['SkillsController_state'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/skills/{id}/versions/{version}/activate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Activate one non-revoked private skill version */
+    post: operations['SkillsController_activate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/agent/skills/{id}/versions/{version}/revoke': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Revoke an owned version while preserving its task history */
+    post: operations['SkillsController_revoke'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List planned routes with exact geography radius filtering */
+    get: operations['RoutesController_list'];
+    put?: never;
+    /** Save a manual route or completed planning result exactly once */
+    post: operations['RoutesController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/import': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Import a GeoJSON route feature */
+    post: operations['RoutesController_import'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/restrictions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List latest versions of restricted areas */
+    get: operations['RoutesController_restrictions'];
+    put?: never;
+    /** Create a versioned restricted area */
+    post: operations['RoutesController_restrictionCreate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/restrictions/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Revise a restricted area with an expected revision */
+    put: operations['RoutesController_restrictionUpdate'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/plans': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Queue a durable sea route plan */
+    post: operations['RoutesController_plan'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/plans/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read planning state, result, source versions and staleness */
+    get: operations['RoutesController_planGet'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/plans/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel a queued or running plan; late worker results are fenced */
+    post: operations['RoutesController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/{id}/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read immutable route revisions */
+    get: operations['RoutesController_history'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/{id}/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export the current route as GeoJSON */
+    get: operations['RoutesController_export'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/{id}/archive': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Archive a route with optimistic concurrency */
+    post: operations['RoutesController_archive'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/{id}/copy': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Copy a revision into an independent draft for comparison */
+    post: operations['RoutesController_copy'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/routes/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read the current route revision */
+    get: operations['RoutesController_get'];
+    /** Update a route using an expected revision and operation id */
+    put: operations['RoutesController_update'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operational-events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List independent operational events with exact radius filtering */
+    get: operations['OperationalEventsController_list'];
+    put?: never;
+    /** Create an operational event with transactional idempotency */
+    post: operations['OperationalEventsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operational-events/backfill': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reconcile existing intelligence and analysis sources */
+    post: operations['OperationalEventsController_backfill'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operational-events/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read an event, resolving an earlier merged id */
+    get: operations['OperationalEventsController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Revise fields, release source overrides or change lifecycle */
+    patch: operations['OperationalEventsController_update'];
+    trace?: never;
+  };
+  '/api/v1/operational-events/{id}/merge': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Merge events with an explicit primary source and both revision checks */
+    post: operations['OperationalEventsController_merge'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operational-events/{id}/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Immutable business event revisions */
+    get: operations['OperationalEventsController_history'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operational-events/{id}/sources': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current source evidence, including independent review and withdrawal status */
+    get: operations['OperationalEventsController_sources'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/operational-events/{id}/source-history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Immutable revisions of one attached source */
+    get: operations['OperationalEventsController_sourceHistory'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+  schemas: never;
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    AuthController_login: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    username: string;
-                    password: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        user: {
-                            /** Format: uuid */
-                            id: string;
-                            username: string;
-                            /** @enum {string} */
-                            role: "viewer" | "operator" | "admin";
-                        };
-                        csrfToken: string;
-                        /** Format: date-time */
-                        expiresAt: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  AuthController_login: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    AuthController_me: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody: {
+      content: {
+        'application/json': {
+          username: string;
+          password: string;
         };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        user: {
-                            /** Format: uuid */
-                            id: string;
-                            username: string;
-                            /** @enum {string} */
-                            role: "viewer" | "operator" | "admin";
-                        };
-                        csrfToken: string;
-                        /** Format: date-time */
-                        expiresAt: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    AuthController_logout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": null;
-                };
+        content: {
+          'application/json': {
+            user: {
+              /** Format: uuid */
+              id: string;
+              username: string;
+              /** @enum {string} */
+              role: 'viewer' | 'operator' | 'admin';
             };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            csrfToken: string;
+            /** Format: date-time */
+            expiresAt: string;
+          };
         };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    UsersController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        id: string;
-                        username: string;
-                        /** @enum {string} */
-                        role: "viewer" | "operator" | "admin";
-                        disabled: boolean;
-                    }[];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AuthController_me: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    UsersController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    username: string;
-                    password: string;
-                    /** @enum {string} */
-                    role: "viewer" | "operator" | "admin";
-                };
+        content: {
+          'application/json': {
+            user: {
+              /** Format: uuid */
+              id: string;
+              username: string;
+              /** @enum {string} */
+              role: 'viewer' | 'operator' | 'admin';
             };
+            csrfToken: string;
+            /** Format: date-time */
+            expiresAt: string;
+          };
         };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        id: string;
-                        username: string;
-                        /** @enum {string} */
-                        role: "viewer" | "operator" | "admin";
-                        disabled: boolean;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    UsersController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                userId: unknown;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    role: "viewer" | "operator" | "admin";
-                    disabled: boolean;
-                    password?: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        id: string;
-                        username: string;
-                        /** @enum {string} */
-                        role: "viewer" | "operator" | "admin";
-                        disabled: boolean;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AuthController_logout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    VesselsController_list: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-                query?: string;
-                mmsi?: string;
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': null;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UsersController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            username: string;
+            /** @enum {string} */
+            role: 'viewer' | 'operator' | 'admin';
+            disabled: boolean;
+          }[];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UsersController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          username: string;
+          password: string;
+          /** @enum {string} */
+          role: 'viewer' | 'operator' | 'admin';
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            username: string;
+            /** @enum {string} */
+            role: 'viewer' | 'operator' | 'admin';
+            disabled: boolean;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UsersController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        userId: unknown;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          role: 'viewer' | 'operator' | 'admin';
+          disabled: boolean;
+          password?: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            username: string;
+            /** @enum {string} */
+            role: 'viewer' | 'operator' | 'admin';
+            disabled: boolean;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VesselsController_list: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+        query?: string;
+        mmsi?: string;
+        name?: string;
+        imo?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              mmsi: string;
+              latestPosition: {
+                /** @enum {number} */
+                schemaVersion: 1;
+                /** @enum {number} */
+                cleaningVersion: 1;
+                eventId: string;
+                captureId: string;
+                sourceId: string;
+                /** @enum {string} */
+                sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+                sourcePriority: number;
+                runId: string | null;
+                /** Format: date-time */
+                receivedAt: string;
+                quality: string[];
+                /** @enum {string} */
+                kind: 'position';
+                /** Format: date-time */
+                observedAt: string;
+                mmsi: string;
+                lat: number;
+                lon: number;
+                sogKnots: number | null;
+                cogDegrees: number | null;
+                headingDegrees: number | null;
+                rotDegPerMinute: number | null;
+                navigationStatus: number | null;
+                /** @enum {string} */
+                receptionType: 'TER' | 'SAT' | 'ROAM' | 'UNKNOWN';
+              } | null;
+              staticFields: {
                 name?: string;
                 imo?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            mmsi: string;
-                            latestPosition: {
-                                /** @enum {number} */
-                                schemaVersion: 1;
-                                /** @enum {number} */
-                                cleaningVersion: 1;
-                                eventId: string;
-                                captureId: string;
-                                sourceId: string;
-                                /** @enum {string} */
-                                sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                                sourcePriority: number;
-                                runId: string | null;
-                                /** Format: date-time */
-                                receivedAt: string;
-                                quality: string[];
-                                /** @enum {string} */
-                                kind: "position";
-                                /** Format: date-time */
-                                observedAt: string;
-                                mmsi: string;
-                                lat: number;
-                                lon: number;
-                                sogKnots: number | null;
-                                cogDegrees: number | null;
-                                headingDegrees: number | null;
-                                rotDegPerMinute: number | null;
-                                navigationStatus: number | null;
-                                /** @enum {string} */
-                                receptionType: "TER" | "SAT" | "ROAM" | "UNKNOWN";
-                            } | null;
-                            staticFields: {
-                                name?: string;
-                                imo?: string;
-                                callsign?: string;
-                                shipType?: number;
-                                length?: number;
-                                width?: number;
-                                draught?: number;
-                                destination?: string;
-                                eta?: {
-                                    year?: number;
-                                    month?: number;
-                                    day?: number;
-                                    hour?: number;
-                                    minute?: number;
-                                };
-                            };
-                        }[];
-                        nextCursor: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VesselsController_detail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                mmsi: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        mmsi: string;
-                        latestPosition: {
-                            /** @enum {number} */
-                            schemaVersion: 1;
-                            /** @enum {number} */
-                            cleaningVersion: 1;
-                            eventId: string;
-                            captureId: string;
-                            sourceId: string;
-                            /** @enum {string} */
-                            sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                            sourcePriority: number;
-                            runId: string | null;
-                            /** Format: date-time */
-                            receivedAt: string;
-                            quality: string[];
-                            /** @enum {string} */
-                            kind: "position";
-                            /** Format: date-time */
-                            observedAt: string;
-                            mmsi: string;
-                            lat: number;
-                            lon: number;
-                            sogKnots: number | null;
-                            cogDegrees: number | null;
-                            headingDegrees: number | null;
-                            rotDegPerMinute: number | null;
-                            navigationStatus: number | null;
-                            /** @enum {string} */
-                            receptionType: "TER" | "SAT" | "ROAM" | "UNKNOWN";
-                        } | null;
-                        staticFields: {
-                            name?: string;
-                            imo?: string;
-                            callsign?: string;
-                            shipType?: number;
-                            length?: number;
-                            width?: number;
-                            draught?: number;
-                            destination?: string;
-                            eta?: {
-                                year?: number;
-                                month?: number;
-                                day?: number;
-                                hour?: number;
-                                minute?: number;
-                            };
-                        };
-                        provenance: {
-                            [key: string]: {
-                                sourceId: string;
-                                /** @enum {string} */
-                                sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                                sourcePriority: number;
-                                eventId: string;
-                                /** Format: date-time */
-                                observedAt: string | null;
-                                /** Format: date-time */
-                                receivedAt: string;
-                            };
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VesselsController_track: {
-        parameters: {
-            query: {
-                maxPoints?: number;
-                to: string;
-                from: string;
-            };
-            header?: never;
-            path: {
-                mmsi: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        mmsi: string;
-                        /** Format: date-time */
-                        from: string;
-                        /** Format: date-time */
-                        to: string;
-                        segments: {
-                            points: {
-                                /** @enum {number} */
-                                schemaVersion: 1;
-                                /** @enum {number} */
-                                cleaningVersion: 1;
-                                eventId: string;
-                                captureId: string;
-                                sourceId: string;
-                                /** @enum {string} */
-                                sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                                sourcePriority: number;
-                                runId: string | null;
-                                /** Format: date-time */
-                                receivedAt: string;
-                                quality: string[];
-                                /** @enum {string} */
-                                kind: "position";
-                                /** Format: date-time */
-                                observedAt: string;
-                                mmsi: string;
-                                lat: number;
-                                lon: number;
-                                sogKnots: number | null;
-                                cogDegrees: number | null;
-                                headingDegrees: number | null;
-                                rotDegPerMinute: number | null;
-                                navigationStatus: number | null;
-                                /** @enum {string} */
-                                receptionType: "TER" | "SAT" | "ROAM" | "UNKNOWN";
-                            }[];
-                        }[];
-                        sampled: boolean;
-                        truncated: boolean;
-                        total: number;
-                        returned: number;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MapController_heatmap: {
-        parameters: {
-            query: {
-                bbox: string;
-                from: string;
-                to: string;
-                sourceId?: string;
+                callsign?: string;
                 shipType?: number;
-                mmsis?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+                length?: number;
+                width?: number;
+                draught?: number;
+                destination?: string;
+                eta?: {
+                  year?: number;
+                  month?: number;
+                  day?: number;
+                  hour?: number;
+                  minute?: number;
+                };
+              };
+            }[];
+            nextCursor: string | null;
+          };
         };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        query: {
-                            bbox: (number)[];
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            sourceId?: string;
-                            shipType?: number;
-                            mmsis?: string[];
-                        };
-                        grid: {
-                            level: number;
-                            cellDegrees: number;
-                        };
-                        cells: {
-                            id: string;
-                            x: number;
-                            y: number;
-                            lon: number;
-                            lat: number;
-                            vesselCount: number;
-                        }[];
-                        totalVessels: number;
-                        /** Format: date-time */
-                        generatedAt: string;
-                        /** @enum {string} */
-                        metric: "unique_vessels";
-                        /** @enum {string} */
-                        shipTypeBasis: "current_profile";
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    MapController_get: {
-        parameters: {
-            query: {
-                bbox: string;
-                zoom?: number;
-                hours?: number;
-                sourceId?: string;
-                shipType?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: ({
-                            /** @enum {string} */
-                            kind: "point";
-                            mmsi: string;
-                            lat: number;
-                            lon: number;
-                            observedAt: string;
-                            sourceId: string;
-                            sogKnots: number | null;
-                            cogDegrees: number | null;
-                            headingDegrees: number | null;
-                            quality: string[];
-                        } | {
-                            /** @enum {string} */
-                            kind: "cluster";
-                            clusterId: string;
-                            lat: number;
-                            lon: number;
-                            count: number;
-                            bbox: (number)[];
-                        })[];
-                        sampled: boolean;
-                        truncated: boolean;
-                        total: number;
-                        /** Format: date-time */
-                        generatedAt: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  VesselsController_positions: {
+    parameters: {
+      query: {
+        /** @description Comma-separated MMSIs, at most 100 */
+        mmsis: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    VesselTracksController_query: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    bbox: (number)[];
-                    /** Format: date-time */
-                    from: string;
-                    /** Format: date-time */
-                    to: string;
-                    selector: {
-                        shipTypes?: number[];
-                        mmsis?: string[];
-                        query?: string;
-                        model?: string;
-                    };
-                    sourceId?: string;
-                    /** @default 20 */
-                    maxVessels?: number;
-                    /** @default 500 */
-                    maxPointsPerVessel?: number;
-                };
-            };
+        content: {
+          'application/json': {
+            items: {
+              mmsi: string;
+              lon: number;
+              lat: number;
+              /** Format: date-time */
+              observedAt: string;
+            }[];
+            missing: string[];
+          };
         };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        query: {
-                            bbox: (number)[];
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            selector: {
-                                shipTypes?: number[];
-                                mmsis?: string[];
-                                query?: string;
-                                model?: string;
-                            };
-                            sourceId?: string;
-                            /** @default 20 */
-                            maxVessels: number;
-                            /** @default 500 */
-                            maxPointsPerVessel: number;
-                        };
-                        /** Format: date-time */
-                        asOf: string;
-                        /** Format: date-time */
-                        generatedAt: string;
-                        /** @enum {string} */
-                        shipTypeBasis: "current_profile";
-                        /** @enum {string} */
-                        selectionBasis: "historical_observation_in_bbox";
-                        /** @enum {string} */
-                        trackScope: "full_time_window";
-                        returnedVessels: number;
-                        matchedVesselsLowerBound: number;
-                        hasMoreVessels: boolean;
-                        tracks: {
-                            mmsi: string;
-                            name: string | null;
-                            shipType: number | null;
-                            segments: {
-                                points: {
-                                    lon: number;
-                                    lat: number;
-                                    /** Format: date-time */
-                                    observedAt: string;
-                                }[];
-                            }[];
-                            total: number;
-                            returned: number;
-                            sampled: boolean;
-                            truncated: boolean;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    SourcesController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sourceId: string;
-                        /** @enum {string} */
-                        sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                        name: string;
-                        /** @enum {string} */
-                        status: "enabled" | "disabled" | "error";
-                        secretRef: string | null;
-                        priority: number;
-                        /** Format: uri */
-                        endpoint?: string;
-                        bbox?: (number)[];
-                        settings?: {
-                            /** @default [] */
-                            allowedHosts: string[];
-                            /** @default 30 */
-                            requestsPerMinute: number;
-                            /** @default 100 */
-                            maxPages: number;
-                            /** @default 2 */
-                            httpConcurrency: number;
-                            /** @default 1 */
-                            browserConcurrency: number;
-                            /** @default 30 */
-                            timeoutSeconds: number;
-                            /** @default 5 */
-                            timespanMinutes: number;
-                            /** @default 2000 */
-                            pageLimit: number;
-                            /** @default false */
-                            authorizationConfirmed: boolean;
-                        };
-                        /** Format: date-time */
-                        lastReceivedAt: string | null;
-                        lastError: string | null;
-                    }[];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  VesselsController_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mmsi: string;
+      };
+      cookie?: never;
     };
-    SourcesController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceId: string;
-                    /** @enum {string} */
-                    sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                    name: string;
-                    /** @enum {string} */
-                    status: "enabled" | "disabled" | "error";
-                    secretRef: string | null;
-                    priority: number;
-                    /** Format: uri */
-                    endpoint?: string;
-                    bbox?: (number)[];
-                    settings?: {
-                        /** @default [] */
-                        allowedHosts?: string[];
-                        /** @default 30 */
-                        requestsPerMinute?: number;
-                        /** @default 100 */
-                        maxPages?: number;
-                        /** @default 2 */
-                        httpConcurrency?: number;
-                        /** @default 1 */
-                        browserConcurrency?: number;
-                        /** @default 30 */
-                        timeoutSeconds?: number;
-                        /** @default 5 */
-                        timespanMinutes?: number;
-                        /** @default 2000 */
-                        pageLimit?: number;
-                        /** @default false */
-                        authorizationConfirmed?: boolean;
-                    };
-                };
+        content: {
+          'application/json': {
+            mmsi: string;
+            latestPosition: {
+              /** @enum {number} */
+              schemaVersion: 1;
+              /** @enum {number} */
+              cleaningVersion: 1;
+              eventId: string;
+              captureId: string;
+              sourceId: string;
+              /** @enum {string} */
+              sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+              sourcePriority: number;
+              runId: string | null;
+              /** Format: date-time */
+              receivedAt: string;
+              quality: string[];
+              /** @enum {string} */
+              kind: 'position';
+              /** Format: date-time */
+              observedAt: string;
+              mmsi: string;
+              lat: number;
+              lon: number;
+              sogKnots: number | null;
+              cogDegrees: number | null;
+              headingDegrees: number | null;
+              rotDegPerMinute: number | null;
+              navigationStatus: number | null;
+              /** @enum {string} */
+              receptionType: 'TER' | 'SAT' | 'ROAM' | 'UNKNOWN';
+            } | null;
+            staticFields: {
+              name?: string;
+              imo?: string;
+              callsign?: string;
+              shipType?: number;
+              length?: number;
+              width?: number;
+              draught?: number;
+              destination?: string;
+              eta?: {
+                year?: number;
+                month?: number;
+                day?: number;
+                hour?: number;
+                minute?: number;
+              };
             };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sourceId: string;
-                        /** @enum {string} */
-                        sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                        name: string;
-                        /** @enum {string} */
-                        status: "enabled" | "disabled" | "error";
-                        secretRef: string | null;
-                        priority: number;
-                        /** Format: uri */
-                        endpoint?: string;
-                        bbox?: (number)[];
-                        settings?: {
-                            /** @default [] */
-                            allowedHosts: string[];
-                            /** @default 30 */
-                            requestsPerMinute: number;
-                            /** @default 100 */
-                            maxPages: number;
-                            /** @default 2 */
-                            httpConcurrency: number;
-                            /** @default 1 */
-                            browserConcurrency: number;
-                            /** @default 30 */
-                            timeoutSeconds: number;
-                            /** @default 5 */
-                            timespanMinutes: number;
-                            /** @default 2000 */
-                            pageLimit: number;
-                            /** @default false */
-                            authorizationConfirmed: boolean;
-                        };
-                        /** Format: date-time */
-                        lastReceivedAt: string | null;
-                        lastError: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    SourcesController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            provenance: {
+              [key: string]: {
                 sourceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceId: string;
-                    /** @enum {string} */
-                    sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                    name: string;
-                    /** @enum {string} */
-                    status: "enabled" | "disabled" | "error";
-                    secretRef: string | null;
-                    priority: number;
-                    /** Format: uri */
-                    endpoint?: string;
-                    bbox?: (number)[];
-                    settings?: {
-                        /** @default [] */
-                        allowedHosts?: string[];
-                        /** @default 30 */
-                        requestsPerMinute?: number;
-                        /** @default 100 */
-                        maxPages?: number;
-                        /** @default 2 */
-                        httpConcurrency?: number;
-                        /** @default 1 */
-                        browserConcurrency?: number;
-                        /** @default 30 */
-                        timeoutSeconds?: number;
-                        /** @default 5 */
-                        timespanMinutes?: number;
-                        /** @default 2000 */
-                        pageLimit?: number;
-                        /** @default false */
-                        authorizationConfirmed?: boolean;
-                    };
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sourceId: string;
-                        /** @enum {string} */
-                        sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                        name: string;
-                        /** @enum {string} */
-                        status: "enabled" | "disabled" | "error";
-                        secretRef: string | null;
-                        priority: number;
-                        /** Format: uri */
-                        endpoint?: string;
-                        bbox?: (number)[];
-                        settings?: {
-                            /** @default [] */
-                            allowedHosts: string[];
-                            /** @default 30 */
-                            requestsPerMinute: number;
-                            /** @default 100 */
-                            maxPages: number;
-                            /** @default 2 */
-                            httpConcurrency: number;
-                            /** @default 1 */
-                            browserConcurrency: number;
-                            /** @default 30 */
-                            timeoutSeconds: number;
-                            /** @default 5 */
-                            timespanMinutes: number;
-                            /** @default 2000 */
-                            pageLimit: number;
-                            /** @default false */
-                            authorizationConfirmed: boolean;
-                        };
-                        /** Format: date-time */
-                        lastReceivedAt: string | null;
-                        lastError: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    SourcesController_remove: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sourceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": null;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JobsController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        jobId: string;
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "enabled" | "paused";
-                        scheduleSeconds: number | null;
-                    }[];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JobsController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    jobId?: string;
-                    sourceId: string;
-                    name: string;
-                    /** @enum {string} */
-                    mode: "crawl" | "collect" | "replay";
-                    /** @enum {string} */
-                    status: "enabled" | "paused";
-                    scheduleSeconds?: number | null;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        jobId: string;
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "enabled" | "paused";
-                        scheduleSeconds: number | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JobsController_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: unknown;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    jobId: string;
-                    sourceId: string;
-                    name: string;
-                    /** @enum {string} */
-                    mode: "crawl" | "collect" | "replay";
-                    /** @enum {string} */
-                    status: "enabled" | "paused";
-                    scheduleSeconds: number | null;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        jobId: string;
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "enabled" | "paused";
-                        scheduleSeconds: number | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JobsController_remove: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: unknown;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": null;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JobsController_run: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path: {
-                jobId: unknown;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        runId: string;
-                        /** Format: uuid */
-                        jobId: string | null;
-                        sourceId: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
-                        /** Format: date-time */
-                        requestedAt: string;
-                        /** Format: date-time */
-                        startedAt: string | null;
-                        /** Format: date-time */
-                        finishedAt: string | null;
-                        captures: number;
-                        positions: number;
-                        statics: number;
-                        quarantined: number;
-                        records: number;
-                        normalizedCaptures: number;
-                        /** @enum {string} */
-                        counterScope: "confirmed expanded records; retained event counts deduplicate separately";
-                        error: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JobsController_pause: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: unknown;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        jobId: string;
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "enabled" | "paused";
-                        scheduleSeconds: number | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    JobsController_resume: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: unknown;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        jobId: string;
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "enabled" | "paused";
-                        scheduleSeconds: number | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RunsController_list: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-                status?: "queued" | "running" | "succeeded" | "failed" | "cancelled";
-                sourceId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            /** Format: uuid */
-                            runId: string;
-                            /** Format: uuid */
-                            jobId: string | null;
-                            sourceId: string;
-                            /** @enum {string} */
-                            mode: "crawl" | "collect" | "replay";
-                            /** @enum {string} */
-                            status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
-                            /** Format: date-time */
-                            requestedAt: string;
-                            /** Format: date-time */
-                            startedAt: string | null;
-                            /** Format: date-time */
-                            finishedAt: string | null;
-                            captures: number;
-                            positions: number;
-                            statics: number;
-                            quarantined: number;
-                            records: number;
-                            normalizedCaptures: number;
-                            /** @enum {string} */
-                            counterScope: "confirmed expanded records; retained event counts deduplicate separately";
-                            error: string | null;
-                        }[];
-                        nextCursor: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RunsController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                runId: unknown;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        runId: string;
-                        /** Format: uuid */
-                        jobId: string | null;
-                        sourceId: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
-                        /** Format: date-time */
-                        requestedAt: string;
-                        /** Format: date-time */
-                        startedAt: string | null;
-                        /** Format: date-time */
-                        finishedAt: string | null;
-                        captures: number;
-                        positions: number;
-                        statics: number;
-                        quarantined: number;
-                        records: number;
-                        normalizedCaptures: number;
-                        /** @enum {string} */
-                        counterScope: "confirmed expanded records; retained event counts deduplicate separately";
-                        error: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    QualityController_quality: {
-        parameters: {
-            query?: {
-                sourceId?: string;
-                to?: string;
-                from?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: date-time */
-                        from: string;
-                        /** Format: date-time */
-                        to: string;
-                        receivedCaptures: number;
-                        /** @enum {string} */
-                        receivedCapturesLabel: "归档确认响应数";
-                        /** @enum {string} */
-                        receivedCapturesScope: "committed archive minute buckets";
-                        /** @enum {number} */
-                        archiveLagSeconds: 60;
-                        normalizedPositions: number;
-                        normalizedStatic: number;
-                        quarantinedEvents: number;
-                        latestPositionJumpFlags: number;
-                        /** @enum {string} */
-                        latestPositionJumpLabel: "最新位置跳跃标记";
-                        qualityFlags: {
-                            flag: string;
-                            events: number;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    QualityController_quarantine: {
-        parameters: {
-            query?: {
-                cursor?: string;
-                limit?: number;
-                reason?: string;
-                sourceId?: string;
-                to?: string;
-                from?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            /** @enum {number} */
-                            schemaVersion: 1;
-                            /** @enum {number} */
-                            cleaningVersion: 1;
-                            eventId: string;
-                            captureId: string;
-                            sourceId: string;
-                            /** @enum {string} */
-                            sourceKind: "aisstream" | "marinetraffic" | "fixture-http" | "fixture-browser";
-                            sourcePriority: number;
-                            runId: string | null;
-                            /** Format: date-time */
-                            receivedAt: string;
-                            quality: string[];
-                            /** @enum {string} */
-                            kind: "quarantine";
-                            /** Format: date-time */
-                            observedAt: string | null;
-                            mmsi: string | null;
-                            reasons: string[];
-                        }[];
-                        nextCursor: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    QualityController_capture: {
-        parameters: {
-            query: {
+                /** @enum {string} */
+                sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+                sourcePriority: number;
+                eventId: string;
+                /** Format: date-time */
+                observedAt: string | null;
+                /** Format: date-time */
                 receivedAt: string;
-                sourceId: string;
+              };
             };
-            header?: never;
-            path: {
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VesselsController_track: {
+    parameters: {
+      query: {
+        maxPoints?: number;
+        to: string;
+        from: string;
+      };
+      header?: never;
+      path: {
+        mmsi: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            mmsi: string;
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            segments: {
+              points: {
+                /** @enum {number} */
+                schemaVersion: 1;
+                /** @enum {number} */
+                cleaningVersion: 1;
+                eventId: string;
                 captureId: string;
-            };
-            cookie?: never;
+                sourceId: string;
+                /** @enum {string} */
+                sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+                sourcePriority: number;
+                runId: string | null;
+                /** Format: date-time */
+                receivedAt: string;
+                quality: string[];
+                /** @enum {string} */
+                kind: 'position';
+                /** Format: date-time */
+                observedAt: string;
+                mmsi: string;
+                lat: number;
+                lon: number;
+                sogKnots: number | null;
+                cogDegrees: number | null;
+                headingDegrees: number | null;
+                rotDegPerMinute: number | null;
+                navigationStatus: number | null;
+                /** @enum {string} */
+                receptionType: 'TER' | 'SAT' | 'ROAM' | 'UNKNOWN';
+              }[];
+            }[];
+            sampled: boolean;
+            truncated: boolean;
+            total: number;
+            returned: number;
+          };
         };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "text/plain": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    ReplayController_list: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-                sourceId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+  };
+  MapController_heatmap: {
+    parameters: {
+      query: {
+        bbox: string;
+        from: string;
+        to: string;
+        sourceId?: string;
+        shipType?: number;
+        mmsis?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
+        content: {
+          'application/json': {
+            query: {
+              bbox: number[];
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              sourceId?: string;
+              shipType?: number;
+              mmsis?: string[];
+            };
+            grid: {
+              level: number;
+              cellDegrees: number;
+            };
+            cells: {
+              id: string;
+              x: number;
+              y: number;
+              lon: number;
+              lat: number;
+              vesselCount: number;
+            }[];
+            totalVessels: number;
+            /** Format: date-time */
+            generatedAt: string;
+            /** @enum {string} */
+            metric: 'unique_vessels';
+            /** @enum {string} */
+            shipTypeBasis: 'current_profile';
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MapController_get: {
+    parameters: {
+      query: {
+        bbox: string;
+        zoom?: number;
+        hours?: number;
+        sourceId?: string;
+        shipType?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: (
+              | {
+                  /** @enum {string} */
+                  kind: 'point';
+                  mmsi: string;
+                  lat: number;
+                  lon: number;
+                  observedAt: string;
+                  sourceId: string;
+                  sogKnots: number | null;
+                  cogDegrees: number | null;
+                  headingDegrees: number | null;
+                  quality: string[];
+                }
+              | {
+                  /** @enum {string} */
+                  kind: 'cluster';
+                  clusterId: string;
+                  lat: number;
+                  lon: number;
+                  count: number;
+                  bbox: number[];
+                }
+            )[];
+            sampled: boolean;
+            truncated: boolean;
+            total: number;
+            /** Format: date-time */
+            generatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  VesselTracksController_query: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          bbox: number[];
+          /** Format: date-time */
+          from: string;
+          /** Format: date-time */
+          to: string;
+          selector: {
+            shipTypes?: number[];
+            mmsis?: string[];
+            query?: string;
+            model?: string;
+          };
+          sourceId?: string;
+          /** @default 20 */
+          maxVessels?: number;
+          /** @default 500 */
+          maxPointsPerVessel?: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            query: {
+              bbox: number[];
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              selector: {
+                shipTypes?: number[];
+                mmsis?: string[];
+                query?: string;
+                model?: string;
+              };
+              sourceId?: string;
+              /** @default 20 */
+              maxVessels: number;
+              /** @default 500 */
+              maxPointsPerVessel: number;
+            };
+            /** Format: date-time */
+            asOf: string;
+            /** Format: date-time */
+            generatedAt: string;
+            /** @enum {string} */
+            shipTypeBasis: 'current_profile';
+            /** @enum {string} */
+            selectionBasis: 'historical_observation_in_bbox';
+            /** @enum {string} */
+            trackScope: 'full_time_window';
+            returnedVessels: number;
+            matchedVesselsLowerBound: number;
+            hasMoreVessels: boolean;
+            tracks: {
+              mmsi: string;
+              name: string | null;
+              shipType: number | null;
+              segments: {
+                points: {
+                  lon: number;
+                  lat: number;
+                  /** Format: date-time */
+                  observedAt: string;
+                }[];
+              }[];
+              total: number;
+              returned: number;
+              sampled: boolean;
+              truncated: boolean;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SourcesController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            sourceId: string;
+            /** @enum {string} */
+            sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+            name: string;
+            /** @enum {string} */
+            status: 'enabled' | 'disabled' | 'error';
+            secretRef: string | null;
+            priority: number;
+            /** Format: uri */
+            endpoint?: string;
+            bbox?: number[];
+            settings?: {
+              /** @default [] */
+              allowedHosts: string[];
+              /** @default 30 */
+              requestsPerMinute: number;
+              /** @default 100 */
+              maxPages: number;
+              /** @default 2 */
+              httpConcurrency: number;
+              /** @default 1 */
+              browserConcurrency: number;
+              /** @default 30 */
+              timeoutSeconds: number;
+              /** @default 5 */
+              timespanMinutes: number;
+              /** @default 2000 */
+              pageLimit: number;
+              /** @default false */
+              authorizationConfirmed: boolean;
+            };
+            /** Format: date-time */
+            lastReceivedAt: string | null;
+            lastError: string | null;
+          }[];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SourcesController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          sourceId: string;
+          /** @enum {string} */
+          sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+          name: string;
+          /** @enum {string} */
+          status: 'enabled' | 'disabled' | 'error';
+          secretRef: string | null;
+          priority: number;
+          /** Format: uri */
+          endpoint?: string;
+          bbox?: number[];
+          settings?: {
+            /** @default [] */
+            allowedHosts?: string[];
+            /** @default 30 */
+            requestsPerMinute?: number;
+            /** @default 100 */
+            maxPages?: number;
+            /** @default 2 */
+            httpConcurrency?: number;
+            /** @default 1 */
+            browserConcurrency?: number;
+            /** @default 30 */
+            timeoutSeconds?: number;
+            /** @default 5 */
+            timespanMinutes?: number;
+            /** @default 2000 */
+            pageLimit?: number;
+            /** @default false */
+            authorizationConfirmed?: boolean;
+          };
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            sourceId: string;
+            /** @enum {string} */
+            sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+            name: string;
+            /** @enum {string} */
+            status: 'enabled' | 'disabled' | 'error';
+            secretRef: string | null;
+            priority: number;
+            /** Format: uri */
+            endpoint?: string;
+            bbox?: number[];
+            settings?: {
+              /** @default [] */
+              allowedHosts: string[];
+              /** @default 30 */
+              requestsPerMinute: number;
+              /** @default 100 */
+              maxPages: number;
+              /** @default 2 */
+              httpConcurrency: number;
+              /** @default 1 */
+              browserConcurrency: number;
+              /** @default 30 */
+              timeoutSeconds: number;
+              /** @default 5 */
+              timespanMinutes: number;
+              /** @default 2000 */
+              pageLimit: number;
+              /** @default false */
+              authorizationConfirmed: boolean;
+            };
+            /** Format: date-time */
+            lastReceivedAt: string | null;
+            lastError: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SourcesController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        sourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          sourceId: string;
+          /** @enum {string} */
+          sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+          name: string;
+          /** @enum {string} */
+          status: 'enabled' | 'disabled' | 'error';
+          secretRef: string | null;
+          priority: number;
+          /** Format: uri */
+          endpoint?: string;
+          bbox?: number[];
+          settings?: {
+            /** @default [] */
+            allowedHosts?: string[];
+            /** @default 30 */
+            requestsPerMinute?: number;
+            /** @default 100 */
+            maxPages?: number;
+            /** @default 2 */
+            httpConcurrency?: number;
+            /** @default 1 */
+            browserConcurrency?: number;
+            /** @default 30 */
+            timeoutSeconds?: number;
+            /** @default 5 */
+            timespanMinutes?: number;
+            /** @default 2000 */
+            pageLimit?: number;
+            /** @default false */
+            authorizationConfirmed?: boolean;
+          };
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            sourceId: string;
+            /** @enum {string} */
+            sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+            name: string;
+            /** @enum {string} */
+            status: 'enabled' | 'disabled' | 'error';
+            secretRef: string | null;
+            priority: number;
+            /** Format: uri */
+            endpoint?: string;
+            bbox?: number[];
+            settings?: {
+              /** @default [] */
+              allowedHosts: string[];
+              /** @default 30 */
+              requestsPerMinute: number;
+              /** @default 100 */
+              maxPages: number;
+              /** @default 2 */
+              httpConcurrency: number;
+              /** @default 1 */
+              browserConcurrency: number;
+              /** @default 30 */
+              timeoutSeconds: number;
+              /** @default 5 */
+              timespanMinutes: number;
+              /** @default 2000 */
+              pageLimit: number;
+              /** @default false */
+              authorizationConfirmed: boolean;
+            };
+            /** Format: date-time */
+            lastReceivedAt: string | null;
+            lastError: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SourcesController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        sourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': null;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  JobsController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            jobId: string;
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'enabled' | 'paused';
+            scheduleSeconds: number | null;
+          }[];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  JobsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          jobId?: string;
+          sourceId: string;
+          name: string;
+          /** @enum {string} */
+          mode: 'crawl' | 'collect' | 'replay';
+          /** @enum {string} */
+          status: 'enabled' | 'paused';
+          scheduleSeconds?: number | null;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            jobId: string;
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'enabled' | 'paused';
+            scheduleSeconds: number | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  JobsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        jobId: unknown;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          jobId: string;
+          sourceId: string;
+          name: string;
+          /** @enum {string} */
+          mode: 'crawl' | 'collect' | 'replay';
+          /** @enum {string} */
+          status: 'enabled' | 'paused';
+          scheduleSeconds: number | null;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            jobId: string;
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'enabled' | 'paused';
+            scheduleSeconds: number | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  JobsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        jobId: unknown;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': null;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  JobsController_run: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path: {
+        jobId: unknown;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            runId: string;
+            /** Format: uuid */
+            jobId: string | null;
+            sourceId: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            startedAt: string | null;
+            /** Format: date-time */
+            finishedAt: string | null;
+            captures: number;
+            positions: number;
+            statics: number;
+            quarantined: number;
+            records: number;
+            normalizedCaptures: number;
+            /** @enum {string} */
+            counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
+            error: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  JobsController_pause: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        jobId: unknown;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            jobId: string;
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'enabled' | 'paused';
+            scheduleSeconds: number | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  JobsController_resume: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        jobId: unknown;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            jobId: string;
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'enabled' | 'paused';
+            scheduleSeconds: number | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RunsController_list: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+        status?: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+        sourceId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              /** Format: uuid */
+              runId: string;
+              /** Format: uuid */
+              jobId: string | null;
+              sourceId: string;
+              /** @enum {string} */
+              mode: 'crawl' | 'collect' | 'replay';
+              /** @enum {string} */
+              status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+              /** Format: date-time */
+              requestedAt: string;
+              /** Format: date-time */
+              startedAt: string | null;
+              /** Format: date-time */
+              finishedAt: string | null;
+              captures: number;
+              positions: number;
+              statics: number;
+              quarantined: number;
+              records: number;
+              normalizedCaptures: number;
+              /** @enum {string} */
+              counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
+              error: string | null;
+            }[];
+            nextCursor: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RunsController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        runId: unknown;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            runId: string;
+            /** Format: uuid */
+            jobId: string | null;
+            sourceId: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            startedAt: string | null;
+            /** Format: date-time */
+            finishedAt: string | null;
+            captures: number;
+            positions: number;
+            statics: number;
+            quarantined: number;
+            records: number;
+            normalizedCaptures: number;
+            /** @enum {string} */
+            counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
+            error: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  QualityController_quality: {
+    parameters: {
+      query?: {
+        sourceId?: string;
+        to?: string;
+        from?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            receivedCaptures: number;
+            /** @enum {string} */
+            receivedCapturesLabel: '归档确认响应数';
+            /** @enum {string} */
+            receivedCapturesScope: 'committed archive minute buckets';
+            /** @enum {number} */
+            archiveLagSeconds: 60;
+            normalizedPositions: number;
+            normalizedStatic: number;
+            quarantinedEvents: number;
+            latestPositionJumpFlags: number;
+            /** @enum {string} */
+            latestPositionJumpLabel: '最新位置跳跃标记';
+            qualityFlags: {
+              flag: string;
+              events: number;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  QualityController_quarantine: {
+    parameters: {
+      query?: {
+        cursor?: string;
+        limit?: number;
+        reason?: string;
+        sourceId?: string;
+        to?: string;
+        from?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              /** @enum {number} */
+              schemaVersion: 1;
+              /** @enum {number} */
+              cleaningVersion: 1;
+              eventId: string;
+              captureId: string;
+              sourceId: string;
+              /** @enum {string} */
+              sourceKind: 'aisstream' | 'marinetraffic' | 'fixture-http' | 'fixture-browser';
+              sourcePriority: number;
+              runId: string | null;
+              /** Format: date-time */
+              receivedAt: string;
+              quality: string[];
+              /** @enum {string} */
+              kind: 'quarantine';
+              /** Format: date-time */
+              observedAt: string | null;
+              mmsi: string | null;
+              reasons: string[];
+            }[];
+            nextCursor: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  QualityController_capture: {
+    parameters: {
+      query: {
+        receivedAt: string;
+        sourceId: string;
+      };
+      header?: never;
+      path: {
+        captureId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+          'text/plain': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReplayController_list: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+        sourceId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              /** Format: uuid */
+              replayId: string;
+              /** Format: uuid */
+              runId: string;
+              sourceId: string;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {number} */
+              cleaningVersion: 1;
+              /** @enum {string} */
+              targetDataset: 'current';
+              status: string;
+              /** Format: date-time */
+              createdAt: string;
+              counters: {
+                [key: string]: number;
+              };
+            }[];
+            nextCursor: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReplayController_create: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          sourceId: string;
+          /** Format: date-time */
+          from: string;
+          /** Format: date-time */
+          to: string;
+          /**
+           * @default 1
+           * @enum {number}
+           */
+          cleaningVersion?: 1;
+          /**
+           * @default current
+           * @enum {string}
+           */
+          targetDataset?: 'current';
+        };
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            runId: string;
+            /** Format: uuid */
+            jobId: string | null;
+            sourceId: string;
+            /** @enum {string} */
+            mode: 'crawl' | 'collect' | 'replay';
+            /** @enum {string} */
+            status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            startedAt: string | null;
+            /** Format: date-time */
+            finishedAt: string | null;
+            captures: number;
+            positions: number;
+            statics: number;
+            quarantined: number;
+            records: number;
+            normalizedCaptures: number;
+            /** @enum {string} */
+            counterScope: 'confirmed expanded records; retained event counts deduplicate separately';
+            error: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SystemController_health: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            status: 'ready' | 'degraded';
+            services: {
+              postgres: boolean;
+              clickhouse: boolean;
+              nats: boolean;
+              s3: boolean;
+            };
+            sources: {
+              enabled: number;
+              latestReceivedAt: string | null;
+              empty: boolean;
+            };
+            bus: {
+              status: string;
+              ready: boolean;
+              reasons: string[];
+              streams: {
+                name: string;
+                bytes: number;
+                limit: number;
+                oldestAgeMs: number;
+                pendingAgeMs: number;
+                activeStreamingCommands: number;
+                messages: number;
+              }[];
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SystemController_ready: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            status: 'ready' | 'degraded';
+            services: {
+              postgres: boolean;
+              clickhouse: boolean;
+              nats: boolean;
+              s3: boolean;
+            };
+            sources: {
+              enabled: number;
+              latestReceivedAt: string | null;
+              empty: boolean;
+            };
+            bus: {
+              status: string;
+              ready: boolean;
+              reasons: string[];
+              streams: {
+                name: string;
+                bytes: number;
+                limit: number;
+                oldestAgeMs: number;
+                pendingAgeMs: number;
+                activeStreamingCommands: number;
+                messages: number;
+              }[];
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SystemController_getMetrics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_search: {
+    parameters: {
+      query?: {
+        keyword?: string;
+        locationKeyword?: string;
+        category?:
+          | 'port-restriction'
+          | 'notice'
+          | 'navigation-warning'
+          | 'weather'
+          | 'security'
+          | 'environment'
+          | 'incident'
+          | 'other';
+        reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+        timeMode?: 'published' | 'effective' | 'observed';
+        from?: string;
+        to?: string;
+        objectId?: string;
+        kind?: 'events' | 'marine' | 'both';
+        samplePointId?: string;
+        forecastFrom?: string;
+        forecastTo?: string;
+        bbox?: string;
+        sourceIds?: string;
+        mmsis?: string;
+        limit?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              id: string;
+              sourceId: string;
+              sourceName: string;
+              externalId: string;
+              version: number;
+              title: string;
+              summary: string;
+              snippet: string;
+              /** @enum {string} */
+              category:
+                | 'port-restriction'
+                | 'notice'
+                | 'navigation-warning'
+                | 'weather'
+                | 'security'
+                | 'environment'
+                | 'incident'
+                | 'other';
+              /** @enum {string} */
+              status: 'active' | 'revised' | 'withdrawn';
+              /** @enum {string} */
+              reviewStatus: 'candidate' | 'confirmed' | 'rejected';
+              /** @enum {string} */
+              visibility: 'public' | 'internal';
+              /** Format: date-time */
+              publishedAt: string | null;
+              /** Format: date-time */
+              observedAt: string;
+              /** Format: date-time */
+              effectiveFrom: string | null;
+              /** Format: date-time */
+              effectiveTo: string | null;
+              /** Format: date-time */
+              collectedAt: string;
+              /** @enum {string} */
+              timeBasis: 'publication' | 'index-observation' | 'effective' | 'unknown';
+              /** Format: uri */
+              originalUrl: string | null;
+              originalArchiveId: string | null;
+              geometry:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              /** @enum {string} */
+              matchBasis: 'geometry' | 'object' | 'mention' | 'keyword' | 'none';
+              locationNote: string;
+            }[];
+            forecasts: {
+              id: string;
+              sourceId: string;
+              samplePointId: string;
+              pointName: string;
+              point: {
+                lon: number;
+                lat: number;
+              };
+              grid: {
+                lon: number;
+                lat: number;
+              };
+              /** Format: date-time */
+              fetchedAt: string;
+              /** Format: date-time */
+              modelPublishedAt: string | null;
+              /** Format: date-time */
+              validFrom: string;
+              /** Format: date-time */
+              validTo: string;
+              series: {
+                /** Format: date-time */
+                validAt: string;
+                waveHeight: number | null;
+                waveDirection: number | null;
+                wavePeriod: number | null;
+              }[];
+              originalArchiveId: string;
+              /** Format: uri */
+              originalUrl: string;
+              /** @enum {string} */
+              visibility: 'public' | 'internal';
+            }[];
+            total: number;
+            nextCursor: string | null;
+            /** Format: date-time */
+            asOf: string;
+            spec: {
+              keyword?: string;
+              locationKeyword?: string;
+              sourceIds?: string[];
+              /** @enum {string} */
+              category?:
+                | 'port-restriction'
+                | 'notice'
+                | 'navigation-warning'
+                | 'weather'
+                | 'security'
+                | 'environment'
+                | 'incident'
+                | 'other';
+              /** @enum {string} */
+              reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+              /** @enum {string} */
+              timeMode?: 'published' | 'effective' | 'observed';
+              /** Format: date-time */
+              from?: string;
+              /** Format: date-time */
+              to?: string;
+              bbox?: number[];
+              objectId?: string;
+              mmsis?: string[];
+              /** @enum {string} */
+              kind?: 'events' | 'marine' | 'both';
+              samplePointId?: string;
+              /** Format: date-time */
+              forecastFrom?: string;
+              /** Format: date-time */
+              forecastTo?: string;
+            };
+            sourceHealth: {
+              sourceId: string;
+              name: string;
+              enabled: boolean;
+              /** @enum {string} */
+              visibility: 'public' | 'internal';
+              /** @enum {string} */
+              status: 'ready' | 'stale' | 'unavailable' | 'never_collected' | 'disabled';
+              /** Format: date-time */
+              lastPolledAt: string | null;
+              /** Format: date-time */
+              lastSuccessfulAt: string | null;
+              /** Format: date-time */
+              nextPollAt: string | null;
+              lastError: string | null;
+            }[];
+            coverageNotes: string[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_sources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+            /**
+             * @default internal
+             * @enum {string}
+             */
+            visibility: 'public' | 'internal';
+            bbox?: number[];
+            eventTypes?: ('TC' | 'TS' | 'FL')[];
+            /** @default 6 */
+            requestsPerMinute: number;
+            /** @default 5 */
+            maxDocuments: number;
+            /**
+             * @default aggregator
+             * @enum {string}
+             */
+            trust: 'official' | 'aggregator';
+            endpoint?: string;
+            /** @default [] */
+            allowedHosts: string[];
+            /** @default false */
+            authorizationConfirmed: boolean;
+            /** @default 300 */
+            pollSeconds: number;
+            /** @default 30 */
+            timeoutSeconds: number;
+            /** Format: date-time */
+            lastPolledAt: string | null;
+            /** Format: date-time */
+            lastSuccessfulAt: string | null;
+            lastError: string | null;
+            lastIngestion: {
+              [key: string]: unknown;
+            };
+          }[];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_createSource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          sourceId: string;
+          name: string;
+          /** @enum {string} */
+          kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
+          /** @default true */
+          enabled?: boolean;
+          /** @enum {string} */
+          adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+          /**
+           * @default internal
+           * @enum {string}
+           */
+          visibility?: 'public' | 'internal';
+          bbox?: number[];
+          eventTypes?: ('TC' | 'TS' | 'FL')[];
+          /** @default 6 */
+          requestsPerMinute?: number;
+          /** @default 5 */
+          maxDocuments?: number;
+          /**
+           * @default aggregator
+           * @enum {string}
+           */
+          trust?: 'official' | 'aggregator';
+          endpoint?: string;
+          /** @default [] */
+          allowedHosts?: string[];
+          /** @default false */
+          authorizationConfirmed?: boolean;
+          /** @default 300 */
+          pollSeconds?: number;
+          /** @default 30 */
+          timeoutSeconds?: number;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+            /**
+             * @default internal
+             * @enum {string}
+             */
+            visibility: 'public' | 'internal';
+            bbox?: number[];
+            eventTypes?: ('TC' | 'TS' | 'FL')[];
+            /** @default 6 */
+            requestsPerMinute: number;
+            /** @default 5 */
+            maxDocuments: number;
+            /**
+             * @default aggregator
+             * @enum {string}
+             */
+            trust: 'official' | 'aggregator';
+            endpoint?: string;
+            /** @default [] */
+            allowedHosts: string[];
+            /** @default false */
+            authorizationConfirmed: boolean;
+            /** @default 300 */
+            pollSeconds: number;
+            /** @default 30 */
+            timeoutSeconds: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_updateSource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          sourceId: string;
+          name: string;
+          /** @enum {string} */
+          kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
+          /** @default true */
+          enabled?: boolean;
+          /** @enum {string} */
+          adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+          /**
+           * @default internal
+           * @enum {string}
+           */
+          visibility?: 'public' | 'internal';
+          bbox?: number[];
+          eventTypes?: ('TC' | 'TS' | 'FL')[];
+          /** @default 6 */
+          requestsPerMinute?: number;
+          /** @default 5 */
+          maxDocuments?: number;
+          /**
+           * @default aggregator
+           * @enum {string}
+           */
+          trust?: 'official' | 'aggregator';
+          endpoint?: string;
+          /** @default [] */
+          allowedHosts?: string[];
+          /** @default false */
+          authorizationConfirmed?: boolean;
+          /** @default 300 */
+          pollSeconds?: number;
+          /** @default 30 */
+          timeoutSeconds?: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            sourceId: string;
+            name: string;
+            /** @enum {string} */
+            kind: 'manual' | 'api' | 'json' | 'rss' | 'file' | 'fixture';
+            /** @default true */
+            enabled: boolean;
+            /** @enum {string} */
+            adapter?: 'maritime-html' | 'gdacs' | 'gdelt' | 'rss' | 'usgs' | 'marine';
+            /**
+             * @default internal
+             * @enum {string}
+             */
+            visibility: 'public' | 'internal';
+            bbox?: number[];
+            eventTypes?: ('TC' | 'TS' | 'FL')[];
+            /** @default 6 */
+            requestsPerMinute: number;
+            /** @default 5 */
+            maxDocuments: number;
+            /**
+             * @default aggregator
+             * @enum {string}
+             */
+            trust: 'official' | 'aggregator';
+            endpoint?: string;
+            /** @default [] */
+            allowedHosts: string[];
+            /** @default false */
+            authorizationConfirmed: boolean;
+            /** @default 300 */
+            pollSeconds: number;
+            /** @default 30 */
+            timeoutSeconds: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_archives: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: unknown[];
+            nextCursor: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_archive: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            id: string;
+            content: string;
+            contentType: string;
+            checksum: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_events: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+        keyword?: string;
+        sourceId?: string;
+        category?:
+          | 'port-restriction'
+          | 'notice'
+          | 'navigation-warning'
+          | 'weather'
+          | 'security'
+          | 'environment'
+          | 'incident'
+          | 'other';
+        reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+        status?: 'active' | 'revised' | 'withdrawn';
+        from?: string;
+        to?: string;
+        objectId?: string;
+        bbox?: string;
+        latest?: 'true' | 'false';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: unknown[];
+            nextCursor: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_createEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          sourceId: string;
+          externalId: string;
+          version: number;
+          /**
+           * @default active
+           * @enum {string}
+           */
+          status?: 'active' | 'revised' | 'withdrawn';
+          /** @enum {string} */
+          category:
+            | 'port-restriction'
+            | 'notice'
+            | 'navigation-warning'
+            | 'weather'
+            | 'security'
+            | 'environment'
+            | 'incident'
+            | 'other';
+          /**
+           * @default confirmed
+           * @enum {string}
+           */
+          reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+          /** Format: uri */
+          originalUrl?: string;
+          /** @default [] */
+          relations?: {
+            /** @enum {string} */
+            kind: 'occurs-at' | 'mentions' | 'involves' | 'applies-to' | 'impacts';
+            objectId?: string;
+            geometry?:
+              | {
+                  /** @enum {string} */
+                  type: 'Point';
+                  coordinates: number[];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'LineString';
+                  coordinates: number[][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'Polygon';
+                  coordinates: number[][][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'MultiPoint';
+                  coordinates: number[][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'MultiLineString';
+                  coordinates: number[][][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'MultiPolygon';
+                  coordinates: number[][][][];
                 };
-                content: {
-                    "application/json": {
-                        items: {
-                            /** Format: uuid */
-                            replayId: string;
-                            /** Format: uuid */
-                            runId: string;
-                            sourceId: string;
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            /** @enum {number} */
-                            cleaningVersion: 1;
+            basis: string;
+            /** @default [] */
+            paragraphIds?: string[];
+            /**
+             * @default candidate
+             * @enum {string}
+             */
+            reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+            /**
+             * @default manual
+             * @enum {string}
+             */
+            origin?: 'source' | 'rule' | 'manual' | 'legacy';
+            impactType?: string;
+            /** Format: date-time */
+            effectiveFrom?: string;
+            /** Format: date-time */
+            effectiveTo?: string | null;
+          }[];
+          title: string;
+          summary: string;
+          /** Format: date-time */
+          publishedAt: string;
+          /** Format: date-time */
+          effectiveFrom: string;
+          /** Format: date-time */
+          effectiveTo: string | null;
+          bbox?: number[];
+          /** @default [] */
+          vesselTypes?: number[];
+          /** @default [] */
+          mmsis?: string[];
+          paragraphs: {
+            id: string;
+            text: string;
+          }[];
+          commonSourceId?: string;
+          supersedesId?: string;
+          originalArchiveId?: string;
+          raw: unknown;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_eventDetail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_reviewEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          reviewStatus: 'candidate' | 'confirmed' | 'rejected';
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_addRelation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          kind: 'occurs-at' | 'mentions' | 'involves' | 'applies-to' | 'impacts';
+          objectId?: string;
+          geometry?:
+            | {
+                /** @enum {string} */
+                type: 'Point';
+                coordinates: number[];
+              }
+            | {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'Polygon';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPoint';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiLineString';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPolygon';
+                coordinates: number[][][][];
+              };
+          basis: string;
+          /** @default [] */
+          paragraphIds?: string[];
+          /**
+           * @default candidate
+           * @enum {string}
+           */
+          reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+          /**
+           * @default manual
+           * @enum {string}
+           */
+          origin?: 'source' | 'rule' | 'manual' | 'legacy';
+          impactType?: string;
+          /** Format: date-time */
+          effectiveFrom?: string;
+          /** Format: date-time */
+          effectiveTo?: string | null;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_editRelation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          kind: 'occurs-at' | 'mentions' | 'involves' | 'applies-to' | 'impacts';
+          objectId?: string;
+          geometry?:
+            | {
+                /** @enum {string} */
+                type: 'Point';
+                coordinates: number[];
+              }
+            | {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'Polygon';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPoint';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiLineString';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPolygon';
+                coordinates: number[][][][];
+              };
+          basis: string;
+          /** @default [] */
+          paragraphIds?: string[];
+          /**
+           * @default candidate
+           * @enum {string}
+           */
+          reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+          /**
+           * @default manual
+           * @enum {string}
+           */
+          origin?: 'source' | 'rule' | 'manual' | 'legacy';
+          impactType?: string;
+          /** Format: date-time */
+          effectiveFrom?: string;
+          /** Format: date-time */
+          effectiveTo?: string | null;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_reviewRelation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          reviewStatus: 'candidate' | 'confirmed' | 'rejected';
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_objects: {
+    parameters: {
+      query?: {
+        keyword?: string;
+        kind?: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: unknown[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_createObject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          id?: string;
+          /** @enum {string} */
+          kind: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
+          name: string;
+          geometry?:
+            | {
+                /** @enum {string} */
+                type: 'Point';
+                coordinates: number[];
+              }
+            | {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'Polygon';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPoint';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiLineString';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPolygon';
+                coordinates: number[][][][];
+              };
+          mmsi?: string;
+          /** @default [] */
+          aliases?: string[];
+          /** @default {} */
+          metadata?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_editObject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          id?: string;
+          /** @enum {string} */
+          kind: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
+          name: string;
+          geometry?:
+            | {
+                /** @enum {string} */
+                type: 'Point';
+                coordinates: number[];
+              }
+            | {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'Polygon';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPoint';
+                coordinates: number[][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiLineString';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPolygon';
+                coordinates: number[][][][];
+              };
+          mmsi?: string;
+          /** @default [] */
+          aliases?: string[];
+          /** @default {} */
+          metadata?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_importObjects: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          type: 'FeatureCollection';
+          features: {
+            /** @enum {string} */
+            type: 'Feature';
+            id?: string;
+            geometry:
+              | {
+                  /** @enum {string} */
+                  type: 'Point';
+                  coordinates: number[];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'LineString';
+                  coordinates: number[][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'Polygon';
+                  coordinates: number[][][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'MultiPoint';
+                  coordinates: number[][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'MultiLineString';
+                  coordinates: number[][][];
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'MultiPolygon';
+                  coordinates: number[][][][];
+                };
+            properties: {
+              id?: string;
+              /** @enum {string} */
+              kind: 'vessel' | 'port' | 'channel' | 'area' | 'facility';
+              name: string;
+              geometry?:
+                | {
+                    /** @enum {string} */
+                    type: 'Point';
+                    coordinates: number[];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'LineString';
+                    coordinates: number[][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'Polygon';
+                    coordinates: number[][][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiPoint';
+                    coordinates: number[][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiLineString';
+                    coordinates: number[][][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiPolygon';
+                    coordinates: number[][][][];
+                  };
+              mmsi?: string;
+              /** @default [] */
+              aliases?: string[];
+              /** @default {} */
+              metadata?: {
+                [key: string]: unknown;
+              };
+            };
+          }[];
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_plot: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          eventIds: string[];
+          /** @default false */
+          includeCandidates?: boolean;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_plotSet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            eventIds: string[];
+            hiddenEventIds: string[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  IntelligenceController_savePlotSet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          eventIds: string[];
+          hiddenEventIds: string[];
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            eventIds: string[];
+            hiddenEventIds: string[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            instances: {
+              [key: string]: unknown;
+            }[];
+            capabilities: {
+              [key: string]: unknown;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          definitionId: 'port-restriction' | 'area-low-speed-notice';
+          name: string;
+          config: {
+            bbox: number[];
+            /** @default 24 */
+            historyHours?: number;
+            /** @default 60 */
+            windowMinutes?: number;
+            /** @default 3 */
+            lowSpeedKnots?: number;
+            /** @default 3 */
+            minPositions?: number;
+            /** @default 60 */
+            scheduleSeconds?: number;
+          };
+          /** @default false */
+          enabled?: boolean;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_state: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          enabled: boolean;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_run: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_runs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              [key: string]: unknown;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_runDetail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_config: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          config: {
+            bbox: number[];
+            /** @default 24 */
+            historyHours?: number;
+            /** @default 60 */
+            windowMinutes?: number;
+            /** @default 3 */
+            lowSpeedKnots?: number;
+            /** @default 3 */
+            minPositions?: number;
+            /** @default 60 */
+            scheduleSeconds?: number;
+          };
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AnalysisController_list: {
+    parameters: {
+      query?: {
+        instanceId?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              [key: string]: unknown;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AnalysisController_revisions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              [key: string]: unknown;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AnalysisController_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AnalysisController_feed: {
+    parameters: {
+      query?: {
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              [key: string]: unknown;
+            }[];
+            nextCursor: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_config: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            spatialFocusEnabled: boolean;
+            businessWriteEnabled: boolean;
+            enabled: boolean;
+            uiEnabled: boolean;
+            dynamicSkillsEnabled: boolean;
+            defaultHistoryHours: number;
+            maxHistoryHours: number;
+            maxModelCalls: number;
+            maxToolCalls: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_sessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              ownerId: string;
+              title: string;
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_createSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default 区域研判 */
+          title?: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ownerId: string;
+            title: string;
+            /** Format: date-time */
+            createdAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_session: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            session: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              ownerId: string;
+              title: string;
+              /** Format: date-time */
+              createdAt: string;
+            };
+            messages: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** @enum {string} */
+              role: 'user' | 'assistant';
+              content: string;
+              /** Format: uuid */
+              taskId: string | null;
+              resultVersion?: number | null;
+              inputRevision?: number | null;
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+            tasks: {
+              skillRef?: {
+                skillId: string;
+                version?: string;
+              } | null;
+              /** @enum {string} */
+              skillVersionPolicy?: 'original' | 'latest';
+              uiBinding?: {
+                /** Format: uuid */
+                clientId: string;
+                pageGeneration: number;
+                tracksVersion?: number;
+                heatmapVersion?: number;
+                highlightsVersion?: number;
+                cameraVersion?: number;
+                focusVersion?: number;
+              } | null;
+              uiResult?: {
+                /** @enum {string} */
+                kind: 'ui_control';
+                /** Format: uuid */
+                commandId: string | null;
+                status: string;
+                components: {
+                  /** @enum {string} */
+                  id:
+                    | 'app.page'
+                    | 'page.list'
+                    | 'page.editor'
+                    | 'page.detail'
+                    | 'page.archive'
+                    | 'intelligence.draft'
+                    | 'workspace.left'
+                    | 'workspace.right'
+                    | 'chart.vessel-tracks'
+                    | 'chart.heatmap'
+                    | 'chart.heatmap.legend'
+                    | 'chart.heatmap.popup'
+                    | 'chart.layers.ais'
+                    | 'chart.layers.tracks'
+                    | 'chart.layers.evidence'
+                    | 'chart.focus'
+                    | 'chart.viewport'
+                    | 'chart.vessel-highlights'
+                    | 'agent.reply'
+                    | 'agent.input'
+                    | 'agent.sources'
+                    | 'chart.evidence'
+                    | 'chart.choices';
+                  version: number;
+                  revision?: number;
+                  mounted: boolean;
+                  open: boolean;
+                  visible: boolean;
+                  /** @default false */
+                  focused: boolean;
+                  /** @default 0 */
+                  order: number;
+                  /** @default false */
+                  loading: boolean;
+                  /** @default false */
+                  dirty: boolean;
+                  /** @default false */
+                  interacting: boolean;
+                  actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+                  /** @enum {string} */
+                  tab?:
+                    | 'search'
+                    | 'intelligence'
+                    | 'layers'
+                    | 'playback'
+                    | 'heatmap'
+                    | 'history-tracks'
+                    | 'chat'
+                    | 'push'
+                    | 'tasks';
+                  /** @enum {string} */
+                  blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+                  highlightEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    groups: {
+                      /** Format: uuid */
+                      groupId: string;
+                      /** Format: uuid */
+                      taskId: string;
+                      mmsis: string[];
+                    }[];
+                  };
+                  highlightGroups?: {
+                    /** Format: uuid */
+                    groupId: string;
+                    /** Format: uuid */
+                    taskId: string;
+                    mmsis: string[];
+                  }[];
+                  focusEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    taskId: string;
+                    version: number;
+                    inputRevision: number;
+                    /** @enum {string} */
+                    displayStatus: 'complete' | 'partial' | 'unlocated';
+                  };
+                  cameraEvidence?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                    /** Format: uuid */
+                    commandId: string;
+                  };
+                  cameraState?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                  };
+                }[];
+              } | null;
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'waiting_ui'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'vessel_highlights'
+                | 'map_camera'
+                | 'map_focus'
+                | 'route_plan'
+                | 'route_manage'
+                | 'event_query'
+                | 'event_manage'
+                | 'ui_control'
+                | 'skill';
+              selection?: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
                             /** @enum {string} */
-                            targetDataset: "current";
-                            status: string;
-                            /** Format: date-time */
-                            createdAt: string;
-                            counters: {
-                                [key: string]: number;
-                            };
-                        }[];
-                        nextCursor: string | null;
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
                     };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
                 };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
                 };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
                 };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
                 };
-                content?: never;
-            };
-        };
-    };
-    ReplayController_create: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceId: string;
-                    /** Format: date-time */
-                    from: string;
-                    /** Format: date-time */
-                    to: string;
-                    /**
-                     * @default 1
-                     * @enum {number}
-                     */
-                    cleaningVersion?: 1;
-                    /**
-                     * @default current
-                     * @enum {string}
-                     */
-                    targetDataset?: "current";
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
                 };
-            };
-        };
-        responses: {
-            202: {
-                headers: {
-                    [name: string]: unknown;
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
                 };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        runId: string;
-                        /** Format: uuid */
-                        jobId: string | null;
-                        sourceId: string;
-                        /** @enum {string} */
-                        mode: "crawl" | "collect" | "replay";
-                        /** @enum {string} */
-                        status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
-                        /** Format: date-time */
-                        requestedAt: string;
-                        /** Format: date-time */
-                        startedAt: string | null;
-                        /** Format: date-time */
-                        finishedAt: string | null;
-                        captures: number;
-                        positions: number;
-                        statics: number;
-                        quarantined: number;
-                        records: number;
-                        normalizedCaptures: number;
-                        /** @enum {string} */
-                        counterScope: "confirmed expanded records; retained event counts deduplicate separately";
-                        error: string | null;
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
                     };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    SystemController_health: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        status: "ready" | "degraded";
-                        services: {
-                            postgres: boolean;
-                            clickhouse: boolean;
-                            nats: boolean;
-                            s3: boolean;
-                        };
-                        sources: {
-                            enabled: number;
-                            latestReceivedAt: string | null;
-                            empty: boolean;
-                        };
-                        bus: {
-                            status: string;
-                            ready: boolean;
-                            reasons: string[];
-                            streams: {
-                                name: string;
-                                bytes: number;
-                                limit: number;
-                                oldestAgeMs: number;
-                                pendingAgeMs: number;
-                                activeStreamingCommands: number;
-                                messages: number;
-                            }[];
-                        };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
                     };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    SystemController_ready: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        status: "ready" | "degraded";
-                        services: {
-                            postgres: boolean;
-                            clickhouse: boolean;
-                            nats: boolean;
-                            s3: boolean;
-                        };
-                        sources: {
-                            enabled: number;
-                            latestReceivedAt: string | null;
-                            empty: boolean;
-                        };
-                        bus: {
-                            status: string;
-                            ready: boolean;
-                            reasons: string[];
-                            streams: {
-                                name: string;
-                                bytes: number;
-                                limit: number;
-                                oldestAgeMs: number;
-                                pendingAgeMs: number;
-                                activeStreamingCommands: number;
-                                messages: number;
-                            }[];
-                        };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+            pendingInputRequests: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: (
+                'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector' | 'skill'
+              )[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic'
+                | 'missing_vessel_selector'
+                | 'ambiguous_skill';
+              prefill: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
                     };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
                 };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
                 };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
                 };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
                 };
-                content?: never;
-            };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            }[];
+            snapshotCursor: string;
+          };
         };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    SystemController_getMetrics: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": string;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AgentController_message: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
     };
-    IntelligenceController_search: {
-        parameters: {
-            query?: {
+    requestBody: {
+      content: {
+        'application/json': {
+          content: string;
+          bbox?: number[];
+          /** @default 24 */
+          historyHours?: number;
+          mapContext?: {
+            sourceId?: string;
+            shipType?: number;
+            hours?: number;
+            selectedTargets?: {
+              /** @enum {string} */
+              kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+              id: string;
+              revision?: number;
+              /** Format: uuid */
+              sourceTaskId?: string;
+            }[];
+            region?:
+              | {
+                  /** @enum {string} */
+                  kind: 'circle';
+                  center: number[];
+                  radiusMeters: number;
+                }
+              | {
+                  /** @enum {string} */
+                  kind: 'bbox';
+                  bbox: number[];
+                }
+              | {
+                  /** @enum {string} */
+                  kind: 'polygon';
+                  geometry:
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      };
+                };
+            bbox: number[];
+            /** Format: date-time */
+            capturedAt: string;
+            selectedMmsis?: string[];
+          };
+          uiBinding?: {
+            /** Format: uuid */
+            clientId: string;
+            pageGeneration: number;
+            tracksVersion?: number;
+            heatmapVersion?: number;
+            highlightsVersion?: number;
+            cameraVersion?: number;
+            focusVersion?: number;
+          };
+          skillRef?: {
+            skillId: string;
+            version?: string;
+          };
+        };
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            message: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** @enum {string} */
+              role: 'user' | 'assistant';
+              content: string;
+              /** Format: uuid */
+              taskId: string | null;
+              resultVersion?: number | null;
+              inputRevision?: number | null;
+              /** Format: date-time */
+              createdAt: string;
+            };
+            task: {
+              skillRef?: {
+                skillId: string;
+                version?: string;
+              } | null;
+              /** @enum {string} */
+              skillVersionPolicy?: 'original' | 'latest';
+              uiBinding?: {
+                /** Format: uuid */
+                clientId: string;
+                pageGeneration: number;
+                tracksVersion?: number;
+                heatmapVersion?: number;
+                highlightsVersion?: number;
+                cameraVersion?: number;
+                focusVersion?: number;
+              } | null;
+              uiResult?: {
+                /** @enum {string} */
+                kind: 'ui_control';
+                /** Format: uuid */
+                commandId: string | null;
+                status: string;
+                components: {
+                  /** @enum {string} */
+                  id:
+                    | 'app.page'
+                    | 'page.list'
+                    | 'page.editor'
+                    | 'page.detail'
+                    | 'page.archive'
+                    | 'intelligence.draft'
+                    | 'workspace.left'
+                    | 'workspace.right'
+                    | 'chart.vessel-tracks'
+                    | 'chart.heatmap'
+                    | 'chart.heatmap.legend'
+                    | 'chart.heatmap.popup'
+                    | 'chart.layers.ais'
+                    | 'chart.layers.tracks'
+                    | 'chart.layers.evidence'
+                    | 'chart.focus'
+                    | 'chart.viewport'
+                    | 'chart.vessel-highlights'
+                    | 'agent.reply'
+                    | 'agent.input'
+                    | 'agent.sources'
+                    | 'chart.evidence'
+                    | 'chart.choices';
+                  version: number;
+                  revision?: number;
+                  mounted: boolean;
+                  open: boolean;
+                  visible: boolean;
+                  /** @default false */
+                  focused: boolean;
+                  /** @default 0 */
+                  order: number;
+                  /** @default false */
+                  loading: boolean;
+                  /** @default false */
+                  dirty: boolean;
+                  /** @default false */
+                  interacting: boolean;
+                  actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+                  /** @enum {string} */
+                  tab?:
+                    | 'search'
+                    | 'intelligence'
+                    | 'layers'
+                    | 'playback'
+                    | 'heatmap'
+                    | 'history-tracks'
+                    | 'chat'
+                    | 'push'
+                    | 'tasks';
+                  /** @enum {string} */
+                  blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+                  highlightEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    groups: {
+                      /** Format: uuid */
+                      groupId: string;
+                      /** Format: uuid */
+                      taskId: string;
+                      mmsis: string[];
+                    }[];
+                  };
+                  highlightGroups?: {
+                    /** Format: uuid */
+                    groupId: string;
+                    /** Format: uuid */
+                    taskId: string;
+                    mmsis: string[];
+                  }[];
+                  focusEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    taskId: string;
+                    version: number;
+                    inputRevision: number;
+                    /** @enum {string} */
+                    displayStatus: 'complete' | 'partial' | 'unlocated';
+                  };
+                  cameraEvidence?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                    /** Format: uuid */
+                    commandId: string;
+                  };
+                  cameraState?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                  };
+                }[];
+              } | null;
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'waiting_ui'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'vessel_highlights'
+                | 'map_camera'
+                | 'map_focus'
+                | 'route_plan'
+                | 'route_manage'
+                | 'event_query'
+                | 'event_manage'
+                | 'ui_control'
+                | 'skill';
+              selection?: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            pendingInputRequests: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: (
+                'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector' | 'skill'
+              )[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic'
+                | 'missing_vessel_selector'
+                | 'ambiguous_skill';
+              prefill: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_task: {
+    parameters: {
+      query?: {
+        resultVersion?: number;
+        inputRevision?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            focusResult: {
+              /** @enum {string} */
+              kind: 'map_focus';
+              version: number;
+              inputRevision: number;
+              sessionId: string;
+              taskId: string;
+              targets: {
+                ref: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                };
+                label: string;
+                geometry:
+                  | {
+                      /** @enum {string} */
+                      type: 'Point';
+                      coordinates: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'LineString';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'Polygon';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPoint';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiLineString';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPolygon';
+                      coordinates: number[][][][];
+                    };
+                /** Format: date-time */
+                observedAt?: string;
+                source?: string;
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+              }[];
+              missing: {
+                /** @enum {string} */
+                kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                id: string;
+                revision?: number;
+                /** Format: uuid */
+                sourceTaskId?: string;
+              }[];
+              omittedCount?: number;
+              bbox: number[] | null;
+              /** @enum {string} */
+              displayStatus: 'complete' | 'partial' | 'unlocated';
+              /** @enum {string} */
+              cameraPolicy: 'if-needed-once';
+            } | null;
+            task: {
+              skillRef?: {
+                skillId: string;
+                version?: string;
+              } | null;
+              /** @enum {string} */
+              skillVersionPolicy?: 'original' | 'latest';
+              uiBinding?: {
+                /** Format: uuid */
+                clientId: string;
+                pageGeneration: number;
+                tracksVersion?: number;
+                heatmapVersion?: number;
+                highlightsVersion?: number;
+                cameraVersion?: number;
+                focusVersion?: number;
+              } | null;
+              uiResult?: {
+                /** @enum {string} */
+                kind: 'ui_control';
+                /** Format: uuid */
+                commandId: string | null;
+                status: string;
+                components: {
+                  /** @enum {string} */
+                  id:
+                    | 'app.page'
+                    | 'page.list'
+                    | 'page.editor'
+                    | 'page.detail'
+                    | 'page.archive'
+                    | 'intelligence.draft'
+                    | 'workspace.left'
+                    | 'workspace.right'
+                    | 'chart.vessel-tracks'
+                    | 'chart.heatmap'
+                    | 'chart.heatmap.legend'
+                    | 'chart.heatmap.popup'
+                    | 'chart.layers.ais'
+                    | 'chart.layers.tracks'
+                    | 'chart.layers.evidence'
+                    | 'chart.focus'
+                    | 'chart.viewport'
+                    | 'chart.vessel-highlights'
+                    | 'agent.reply'
+                    | 'agent.input'
+                    | 'agent.sources'
+                    | 'chart.evidence'
+                    | 'chart.choices';
+                  version: number;
+                  revision?: number;
+                  mounted: boolean;
+                  open: boolean;
+                  visible: boolean;
+                  /** @default false */
+                  focused: boolean;
+                  /** @default 0 */
+                  order: number;
+                  /** @default false */
+                  loading: boolean;
+                  /** @default false */
+                  dirty: boolean;
+                  /** @default false */
+                  interacting: boolean;
+                  actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+                  /** @enum {string} */
+                  tab?:
+                    | 'search'
+                    | 'intelligence'
+                    | 'layers'
+                    | 'playback'
+                    | 'heatmap'
+                    | 'history-tracks'
+                    | 'chat'
+                    | 'push'
+                    | 'tasks';
+                  /** @enum {string} */
+                  blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+                  highlightEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    groups: {
+                      /** Format: uuid */
+                      groupId: string;
+                      /** Format: uuid */
+                      taskId: string;
+                      mmsis: string[];
+                    }[];
+                  };
+                  highlightGroups?: {
+                    /** Format: uuid */
+                    groupId: string;
+                    /** Format: uuid */
+                    taskId: string;
+                    mmsis: string[];
+                  }[];
+                  focusEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    taskId: string;
+                    version: number;
+                    inputRevision: number;
+                    /** @enum {string} */
+                    displayStatus: 'complete' | 'partial' | 'unlocated';
+                  };
+                  cameraEvidence?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                    /** Format: uuid */
+                    commandId: string;
+                  };
+                  cameraState?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                  };
+                }[];
+              } | null;
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'waiting_ui'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'vessel_highlights'
+                | 'map_camera'
+                | 'map_focus'
+                | 'route_plan'
+                | 'route_manage'
+                | 'event_query'
+                | 'event_manage'
+                | 'ui_control'
+                | 'skill';
+              selection?: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            results: {
+              [key: string]: unknown;
+            }[];
+            steps: {
+              key: string;
+              name: string;
+              input: unknown;
+              output: unknown;
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+            pendingInputRequests: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: (
+                'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector' | 'skill'
+              )[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic'
+                | 'missing_vessel_selector'
+                | 'ambiguous_skill';
+              prefill: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            }[];
+            snapshotCursor: string;
+            queryResult: {
+              regionGeometry?:
+                | {
+                    /** @enum {string} */
+                    type: 'Point';
+                    coordinates: number[];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'LineString';
+                    coordinates: number[][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'Polygon';
+                    coordinates: number[][][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiPoint';
+                    coordinates: number[][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiLineString';
+                    coordinates: number[][][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiPolygon';
+                    coordinates: number[][][][];
+                  };
+              /** @enum {string} */
+              kind: 'vessel_list' | 'vessel_detail';
+              version: number;
+              inputRevision: number;
+              total: number;
+              truncated: boolean;
+              items: {
+                mmsi: string;
+                name: string | null;
+                imo: string | null;
+                shipType: number | null;
+                latestPosition: {
+                  lat: number;
+                  lon: number;
+                  /** Format: date-time */
+                  observedAt: string;
+                  sogKnots: number | null;
+                  sourceId: string;
+                } | null;
+              }[];
+              /** Format: date-time */
+              asOf: string;
+              selection: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+            } | null;
+            intelligenceResult: {
+              /** @enum {string} */
+              kind: 'intelligence_search';
+              version: number;
+              inputRevision: number;
+              /** Format: date-time */
+              asOf: string;
+              spec: {
                 keyword?: string;
                 locationKeyword?: string;
-                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                reviewStatus?: "candidate" | "confirmed" | "rejected";
-                timeMode?: "published" | "effective" | "observed";
+                sourceIds?: string[];
+                /** @enum {string} */
+                category?:
+                  | 'port-restriction'
+                  | 'notice'
+                  | 'navigation-warning'
+                  | 'weather'
+                  | 'security'
+                  | 'environment'
+                  | 'incident'
+                  | 'other';
+                /** @enum {string} */
+                reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                /** @enum {string} */
+                timeMode?: 'published' | 'effective' | 'observed';
+                /** Format: date-time */
                 from?: string;
+                /** Format: date-time */
                 to?: string;
+                bbox?: number[];
                 objectId?: string;
-                kind?: "events" | "marine" | "both";
+                mmsis?: string[];
+                /** @enum {string} */
+                kind?: 'events' | 'marine' | 'both';
                 samplePointId?: string;
+                /** Format: date-time */
                 forecastFrom?: string;
+                /** Format: date-time */
                 forecastTo?: string;
-                bbox?: string;
-                sourceIds?: string;
-                mmsis?: string;
-                limit?: number;
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            id: string;
-                            sourceId: string;
-                            sourceName: string;
-                            externalId: string;
-                            version: number;
-                            title: string;
-                            summary: string;
-                            snippet: string;
-                            /** @enum {string} */
-                            category: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                            /** @enum {string} */
-                            status: "active" | "revised" | "withdrawn";
-                            /** @enum {string} */
-                            reviewStatus: "candidate" | "confirmed" | "rejected";
-                            /** @enum {string} */
-                            visibility: "public" | "internal";
-                            /** Format: date-time */
-                            publishedAt: string | null;
-                            /** Format: date-time */
-                            observedAt: string;
-                            /** Format: date-time */
-                            effectiveFrom: string | null;
-                            /** Format: date-time */
-                            effectiveTo: string | null;
-                            /** Format: date-time */
-                            collectedAt: string;
-                            /** @enum {string} */
-                            timeBasis: "publication" | "index-observation" | "effective" | "unknown";
-                            /** Format: uri */
-                            originalUrl: string | null;
-                            originalArchiveId: string | null;
-                            geometry: ({
+              };
+              total: number;
+              truncated: boolean;
+              evidence: (
+                | {
+                    /** @enum {string} */
+                    kind: 'event';
+                    reference: string;
+                    event: {
+                      id: string;
+                      sourceId: string;
+                      sourceName: string;
+                      externalId: string;
+                      version: number;
+                      title: string;
+                      summary: string;
+                      snippet: string;
+                      /** @enum {string} */
+                      category:
+                        | 'port-restriction'
+                        | 'notice'
+                        | 'navigation-warning'
+                        | 'weather'
+                        | 'security'
+                        | 'environment'
+                        | 'incident'
+                        | 'other';
+                      /** @enum {string} */
+                      status: 'active' | 'revised' | 'withdrawn';
+                      /** @enum {string} */
+                      reviewStatus: 'candidate' | 'confirmed' | 'rejected';
+                      /** @enum {string} */
+                      visibility: 'public' | 'internal';
+                      /** Format: date-time */
+                      publishedAt: string | null;
+                      /** Format: date-time */
+                      observedAt: string;
+                      /** Format: date-time */
+                      effectiveFrom: string | null;
+                      /** Format: date-time */
+                      effectiveTo: string | null;
+                      /** Format: date-time */
+                      collectedAt: string;
+                      /** @enum {string} */
+                      timeBasis: 'publication' | 'index-observation' | 'effective' | 'unknown';
+                      /** Format: uri */
+                      originalUrl: string | null;
+                      originalArchiveId: string | null;
+                      geometry:
+                        | (
+                            | {
                                 /** @enum {string} */
-                                type: "Point";
-                                coordinates: (number)[];
-                            } | {
+                                type: 'Point';
+                                coordinates: number[];
+                              }
+                            | {
                                 /** @enum {string} */
-                                type: "LineString";
-                                coordinates: (number)[][];
-                            } | {
+                                type: 'LineString';
+                                coordinates: number[][];
+                              }
+                            | {
                                 /** @enum {string} */
-                                type: "Polygon";
-                                coordinates: (number)[][][];
-                            } | {
+                                type: 'Polygon';
+                                coordinates: number[][][];
+                              }
+                            | {
                                 /** @enum {string} */
-                                type: "MultiPoint";
-                                coordinates: (number)[][];
-                            } | {
+                                type: 'MultiPoint';
+                                coordinates: number[][];
+                              }
+                            | {
                                 /** @enum {string} */
-                                type: "MultiLineString";
-                                coordinates: (number)[][][];
-                            } | {
+                                type: 'MultiLineString';
+                                coordinates: number[][][];
+                              }
+                            | {
                                 /** @enum {string} */
-                                type: "MultiPolygon";
-                                coordinates: (number)[][][][];
-                            }) | null;
-                            /** @enum {string} */
-                            matchBasis: "geometry" | "object" | "mention" | "keyword" | "none";
-                            locationNote: string;
-                        }[];
-                        forecasts: {
-                            id: string;
-                            sourceId: string;
-                            samplePointId: string;
-                            pointName: string;
-                            point: {
-                                lon: number;
-                                lat: number;
-                            };
-                            grid: {
-                                lon: number;
-                                lat: number;
-                            };
-                            /** Format: date-time */
-                            fetchedAt: string;
-                            /** Format: date-time */
-                            modelPublishedAt: string | null;
-                            /** Format: date-time */
-                            validFrom: string;
-                            /** Format: date-time */
-                            validTo: string;
-                            series: {
-                                /** Format: date-time */
-                                validAt: string;
-                                waveHeight: number | null;
-                                waveDirection: number | null;
-                                wavePeriod: number | null;
-                            }[];
-                            originalArchiveId: string;
-                            /** Format: uri */
-                            originalUrl: string;
-                            /** @enum {string} */
-                            visibility: "public" | "internal";
-                        }[];
-                        total: number;
-                        nextCursor: string | null;
+                                type: 'MultiPolygon';
+                                coordinates: number[][][][];
+                              }
+                          )
+                        | null;
+                      /** @enum {string} */
+                      matchBasis: 'geometry' | 'object' | 'mention' | 'keyword' | 'none';
+                      locationNote: string;
+                    };
+                  }
+                | {
+                    /** @enum {string} */
+                    kind: 'marine';
+                    reference: string;
+                    forecast: {
+                      id: string;
+                      sourceId: string;
+                      samplePointId: string;
+                      pointName: string;
+                      point: {
+                        lon: number;
+                        lat: number;
+                      };
+                      grid: {
+                        lon: number;
+                        lat: number;
+                      };
+                      /** Format: date-time */
+                      fetchedAt: string;
+                      /** Format: date-time */
+                      modelPublishedAt: string | null;
+                      /** Format: date-time */
+                      validFrom: string;
+                      /** Format: date-time */
+                      validTo: string;
+                      series: {
                         /** Format: date-time */
-                        asOf: string;
-                        spec: {
-                            keyword?: string;
-                            locationKeyword?: string;
-                            sourceIds?: string[];
-                            /** @enum {string} */
-                            category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                            /** @enum {string} */
-                            reviewStatus?: "candidate" | "confirmed" | "rejected";
-                            /** @enum {string} */
-                            timeMode?: "published" | "effective" | "observed";
-                            /** Format: date-time */
-                            from?: string;
-                            /** Format: date-time */
-                            to?: string;
-                            bbox?: (number)[];
-                            objectId?: string;
-                            mmsis?: string[];
-                            /** @enum {string} */
-                            kind?: "events" | "marine" | "both";
-                            samplePointId?: string;
-                            /** Format: date-time */
-                            forecastFrom?: string;
-                            /** Format: date-time */
-                            forecastTo?: string;
-                        };
-                        sourceHealth: {
-                            sourceId: string;
-                            name: string;
-                            enabled: boolean;
-                            /** @enum {string} */
-                            visibility: "public" | "internal";
-                            /** @enum {string} */
-                            status: "ready" | "stale" | "unavailable" | "never_collected" | "disabled";
-                            /** Format: date-time */
-                            lastPolledAt: string | null;
-                            /** Format: date-time */
-                            lastSuccessfulAt: string | null;
-                            /** Format: date-time */
-                            nextPollAt: string | null;
-                            lastError: string | null;
-                        }[];
-                        coverageNotes: string[];
+                        validAt: string;
+                        waveHeight: number | null;
+                        waveDirection: number | null;
+                        wavePeriod: number | null;
+                      }[];
+                      originalArchiveId: string;
+                      /** Format: uri */
+                      originalUrl: string;
+                      /** @enum {string} */
+                      visibility: 'public' | 'internal';
                     };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_sources: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
-                        /** @default true */
-                        enabled: boolean;
-                        /** @enum {string} */
-                        adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
-                        /**
-                         * @default internal
-                         * @enum {string}
-                         */
-                        visibility: "public" | "internal";
-                        bbox?: (number)[];
-                        eventTypes?: ("TC" | "TS" | "FL")[];
-                        /** @default 6 */
-                        requestsPerMinute: number;
-                        /** @default 5 */
-                        maxDocuments: number;
-                        /**
-                         * @default aggregator
-                         * @enum {string}
-                         */
-                        trust: "official" | "aggregator";
-                        endpoint?: string;
-                        /** @default [] */
-                        allowedHosts: string[];
-                        /** @default false */
-                        authorizationConfirmed: boolean;
-                        /** @default 300 */
-                        pollSeconds: number;
-                        /** @default 30 */
-                        timeoutSeconds: number;
-                        /** Format: date-time */
-                        lastPolledAt: string | null;
-                        /** Format: date-time */
-                        lastSuccessfulAt: string | null;
-                        lastError: string | null;
-                        lastIngestion: {
-                            [key: string]: unknown;
-                        };
-                    }[];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_createSource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceId: string;
-                    name: string;
-                    /** @enum {string} */
-                    kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
-                    /** @default true */
-                    enabled?: boolean;
-                    /** @enum {string} */
-                    adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
-                    /**
-                     * @default internal
-                     * @enum {string}
-                     */
-                    visibility?: "public" | "internal";
-                    bbox?: (number)[];
-                    eventTypes?: ("TC" | "TS" | "FL")[];
-                    /** @default 6 */
-                    requestsPerMinute?: number;
-                    /** @default 5 */
-                    maxDocuments?: number;
-                    /**
-                     * @default aggregator
-                     * @enum {string}
-                     */
-                    trust?: "official" | "aggregator";
-                    endpoint?: string;
-                    /** @default [] */
-                    allowedHosts?: string[];
-                    /** @default false */
-                    authorizationConfirmed?: boolean;
-                    /** @default 300 */
-                    pollSeconds?: number;
-                    /** @default 30 */
-                    timeoutSeconds?: number;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
-                        /** @default true */
-                        enabled: boolean;
-                        /** @enum {string} */
-                        adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
-                        /**
-                         * @default internal
-                         * @enum {string}
-                         */
-                        visibility: "public" | "internal";
-                        bbox?: (number)[];
-                        eventTypes?: ("TC" | "TS" | "FL")[];
-                        /** @default 6 */
-                        requestsPerMinute: number;
-                        /** @default 5 */
-                        maxDocuments: number;
-                        /**
-                         * @default aggregator
-                         * @enum {string}
-                         */
-                        trust: "official" | "aggregator";
-                        endpoint?: string;
-                        /** @default [] */
-                        allowedHosts: string[];
-                        /** @default false */
-                        authorizationConfirmed: boolean;
-                        /** @default 300 */
-                        pollSeconds: number;
-                        /** @default 30 */
-                        timeoutSeconds: number;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_updateSource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceId: string;
-                    name: string;
-                    /** @enum {string} */
-                    kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
-                    /** @default true */
-                    enabled?: boolean;
-                    /** @enum {string} */
-                    adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
-                    /**
-                     * @default internal
-                     * @enum {string}
-                     */
-                    visibility?: "public" | "internal";
-                    bbox?: (number)[];
-                    eventTypes?: ("TC" | "TS" | "FL")[];
-                    /** @default 6 */
-                    requestsPerMinute?: number;
-                    /** @default 5 */
-                    maxDocuments?: number;
-                    /**
-                     * @default aggregator
-                     * @enum {string}
-                     */
-                    trust?: "official" | "aggregator";
-                    endpoint?: string;
-                    /** @default [] */
-                    allowedHosts?: string[];
-                    /** @default false */
-                    authorizationConfirmed?: boolean;
-                    /** @default 300 */
-                    pollSeconds?: number;
-                    /** @default 30 */
-                    timeoutSeconds?: number;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sourceId: string;
-                        name: string;
-                        /** @enum {string} */
-                        kind: "manual" | "api" | "json" | "rss" | "file" | "fixture";
-                        /** @default true */
-                        enabled: boolean;
-                        /** @enum {string} */
-                        adapter?: "maritime-html" | "gdacs" | "gdelt" | "rss" | "usgs" | "marine";
-                        /**
-                         * @default internal
-                         * @enum {string}
-                         */
-                        visibility: "public" | "internal";
-                        bbox?: (number)[];
-                        eventTypes?: ("TC" | "TS" | "FL")[];
-                        /** @default 6 */
-                        requestsPerMinute: number;
-                        /** @default 5 */
-                        maxDocuments: number;
-                        /**
-                         * @default aggregator
-                         * @enum {string}
-                         */
-                        trust: "official" | "aggregator";
-                        endpoint?: string;
-                        /** @default [] */
-                        allowedHosts: string[];
-                        /** @default false */
-                        authorizationConfirmed: boolean;
-                        /** @default 300 */
-                        pollSeconds: number;
-                        /** @default 30 */
-                        timeoutSeconds: number;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_archives: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: unknown[];
-                        nextCursor: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_archive: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        content: string;
-                        contentType: string;
-                        checksum: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_events: {
-        parameters: {
-            query?: {
-                limit?: number;
-                cursor?: string;
-                keyword?: string;
+                  }
+              )[];
+              sourceHealth: {
+                sourceId: string;
+                name: string;
+                enabled: boolean;
+                /** @enum {string} */
+                visibility: 'public' | 'internal';
+                /** @enum {string} */
+                status: 'ready' | 'stale' | 'unavailable' | 'never_collected' | 'disabled';
+                /** Format: date-time */
+                lastPolledAt: string | null;
+                /** Format: date-time */
+                lastSuccessfulAt: string | null;
+                /** Format: date-time */
+                nextPollAt: string | null;
+                lastError: string | null;
+              }[];
+              coverageNotes: string[];
+            } | null;
+            heatmapResult: {
+              query: {
+                bbox: number[];
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
                 sourceId?: string;
-                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                reviewStatus?: "candidate" | "confirmed" | "rejected";
-                status?: "active" | "revised" | "withdrawn";
-                from?: string;
-                to?: string;
-                objectId?: string;
-                bbox?: string;
-                latest?: "true" | "false";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
+                shipType?: number;
+                mmsis?: string[];
+              };
+              grid: {
+                level: number;
+                cellDegrees: number;
+              };
+              cells: {
+                id: string;
+                x: number;
+                y: number;
+                lon: number;
+                lat: number;
+                vesselCount: number;
+              }[];
+              totalVessels: number;
+              /** Format: date-time */
+              generatedAt: string;
+              /** @enum {string} */
+              metric: 'unique_vessels';
+              /** @enum {string} */
+              shipTypeBasis: 'current_profile';
+              /** @enum {string} */
+              kind: 'ais_heatmap';
+              version: number;
+              inputRevision: number;
+            } | null;
+            tracksResult: {
+              query: {
+                bbox: number[];
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+                selector: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
                 };
-                content: {
-                    "application/json": {
-                        items: unknown[];
-                        nextCursor: string | null;
+                sourceId?: string;
+                /** @default 20 */
+                maxVessels: number;
+                /** @default 500 */
+                maxPointsPerVessel: number;
+              };
+              /** Format: date-time */
+              asOf: string;
+              /** Format: date-time */
+              generatedAt: string;
+              /** @enum {string} */
+              shipTypeBasis: 'current_profile';
+              /** @enum {string} */
+              selectionBasis: 'historical_observation_in_bbox';
+              /** @enum {string} */
+              trackScope: 'full_time_window';
+              returnedVessels: number;
+              matchedVesselsLowerBound: number;
+              hasMoreVessels: boolean;
+              tracks: {
+                mmsi: string;
+                name: string | null;
+                shipType: number | null;
+                segments: {
+                  points: {
+                    lon: number;
+                    lat: number;
+                    /** Format: date-time */
+                    observedAt: string;
+                  }[];
+                }[];
+                total: number;
+                returned: number;
+                sampled: boolean;
+                truncated: boolean;
+              }[];
+              /** @enum {string} */
+              kind: 'vessel_tracks';
+              version: number;
+              inputRevision: number;
+            } | null;
+            dynamicSkill: {
+              taskBinding: {
+                /** Format: uuid */
+                ownerId: string;
+                /** Format: uuid */
+                taskId: string;
+                inputRevision: number;
+                binding: {
+                  skillId: string;
+                  version: string;
+                  contentHash: string;
+                  adapterVersion: string;
+                };
+                toolCeiling: string[];
+                /** Format: date-time */
+                boundAt: string;
+              } | null;
+              version: {
+                /** Format: uuid */
+                ownerId: string;
+                binding: {
+                  skillId: string;
+                  version: string;
+                  contentHash: string;
+                  adapterVersion: string;
+                };
+                definition: {
+                  /** @enum {number} */
+                  schemaVersion: 1;
+                  name: string;
+                  description: string;
+                  body: string;
+                  /** @default {} */
+                  references: {
+                    [key: string]: string;
+                  };
+                  /** @default [] */
+                  requiredInputs: (
+                    'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector'
+                  )[];
+                  toolIds: string[];
+                  steps: {
+                    id: string;
+                    toolId: string;
+                    input: {
+                      [key: string]: unknown;
                     };
+                    /** @enum {string} */
+                    artifactKind?:
+                      | 'map_focus'
+                      | 'route_plan'
+                      | 'route'
+                      | 'operational_events'
+                      | 'operational_event'
+                      | 'vessel_list'
+                      | 'vessel_detail'
+                      | 'ais_heatmap'
+                      | 'vessel_tracks'
+                      | 'intelligence_search'
+                      | 'analysis'
+                      | 'vessel_highlights'
+                      | 'map_camera';
+                    ui?: {
+                      /** @enum {string} */
+                      componentId:
+                        | 'app.page'
+                        | 'page.list'
+                        | 'page.editor'
+                        | 'page.detail'
+                        | 'page.archive'
+                        | 'intelligence.draft'
+                        | 'workspace.left'
+                        | 'workspace.right'
+                        | 'chart.vessel-tracks'
+                        | 'chart.heatmap'
+                        | 'chart.heatmap.legend'
+                        | 'chart.heatmap.popup'
+                        | 'chart.layers.ais'
+                        | 'chart.layers.tracks'
+                        | 'chart.layers.evidence'
+                        | 'chart.focus'
+                        | 'chart.viewport'
+                        | 'chart.vessel-highlights'
+                        | 'agent.reply'
+                        | 'agent.input'
+                        | 'agent.sources'
+                        | 'chart.evidence'
+                        | 'chart.choices';
+                      /** @enum {string} */
+                      action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+                      /** @enum {string} */
+                      tab?:
+                        | 'search'
+                        | 'intelligence'
+                        | 'layers'
+                        | 'playback'
+                        | 'heatmap'
+                        | 'history-tracks'
+                        | 'chat'
+                        | 'push'
+                        | 'tasks';
+                    };
+                  }[];
+                  /** @default [] */
+                  expectedArtifacts: {
+                    stepId: string;
+                    /** @enum {string} */
+                    kind:
+                      | 'map_focus'
+                      | 'route_plan'
+                      | 'route'
+                      | 'operational_events'
+                      | 'operational_event'
+                      | 'vessel_list'
+                      | 'vessel_detail'
+                      | 'ais_heatmap'
+                      | 'vessel_tracks'
+                      | 'intelligence_search'
+                      | 'analysis'
+                      | 'vessel_highlights'
+                      | 'map_camera';
+                  }[];
+                  /** @default [] */
+                  requiredDisplays: string[];
                 };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
+                /** @enum {string} */
+                source: 'agent' | 'user';
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                revokedAt: string | null;
+              } | null;
+              calls: {
+                /** Format: uuid */
+                callId: string;
+                /** Format: uuid */
+                taskId: string;
+                inputRevision: number;
+                stepId: string;
+                toolId: string;
+                generation: number;
+                /** @enum {string} */
+                status: 'running' | 'completed' | 'failed' | 'unknown' | 'waiting_ui';
+                input: unknown;
+                localResult: unknown;
+                modelProjection: unknown;
+                artifactRefs: string[];
+                errorCode: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+              }[];
+              artifacts: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                ownerId: string;
+                /** Format: uuid */
+                taskId: string;
+                inputRevision: number;
+                stepId: string;
+                /** @enum {string} */
+                kind:
+                  | 'map_focus'
+                  | 'route_plan'
+                  | 'route'
+                  | 'operational_events'
+                  | 'operational_event'
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks'
+                  | 'intelligence_search'
+                  | 'analysis'
+                  | 'vessel_highlights'
+                  | 'map_camera';
+                payload: unknown;
+                modelProjection: unknown;
+                /** Format: date-time */
+                createdAt: string;
+              }[];
+              createdVersions: {
+                /** Format: uuid */
+                ownerId: string;
+                binding: {
+                  skillId: string;
+                  version: string;
+                  contentHash: string;
+                  adapterVersion: string;
                 };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
+                definition: {
+                  /** @enum {number} */
+                  schemaVersion: 1;
+                  name: string;
+                  description: string;
+                  body: string;
+                  /** @default {} */
+                  references: {
+                    [key: string]: string;
+                  };
+                  /** @default [] */
+                  requiredInputs: (
+                    'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector'
+                  )[];
+                  toolIds: string[];
+                  steps: {
+                    id: string;
+                    toolId: string;
+                    input: {
+                      [key: string]: unknown;
+                    };
+                    /** @enum {string} */
+                    artifactKind?:
+                      | 'map_focus'
+                      | 'route_plan'
+                      | 'route'
+                      | 'operational_events'
+                      | 'operational_event'
+                      | 'vessel_list'
+                      | 'vessel_detail'
+                      | 'ais_heatmap'
+                      | 'vessel_tracks'
+                      | 'intelligence_search'
+                      | 'analysis'
+                      | 'vessel_highlights'
+                      | 'map_camera';
+                    ui?: {
+                      /** @enum {string} */
+                      componentId:
+                        | 'app.page'
+                        | 'page.list'
+                        | 'page.editor'
+                        | 'page.detail'
+                        | 'page.archive'
+                        | 'intelligence.draft'
+                        | 'workspace.left'
+                        | 'workspace.right'
+                        | 'chart.vessel-tracks'
+                        | 'chart.heatmap'
+                        | 'chart.heatmap.legend'
+                        | 'chart.heatmap.popup'
+                        | 'chart.layers.ais'
+                        | 'chart.layers.tracks'
+                        | 'chart.layers.evidence'
+                        | 'chart.focus'
+                        | 'chart.viewport'
+                        | 'chart.vessel-highlights'
+                        | 'agent.reply'
+                        | 'agent.input'
+                        | 'agent.sources'
+                        | 'chart.evidence'
+                        | 'chart.choices';
+                      /** @enum {string} */
+                      action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+                      /** @enum {string} */
+                      tab?:
+                        | 'search'
+                        | 'intelligence'
+                        | 'layers'
+                        | 'playback'
+                        | 'heatmap'
+                        | 'history-tracks'
+                        | 'chat'
+                        | 'push'
+                        | 'tasks';
+                    };
+                  }[];
+                  /** @default [] */
+                  expectedArtifacts: {
+                    stepId: string;
+                    /** @enum {string} */
+                    kind:
+                      | 'map_focus'
+                      | 'route_plan'
+                      | 'route'
+                      | 'operational_events'
+                      | 'operational_event'
+                      | 'vessel_list'
+                      | 'vessel_detail'
+                      | 'ais_heatmap'
+                      | 'vessel_tracks'
+                      | 'intelligence_search'
+                      | 'analysis'
+                      | 'vessel_highlights'
+                      | 'map_camera';
+                  }[];
+                  /** @default [] */
+                  requiredDisplays: string[];
                 };
-                content?: never;
+                /** @enum {string} */
+                source: 'agent' | 'user';
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                revokedAt: string | null;
+              }[];
             };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            artifacts: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              stepId: string;
+              /** @enum {string} */
+              kind:
+                | 'map_focus'
+                | 'route_plan'
+                | 'route'
+                | 'operational_events'
+                | 'operational_event'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'intelligence_search'
+                | 'analysis'
+                | 'vessel_highlights'
+                | 'map_camera';
+              payload: unknown;
+              modelProjection: unknown;
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+          };
         };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    IntelligenceController_createEvent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+  };
+  AgentController_respond: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json':
+          | {
+              /** @enum {string} */
+              action: 'accept';
+              inputRevision: number;
+              values: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom?: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom?: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+                historyHours?: number;
+              };
+            }
+          | {
+              /** @enum {string} */
+              action: 'decline';
+              inputRevision: number;
+            };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sourceId: string;
-                    externalId: string;
+        content: {
+          'application/json': {
+            task: {
+              skillRef?: {
+                skillId: string;
+                version?: string;
+              } | null;
+              /** @enum {string} */
+              skillVersionPolicy?: 'original' | 'latest';
+              uiBinding?: {
+                /** Format: uuid */
+                clientId: string;
+                pageGeneration: number;
+                tracksVersion?: number;
+                heatmapVersion?: number;
+                highlightsVersion?: number;
+                cameraVersion?: number;
+                focusVersion?: number;
+              } | null;
+              uiResult?: {
+                /** @enum {string} */
+                kind: 'ui_control';
+                /** Format: uuid */
+                commandId: string | null;
+                status: string;
+                components: {
+                  /** @enum {string} */
+                  id:
+                    | 'app.page'
+                    | 'page.list'
+                    | 'page.editor'
+                    | 'page.detail'
+                    | 'page.archive'
+                    | 'intelligence.draft'
+                    | 'workspace.left'
+                    | 'workspace.right'
+                    | 'chart.vessel-tracks'
+                    | 'chart.heatmap'
+                    | 'chart.heatmap.legend'
+                    | 'chart.heatmap.popup'
+                    | 'chart.layers.ais'
+                    | 'chart.layers.tracks'
+                    | 'chart.layers.evidence'
+                    | 'chart.focus'
+                    | 'chart.viewport'
+                    | 'chart.vessel-highlights'
+                    | 'agent.reply'
+                    | 'agent.input'
+                    | 'agent.sources'
+                    | 'chart.evidence'
+                    | 'chart.choices';
+                  version: number;
+                  revision?: number;
+                  mounted: boolean;
+                  open: boolean;
+                  visible: boolean;
+                  /** @default false */
+                  focused: boolean;
+                  /** @default 0 */
+                  order: number;
+                  /** @default false */
+                  loading: boolean;
+                  /** @default false */
+                  dirty: boolean;
+                  /** @default false */
+                  interacting: boolean;
+                  actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+                  /** @enum {string} */
+                  tab?:
+                    | 'search'
+                    | 'intelligence'
+                    | 'layers'
+                    | 'playback'
+                    | 'heatmap'
+                    | 'history-tracks'
+                    | 'chat'
+                    | 'push'
+                    | 'tasks';
+                  /** @enum {string} */
+                  blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+                  highlightEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    groups: {
+                      /** Format: uuid */
+                      groupId: string;
+                      /** Format: uuid */
+                      taskId: string;
+                      mmsis: string[];
+                    }[];
+                  };
+                  highlightGroups?: {
+                    /** Format: uuid */
+                    groupId: string;
+                    /** Format: uuid */
+                    taskId: string;
+                    mmsis: string[];
+                  }[];
+                  focusEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    taskId: string;
                     version: number;
-                    /**
-                     * @default active
-                     * @enum {string}
-                     */
-                    status?: "active" | "revised" | "withdrawn";
+                    inputRevision: number;
                     /** @enum {string} */
-                    category: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                    /**
-                     * @default confirmed
-                     * @enum {string}
-                     */
-                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                    /** Format: uri */
-                    originalUrl?: string;
-                    /** @default [] */
-                    relations?: {
-                        /** @enum {string} */
-                        kind: "occurs-at" | "mentions" | "involves" | "applies-to" | "impacts";
-                        objectId?: string;
-                        geometry?: {
+                    displayStatus: 'complete' | 'partial' | 'unlocated';
+                  };
+                  cameraEvidence?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                    /** Format: uuid */
+                    commandId: string;
+                  };
+                  cameraState?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                  };
+                }[];
+              } | null;
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'waiting_ui'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'vessel_highlights'
+                | 'map_camera'
+                | 'map_focus'
+                | 'route_plan'
+                | 'route_manage'
+                | 'event_query'
+                | 'event_manage'
+                | 'ui_control'
+                | 'skill';
+              selection?: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
                             /** @enum {string} */
-                            type: "Point";
-                            coordinates: (number)[];
-                        } | {
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
                             /** @enum {string} */
-                            type: "LineString";
-                            coordinates: (number)[][];
-                        } | {
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
                             /** @enum {string} */
-                            type: "Polygon";
-                            coordinates: (number)[][][];
-                        } | {
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
                             /** @enum {string} */
-                            type: "MultiPoint";
-                            coordinates: (number)[][];
-                        } | {
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
                             /** @enum {string} */
-                            type: "MultiLineString";
-                            coordinates: (number)[][][];
-                        } | {
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
                             /** @enum {string} */
-                            type: "MultiPolygon";
-                            coordinates: (number)[][][][];
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            request: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string;
+              inputRevision: number;
+              pauseGeneration: number;
+              fields: (
+                'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector' | 'skill'
+              )[];
+              /** @enum {string} */
+              reason:
+                | 'missing_region'
+                | 'missing_vessels'
+                | 'missing_time'
+                | 'missing_goal'
+                | 'data_limit'
+                | 'retention'
+                | 'scope_changed'
+                | 'missing_topic'
+                | 'missing_vessel_selector'
+                | 'ambiguous_skill';
+              prefill: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              /** @enum {string} */
+              status: 'pending' | 'answered' | 'cancelled' | 'superseded';
+              response: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              } | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              answeredAt: string | null;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_retry: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          uiBinding?: {
+            /** Format: uuid */
+            clientId: string;
+            pageGeneration: number;
+            tracksVersion?: number;
+            heatmapVersion?: number;
+            highlightsVersion?: number;
+            cameraVersion?: number;
+            focusVersion?: number;
+          };
+          /** @enum {string} */
+          skillVersionPolicy?: 'original' | 'latest';
+        };
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            task: {
+              skillRef?: {
+                skillId: string;
+                version?: string;
+              } | null;
+              /** @enum {string} */
+              skillVersionPolicy?: 'original' | 'latest';
+              uiBinding?: {
+                /** Format: uuid */
+                clientId: string;
+                pageGeneration: number;
+                tracksVersion?: number;
+                heatmapVersion?: number;
+                highlightsVersion?: number;
+                cameraVersion?: number;
+                focusVersion?: number;
+              } | null;
+              uiResult?: {
+                /** @enum {string} */
+                kind: 'ui_control';
+                /** Format: uuid */
+                commandId: string | null;
+                status: string;
+                components: {
+                  /** @enum {string} */
+                  id:
+                    | 'app.page'
+                    | 'page.list'
+                    | 'page.editor'
+                    | 'page.detail'
+                    | 'page.archive'
+                    | 'intelligence.draft'
+                    | 'workspace.left'
+                    | 'workspace.right'
+                    | 'chart.vessel-tracks'
+                    | 'chart.heatmap'
+                    | 'chart.heatmap.legend'
+                    | 'chart.heatmap.popup'
+                    | 'chart.layers.ais'
+                    | 'chart.layers.tracks'
+                    | 'chart.layers.evidence'
+                    | 'chart.focus'
+                    | 'chart.viewport'
+                    | 'chart.vessel-highlights'
+                    | 'agent.reply'
+                    | 'agent.input'
+                    | 'agent.sources'
+                    | 'chart.evidence'
+                    | 'chart.choices';
+                  version: number;
+                  revision?: number;
+                  mounted: boolean;
+                  open: boolean;
+                  visible: boolean;
+                  /** @default false */
+                  focused: boolean;
+                  /** @default 0 */
+                  order: number;
+                  /** @default false */
+                  loading: boolean;
+                  /** @default false */
+                  dirty: boolean;
+                  /** @default false */
+                  interacting: boolean;
+                  actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+                  /** @enum {string} */
+                  tab?:
+                    | 'search'
+                    | 'intelligence'
+                    | 'layers'
+                    | 'playback'
+                    | 'heatmap'
+                    | 'history-tracks'
+                    | 'chat'
+                    | 'push'
+                    | 'tasks';
+                  /** @enum {string} */
+                  blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+                  highlightEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    groups: {
+                      /** Format: uuid */
+                      groupId: string;
+                      /** Format: uuid */
+                      taskId: string;
+                      mmsis: string[];
+                    }[];
+                  };
+                  highlightGroups?: {
+                    /** Format: uuid */
+                    groupId: string;
+                    /** Format: uuid */
+                    taskId: string;
+                    mmsis: string[];
+                  }[];
+                  focusEvidence?: {
+                    /** Format: uuid */
+                    artifactRef: string;
+                    taskId: string;
+                    version: number;
+                    inputRevision: number;
+                    /** @enum {string} */
+                    displayStatus: 'complete' | 'partial' | 'unlocated';
+                  };
+                  cameraEvidence?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                    /** Format: uuid */
+                    commandId: string;
+                  };
+                  cameraState?: {
+                    center: number[];
+                    zoom: number;
+                    bbox: number[];
+                  };
+                }[];
+              } | null;
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              ownerId: string;
+              /** @enum {string} */
+              status:
+                | 'awaiting_input'
+                | 'queued'
+                | 'running'
+                | 'waiting_result'
+                | 'waiting_ui'
+                | 'completed'
+                | 'failed'
+                | 'cancelled';
+              goal: string;
+              bbox: number[] | null;
+              historyHours: number;
+              /** Format: date-time */
+              from: string;
+              /** Format: date-time */
+              to: string;
+              /** @enum {string|null} */
+              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              generation: number;
+              modelCalls: number;
+              toolCalls: number;
+              resultVersion: number;
+              summaryResultVersion: number | null;
+              summary: string | null;
+              error: string | null;
+              /** @enum {string} */
+              intent?:
+                | 'conversation'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'analysis'
+                | 'explain'
+                | 'unresolved'
+                | 'intelligence_search'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'vessel_highlights'
+                | 'map_camera'
+                | 'map_focus'
+                | 'route_plan'
+                | 'route_manage'
+                | 'event_query'
+                | 'event_manage'
+                | 'ui_control'
+                | 'skill';
+              selection?: {
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
+                            /** @enum {string} */
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
+                    };
+                focusTargets?: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                skillRef?: {
+                  skillId: string;
+                  version?: string;
+                };
+                skillCandidates?: {
+                  skillId: string;
+                  version: string;
+                  name: string;
+                  description?: string;
+                }[];
+                bbox?: number[];
+                mmsis?: string[];
+                timeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                filters?: {
+                  sourceId?: string;
+                  shipType?: number;
+                  hours?: number;
+                };
+                /** @enum {string} */
+                purpose?:
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'port-restriction'
+                  | 'area-low-speed-notice'
+                  | 'intelligence_search'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks';
+                intelligenceQuery?: {
+                  keyword?: string;
+                  locationKeyword?: string;
+                  sourceIds?: string[];
+                  /** @enum {string} */
+                  category?:
+                    | 'port-restriction'
+                    | 'notice'
+                    | 'navigation-warning'
+                    | 'weather'
+                    | 'security'
+                    | 'environment'
+                    | 'incident'
+                    | 'other';
+                  /** @enum {string} */
+                  reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                  /** @enum {string} */
+                  timeMode?: 'published' | 'effective' | 'observed';
+                  /** Format: date-time */
+                  from?: string;
+                  /** Format: date-time */
+                  to?: string;
+                  bbox?: number[];
+                  objectId?: string;
+                  mmsis?: string[];
+                  /** @enum {string} */
+                  kind?: 'events' | 'marine' | 'both';
+                  samplePointId?: string;
+                  /** Format: date-time */
+                  forecastFrom?: string;
+                  /** Format: date-time */
+                  forecastTo?: string;
+                };
+                intelligenceTimeRange?: {
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                };
+                intelligenceTimeUnclear?: boolean;
+                heatmapTimeUnclear?: boolean;
+                tracksTimeUnclear?: boolean;
+                vesselSelector?: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                mapCamera?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
+                    };
+                highlightClear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
+                    };
+                highlightAndFocus?: boolean;
+                mapTargetZoom?: number;
+                highlightTaskIndex?: number;
+                highlightClearUnclear?: boolean;
+                intelligenceObjectUnclear?: boolean;
+                intelligenceObjectCandidates?: {
+                  id: string;
+                  name: string;
+                }[];
+              };
+              inputRevision?: number;
+              resultInputRevision?: number | null;
+              summaryInputRevision?: number | null;
+              errorCode?: string | null;
+              /** Format: uuid */
+              retryOfTaskId?: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            message: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** @enum {string} */
+              role: 'user' | 'assistant';
+              content: string;
+              /** Format: uuid */
+              taskId: string | null;
+              resultVersion?: number | null;
+              inputRevision?: number | null;
+              /** Format: date-time */
+              createdAt: string;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            skillRef?: {
+              skillId: string;
+              version?: string;
+            } | null;
+            /** @enum {string} */
+            skillVersionPolicy?: 'original' | 'latest';
+            uiBinding?: {
+              /** Format: uuid */
+              clientId: string;
+              pageGeneration: number;
+              tracksVersion?: number;
+              heatmapVersion?: number;
+              highlightsVersion?: number;
+              cameraVersion?: number;
+              focusVersion?: number;
+            } | null;
+            uiResult?: {
+              /** @enum {string} */
+              kind: 'ui_control';
+              /** Format: uuid */
+              commandId: string | null;
+              status: string;
+              components: {
+                /** @enum {string} */
+                id:
+                  | 'app.page'
+                  | 'page.list'
+                  | 'page.editor'
+                  | 'page.detail'
+                  | 'page.archive'
+                  | 'intelligence.draft'
+                  | 'workspace.left'
+                  | 'workspace.right'
+                  | 'chart.vessel-tracks'
+                  | 'chart.heatmap'
+                  | 'chart.heatmap.legend'
+                  | 'chart.heatmap.popup'
+                  | 'chart.layers.ais'
+                  | 'chart.layers.tracks'
+                  | 'chart.layers.evidence'
+                  | 'chart.focus'
+                  | 'chart.viewport'
+                  | 'chart.vessel-highlights'
+                  | 'agent.reply'
+                  | 'agent.input'
+                  | 'agent.sources'
+                  | 'chart.evidence'
+                  | 'chart.choices';
+                version: number;
+                revision?: number;
+                mounted: boolean;
+                open: boolean;
+                visible: boolean;
+                /** @default false */
+                focused: boolean;
+                /** @default 0 */
+                order: number;
+                /** @default false */
+                loading: boolean;
+                /** @default false */
+                dirty: boolean;
+                /** @default false */
+                interacting: boolean;
+                actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+                /** @enum {string} */
+                tab?:
+                  | 'search'
+                  | 'intelligence'
+                  | 'layers'
+                  | 'playback'
+                  | 'heatmap'
+                  | 'history-tracks'
+                  | 'chat'
+                  | 'push'
+                  | 'tasks';
+                /** @enum {string} */
+                blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+                highlightEvidence?: {
+                  /** Format: uuid */
+                  artifactRef: string;
+                  groups: {
+                    /** Format: uuid */
+                    groupId: string;
+                    /** Format: uuid */
+                    taskId: string;
+                    mmsis: string[];
+                  }[];
+                };
+                highlightGroups?: {
+                  /** Format: uuid */
+                  groupId: string;
+                  /** Format: uuid */
+                  taskId: string;
+                  mmsis: string[];
+                }[];
+                focusEvidence?: {
+                  /** Format: uuid */
+                  artifactRef: string;
+                  taskId: string;
+                  version: number;
+                  inputRevision: number;
+                  /** @enum {string} */
+                  displayStatus: 'complete' | 'partial' | 'unlocated';
+                };
+                cameraEvidence?: {
+                  center: number[];
+                  zoom: number;
+                  bbox: number[];
+                  /** Format: uuid */
+                  commandId: string;
+                };
+                cameraState?: {
+                  center: number[];
+                  zoom: number;
+                  bbox: number[];
+                };
+              }[];
+            } | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            sessionId: string;
+            /** Format: uuid */
+            ownerId: string;
+            /** @enum {string} */
+            status:
+              | 'awaiting_input'
+              | 'queued'
+              | 'running'
+              | 'waiting_result'
+              | 'waiting_ui'
+              | 'completed'
+              | 'failed'
+              | 'cancelled';
+            goal: string;
+            bbox: number[] | null;
+            historyHours: number;
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            /** @enum {string|null} */
+            definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+            generation: number;
+            modelCalls: number;
+            toolCalls: number;
+            resultVersion: number;
+            summaryResultVersion: number | null;
+            summary: string | null;
+            error: string | null;
+            /** @enum {string} */
+            intent?:
+              | 'conversation'
+              | 'vessel_list'
+              | 'vessel_detail'
+              | 'analysis'
+              | 'explain'
+              | 'unresolved'
+              | 'intelligence_search'
+              | 'ais_heatmap'
+              | 'vessel_tracks'
+              | 'vessel_highlights'
+              | 'map_camera'
+              | 'map_focus'
+              | 'route_plan'
+              | 'route_manage'
+              | 'event_query'
+              | 'event_manage'
+              | 'ui_control'
+              | 'skill';
+            selection?: {
+              region?:
+                | {
+                    /** @enum {string} */
+                    kind: 'circle';
+                    center: number[];
+                    radiusMeters: number;
+                  }
+                | {
+                    /** @enum {string} */
+                    kind: 'bbox';
+                    bbox: number[];
+                  }
+                | {
+                    /** @enum {string} */
+                    kind: 'polygon';
+                    geometry:
+                      | {
+                          /** @enum {string} */
+                          type: 'Point';
+                          coordinates: number[];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'LineString';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'Polygon';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPoint';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiLineString';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPolygon';
+                          coordinates: number[][][][];
                         };
-                        basis: string;
-                        /** @default [] */
-                        paragraphIds?: string[];
-                        /**
-                         * @default candidate
-                         * @enum {string}
-                         */
-                        reviewStatus?: "candidate" | "confirmed" | "rejected";
-                        /**
-                         * @default manual
-                         * @enum {string}
-                         */
-                        origin?: "source" | "rule" | "manual" | "legacy";
-                        impactType?: string;
-                        /** Format: date-time */
-                        effectiveFrom?: string;
-                        /** Format: date-time */
-                        effectiveTo?: string | null;
-                    }[];
-                    title: string;
-                    summary: string;
-                    /** Format: date-time */
-                    publishedAt: string;
-                    /** Format: date-time */
-                    effectiveFrom: string;
-                    /** Format: date-time */
-                    effectiveTo: string | null;
-                    bbox?: (number)[];
-                    /** @default [] */
-                    vesselTypes?: number[];
-                    /** @default [] */
-                    mmsis?: string[];
-                    paragraphs: {
-                        id: string;
-                        text: string;
-                    }[];
-                    commonSourceId?: string;
-                    supersedesId?: string;
-                    originalArchiveId?: string;
-                    raw: unknown;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_eventDetail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_reviewEvent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    reviewStatus: "candidate" | "confirmed" | "rejected";
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_addRelation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    kind: "occurs-at" | "mentions" | "involves" | "applies-to" | "impacts";
-                    objectId?: string;
-                    geometry?: {
-                        /** @enum {string} */
-                        type: "Point";
-                        coordinates: (number)[];
-                    } | {
-                        /** @enum {string} */
-                        type: "LineString";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "Polygon";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPoint";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiLineString";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPolygon";
-                        coordinates: (number)[][][][];
-                    };
-                    basis: string;
-                    /** @default [] */
-                    paragraphIds?: string[];
-                    /**
-                     * @default candidate
-                     * @enum {string}
-                     */
-                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                    /**
-                     * @default manual
-                     * @enum {string}
-                     */
-                    origin?: "source" | "rule" | "manual" | "legacy";
-                    impactType?: string;
-                    /** Format: date-time */
-                    effectiveFrom?: string;
-                    /** Format: date-time */
-                    effectiveTo?: string | null;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_editRelation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    kind: "occurs-at" | "mentions" | "involves" | "applies-to" | "impacts";
-                    objectId?: string;
-                    geometry?: {
-                        /** @enum {string} */
-                        type: "Point";
-                        coordinates: (number)[];
-                    } | {
-                        /** @enum {string} */
-                        type: "LineString";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "Polygon";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPoint";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiLineString";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPolygon";
-                        coordinates: (number)[][][][];
-                    };
-                    basis: string;
-                    /** @default [] */
-                    paragraphIds?: string[];
-                    /**
-                     * @default candidate
-                     * @enum {string}
-                     */
-                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                    /**
-                     * @default manual
-                     * @enum {string}
-                     */
-                    origin?: "source" | "rule" | "manual" | "legacy";
-                    impactType?: string;
-                    /** Format: date-time */
-                    effectiveFrom?: string;
-                    /** Format: date-time */
-                    effectiveTo?: string | null;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_reviewRelation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    reviewStatus: "candidate" | "confirmed" | "rejected";
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_objects: {
-        parameters: {
-            query?: {
+                  };
+              focusTargets?: {
+                /** @enum {string} */
+                kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                id: string;
+                revision?: number;
+                /** Format: uuid */
+                sourceTaskId?: string;
+              }[];
+              skillRef?: {
+                skillId: string;
+                version?: string;
+              };
+              skillCandidates?: {
+                skillId: string;
+                version: string;
+                name: string;
+                description?: string;
+              }[];
+              bbox?: number[];
+              mmsis?: string[];
+              timeRange?: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+              };
+              filters?: {
+                sourceId?: string;
+                shipType?: number;
+                hours?: number;
+              };
+              /** @enum {string} */
+              purpose?:
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'port-restriction'
+                | 'area-low-speed-notice'
+                | 'intelligence_search'
+                | 'ais_heatmap'
+                | 'vessel_tracks';
+              intelligenceQuery?: {
                 keyword?: string;
-                kind?: "vessel" | "port" | "channel" | "area" | "facility";
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: unknown[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_createObject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id?: string;
+                locationKeyword?: string;
+                sourceIds?: string[];
+                /** @enum {string} */
+                category?:
+                  | 'port-restriction'
+                  | 'notice'
+                  | 'navigation-warning'
+                  | 'weather'
+                  | 'security'
+                  | 'environment'
+                  | 'incident'
+                  | 'other';
+                /** @enum {string} */
+                reviewStatus?: 'candidate' | 'confirmed' | 'rejected';
+                /** @enum {string} */
+                timeMode?: 'published' | 'effective' | 'observed';
+                /** Format: date-time */
+                from?: string;
+                /** Format: date-time */
+                to?: string;
+                bbox?: number[];
+                objectId?: string;
+                mmsis?: string[];
+                /** @enum {string} */
+                kind?: 'events' | 'marine' | 'both';
+                samplePointId?: string;
+                /** Format: date-time */
+                forecastFrom?: string;
+                /** Format: date-time */
+                forecastTo?: string;
+              };
+              intelligenceTimeRange?: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+              };
+              intelligenceTimeUnclear?: boolean;
+              heatmapTimeUnclear?: boolean;
+              tracksTimeUnclear?: boolean;
+              vesselSelector?: {
+                shipTypes?: number[];
+                mmsis?: string[];
+                query?: string;
+                model?: string;
+              };
+              mapCamera?:
+                | {
                     /** @enum {string} */
-                    kind: "vessel" | "port" | "channel" | "area" | "facility";
-                    name: string;
-                    geometry?: {
-                        /** @enum {string} */
-                        type: "Point";
-                        coordinates: (number)[];
-                    } | {
-                        /** @enum {string} */
-                        type: "LineString";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "Polygon";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPoint";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiLineString";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPolygon";
-                        coordinates: (number)[][][][];
-                    };
-                    mmsi?: string;
-                    /** @default [] */
-                    aliases?: string[];
-                    /** @default {} */
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_editObject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    id?: string;
+                    mode: 'point';
+                    center: number[];
+                    /** @default 10 */
+                    zoom: number;
+                  }
+                | {
                     /** @enum {string} */
-                    kind: "vessel" | "port" | "channel" | "area" | "facility";
-                    name: string;
-                    geometry?: {
-                        /** @enum {string} */
-                        type: "Point";
-                        coordinates: (number)[];
-                    } | {
-                        /** @enum {string} */
-                        type: "LineString";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "Polygon";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPoint";
-                        coordinates: (number)[][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiLineString";
-                        coordinates: (number)[][][];
-                    } | {
-                        /** @enum {string} */
-                        type: "MultiPolygon";
-                        coordinates: (number)[][][][];
-                    };
-                    mmsi?: string;
-                    /** @default [] */
-                    aliases?: string[];
-                    /** @default {} */
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_importObjects: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
+                    mode: 'bounds';
+                    bbox: number[];
+                    /** @default 10 */
+                    maxZoom: number;
+                  }
+                | {
                     /** @enum {string} */
-                    type: "FeatureCollection";
-                    features: {
-                        /** @enum {string} */
-                        type: "Feature";
-                        id?: string;
-                        geometry: {
-                            /** @enum {string} */
-                            type: "Point";
-                            coordinates: (number)[];
-                        } | {
-                            /** @enum {string} */
-                            type: "LineString";
-                            coordinates: (number)[][];
-                        } | {
-                            /** @enum {string} */
-                            type: "Polygon";
-                            coordinates: (number)[][][];
-                        } | {
-                            /** @enum {string} */
-                            type: "MultiPoint";
-                            coordinates: (number)[][];
-                        } | {
-                            /** @enum {string} */
-                            type: "MultiLineString";
-                            coordinates: (number)[][][];
-                        } | {
-                            /** @enum {string} */
-                            type: "MultiPolygon";
-                            coordinates: (number)[][][][];
-                        };
-                        properties: {
-                            id?: string;
-                            /** @enum {string} */
-                            kind: "vessel" | "port" | "channel" | "area" | "facility";
-                            name: string;
-                            geometry?: {
-                                /** @enum {string} */
-                                type: "Point";
-                                coordinates: (number)[];
-                            } | {
-                                /** @enum {string} */
-                                type: "LineString";
-                                coordinates: (number)[][];
-                            } | {
-                                /** @enum {string} */
-                                type: "Polygon";
-                                coordinates: (number)[][][];
-                            } | {
-                                /** @enum {string} */
-                                type: "MultiPoint";
-                                coordinates: (number)[][];
-                            } | {
-                                /** @enum {string} */
-                                type: "MultiLineString";
-                                coordinates: (number)[][][];
-                            } | {
-                                /** @enum {string} */
-                                type: "MultiPolygon";
-                                coordinates: (number)[][][][];
-                            };
-                            mmsi?: string;
-                            /** @default [] */
-                            aliases?: string[];
-                            /** @default {} */
-                            metadata?: {
-                                [key: string]: unknown;
-                            };
-                        };
+                    mode: 'current';
+                    zoom?: number;
+                    zoomDelta?: number;
+                  };
+              highlightClear?:
+                | {
+                    /** @enum {string} */
+                    mode: 'all';
+                  }
+                | {
+                    /** @enum {string} */
+                    mode: 'groups';
+                    groupIds: string[];
+                  };
+              highlightAndFocus?: boolean;
+              mapTargetZoom?: number;
+              highlightTaskIndex?: number;
+              highlightClearUnclear?: boolean;
+              intelligenceObjectUnclear?: boolean;
+              intelligenceObjectCandidates?: {
+                id: string;
+                name: string;
+              }[];
+            };
+            inputRevision?: number;
+            resultInputRevision?: number | null;
+            summaryInputRevision?: number | null;
+            errorCode?: string | null;
+            /** Format: uuid */
+            retryOfTaskId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentController_events: {
+    parameters: {
+      query?: {
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              id: string;
+              /** Format: uuid */
+              sessionId: string;
+              /** Format: uuid */
+              taskId: string | null;
+              type: string;
+              data: {
+                [key: string]: unknown;
+              };
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+            nextCursor: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentUiController_register: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          instanceId: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            clientId: string;
+            pageGeneration: number;
+            tracksVersion?: number;
+            heatmapVersion?: number;
+            highlightsVersion?: number;
+            cameraVersion?: number;
+            focusVersion?: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentUiController_state: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          clientId: string;
+          pageGeneration: number;
+          tracksVersion?: number;
+          heatmapVersion?: number;
+          highlightsVersion?: number;
+          cameraVersion?: number;
+          focusVersion?: number;
+          /** Format: uuid */
+          sessionId: string | null;
+          state: {
+            sequence: number;
+            /** @enum {string} */
+            route:
+              | '/'
+              | '/intelligence'
+              | '/topics'
+              | '/routes'
+              | '/events'
+              | '/sources'
+              | '/runs'
+              | '/replays'
+              | '/quality'
+              | '/jobs'
+              | '/users'
+              | '/login'
+              | '/skills'
+              | 'unknown';
+            components: {
+              /** @enum {string} */
+              id:
+                | 'app.page'
+                | 'page.list'
+                | 'page.editor'
+                | 'page.detail'
+                | 'page.archive'
+                | 'intelligence.draft'
+                | 'workspace.left'
+                | 'workspace.right'
+                | 'chart.vessel-tracks'
+                | 'chart.heatmap'
+                | 'chart.heatmap.legend'
+                | 'chart.heatmap.popup'
+                | 'chart.layers.ais'
+                | 'chart.layers.tracks'
+                | 'chart.layers.evidence'
+                | 'chart.focus'
+                | 'chart.viewport'
+                | 'chart.vessel-highlights'
+                | 'agent.reply'
+                | 'agent.input'
+                | 'agent.sources'
+                | 'chart.evidence'
+                | 'chart.choices';
+              version: number;
+              revision?: number;
+              mounted: boolean;
+              open: boolean;
+              visible: boolean;
+              /** @default false */
+              focused?: boolean;
+              /** @default 0 */
+              order?: number;
+              /** @default false */
+              loading?: boolean;
+              /** @default false */
+              dirty?: boolean;
+              /** @default false */
+              interacting?: boolean;
+              actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+              /** @enum {string} */
+              tab?:
+                | 'search'
+                | 'intelligence'
+                | 'layers'
+                | 'playback'
+                | 'heatmap'
+                | 'history-tracks'
+                | 'chat'
+                | 'push'
+                | 'tasks';
+              /** @enum {string} */
+              blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+              highlightEvidence?: {
+                /** Format: uuid */
+                artifactRef: string;
+                groups: {
+                  /** Format: uuid */
+                  groupId: string;
+                  /** Format: uuid */
+                  taskId: string;
+                  mmsis: string[];
+                }[];
+              };
+              highlightGroups?: {
+                /** Format: uuid */
+                groupId: string;
+                /** Format: uuid */
+                taskId: string;
+                mmsis: string[];
+              }[];
+              focusEvidence?: {
+                /** Format: uuid */
+                artifactRef: string;
+                taskId: string;
+                version: number;
+                inputRevision: number;
+                /** @enum {string} */
+                displayStatus: 'complete' | 'partial' | 'unlocated';
+              };
+              cameraEvidence?: {
+                center: number[];
+                zoom: number;
+                bbox: number[];
+                /** Format: uuid */
+                commandId: string;
+              };
+              cameraState?: {
+                center: number[];
+                zoom: number;
+                bbox: number[];
+              };
+            }[];
+          };
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            clientId: string;
+            pageGeneration: number;
+            tracksVersion?: number;
+            heatmapVersion?: number;
+            highlightsVersion?: number;
+            cameraVersion?: number;
+            focusVersion?: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AgentUiController_commands: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              stepId?: string;
+              /** Format: uuid */
+              artifactRef?: string;
+              presentation?: {
+                query: {
+                  bbox: number[];
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                  sourceId?: string;
+                  shipType?: number;
+                  mmsis?: string[];
+                };
+                grid: {
+                  level: number;
+                  cellDegrees: number;
+                };
+                cells: {
+                  id: string;
+                  x: number;
+                  y: number;
+                  lon: number;
+                  lat: number;
+                  vesselCount: number;
+                }[];
+                totalVessels: number;
+                /** Format: date-time */
+                generatedAt: string;
+                /** @enum {string} */
+                metric: 'unique_vessels';
+                /** @enum {string} */
+                shipTypeBasis: 'current_profile';
+                /** @enum {string} */
+                kind: 'ais_heatmap';
+                version: number;
+                inputRevision: number;
+              };
+              tracksPresentation?: {
+                query: {
+                  bbox: number[];
+                  /** Format: date-time */
+                  from: string;
+                  /** Format: date-time */
+                  to: string;
+                  selector: {
+                    shipTypes?: number[];
+                    mmsis?: string[];
+                    query?: string;
+                    model?: string;
+                  };
+                  sourceId?: string;
+                  /** @default 20 */
+                  maxVessels: number;
+                  /** @default 500 */
+                  maxPointsPerVessel: number;
+                };
+                /** Format: date-time */
+                asOf: string;
+                /** Format: date-time */
+                generatedAt: string;
+                /** @enum {string} */
+                shipTypeBasis: 'current_profile';
+                /** @enum {string} */
+                selectionBasis: 'historical_observation_in_bbox';
+                /** @enum {string} */
+                trackScope: 'full_time_window';
+                returnedVessels: number;
+                matchedVesselsLowerBound: number;
+                hasMoreVessels: boolean;
+                tracks: {
+                  mmsi: string;
+                  name: string | null;
+                  shipType: number | null;
+                  segments: {
+                    points: {
+                      lon: number;
+                      lat: number;
+                      /** Format: date-time */
+                      observedAt: string;
                     }[];
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_plot: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    eventIds: string[];
-                    /** @default false */
-                    includeCandidates?: boolean;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_plotSet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        eventIds: string[];
-                        hiddenEventIds: string[];
+                  }[];
+                  total: number;
+                  returned: number;
+                  sampled: boolean;
+                  truncated: boolean;
+                }[];
+                /** @enum {string} */
+                kind: 'vessel_tracks';
+                version: number;
+                inputRevision: number;
+              };
+              highlightsPresentation?: {
+                /** @enum {string} */
+                kind: 'vessel_highlights';
+                version: number;
+                inputRevision: number;
+                /** @enum {string} */
+                operation: 'show' | 'clear';
+                vessels: {
+                  mmsi: string;
+                  name: string | null;
+                  lon: number;
+                  lat: number;
+                  /** Format: date-time */
+                  observedAt: string;
+                }[];
+                missingMmsis: string[];
+                clear?:
+                  | {
+                      /** @enum {string} */
+                      mode: 'all';
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'groups';
+                      groupIds: string[];
                     };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    IntelligenceController_savePlotSet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    eventIds: string[];
-                    hiddenEventIds: string[];
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        eventIds: string[];
-                        hiddenEventIds: string[];
+              };
+              cameraPresentation?: {
+                /** @enum {string} */
+                kind: 'map_camera';
+                version: number;
+                inputRevision: number;
+                request:
+                  | {
+                      /** @enum {string} */
+                      mode: 'point';
+                      center: number[];
+                      /** @default 10 */
+                      zoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'bounds';
+                      bbox: number[];
+                      /** @default 10 */
+                      maxZoom: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      mode: 'current';
+                      zoom?: number;
+                      zoomDelta?: number;
                     };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    TopicsController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        instances: {
-                            [key: string]: unknown;
-                        }[];
-                        capabilities: {
-                            [key: string]: unknown;
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    TopicsController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
+              };
+              focusPresentation?: {
+                /** @enum {string} */
+                kind: 'map_focus';
+                version: number;
+                inputRevision: number;
+                sessionId: string;
+                taskId: string;
+                targets: {
+                  ref: {
                     /** @enum {string} */
-                    definitionId: "port-restriction" | "area-low-speed-notice";
-                    name: string;
-                    config: {
-                        bbox: (number)[];
-                        /** @default 24 */
-                        historyHours?: number;
-                        /** @default 60 */
-                        windowMinutes?: number;
-                        /** @default 3 */
-                        lowSpeedKnots?: number;
-                        /** @default 3 */
-                        minPositions?: number;
-                        /** @default 60 */
-                        scheduleSeconds?: number;
-                    };
-                    /** @default false */
-                    enabled?: boolean;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    TopicsController_state: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    enabled: boolean;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    TopicsController_run: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    TopicsController_runs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    TopicsController_runDetail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    TopicsController_config: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    config: {
-                        bbox: (number)[];
-                        /** @default 24 */
-                        historyHours?: number;
-                        /** @default 60 */
-                        windowMinutes?: number;
-                        /** @default 3 */
-                        lowSpeedKnots?: number;
-                        /** @default 3 */
-                        minPositions?: number;
-                        /** @default 60 */
-                        scheduleSeconds?: number;
-                    };
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AnalysisController_list: {
-        parameters: {
-            query?: {
-                instanceId?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AnalysisController_revisions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AnalysisController_detail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AnalysisController_feed: {
-        parameters: {
-            query?: {
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            [key: string]: unknown;
-                        }[];
-                        nextCursor: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentController_config: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        enabled: boolean;
-                        uiEnabled: boolean;
-                        dynamicSkillsEnabled: boolean;
-                        defaultHistoryHours: number;
-                        maxHistoryHours: number;
-                        maxModelCalls: number;
-                        maxToolCalls: number;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentController_sessions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            title: string;
-                            /** Format: date-time */
-                            createdAt: string;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentController_createSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @default 区域研判 */
-                    title?: string;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        id: string;
-                        /** Format: uuid */
-                        ownerId: string;
-                        title: string;
-                        /** Format: date-time */
-                        createdAt: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentController_session: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        session: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            title: string;
-                            /** Format: date-time */
-                            createdAt: string;
-                        };
-                        messages: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** @enum {string} */
-                            role: "user" | "assistant";
-                            content: string;
-                            /** Format: uuid */
-                            taskId: string | null;
-                            resultVersion?: number | null;
-                            inputRevision?: number | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                        }[];
-                        tasks: {
-                            skillRef?: {
-                                skillId: string;
-                                version?: string;
-                            } | null;
-                            /** @enum {string} */
-                            skillVersionPolicy?: "original" | "latest";
-                            uiBinding?: {
-                                /** Format: uuid */
-                                clientId: string;
-                                pageGeneration: number;
-                                tracksVersion?: number;
-                                heatmapVersion?: number;
-                            } | null;
-                            uiResult?: {
-                                /** @enum {string} */
-                                kind: "ui_control";
-                                /** Format: uuid */
-                                commandId: string | null;
-                                status: string;
-                                components: {
-                                    /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                    version: number;
-                                    revision?: number;
-                                    mounted: boolean;
-                                    open: boolean;
-                                    visible: boolean;
-                                    /** @default false */
-                                    focused: boolean;
-                                    /** @default 0 */
-                                    order: number;
-                                    /** @default false */
-                                    loading: boolean;
-                                    /** @default false */
-                                    dirty: boolean;
-                                    /** @default false */
-                                    interacting: boolean;
-                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                                    /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                    /** @enum {string} */
-                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                                }[];
-                            } | null;
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            /** @enum {string} */
-                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
-                            goal: string;
-                            bbox: (number)[] | null;
-                            historyHours: number;
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            /** @enum {string|null} */
-                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
-                            generation: number;
-                            modelCalls: number;
-                            toolCalls: number;
-                            resultVersion: number;
-                            summaryResultVersion: number | null;
-                            summary: string | null;
-                            error: string | null;
-                            /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
-                            selection?: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
+                    kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                    id: string;
+                    revision?: number;
+                    /** Format: uuid */
+                    sourceTaskId?: string;
+                  };
+                  label: string;
+                  geometry:
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      };
+                  /** Format: date-time */
+                  observedAt?: string;
+                  source?: string;
+                  region?:
+                    | {
+                        /** @enum {string} */
+                        kind: 'circle';
+                        center: number[];
+                        radiusMeters: number;
+                      }
+                    | {
+                        /** @enum {string} */
+                        kind: 'bbox';
+                        bbox: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        kind: 'polygon';
+                        geometry:
+                          | {
+                              /** @enum {string} */
+                              type: 'Point';
+                              coordinates: number[];
+                            }
+                          | {
+                              /** @enum {string} */
+                              type: 'LineString';
+                              coordinates: number[][];
+                            }
+                          | {
+                              /** @enum {string} */
+                              type: 'Polygon';
+                              coordinates: number[][][];
+                            }
+                          | {
+                              /** @enum {string} */
+                              type: 'MultiPoint';
+                              coordinates: number[][];
+                            }
+                          | {
+                              /** @enum {string} */
+                              type: 'MultiLineString';
+                              coordinates: number[][][];
+                            }
+                          | {
+                              /** @enum {string} */
+                              type: 'MultiPolygon';
+                              coordinates: number[][][][];
                             };
-                            inputRevision?: number;
-                            resultInputRevision?: number | null;
-                            summaryInputRevision?: number | null;
-                            errorCode?: string | null;
-                            /** Format: uuid */
-                            retryOfTaskId?: string | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        }[];
-                        pendingInputRequests: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            taskId: string;
-                            inputRevision: number;
-                            pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
-                            /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
-                            prefill: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            /** @enum {string} */
-                            status: "pending" | "answered" | "cancelled" | "superseded";
-                            response: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            } | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            answeredAt: string | null;
-                        }[];
-                        snapshotCursor: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+                      };
+                }[];
+                missing: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
+                }[];
+                omittedCount?: number;
+                bbox: number[] | null;
+                /** @enum {string} */
+                displayStatus: 'complete' | 'partial' | 'unlocated';
+                /** @enum {string} */
+                cameraPolicy: 'if-needed-once';
+              };
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              taskId: string;
+              /** Format: uuid */
+              clientId: string;
+              pageGeneration: number;
+              operation: {
+                /** @enum {string} */
+                componentId:
+                  | 'app.page'
+                  | 'page.list'
+                  | 'page.editor'
+                  | 'page.detail'
+                  | 'page.archive'
+                  | 'intelligence.draft'
+                  | 'workspace.left'
+                  | 'workspace.right'
+                  | 'chart.vessel-tracks'
+                  | 'chart.heatmap'
+                  | 'chart.heatmap.legend'
+                  | 'chart.heatmap.popup'
+                  | 'chart.layers.ais'
+                  | 'chart.layers.tracks'
+                  | 'chart.layers.evidence'
+                  | 'chart.focus'
+                  | 'chart.viewport'
+                  | 'chart.vessel-highlights'
+                  | 'agent.reply'
+                  | 'agent.input'
+                  | 'agent.sources'
+                  | 'chart.evidence'
+                  | 'chart.choices';
+                /** @enum {string} */
+                action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+                /** @enum {string} */
+                tab?:
+                  | 'search'
+                  | 'intelligence'
+                  | 'layers'
+                  | 'playback'
+                  | 'heatmap'
+                  | 'history-tracks'
+                  | 'chat'
+                  | 'push'
+                  | 'tasks';
+              };
+              expectedVersion: number;
+              /** @enum {string} */
+              status:
+                | 'queued'
+                | 'claimed'
+                | 'executing'
+                | 'succeeded'
+                | 'failed'
+                | 'rejected'
+                | 'cancelled'
+                | 'expired'
+                | 'unknown';
+              /** Format: uuid */
+              claimToken?: string;
+            }[];
+          };
         };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    AgentController_message: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    content: string;
-                    bbox?: (number)[];
-                    /** @default 24 */
-                    historyHours?: number;
-                    mapContext?: {
-                        sourceId?: string;
-                        shipType?: number;
-                        hours?: number;
-                        bbox: (number)[];
-                        /** Format: date-time */
-                        capturedAt: string;
-                        selectedMmsis?: string[];
-                    };
-                    uiBinding?: {
-                        /** Format: uuid */
-                        clientId: string;
-                        pageGeneration: number;
-                        tracksVersion?: number;
-                        heatmapVersion?: number;
-                    };
-                    skillRef?: {
-                        skillId: string;
-                        version?: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** @enum {string} */
-                            role: "user" | "assistant";
-                            content: string;
-                            /** Format: uuid */
-                            taskId: string | null;
-                            resultVersion?: number | null;
-                            inputRevision?: number | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                        };
-                        task: {
-                            skillRef?: {
-                                skillId: string;
-                                version?: string;
-                            } | null;
-                            /** @enum {string} */
-                            skillVersionPolicy?: "original" | "latest";
-                            uiBinding?: {
-                                /** Format: uuid */
-                                clientId: string;
-                                pageGeneration: number;
-                                tracksVersion?: number;
-                                heatmapVersion?: number;
-                            } | null;
-                            uiResult?: {
-                                /** @enum {string} */
-                                kind: "ui_control";
-                                /** Format: uuid */
-                                commandId: string | null;
-                                status: string;
-                                components: {
-                                    /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                    version: number;
-                                    revision?: number;
-                                    mounted: boolean;
-                                    open: boolean;
-                                    visible: boolean;
-                                    /** @default false */
-                                    focused: boolean;
-                                    /** @default 0 */
-                                    order: number;
-                                    /** @default false */
-                                    loading: boolean;
-                                    /** @default false */
-                                    dirty: boolean;
-                                    /** @default false */
-                                    interacting: boolean;
-                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                                    /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                    /** @enum {string} */
-                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                                }[];
-                            } | null;
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            /** @enum {string} */
-                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
-                            goal: string;
-                            bbox: (number)[] | null;
-                            historyHours: number;
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            /** @enum {string|null} */
-                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
-                            generation: number;
-                            modelCalls: number;
-                            toolCalls: number;
-                            resultVersion: number;
-                            summaryResultVersion: number | null;
-                            summary: string | null;
-                            error: string | null;
-                            /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
-                            selection?: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            inputRevision?: number;
-                            resultInputRevision?: number | null;
-                            summaryInputRevision?: number | null;
-                            errorCode?: string | null;
-                            /** Format: uuid */
-                            retryOfTaskId?: string | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                        pendingInputRequests: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            taskId: string;
-                            inputRevision: number;
-                            pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
-                            /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
-                            prefill: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            /** @enum {string} */
-                            status: "pending" | "answered" | "cancelled" | "superseded";
-                            response: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            } | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            answeredAt: string | null;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AgentUiController_claim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    AgentController_task: {
-        parameters: {
-            query?: {
-                resultVersion?: number;
-                inputRevision?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          clientId: string;
+          pageGeneration: number;
+          tracksVersion?: number;
+          heatmapVersion?: number;
+          highlightsVersion?: number;
+          cameraVersion?: number;
+          focusVersion?: number;
         };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        task: {
-                            skillRef?: {
-                                skillId: string;
-                                version?: string;
-                            } | null;
-                            /** @enum {string} */
-                            skillVersionPolicy?: "original" | "latest";
-                            uiBinding?: {
-                                /** Format: uuid */
-                                clientId: string;
-                                pageGeneration: number;
-                                tracksVersion?: number;
-                                heatmapVersion?: number;
-                            } | null;
-                            uiResult?: {
-                                /** @enum {string} */
-                                kind: "ui_control";
-                                /** Format: uuid */
-                                commandId: string | null;
-                                status: string;
-                                components: {
-                                    /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                    version: number;
-                                    revision?: number;
-                                    mounted: boolean;
-                                    open: boolean;
-                                    visible: boolean;
-                                    /** @default false */
-                                    focused: boolean;
-                                    /** @default 0 */
-                                    order: number;
-                                    /** @default false */
-                                    loading: boolean;
-                                    /** @default false */
-                                    dirty: boolean;
-                                    /** @default false */
-                                    interacting: boolean;
-                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                                    /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                    /** @enum {string} */
-                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                                }[];
-                            } | null;
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            /** @enum {string} */
-                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
-                            goal: string;
-                            bbox: (number)[] | null;
-                            historyHours: number;
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            /** @enum {string|null} */
-                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
-                            generation: number;
-                            modelCalls: number;
-                            toolCalls: number;
-                            resultVersion: number;
-                            summaryResultVersion: number | null;
-                            summary: string | null;
-                            error: string | null;
-                            /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
-                            selection?: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            inputRevision?: number;
-                            resultInputRevision?: number | null;
-                            summaryInputRevision?: number | null;
-                            errorCode?: string | null;
-                            /** Format: uuid */
-                            retryOfTaskId?: string | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                        results: {
-                            [key: string]: unknown;
-                        }[];
-                        steps: {
-                            key: string;
-                            name: string;
-                            input: unknown;
-                            output: unknown;
-                            /** Format: date-time */
-                            createdAt: string;
-                        }[];
-                        pendingInputRequests: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            taskId: string;
-                            inputRevision: number;
-                            pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
-                            /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
-                            prefill: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            /** @enum {string} */
-                            status: "pending" | "answered" | "cancelled" | "superseded";
-                            response: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            } | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            answeredAt: string | null;
-                        }[];
-                        snapshotCursor: string;
-                        queryResult: {
-                            /** @enum {string} */
-                            kind: "vessel_list" | "vessel_detail";
-                            version: number;
-                            inputRevision: number;
-                            total: number;
-                            truncated: boolean;
-                            items: {
-                                mmsi: string;
-                                name: string | null;
-                                imo: string | null;
-                                shipType: number | null;
-                                latestPosition: {
-                                    lat: number;
-                                    lon: number;
-                                    /** Format: date-time */
-                                    observedAt: string;
-                                    sogKnots: number | null;
-                                    sourceId: string;
-                                } | null;
-                            }[];
-                            /** Format: date-time */
-                            asOf: string;
-                            selection: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                        } | null;
-                        intelligenceResult: {
-                            /** @enum {string} */
-                            kind: "intelligence_search";
-                            version: number;
-                            inputRevision: number;
-                            /** Format: date-time */
-                            asOf: string;
-                            spec: {
-                                keyword?: string;
-                                locationKeyword?: string;
-                                sourceIds?: string[];
-                                /** @enum {string} */
-                                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                /** @enum {string} */
-                                reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                /** @enum {string} */
-                                timeMode?: "published" | "effective" | "observed";
-                                /** Format: date-time */
-                                from?: string;
-                                /** Format: date-time */
-                                to?: string;
-                                bbox?: (number)[];
-                                objectId?: string;
-                                mmsis?: string[];
-                                /** @enum {string} */
-                                kind?: "events" | "marine" | "both";
-                                samplePointId?: string;
-                                /** Format: date-time */
-                                forecastFrom?: string;
-                                /** Format: date-time */
-                                forecastTo?: string;
-                            };
-                            total: number;
-                            truncated: boolean;
-                            evidence: ({
-                                /** @enum {string} */
-                                kind: "event";
-                                reference: string;
-                                event: {
-                                    id: string;
-                                    sourceId: string;
-                                    sourceName: string;
-                                    externalId: string;
-                                    version: number;
-                                    title: string;
-                                    summary: string;
-                                    snippet: string;
-                                    /** @enum {string} */
-                                    category: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    status: "active" | "revised" | "withdrawn";
-                                    /** @enum {string} */
-                                    reviewStatus: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    visibility: "public" | "internal";
-                                    /** Format: date-time */
-                                    publishedAt: string | null;
-                                    /** Format: date-time */
-                                    observedAt: string;
-                                    /** Format: date-time */
-                                    effectiveFrom: string | null;
-                                    /** Format: date-time */
-                                    effectiveTo: string | null;
-                                    /** Format: date-time */
-                                    collectedAt: string;
-                                    /** @enum {string} */
-                                    timeBasis: "publication" | "index-observation" | "effective" | "unknown";
-                                    /** Format: uri */
-                                    originalUrl: string | null;
-                                    originalArchiveId: string | null;
-                                    geometry: ({
-                                        /** @enum {string} */
-                                        type: "Point";
-                                        coordinates: (number)[];
-                                    } | {
-                                        /** @enum {string} */
-                                        type: "LineString";
-                                        coordinates: (number)[][];
-                                    } | {
-                                        /** @enum {string} */
-                                        type: "Polygon";
-                                        coordinates: (number)[][][];
-                                    } | {
-                                        /** @enum {string} */
-                                        type: "MultiPoint";
-                                        coordinates: (number)[][];
-                                    } | {
-                                        /** @enum {string} */
-                                        type: "MultiLineString";
-                                        coordinates: (number)[][][];
-                                    } | {
-                                        /** @enum {string} */
-                                        type: "MultiPolygon";
-                                        coordinates: (number)[][][][];
-                                    }) | null;
-                                    /** @enum {string} */
-                                    matchBasis: "geometry" | "object" | "mention" | "keyword" | "none";
-                                    locationNote: string;
-                                };
-                            } | {
-                                /** @enum {string} */
-                                kind: "marine";
-                                reference: string;
-                                forecast: {
-                                    id: string;
-                                    sourceId: string;
-                                    samplePointId: string;
-                                    pointName: string;
-                                    point: {
-                                        lon: number;
-                                        lat: number;
-                                    };
-                                    grid: {
-                                        lon: number;
-                                        lat: number;
-                                    };
-                                    /** Format: date-time */
-                                    fetchedAt: string;
-                                    /** Format: date-time */
-                                    modelPublishedAt: string | null;
-                                    /** Format: date-time */
-                                    validFrom: string;
-                                    /** Format: date-time */
-                                    validTo: string;
-                                    series: {
-                                        /** Format: date-time */
-                                        validAt: string;
-                                        waveHeight: number | null;
-                                        waveDirection: number | null;
-                                        wavePeriod: number | null;
-                                    }[];
-                                    originalArchiveId: string;
-                                    /** Format: uri */
-                                    originalUrl: string;
-                                    /** @enum {string} */
-                                    visibility: "public" | "internal";
-                                };
-                            })[];
-                            sourceHealth: {
-                                sourceId: string;
-                                name: string;
-                                enabled: boolean;
-                                /** @enum {string} */
-                                visibility: "public" | "internal";
-                                /** @enum {string} */
-                                status: "ready" | "stale" | "unavailable" | "never_collected" | "disabled";
-                                /** Format: date-time */
-                                lastPolledAt: string | null;
-                                /** Format: date-time */
-                                lastSuccessfulAt: string | null;
-                                /** Format: date-time */
-                                nextPollAt: string | null;
-                                lastError: string | null;
-                            }[];
-                            coverageNotes: string[];
-                        } | null;
-                        heatmapResult: {
-                            query: {
-                                bbox: (number)[];
-                                /** Format: date-time */
-                                from: string;
-                                /** Format: date-time */
-                                to: string;
-                                sourceId?: string;
-                                shipType?: number;
-                                mmsis?: string[];
-                            };
-                            grid: {
-                                level: number;
-                                cellDegrees: number;
-                            };
-                            cells: {
-                                id: string;
-                                x: number;
-                                y: number;
-                                lon: number;
-                                lat: number;
-                                vesselCount: number;
-                            }[];
-                            totalVessels: number;
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** @enum {string} */
-                            metric: "unique_vessels";
-                            /** @enum {string} */
-                            shipTypeBasis: "current_profile";
-                            /** @enum {string} */
-                            kind: "ais_heatmap";
-                            version: number;
-                            inputRevision: number;
-                        } | null;
-                        tracksResult: {
-                            query: {
-                                bbox: (number)[];
-                                /** Format: date-time */
-                                from: string;
-                                /** Format: date-time */
-                                to: string;
-                                selector: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                sourceId?: string;
-                                /** @default 20 */
-                                maxVessels: number;
-                                /** @default 500 */
-                                maxPointsPerVessel: number;
-                            };
-                            /** Format: date-time */
-                            asOf: string;
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** @enum {string} */
-                            shipTypeBasis: "current_profile";
-                            /** @enum {string} */
-                            selectionBasis: "historical_observation_in_bbox";
-                            /** @enum {string} */
-                            trackScope: "full_time_window";
-                            returnedVessels: number;
-                            matchedVesselsLowerBound: number;
-                            hasMoreVessels: boolean;
-                            tracks: {
-                                mmsi: string;
-                                name: string | null;
-                                shipType: number | null;
-                                segments: {
-                                    points: {
-                                        lon: number;
-                                        lat: number;
-                                        /** Format: date-time */
-                                        observedAt: string;
-                                    }[];
-                                }[];
-                                total: number;
-                                returned: number;
-                                sampled: boolean;
-                                truncated: boolean;
-                            }[];
-                            /** @enum {string} */
-                            kind: "vessel_tracks";
-                            version: number;
-                            inputRevision: number;
-                        } | null;
-                        dynamicSkill: {
-                            taskBinding: {
-                                /** Format: uuid */
-                                ownerId: string;
-                                /** Format: uuid */
-                                taskId: string;
-                                inputRevision: number;
-                                binding: {
-                                    skillId: string;
-                                    version: string;
-                                    contentHash: string;
-                                    adapterVersion: string;
-                                };
-                                toolCeiling: string[];
-                                /** Format: date-time */
-                                boundAt: string;
-                            } | null;
-                            version: {
-                                /** Format: uuid */
-                                ownerId: string;
-                                binding: {
-                                    skillId: string;
-                                    version: string;
-                                    contentHash: string;
-                                    adapterVersion: string;
-                                };
-                                definition: {
-                                    /** @enum {number} */
-                                    schemaVersion: 1;
-                                    name: string;
-                                    description: string;
-                                    body: string;
-                                    /** @default {} */
-                                    references: {
-                                        [key: string]: string;
-                                    };
-                                    /** @default [] */
-                                    requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
-                                    toolIds: string[];
-                                    steps: {
-                                        id: string;
-                                        toolId: string;
-                                        input: {
-                                            [key: string]: unknown;
-                                        };
-                                        /** @enum {string} */
-                                        artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                        ui?: {
-                                            /** @enum {string} */
-                                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                            /** @enum {string} */
-                                            action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                                            /** @enum {string} */
-                                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                        };
-                                    }[];
-                                    /** @default [] */
-                                    expectedArtifacts: {
-                                        stepId: string;
-                                        /** @enum {string} */
-                                        kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                    }[];
-                                    /** @default [] */
-                                    requiredDisplays: string[];
-                                };
-                                /** @enum {string} */
-                                source: "agent" | "user";
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                revokedAt: string | null;
-                            } | null;
-                            calls: {
-                                /** Format: uuid */
-                                callId: string;
-                                /** Format: uuid */
-                                taskId: string;
-                                inputRevision: number;
-                                stepId: string;
-                                toolId: string;
-                                generation: number;
-                                /** @enum {string} */
-                                status: "running" | "completed" | "failed" | "unknown" | "waiting_ui";
-                                input: unknown;
-                                localResult: unknown;
-                                modelProjection: unknown;
-                                artifactRefs: string[];
-                                errorCode: string | null;
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                updatedAt: string;
-                            }[];
-                            artifacts: {
-                                /** Format: uuid */
-                                id: string;
-                                /** Format: uuid */
-                                ownerId: string;
-                                /** Format: uuid */
-                                taskId: string;
-                                inputRevision: number;
-                                stepId: string;
-                                /** @enum {string} */
-                                kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                payload: unknown;
-                                modelProjection: unknown;
-                                /** Format: date-time */
-                                createdAt: string;
-                            }[];
-                            createdVersions: {
-                                /** Format: uuid */
-                                ownerId: string;
-                                binding: {
-                                    skillId: string;
-                                    version: string;
-                                    contentHash: string;
-                                    adapterVersion: string;
-                                };
-                                definition: {
-                                    /** @enum {number} */
-                                    schemaVersion: 1;
-                                    name: string;
-                                    description: string;
-                                    body: string;
-                                    /** @default {} */
-                                    references: {
-                                        [key: string]: string;
-                                    };
-                                    /** @default [] */
-                                    requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
-                                    toolIds: string[];
-                                    steps: {
-                                        id: string;
-                                        toolId: string;
-                                        input: {
-                                            [key: string]: unknown;
-                                        };
-                                        /** @enum {string} */
-                                        artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                        ui?: {
-                                            /** @enum {string} */
-                                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                            /** @enum {string} */
-                                            action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                                            /** @enum {string} */
-                                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                        };
-                                    }[];
-                                    /** @default [] */
-                                    expectedArtifacts: {
-                                        stepId: string;
-                                        /** @enum {string} */
-                                        kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                    }[];
-                                    /** @default [] */
-                                    requiredDisplays: string[];
-                                };
-                                /** @enum {string} */
-                                source: "agent" | "user";
-                                /** Format: date-time */
-                                createdAt: string;
-                                /** Format: date-time */
-                                revokedAt: string | null;
-                            }[];
-                        };
-                        artifacts: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            /** Format: uuid */
-                            taskId: string;
-                            inputRevision: number;
-                            stepId: string;
-                            /** @enum {string} */
-                            kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                            payload: unknown;
-                            modelProjection: unknown;
-                            /** Format: date-time */
-                            createdAt: string;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    AgentController_respond: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
+        content: {
+          'application/json': {
+            stepId?: string;
+            /** Format: uuid */
+            artifactRef?: string;
+            presentation?: {
+              query: {
+                bbox: number[];
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+                sourceId?: string;
+                shipType?: number;
+                mmsis?: string[];
+              };
+              grid: {
+                level: number;
+                cellDegrees: number;
+              };
+              cells: {
+                id: string;
+                x: number;
+                y: number;
+                lon: number;
+                lat: number;
+                vesselCount: number;
+              }[];
+              totalVessels: number;
+              /** Format: date-time */
+              generatedAt: string;
+              /** @enum {string} */
+              metric: 'unique_vessels';
+              /** @enum {string} */
+              shipTypeBasis: 'current_profile';
+              /** @enum {string} */
+              kind: 'ais_heatmap';
+              version: number;
+              inputRevision: number;
+            };
+            tracksPresentation?: {
+              query: {
+                bbox: number[];
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+                selector: {
+                  shipTypes?: number[];
+                  mmsis?: string[];
+                  query?: string;
+                  model?: string;
+                };
+                sourceId?: string;
+                /** @default 20 */
+                maxVessels: number;
+                /** @default 500 */
+                maxPointsPerVessel: number;
+              };
+              /** Format: date-time */
+              asOf: string;
+              /** Format: date-time */
+              generatedAt: string;
+              /** @enum {string} */
+              shipTypeBasis: 'current_profile';
+              /** @enum {string} */
+              selectionBasis: 'historical_observation_in_bbox';
+              /** @enum {string} */
+              trackScope: 'full_time_window';
+              returnedVessels: number;
+              matchedVesselsLowerBound: number;
+              hasMoreVessels: boolean;
+              tracks: {
+                mmsi: string;
+                name: string | null;
+                shipType: number | null;
+                segments: {
+                  points: {
+                    lon: number;
+                    lat: number;
+                    /** Format: date-time */
+                    observedAt: string;
+                  }[];
+                }[];
+                total: number;
+                returned: number;
+                sampled: boolean;
+                truncated: boolean;
+              }[];
+              /** @enum {string} */
+              kind: 'vessel_tracks';
+              version: number;
+              inputRevision: number;
+            };
+            highlightsPresentation?: {
+              /** @enum {string} */
+              kind: 'vessel_highlights';
+              version: number;
+              inputRevision: number;
+              /** @enum {string} */
+              operation: 'show' | 'clear';
+              vessels: {
+                mmsi: string;
+                name: string | null;
+                lon: number;
+                lat: number;
+                /** Format: date-time */
+                observedAt: string;
+              }[];
+              missingMmsis: string[];
+              clear?:
+                | {
                     /** @enum {string} */
-                    action: "accept";
-                    inputRevision: number;
-                    values: {
-                        skillRef?: {
-                            skillId: string;
-                            version?: string;
-                        };
-                        skillCandidates?: {
-                            skillId: string;
-                            version: string;
-                            name: string;
-                            description?: string;
-                        }[];
-                        bbox?: (number)[];
-                        mmsis?: string[];
-                        timeRange?: {
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                        };
-                        filters?: {
-                            sourceId?: string;
-                            shipType?: number;
-                            hours?: number;
-                        };
-                        /** @enum {string} */
-                        purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                        intelligenceQuery?: {
-                            keyword?: string;
-                            locationKeyword?: string;
-                            sourceIds?: string[];
-                            /** @enum {string} */
-                            category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                            /** @enum {string} */
-                            reviewStatus?: "candidate" | "confirmed" | "rejected";
-                            /** @enum {string} */
-                            timeMode?: "published" | "effective" | "observed";
-                            /** Format: date-time */
-                            from?: string;
-                            /** Format: date-time */
-                            to?: string;
-                            bbox?: (number)[];
-                            objectId?: string;
-                            mmsis?: string[];
-                            /** @enum {string} */
-                            kind?: "events" | "marine" | "both";
-                            samplePointId?: string;
-                            /** Format: date-time */
-                            forecastFrom?: string;
-                            /** Format: date-time */
-                            forecastTo?: string;
-                        };
-                        intelligenceTimeRange?: {
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                        };
-                        intelligenceTimeUnclear?: boolean;
-                        heatmapTimeUnclear?: boolean;
-                        tracksTimeUnclear?: boolean;
-                        vesselSelector?: {
-                            shipTypes?: number[];
-                            mmsis?: string[];
-                            query?: string;
-                            model?: string;
-                        };
-                        intelligenceObjectUnclear?: boolean;
-                        intelligenceObjectCandidates?: {
-                            id: string;
-                            name: string;
-                        }[];
-                        historyHours?: number;
-                    };
-                } | {
+                    mode: 'all';
+                  }
+                | {
                     /** @enum {string} */
-                    action: "decline";
-                    inputRevision: number;
-                };
+                    mode: 'groups';
+                    groupIds: string[];
+                  };
             };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        task: {
-                            skillRef?: {
-                                skillId: string;
-                                version?: string;
-                            } | null;
-                            /** @enum {string} */
-                            skillVersionPolicy?: "original" | "latest";
-                            uiBinding?: {
-                                /** Format: uuid */
-                                clientId: string;
-                                pageGeneration: number;
-                                tracksVersion?: number;
-                                heatmapVersion?: number;
-                            } | null;
-                            uiResult?: {
-                                /** @enum {string} */
-                                kind: "ui_control";
-                                /** Format: uuid */
-                                commandId: string | null;
-                                status: string;
-                                components: {
-                                    /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                    version: number;
-                                    revision?: number;
-                                    mounted: boolean;
-                                    open: boolean;
-                                    visible: boolean;
-                                    /** @default false */
-                                    focused: boolean;
-                                    /** @default 0 */
-                                    order: number;
-                                    /** @default false */
-                                    loading: boolean;
-                                    /** @default false */
-                                    dirty: boolean;
-                                    /** @default false */
-                                    interacting: boolean;
-                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                                    /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                    /** @enum {string} */
-                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                                }[];
-                            } | null;
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            /** @enum {string} */
-                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
-                            goal: string;
-                            bbox: (number)[] | null;
-                            historyHours: number;
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            /** @enum {string|null} */
-                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
-                            generation: number;
-                            modelCalls: number;
-                            toolCalls: number;
-                            resultVersion: number;
-                            summaryResultVersion: number | null;
-                            summary: string | null;
-                            error: string | null;
-                            /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
-                            selection?: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            inputRevision?: number;
-                            resultInputRevision?: number | null;
-                            summaryInputRevision?: number | null;
-                            errorCode?: string | null;
-                            /** Format: uuid */
-                            retryOfTaskId?: string | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                        request: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            taskId: string;
-                            inputRevision: number;
-                            pauseGeneration: number;
-                            fields: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector" | "skill")[];
-                            /** @enum {string} */
-                            reason: "missing_region" | "missing_vessels" | "missing_time" | "missing_goal" | "data_limit" | "retention" | "scope_changed" | "missing_topic" | "missing_vessel_selector" | "ambiguous_skill";
-                            prefill: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            /** @enum {string} */
-                            status: "pending" | "answered" | "cancelled" | "superseded";
-                            response: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            } | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            answeredAt: string | null;
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentController_retry: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    uiBinding?: {
-                        /** Format: uuid */
-                        clientId: string;
-                        pageGeneration: number;
-                        tracksVersion?: number;
-                        heatmapVersion?: number;
-                    };
+            cameraPresentation?: {
+              /** @enum {string} */
+              kind: 'map_camera';
+              version: number;
+              inputRevision: number;
+              request:
+                | {
                     /** @enum {string} */
-                    skillVersionPolicy?: "original" | "latest";
-                };
-            };
-        };
-        responses: {
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        task: {
-                            skillRef?: {
-                                skillId: string;
-                                version?: string;
-                            } | null;
-                            /** @enum {string} */
-                            skillVersionPolicy?: "original" | "latest";
-                            uiBinding?: {
-                                /** Format: uuid */
-                                clientId: string;
-                                pageGeneration: number;
-                                tracksVersion?: number;
-                                heatmapVersion?: number;
-                            } | null;
-                            uiResult?: {
-                                /** @enum {string} */
-                                kind: "ui_control";
-                                /** Format: uuid */
-                                commandId: string | null;
-                                status: string;
-                                components: {
-                                    /** @enum {string} */
-                                    id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                    version: number;
-                                    revision?: number;
-                                    mounted: boolean;
-                                    open: boolean;
-                                    visible: boolean;
-                                    /** @default false */
-                                    focused: boolean;
-                                    /** @default 0 */
-                                    order: number;
-                                    /** @default false */
-                                    loading: boolean;
-                                    /** @default false */
-                                    dirty: boolean;
-                                    /** @default false */
-                                    interacting: boolean;
-                                    actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                                    /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                    /** @enum {string} */
-                                    blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                                }[];
-                            } | null;
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            ownerId: string;
-                            /** @enum {string} */
-                            status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
-                            goal: string;
-                            bbox: (number)[] | null;
-                            historyHours: number;
-                            /** Format: date-time */
-                            from: string;
-                            /** Format: date-time */
-                            to: string;
-                            /** @enum {string|null} */
-                            definitionId: "port-restriction" | "area-low-speed-notice" | null;
-                            generation: number;
-                            modelCalls: number;
-                            toolCalls: number;
-                            resultVersion: number;
-                            summaryResultVersion: number | null;
-                            summary: string | null;
-                            error: string | null;
-                            /** @enum {string} */
-                            intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
-                            selection?: {
-                                skillRef?: {
-                                    skillId: string;
-                                    version?: string;
-                                };
-                                skillCandidates?: {
-                                    skillId: string;
-                                    version: string;
-                                    name: string;
-                                    description?: string;
-                                }[];
-                                bbox?: (number)[];
-                                mmsis?: string[];
-                                timeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                filters?: {
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    hours?: number;
-                                };
-                                /** @enum {string} */
-                                purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                                intelligenceQuery?: {
-                                    keyword?: string;
-                                    locationKeyword?: string;
-                                    sourceIds?: string[];
-                                    /** @enum {string} */
-                                    category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                    /** @enum {string} */
-                                    reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                    /** @enum {string} */
-                                    timeMode?: "published" | "effective" | "observed";
-                                    /** Format: date-time */
-                                    from?: string;
-                                    /** Format: date-time */
-                                    to?: string;
-                                    bbox?: (number)[];
-                                    objectId?: string;
-                                    mmsis?: string[];
-                                    /** @enum {string} */
-                                    kind?: "events" | "marine" | "both";
-                                    samplePointId?: string;
-                                    /** Format: date-time */
-                                    forecastFrom?: string;
-                                    /** Format: date-time */
-                                    forecastTo?: string;
-                                };
-                                intelligenceTimeRange?: {
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                };
-                                intelligenceTimeUnclear?: boolean;
-                                heatmapTimeUnclear?: boolean;
-                                tracksTimeUnclear?: boolean;
-                                vesselSelector?: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                intelligenceObjectUnclear?: boolean;
-                                intelligenceObjectCandidates?: {
-                                    id: string;
-                                    name: string;
-                                }[];
-                            };
-                            inputRevision?: number;
-                            resultInputRevision?: number | null;
-                            summaryInputRevision?: number | null;
-                            errorCode?: string | null;
-                            /** Format: uuid */
-                            retryOfTaskId?: string | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                        message: {
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** @enum {string} */
-                            role: "user" | "assistant";
-                            content: string;
-                            /** Format: uuid */
-                            taskId: string | null;
-                            resultVersion?: number | null;
-                            inputRevision?: number | null;
-                            /** Format: date-time */
-                            createdAt: string;
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentController_cancel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        skillRef?: {
-                            skillId: string;
-                            version?: string;
-                        } | null;
-                        /** @enum {string} */
-                        skillVersionPolicy?: "original" | "latest";
-                        uiBinding?: {
-                            /** Format: uuid */
-                            clientId: string;
-                            pageGeneration: number;
-                            tracksVersion?: number;
-                            heatmapVersion?: number;
-                        } | null;
-                        uiResult?: {
-                            /** @enum {string} */
-                            kind: "ui_control";
-                            /** Format: uuid */
-                            commandId: string | null;
-                            status: string;
-                            components: {
-                                /** @enum {string} */
-                                id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                version: number;
-                                revision?: number;
-                                mounted: boolean;
-                                open: boolean;
-                                visible: boolean;
-                                /** @default false */
-                                focused: boolean;
-                                /** @default 0 */
-                                order: number;
-                                /** @default false */
-                                loading: boolean;
-                                /** @default false */
-                                dirty: boolean;
-                                /** @default false */
-                                interacting: boolean;
-                                actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                                /** @enum {string} */
-                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                /** @enum {string} */
-                                blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                            }[];
-                        } | null;
-                        /** Format: uuid */
-                        id: string;
-                        /** Format: uuid */
-                        sessionId: string;
-                        /** Format: uuid */
-                        ownerId: string;
-                        /** @enum {string} */
-                        status: "awaiting_input" | "queued" | "running" | "waiting_result" | "waiting_ui" | "completed" | "failed" | "cancelled";
-                        goal: string;
-                        bbox: (number)[] | null;
-                        historyHours: number;
-                        /** Format: date-time */
-                        from: string;
-                        /** Format: date-time */
-                        to: string;
-                        /** @enum {string|null} */
-                        definitionId: "port-restriction" | "area-low-speed-notice" | null;
-                        generation: number;
-                        modelCalls: number;
-                        toolCalls: number;
-                        resultVersion: number;
-                        summaryResultVersion: number | null;
-                        summary: string | null;
-                        error: string | null;
-                        /** @enum {string} */
-                        intent?: "conversation" | "vessel_list" | "vessel_detail" | "analysis" | "explain" | "unresolved" | "intelligence_search" | "ais_heatmap" | "vessel_tracks" | "ui_control" | "skill";
-                        selection?: {
-                            skillRef?: {
-                                skillId: string;
-                                version?: string;
-                            };
-                            skillCandidates?: {
-                                skillId: string;
-                                version: string;
-                                name: string;
-                                description?: string;
-                            }[];
-                            bbox?: (number)[];
-                            mmsis?: string[];
-                            timeRange?: {
-                                /** Format: date-time */
-                                from: string;
-                                /** Format: date-time */
-                                to: string;
-                            };
-                            filters?: {
-                                sourceId?: string;
-                                shipType?: number;
-                                hours?: number;
-                            };
-                            /** @enum {string} */
-                            purpose?: "vessel_list" | "vessel_detail" | "port-restriction" | "area-low-speed-notice" | "intelligence_search" | "ais_heatmap" | "vessel_tracks";
-                            intelligenceQuery?: {
-                                keyword?: string;
-                                locationKeyword?: string;
-                                sourceIds?: string[];
-                                /** @enum {string} */
-                                category?: "port-restriction" | "notice" | "navigation-warning" | "weather" | "security" | "environment" | "incident" | "other";
-                                /** @enum {string} */
-                                reviewStatus?: "candidate" | "confirmed" | "rejected";
-                                /** @enum {string} */
-                                timeMode?: "published" | "effective" | "observed";
-                                /** Format: date-time */
-                                from?: string;
-                                /** Format: date-time */
-                                to?: string;
-                                bbox?: (number)[];
-                                objectId?: string;
-                                mmsis?: string[];
-                                /** @enum {string} */
-                                kind?: "events" | "marine" | "both";
-                                samplePointId?: string;
-                                /** Format: date-time */
-                                forecastFrom?: string;
-                                /** Format: date-time */
-                                forecastTo?: string;
-                            };
-                            intelligenceTimeRange?: {
-                                /** Format: date-time */
-                                from: string;
-                                /** Format: date-time */
-                                to: string;
-                            };
-                            intelligenceTimeUnclear?: boolean;
-                            heatmapTimeUnclear?: boolean;
-                            tracksTimeUnclear?: boolean;
-                            vesselSelector?: {
-                                shipTypes?: number[];
-                                mmsis?: string[];
-                                query?: string;
-                                model?: string;
-                            };
-                            intelligenceObjectUnclear?: boolean;
-                            intelligenceObjectCandidates?: {
-                                id: string;
-                                name: string;
-                            }[];
-                        };
-                        inputRevision?: number;
-                        resultInputRevision?: number | null;
-                        summaryInputRevision?: number | null;
-                        errorCode?: string | null;
-                        /** Format: uuid */
-                        retryOfTaskId?: string | null;
-                        /** Format: date-time */
-                        createdAt: string;
-                        /** Format: date-time */
-                        updatedAt: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentController_events: {
-        parameters: {
-            query?: {
-                cursor?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            id: string;
-                            /** Format: uuid */
-                            sessionId: string;
-                            /** Format: uuid */
-                            taskId: string | null;
-                            type: string;
-                            data: {
-                                [key: string]: unknown;
-                            };
-                            /** Format: date-time */
-                            createdAt: string;
-                        }[];
-                        nextCursor: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentUiController_register: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    instanceId: string;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        clientId: string;
-                        pageGeneration: number;
-                        tracksVersion?: number;
-                        heatmapVersion?: number;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentUiController_state: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    clientId: string;
-                    pageGeneration: number;
-                    tracksVersion?: number;
-                    heatmapVersion?: number;
-                    /** Format: uuid */
-                    sessionId: string | null;
-                    state: {
-                        sequence: number;
-                        /** @enum {string} */
-                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "/skills" | "unknown";
-                        components: {
-                            /** @enum {string} */
-                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                            version: number;
-                            revision?: number;
-                            mounted: boolean;
-                            open: boolean;
-                            visible: boolean;
-                            /** @default false */
-                            focused?: boolean;
-                            /** @default 0 */
-                            order?: number;
-                            /** @default false */
-                            loading?: boolean;
-                            /** @default false */
-                            dirty?: boolean;
-                            /** @default false */
-                            interacting?: boolean;
-                            actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                            /** @enum {string} */
-                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                            /** @enum {string} */
-                            blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                        }[];
-                    };
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        clientId: string;
-                        pageGeneration: number;
-                        tracksVersion?: number;
-                        heatmapVersion?: number;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentUiController_commands: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: {
-                            stepId?: string;
-                            /** Format: uuid */
-                            artifactRef?: string;
-                            presentation?: {
-                                query: {
-                                    bbox: (number)[];
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                    sourceId?: string;
-                                    shipType?: number;
-                                    mmsis?: string[];
-                                };
-                                grid: {
-                                    level: number;
-                                    cellDegrees: number;
-                                };
-                                cells: {
-                                    id: string;
-                                    x: number;
-                                    y: number;
-                                    lon: number;
-                                    lat: number;
-                                    vesselCount: number;
-                                }[];
-                                totalVessels: number;
-                                /** Format: date-time */
-                                generatedAt: string;
-                                /** @enum {string} */
-                                metric: "unique_vessels";
-                                /** @enum {string} */
-                                shipTypeBasis: "current_profile";
-                                /** @enum {string} */
-                                kind: "ais_heatmap";
-                                version: number;
-                                inputRevision: number;
-                            };
-                            tracksPresentation?: {
-                                query: {
-                                    bbox: (number)[];
-                                    /** Format: date-time */
-                                    from: string;
-                                    /** Format: date-time */
-                                    to: string;
-                                    selector: {
-                                        shipTypes?: number[];
-                                        mmsis?: string[];
-                                        query?: string;
-                                        model?: string;
-                                    };
-                                    sourceId?: string;
-                                    /** @default 20 */
-                                    maxVessels: number;
-                                    /** @default 500 */
-                                    maxPointsPerVessel: number;
-                                };
-                                /** Format: date-time */
-                                asOf: string;
-                                /** Format: date-time */
-                                generatedAt: string;
-                                /** @enum {string} */
-                                shipTypeBasis: "current_profile";
-                                /** @enum {string} */
-                                selectionBasis: "historical_observation_in_bbox";
-                                /** @enum {string} */
-                                trackScope: "full_time_window";
-                                returnedVessels: number;
-                                matchedVesselsLowerBound: number;
-                                hasMoreVessels: boolean;
-                                tracks: {
-                                    mmsi: string;
-                                    name: string | null;
-                                    shipType: number | null;
-                                    segments: {
-                                        points: {
-                                            lon: number;
-                                            lat: number;
-                                            /** Format: date-time */
-                                            observedAt: string;
-                                        }[];
-                                    }[];
-                                    total: number;
-                                    returned: number;
-                                    sampled: boolean;
-                                    truncated: boolean;
-                                }[];
-                                /** @enum {string} */
-                                kind: "vessel_tracks";
-                                version: number;
-                                inputRevision: number;
-                            };
-                            /** Format: uuid */
-                            id: string;
-                            /** Format: uuid */
-                            taskId: string;
-                            /** Format: uuid */
-                            clientId: string;
-                            pageGeneration: number;
-                            operation: {
-                                /** @enum {string} */
-                                componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                /** @enum {string} */
-                                action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                                /** @enum {string} */
-                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                            };
-                            expectedVersion: number;
-                            /** @enum {string} */
-                            status: "queued" | "claimed" | "executing" | "succeeded" | "failed" | "rejected" | "cancelled" | "expired" | "unknown";
-                            /** Format: uuid */
-                            claimToken?: string;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentUiController_claim: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    clientId: string;
-                    pageGeneration: number;
-                    tracksVersion?: number;
-                    heatmapVersion?: number;
-                };
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        stepId?: string;
-                        /** Format: uuid */
-                        artifactRef?: string;
-                        presentation?: {
-                            query: {
-                                bbox: (number)[];
-                                /** Format: date-time */
-                                from: string;
-                                /** Format: date-time */
-                                to: string;
-                                sourceId?: string;
-                                shipType?: number;
-                                mmsis?: string[];
-                            };
-                            grid: {
-                                level: number;
-                                cellDegrees: number;
-                            };
-                            cells: {
-                                id: string;
-                                x: number;
-                                y: number;
-                                lon: number;
-                                lat: number;
-                                vesselCount: number;
-                            }[];
-                            totalVessels: number;
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** @enum {string} */
-                            metric: "unique_vessels";
-                            /** @enum {string} */
-                            shipTypeBasis: "current_profile";
-                            /** @enum {string} */
-                            kind: "ais_heatmap";
-                            version: number;
-                            inputRevision: number;
-                        };
-                        tracksPresentation?: {
-                            query: {
-                                bbox: (number)[];
-                                /** Format: date-time */
-                                from: string;
-                                /** Format: date-time */
-                                to: string;
-                                selector: {
-                                    shipTypes?: number[];
-                                    mmsis?: string[];
-                                    query?: string;
-                                    model?: string;
-                                };
-                                sourceId?: string;
-                                /** @default 20 */
-                                maxVessels: number;
-                                /** @default 500 */
-                                maxPointsPerVessel: number;
-                            };
-                            /** Format: date-time */
-                            asOf: string;
-                            /** Format: date-time */
-                            generatedAt: string;
-                            /** @enum {string} */
-                            shipTypeBasis: "current_profile";
-                            /** @enum {string} */
-                            selectionBasis: "historical_observation_in_bbox";
-                            /** @enum {string} */
-                            trackScope: "full_time_window";
-                            returnedVessels: number;
-                            matchedVesselsLowerBound: number;
-                            hasMoreVessels: boolean;
-                            tracks: {
-                                mmsi: string;
-                                name: string | null;
-                                shipType: number | null;
-                                segments: {
-                                    points: {
-                                        lon: number;
-                                        lat: number;
-                                        /** Format: date-time */
-                                        observedAt: string;
-                                    }[];
-                                }[];
-                                total: number;
-                                returned: number;
-                                sampled: boolean;
-                                truncated: boolean;
-                            }[];
-                            /** @enum {string} */
-                            kind: "vessel_tracks";
-                            version: number;
-                            inputRevision: number;
-                        };
-                        /** Format: uuid */
-                        id: string;
-                        /** Format: uuid */
-                        taskId: string;
-                        /** Format: uuid */
-                        clientId: string;
-                        pageGeneration: number;
-                        operation: {
-                            /** @enum {string} */
-                            componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                            /** @enum {string} */
-                            action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                            /** @enum {string} */
-                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                        };
-                        expectedVersion: number;
-                        /** @enum {string} */
-                        status: "queued" | "claimed" | "executing" | "succeeded" | "failed" | "rejected" | "cancelled" | "expired" | "unknown";
-                        /** Format: uuid */
-                        claimToken?: string;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentUiController_receipt: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    clientId: string;
-                    pageGeneration: number;
-                    tracksVersion?: number;
-                    heatmapVersion?: number;
-                    stepId?: string;
-                    /** Format: uuid */
-                    artifactRef?: string;
-                    /** Format: uuid */
-                    receiptId: string;
-                    /** Format: uuid */
-                    claimToken: string;
+                    mode: 'point';
+                    center: number[];
+                    /** @default 10 */
+                    zoom: number;
+                  }
+                | {
                     /** @enum {string} */
-                    status: "executing" | "succeeded" | "failed" | "rejected";
-                    state: {
-                        sequence: number;
-                        /** @enum {string} */
-                        route: "/" | "/intelligence" | "/topics" | "/sources" | "/runs" | "/replays" | "/quality" | "/jobs" | "/users" | "/login" | "/skills" | "unknown";
-                        components: {
-                            /** @enum {string} */
-                            id: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                            version: number;
-                            revision?: number;
-                            mounted: boolean;
-                            open: boolean;
-                            visible: boolean;
-                            /** @default false */
-                            focused?: boolean;
-                            /** @default 0 */
-                            order?: number;
-                            /** @default false */
-                            loading?: boolean;
-                            /** @default false */
-                            dirty?: boolean;
-                            /** @default false */
-                            interacting?: boolean;
-                            actions: ("open" | "close" | "show" | "hide" | "focus" | "tab")[];
-                            /** @enum {string} */
-                            tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                            /** @enum {string} */
-                            blocked?: "editing" | "drawing" | "loading" | "unavailable";
-                        }[];
-                    };
+                    mode: 'bounds';
+                    bbox: number[];
+                    /** @default 10 */
+                    maxZoom: number;
+                  }
+                | {
                     /** @enum {string} */
-                    error?: "STATE_CONFLICT" | "POSTCONDITION_FAILED" | "UNAVAILABLE" | "EXECUTION_FAILED";
-                };
+                    mode: 'current';
+                    zoom?: number;
+                    zoomDelta?: number;
+                  };
             };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
+            focusPresentation?: {
+              /** @enum {string} */
+              kind: 'map_focus';
+              version: number;
+              inputRevision: number;
+              sessionId: string;
+              taskId: string;
+              targets: {
+                ref: {
+                  /** @enum {string} */
+                  kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                  id: string;
+                  revision?: number;
+                  /** Format: uuid */
+                  sourceTaskId?: string;
                 };
-                content: {
-                    "application/json": {
-                        status: string;
+                label: string;
+                geometry:
+                  | {
+                      /** @enum {string} */
+                      type: 'Point';
+                      coordinates: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'LineString';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'Polygon';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPoint';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiLineString';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPolygon';
+                      coordinates: number[][][][];
                     };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    SkillsController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        catalogRevision: number;
-                        items: {
-                            skillId: string;
-                            name: string;
-                            description: string;
-                            toolIds: string[];
-                            enabled: boolean;
-                            currentVersion: string | null;
+                /** Format: date-time */
+                observedAt?: string;
+                source?: string;
+                region?:
+                  | {
+                      /** @enum {string} */
+                      kind: 'circle';
+                      center: number[];
+                      radiusMeters: number;
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'bbox';
+                      bbox: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      kind: 'polygon';
+                      geometry:
+                        | {
                             /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        }[];
+                            type: 'Point';
+                            coordinates: number[];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'LineString';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'Polygon';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPoint';
+                            coordinates: number[][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiLineString';
+                            coordinates: number[][][];
+                          }
+                        | {
+                            /** @enum {string} */
+                            type: 'MultiPolygon';
+                            coordinates: number[][][][];
+                          };
                     };
-                };
+              }[];
+              missing: {
+                /** @enum {string} */
+                kind: 'vessel' | 'track' | 'route' | 'event' | 'intelligence' | 'region';
+                id: string;
+                revision?: number;
+                /** Format: uuid */
+                sourceTaskId?: string;
+              }[];
+              omittedCount?: number;
+              bbox: number[] | null;
+              /** @enum {string} */
+              displayStatus: 'complete' | 'partial' | 'unlocated';
+              /** @enum {string} */
+              cameraPolicy: 'if-needed-once';
             };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            taskId: string;
+            /** Format: uuid */
+            clientId: string;
+            pageGeneration: number;
+            operation: {
+              /** @enum {string} */
+              componentId:
+                | 'app.page'
+                | 'page.list'
+                | 'page.editor'
+                | 'page.detail'
+                | 'page.archive'
+                | 'intelligence.draft'
+                | 'workspace.left'
+                | 'workspace.right'
+                | 'chart.vessel-tracks'
+                | 'chart.heatmap'
+                | 'chart.heatmap.legend'
+                | 'chart.heatmap.popup'
+                | 'chart.layers.ais'
+                | 'chart.layers.tracks'
+                | 'chart.layers.evidence'
+                | 'chart.focus'
+                | 'chart.viewport'
+                | 'chart.vessel-highlights'
+                | 'agent.reply'
+                | 'agent.input'
+                | 'agent.sources'
+                | 'chart.evidence'
+                | 'chart.choices';
+              /** @enum {string} */
+              action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+              /** @enum {string} */
+              tab?:
+                | 'search'
+                | 'intelligence'
+                | 'layers'
+                | 'playback'
+                | 'heatmap'
+                | 'history-tracks'
+                | 'chat'
+                | 'push'
+                | 'tasks';
             };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            expectedVersion: number;
+            /** @enum {string} */
+            status:
+              | 'queued'
+              | 'claimed'
+              | 'executing'
+              | 'succeeded'
+              | 'failed'
+              | 'rejected'
+              | 'cancelled'
+              | 'expired'
+              | 'unknown';
+            /** Format: uuid */
+            claimToken?: string;
+          };
         };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    SkillsController_detail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        catalogRevision: number;
-                        skill: {
-                            skillId: string;
-                            name: string;
-                            description: string;
-                            toolIds: string[];
-                            enabled: boolean;
-                            currentVersion: string | null;
-                            /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                        versions: {
-                            /** Format: uuid */
-                            ownerId: string;
-                            binding: {
-                                skillId: string;
-                                version: string;
-                                contentHash: string;
-                                adapterVersion: string;
-                            };
-                            definition: {
-                                /** @enum {number} */
-                                schemaVersion: 1;
-                                name: string;
-                                description: string;
-                                body: string;
-                                /** @default {} */
-                                references: {
-                                    [key: string]: string;
-                                };
-                                /** @default [] */
-                                requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
-                                toolIds: string[];
-                                steps: {
-                                    id: string;
-                                    toolId: string;
-                                    input: {
-                                        [key: string]: unknown;
-                                    };
-                                    /** @enum {string} */
-                                    artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                    ui?: {
-                                        /** @enum {string} */
-                                        componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                        /** @enum {string} */
-                                        action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                                        /** @enum {string} */
-                                        tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                    };
-                                }[];
-                                /** @default [] */
-                                expectedArtifacts: {
-                                    stepId: string;
-                                    /** @enum {string} */
-                                    kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                }[];
-                                /** @default [] */
-                                requiredDisplays: string[];
-                            };
-                            /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            revokedAt: string | null;
-                        }[];
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  AgentUiController_receipt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    SkillsController_version: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          clientId: string;
+          pageGeneration: number;
+          tracksVersion?: number;
+          heatmapVersion?: number;
+          highlightsVersion?: number;
+          cameraVersion?: number;
+          focusVersion?: number;
+          stepId?: string;
+          /** Format: uuid */
+          artifactRef?: string;
+          /** Format: uuid */
+          receiptId: string;
+          /** Format: uuid */
+          claimToken: string;
+          /** @enum {string} */
+          status: 'executing' | 'succeeded' | 'failed' | 'rejected';
+          state: {
+            sequence: number;
+            /** @enum {string} */
+            route:
+              | '/'
+              | '/intelligence'
+              | '/topics'
+              | '/routes'
+              | '/events'
+              | '/sources'
+              | '/runs'
+              | '/replays'
+              | '/quality'
+              | '/jobs'
+              | '/users'
+              | '/login'
+              | '/skills'
+              | 'unknown';
+            components: {
+              /** @enum {string} */
+              id:
+                | 'app.page'
+                | 'page.list'
+                | 'page.editor'
+                | 'page.detail'
+                | 'page.archive'
+                | 'intelligence.draft'
+                | 'workspace.left'
+                | 'workspace.right'
+                | 'chart.vessel-tracks'
+                | 'chart.heatmap'
+                | 'chart.heatmap.legend'
+                | 'chart.heatmap.popup'
+                | 'chart.layers.ais'
+                | 'chart.layers.tracks'
+                | 'chart.layers.evidence'
+                | 'chart.focus'
+                | 'chart.viewport'
+                | 'chart.vessel-highlights'
+                | 'agent.reply'
+                | 'agent.input'
+                | 'agent.sources'
+                | 'chart.evidence'
+                | 'chart.choices';
+              version: number;
+              revision?: number;
+              mounted: boolean;
+              open: boolean;
+              visible: boolean;
+              /** @default false */
+              focused?: boolean;
+              /** @default 0 */
+              order?: number;
+              /** @default false */
+              loading?: boolean;
+              /** @default false */
+              dirty?: boolean;
+              /** @default false */
+              interacting?: boolean;
+              actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
+              /** @enum {string} */
+              tab?:
+                | 'search'
+                | 'intelligence'
+                | 'layers'
+                | 'playback'
+                | 'heatmap'
+                | 'history-tracks'
+                | 'chat'
+                | 'push'
+                | 'tasks';
+              /** @enum {string} */
+              blocked?: 'editing' | 'drawing' | 'loading' | 'unavailable';
+              highlightEvidence?: {
+                /** Format: uuid */
+                artifactRef: string;
+                groups: {
+                  /** Format: uuid */
+                  groupId: string;
+                  /** Format: uuid */
+                  taskId: string;
+                  mmsis: string[];
+                }[];
+              };
+              highlightGroups?: {
+                /** Format: uuid */
+                groupId: string;
+                /** Format: uuid */
+                taskId: string;
+                mmsis: string[];
+              }[];
+              focusEvidence?: {
+                /** Format: uuid */
+                artifactRef: string;
+                taskId: string;
+                version: number;
+                inputRevision: number;
+                /** @enum {string} */
+                displayStatus: 'complete' | 'partial' | 'unlocated';
+              };
+              cameraEvidence?: {
+                center: number[];
+                zoom: number;
+                bbox: number[];
+                /** Format: uuid */
+                commandId: string;
+              };
+              cameraState?: {
+                center: number[];
+                zoom: number;
+                bbox: number[];
+              };
+            }[];
+          };
+          /** @enum {string} */
+          error?: 'STATE_CONFLICT' | 'POSTCONDITION_FAILED' | 'UNAVAILABLE' | 'EXECUTION_FAILED';
         };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            status: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkillsController_list: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            catalogRevision: number;
+            items: {
+              skillId: string;
+              name: string;
+              description: string;
+              toolIds: string[];
+              enabled: boolean;
+              currentVersion: string | null;
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkillsController_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            catalogRevision: number;
+            skill: {
+              skillId: string;
+              name: string;
+              description: string;
+              toolIds: string[];
+              enabled: boolean;
+              currentVersion: string | null;
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            versions: {
+              /** Format: uuid */
+              ownerId: string;
+              binding: {
+                skillId: string;
+                version: string;
+                contentHash: string;
+                adapterVersion: string;
+              };
+              definition: {
+                /** @enum {number} */
+                schemaVersion: 1;
+                name: string;
+                description: string;
+                body: string;
+                /** @default {} */
+                references: {
+                  [key: string]: string;
                 };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        ownerId: string;
-                        binding: {
-                            skillId: string;
-                            version: string;
-                            contentHash: string;
-                            adapterVersion: string;
-                        };
-                        definition: {
-                            /** @enum {number} */
-                            schemaVersion: 1;
-                            name: string;
-                            description: string;
-                            body: string;
-                            /** @default {} */
-                            references: {
-                                [key: string]: string;
-                            };
-                            /** @default [] */
-                            requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
-                            toolIds: string[];
-                            steps: {
-                                id: string;
-                                toolId: string;
-                                input: {
-                                    [key: string]: unknown;
-                                };
-                                /** @enum {string} */
-                                artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                ui?: {
-                                    /** @enum {string} */
-                                    componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                    /** @enum {string} */
-                                    action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                                    /** @enum {string} */
-                                    tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                };
-                            }[];
-                            /** @default [] */
-                            expectedArtifacts: {
-                                stepId: string;
-                                /** @enum {string} */
-                                kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                            }[];
-                            /** @default [] */
-                            requiredDisplays: string[];
-                        };
+                /** @default [] */
+                requiredInputs: (
+                  'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector'
+                )[];
+                toolIds: string[];
+                steps: {
+                  id: string;
+                  toolId: string;
+                  input: {
+                    [key: string]: unknown;
+                  };
+                  /** @enum {string} */
+                  artifactKind?:
+                    | 'map_focus'
+                    | 'route_plan'
+                    | 'route'
+                    | 'operational_events'
+                    | 'operational_event'
+                    | 'vessel_list'
+                    | 'vessel_detail'
+                    | 'ais_heatmap'
+                    | 'vessel_tracks'
+                    | 'intelligence_search'
+                    | 'analysis'
+                    | 'vessel_highlights'
+                    | 'map_camera';
+                  ui?: {
+                    /** @enum {string} */
+                    componentId:
+                      | 'app.page'
+                      | 'page.list'
+                      | 'page.editor'
+                      | 'page.detail'
+                      | 'page.archive'
+                      | 'intelligence.draft'
+                      | 'workspace.left'
+                      | 'workspace.right'
+                      | 'chart.vessel-tracks'
+                      | 'chart.heatmap'
+                      | 'chart.heatmap.legend'
+                      | 'chart.heatmap.popup'
+                      | 'chart.layers.ais'
+                      | 'chart.layers.tracks'
+                      | 'chart.layers.evidence'
+                      | 'chart.focus'
+                      | 'chart.viewport'
+                      | 'chart.vessel-highlights'
+                      | 'agent.reply'
+                      | 'agent.input'
+                      | 'agent.sources'
+                      | 'chart.evidence'
+                      | 'chart.choices';
+                    /** @enum {string} */
+                    action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+                    /** @enum {string} */
+                    tab?:
+                      | 'search'
+                      | 'intelligence'
+                      | 'layers'
+                      | 'playback'
+                      | 'heatmap'
+                      | 'history-tracks'
+                      | 'chat'
+                      | 'push'
+                      | 'tasks';
+                  };
+                }[];
+                /** @default [] */
+                expectedArtifacts: {
+                  stepId: string;
+                  /** @enum {string} */
+                  kind:
+                    | 'map_focus'
+                    | 'route_plan'
+                    | 'route'
+                    | 'operational_events'
+                    | 'operational_event'
+                    | 'vessel_list'
+                    | 'vessel_detail'
+                    | 'ais_heatmap'
+                    | 'vessel_tracks'
+                    | 'intelligence_search'
+                    | 'analysis'
+                    | 'vessel_highlights'
+                    | 'map_camera';
+                }[];
+                /** @default [] */
+                requiredDisplays: string[];
+              };
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              revokedAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkillsController_version: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            ownerId: string;
+            binding: {
+              skillId: string;
+              version: string;
+              contentHash: string;
+              adapterVersion: string;
+            };
+            definition: {
+              /** @enum {number} */
+              schemaVersion: 1;
+              name: string;
+              description: string;
+              body: string;
+              /** @default {} */
+              references: {
+                [key: string]: string;
+              };
+              /** @default [] */
+              requiredInputs: (
+                'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector'
+              )[];
+              toolIds: string[];
+              steps: {
+                id: string;
+                toolId: string;
+                input: {
+                  [key: string]: unknown;
+                };
+                /** @enum {string} */
+                artifactKind?:
+                  | 'map_focus'
+                  | 'route_plan'
+                  | 'route'
+                  | 'operational_events'
+                  | 'operational_event'
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks'
+                  | 'intelligence_search'
+                  | 'analysis'
+                  | 'vessel_highlights'
+                  | 'map_camera';
+                ui?: {
+                  /** @enum {string} */
+                  componentId:
+                    | 'app.page'
+                    | 'page.list'
+                    | 'page.editor'
+                    | 'page.detail'
+                    | 'page.archive'
+                    | 'intelligence.draft'
+                    | 'workspace.left'
+                    | 'workspace.right'
+                    | 'chart.vessel-tracks'
+                    | 'chart.heatmap'
+                    | 'chart.heatmap.legend'
+                    | 'chart.heatmap.popup'
+                    | 'chart.layers.ais'
+                    | 'chart.layers.tracks'
+                    | 'chart.layers.evidence'
+                    | 'chart.focus'
+                    | 'chart.viewport'
+                    | 'chart.vessel-highlights'
+                    | 'agent.reply'
+                    | 'agent.input'
+                    | 'agent.sources'
+                    | 'chart.evidence'
+                    | 'chart.choices';
+                  /** @enum {string} */
+                  action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+                  /** @enum {string} */
+                  tab?:
+                    | 'search'
+                    | 'intelligence'
+                    | 'layers'
+                    | 'playback'
+                    | 'heatmap'
+                    | 'history-tracks'
+                    | 'chat'
+                    | 'push'
+                    | 'tasks';
+                };
+              }[];
+              /** @default [] */
+              expectedArtifacts: {
+                stepId: string;
+                /** @enum {string} */
+                kind:
+                  | 'map_focus'
+                  | 'route_plan'
+                  | 'route'
+                  | 'operational_events'
+                  | 'operational_event'
+                  | 'vessel_list'
+                  | 'vessel_detail'
+                  | 'ais_heatmap'
+                  | 'vessel_tracks'
+                  | 'intelligence_search'
+                  | 'analysis'
+                  | 'vessel_highlights'
+                  | 'map_camera';
+              }[];
+              /** @default [] */
+              requiredDisplays: string[];
+            };
+            /** @enum {string} */
+            source: 'agent' | 'user';
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            revokedAt: string | null;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkillsController_publish: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedCatalogRevision: number;
+          skillId?: string;
+          definition: {
+            /** @enum {number} */
+            schemaVersion: 1;
+            name: string;
+            description: string;
+            body: string;
+            /** @default {} */
+            references?: {
+              [key: string]: string;
+            };
+            /** @default [] */
+            requiredInputs?: (
+              'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector'
+            )[];
+            toolIds: string[];
+            steps: {
+              id: string;
+              toolId: string;
+              input: {
+                [key: string]: unknown;
+              };
+              /** @enum {string} */
+              artifactKind?:
+                | 'map_focus'
+                | 'route_plan'
+                | 'route'
+                | 'operational_events'
+                | 'operational_event'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'intelligence_search'
+                | 'analysis'
+                | 'vessel_highlights'
+                | 'map_camera';
+              ui?: {
+                /** @enum {string} */
+                componentId:
+                  | 'app.page'
+                  | 'page.list'
+                  | 'page.editor'
+                  | 'page.detail'
+                  | 'page.archive'
+                  | 'intelligence.draft'
+                  | 'workspace.left'
+                  | 'workspace.right'
+                  | 'chart.vessel-tracks'
+                  | 'chart.heatmap'
+                  | 'chart.heatmap.legend'
+                  | 'chart.heatmap.popup'
+                  | 'chart.layers.ais'
+                  | 'chart.layers.tracks'
+                  | 'chart.layers.evidence'
+                  | 'chart.focus'
+                  | 'chart.viewport'
+                  | 'chart.vessel-highlights'
+                  | 'agent.reply'
+                  | 'agent.input'
+                  | 'agent.sources'
+                  | 'chart.evidence'
+                  | 'chart.choices';
+                /** @enum {string} */
+                action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+                /** @enum {string} */
+                tab?:
+                  | 'search'
+                  | 'intelligence'
+                  | 'layers'
+                  | 'playback'
+                  | 'heatmap'
+                  | 'history-tracks'
+                  | 'chat'
+                  | 'push'
+                  | 'tasks';
+              };
+            }[];
+            /** @default [] */
+            expectedArtifacts?: {
+              stepId: string;
+              /** @enum {string} */
+              kind:
+                | 'map_focus'
+                | 'route_plan'
+                | 'route'
+                | 'operational_events'
+                | 'operational_event'
+                | 'vessel_list'
+                | 'vessel_detail'
+                | 'ais_heatmap'
+                | 'vessel_tracks'
+                | 'intelligence_search'
+                | 'analysis'
+                | 'vessel_highlights'
+                | 'map_camera';
+            }[];
+            /** @default [] */
+            requiredDisplays?: string[];
+          };
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            catalogRevision: number;
+            skill: {
+              skillId: string;
+              name: string;
+              description: string;
+              toolIds: string[];
+              enabled: boolean;
+              currentVersion: string | null;
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+            version: {
+              /** Format: uuid */
+              ownerId: string;
+              binding: {
+                skillId: string;
+                version: string;
+                contentHash: string;
+                adapterVersion: string;
+              };
+              definition: {
+                /** @enum {number} */
+                schemaVersion: 1;
+                name: string;
+                description: string;
+                body: string;
+                /** @default {} */
+                references: {
+                  [key: string]: string;
+                };
+                /** @default [] */
+                requiredInputs: (
+                  'region' | 'vessels' | 'time' | 'goal' | 'topic' | 'vessel_selector'
+                )[];
+                toolIds: string[];
+                steps: {
+                  id: string;
+                  toolId: string;
+                  input: {
+                    [key: string]: unknown;
+                  };
+                  /** @enum {string} */
+                  artifactKind?:
+                    | 'map_focus'
+                    | 'route_plan'
+                    | 'route'
+                    | 'operational_events'
+                    | 'operational_event'
+                    | 'vessel_list'
+                    | 'vessel_detail'
+                    | 'ais_heatmap'
+                    | 'vessel_tracks'
+                    | 'intelligence_search'
+                    | 'analysis'
+                    | 'vessel_highlights'
+                    | 'map_camera';
+                  ui?: {
+                    /** @enum {string} */
+                    componentId:
+                      | 'app.page'
+                      | 'page.list'
+                      | 'page.editor'
+                      | 'page.detail'
+                      | 'page.archive'
+                      | 'intelligence.draft'
+                      | 'workspace.left'
+                      | 'workspace.right'
+                      | 'chart.vessel-tracks'
+                      | 'chart.heatmap'
+                      | 'chart.heatmap.legend'
+                      | 'chart.heatmap.popup'
+                      | 'chart.layers.ais'
+                      | 'chart.layers.tracks'
+                      | 'chart.layers.evidence'
+                      | 'chart.focus'
+                      | 'chart.viewport'
+                      | 'chart.vessel-highlights'
+                      | 'agent.reply'
+                      | 'agent.input'
+                      | 'agent.sources'
+                      | 'chart.evidence'
+                      | 'chart.choices';
+                    /** @enum {string} */
+                    action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
+                    /** @enum {string} */
+                    tab?:
+                      | 'search'
+                      | 'intelligence'
+                      | 'layers'
+                      | 'playback'
+                      | 'heatmap'
+                      | 'history-tracks'
+                      | 'chat'
+                      | 'push'
+                      | 'tasks';
+                  };
+                }[];
+                /** @default [] */
+                expectedArtifacts: {
+                  stepId: string;
+                  /** @enum {string} */
+                  kind:
+                    | 'map_focus'
+                    | 'route_plan'
+                    | 'route'
+                    | 'operational_events'
+                    | 'operational_event'
+                    | 'vessel_list'
+                    | 'vessel_detail'
+                    | 'ais_heatmap'
+                    | 'vessel_tracks'
+                    | 'intelligence_search'
+                    | 'analysis'
+                    | 'vessel_highlights'
+                    | 'map_camera';
+                }[];
+                /** @default [] */
+                requiredDisplays: string[];
+              };
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              revokedAt: string | null;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkillsController_state: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedCatalogRevision: number;
+          enabled: boolean;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            catalogRevision: number;
+            skill: {
+              skillId: string;
+              name: string;
+              description: string;
+              toolIds: string[];
+              enabled: boolean;
+              currentVersion: string | null;
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkillsController_activate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedCatalogRevision: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            catalogRevision: number;
+            skill: {
+              skillId: string;
+              name: string;
+              description: string;
+              toolIds: string[];
+              enabled: boolean;
+              currentVersion: string | null;
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SkillsController_revoke: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedCatalogRevision: number;
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            catalogRevision: number;
+            skill: {
+              skillId: string;
+              name: string;
+              description: string;
+              toolIds: string[];
+              enabled: boolean;
+              currentVersion: string | null;
+              /** @enum {string} */
+              source: 'agent' | 'user';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            };
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_list: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+        status?: 'draft' | 'active' | 'archived';
+        search?: string;
+        longitude?: number;
+        latitude?: number;
+        radiusMeters?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              /** Format: uuid */
+              id: string;
+              revision: number;
+              name: string;
+              /** @enum {string} */
+              status: 'draft' | 'active' | 'archived';
+              mmsis: string[];
+              waypoints: number[][];
+              geometry: {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              };
+              lengthMeters: number;
+              /** @enum {string} */
+              generatedBy: 'manual' | 'import' | 'planner';
+              /** Format: uuid */
+              planId: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+            total: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          name: string;
+          /**
+           * @default draft
+           * @enum {string}
+           */
+          status?: 'draft' | 'active' | 'archived';
+          /** @default [] */
+          mmsis?: string[];
+          waypoints?: number[][];
+          geometry?: {
+            /** @enum {string} */
+            type: 'LineString';
+            coordinates: number[][];
+          };
+          /** Format: uuid */
+          planId?: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            name: string;
+            /** @enum {string} */
+            status: 'draft' | 'active' | 'archived';
+            mmsis: string[];
+            waypoints: number[][];
+            geometry: {
+              /** @enum {string} */
+              type: 'LineString';
+              coordinates: number[][];
+            };
+            lengthMeters: number;
+            /** @enum {string} */
+            generatedBy: 'manual' | 'import' | 'planner';
+            /** Format: uuid */
+            planId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_import: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          name: string;
+          geojson: {
+            /** @enum {string} */
+            type: 'Feature';
+            geometry: {
+              /** @enum {string} */
+              type: 'LineString';
+              coordinates: number[][];
+            };
+            /** @default {} */
+            properties?: {
+              [key: string]: unknown;
+            };
+          };
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            name: string;
+            /** @enum {string} */
+            status: 'draft' | 'active' | 'archived';
+            mmsis: string[];
+            waypoints: number[][];
+            geometry: {
+              /** @enum {string} */
+              type: 'LineString';
+              coordinates: number[][];
+            };
+            lengthMeters: number;
+            /** @enum {string} */
+            generatedBy: 'manual' | 'import' | 'planner';
+            /** Format: uuid */
+            planId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_restrictions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              [key: string]: unknown;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_restrictionCreate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          /** @default 0 */
+          expectedRevision?: number;
+          name: string;
+          geometry:
+            | {
+                /** @enum {string} */
+                type: 'Polygon';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPolygon';
+                coordinates: number[][][][];
+              };
+          /** Format: date-time */
+          validFrom: string;
+          /** Format: date-time */
+          validUntil: string | null;
+          /** @default true */
+          enabled?: boolean;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_restrictionUpdate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          /** @default 0 */
+          expectedRevision?: number;
+          name: string;
+          geometry:
+            | {
+                /** @enum {string} */
+                type: 'Polygon';
+                coordinates: number[][][];
+              }
+            | {
+                /** @enum {string} */
+                type: 'MultiPolygon';
+                coordinates: number[][][][];
+              };
+          /** Format: date-time */
+          validFrom: string;
+          /** Format: date-time */
+          validUntil: string | null;
+          /** @default true */
+          enabled?: boolean;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          waypoints: number[][];
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+            input: {
+              /** Format: uuid */
+              operationId: string;
+              waypoints: number[][];
+            };
+            datasetVersion: string | null;
+            restrictionVersion: number;
+            result: {
+              geometry: {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              };
+              lengthMeters: number;
+            } | null;
+            error: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            stale: boolean;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_planGet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+            input: {
+              /** Format: uuid */
+              operationId: string;
+              waypoints: number[][];
+            };
+            datasetVersion: string | null;
+            restrictionVersion: number;
+            result: {
+              geometry: {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              };
+              lengthMeters: number;
+            } | null;
+            error: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            stale: boolean;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+            input: {
+              /** Format: uuid */
+              operationId: string;
+              waypoints: number[][];
+            };
+            datasetVersion: string | null;
+            restrictionVersion: number;
+            result: {
+              geometry: {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              };
+              lengthMeters: number;
+            } | null;
+            error: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            stale: boolean;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_history: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              /** Format: uuid */
+              id: string;
+              revision: number;
+              name: string;
+              /** @enum {string} */
+              status: 'draft' | 'active' | 'archived';
+              mmsis: string[];
+              waypoints: number[][];
+              geometry: {
+                /** @enum {string} */
+                type: 'LineString';
+                coordinates: number[][];
+              };
+              lengthMeters: number;
+              /** @enum {string} */
+              generatedBy: 'manual' | 'import' | 'planner';
+              /** Format: uuid */
+              planId: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_export: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_archive: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            name: string;
+            /** @enum {string} */
+            status: 'draft' | 'active' | 'archived';
+            mmsis: string[];
+            waypoints: number[][];
+            geometry: {
+              /** @enum {string} */
+              type: 'LineString';
+              coordinates: number[][];
+            };
+            lengthMeters: number;
+            /** @enum {string} */
+            generatedBy: 'manual' | 'import' | 'planner';
+            /** Format: uuid */
+            planId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_copy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+          name: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            name: string;
+            /** @enum {string} */
+            status: 'draft' | 'active' | 'archived';
+            mmsis: string[];
+            waypoints: number[][];
+            geometry: {
+              /** @enum {string} */
+              type: 'LineString';
+              coordinates: number[][];
+            };
+            lengthMeters: number;
+            /** @enum {string} */
+            generatedBy: 'manual' | 'import' | 'planner';
+            /** Format: uuid */
+            planId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            name: string;
+            /** @enum {string} */
+            status: 'draft' | 'active' | 'archived';
+            mmsis: string[];
+            waypoints: number[][];
+            geometry: {
+              /** @enum {string} */
+              type: 'LineString';
+              coordinates: number[][];
+            };
+            lengthMeters: number;
+            /** @enum {string} */
+            generatedBy: 'manual' | 'import' | 'planner';
+            /** Format: uuid */
+            planId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutesController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+          name?: string;
+          /** @enum {string} */
+          status?: 'draft' | 'active' | 'archived';
+          mmsis?: string[];
+          waypoints?: number[][];
+          geometry?: {
+            /** @enum {string} */
+            type: 'LineString';
+            coordinates: number[][];
+          };
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            name: string;
+            /** @enum {string} */
+            status: 'draft' | 'active' | 'archived';
+            mmsis: string[];
+            waypoints: number[][];
+            geometry: {
+              /** @enum {string} */
+              type: 'LineString';
+              coordinates: number[][];
+            };
+            lengthMeters: number;
+            /** @enum {string} */
+            generatedBy: 'manual' | 'import' | 'planner';
+            /** Format: uuid */
+            planId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OperationalEventsController_list: {
+    parameters: {
+      query?: {
+        keyword?: string;
+        status?: 'active' | 'resolved' | 'archived' | 'merged';
+        limit?: number;
+        offset?: number;
+        circle?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              title: string;
+              /** @default  */
+              summary: string;
+              /** @default other */
+              category: string;
+              /**
+               * @default unknown
+               * @enum {string}
+               */
+              severity: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /**
+               * Format: date-time
+               * @default null
+               */
+              occurredAt: string | null;
+              /** @default null */
+              geometry:
+                | (
+                    | {
                         /** @enum {string} */
-                        source: "agent" | "user";
-                        /** Format: date-time */
-                        createdAt: string;
-                        /** Format: date-time */
-                        revokedAt: string | null;
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              /** @default [] */
+              linkedMmsis: string[];
+              /** @default [] */
+              linkedRouteIds: string[];
+              /** Format: uuid */
+              id: string;
+              revision: number;
+              /** @enum {string} */
+              status: 'active' | 'resolved' | 'archived' | 'merged';
+              primarySourceKey: string | null;
+              sourceSuggestions: {
+                title?: string;
+                summary?: string;
+                category?: string;
+                /** @enum {string} */
+                severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+                /** Format: date-time */
+                occurredAt?: string | null;
+                geometry?:
+                  | (
+                      | {
+                          /** @enum {string} */
+                          type: 'Point';
+                          coordinates: number[];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'LineString';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'Polygon';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPoint';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiLineString';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPolygon';
+                          coordinates: number[][][][];
+                        }
+                    )
+                  | null;
+                linkedMmsis?: string[];
+                linkedRouteIds?: string[];
+              };
+              overrides: {
+                title?: string;
+                summary?: string;
+                category?: string;
+                /** @enum {string} */
+                severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+                /** Format: date-time */
+                occurredAt?: string | null;
+                geometry?:
+                  | (
+                      | {
+                          /** @enum {string} */
+                          type: 'Point';
+                          coordinates: number[];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'LineString';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'Polygon';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPoint';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiLineString';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPolygon';
+                          coordinates: number[][][][];
+                        }
+                    )
+                  | null;
+                linkedMmsis?: string[];
+                linkedRouteIds?: string[];
+              };
+              /** Format: uuid */
+              mergedInto: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+            total: number;
+          };
         };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    SkillsController_publish: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    operationId: string;
-                    expectedCatalogRevision: number;
-                    skillId?: string;
-                    definition: {
-                        /** @enum {number} */
-                        schemaVersion: 1;
-                        name: string;
-                        description: string;
-                        body: string;
-                        /** @default {} */
-                        references?: {
-                            [key: string]: string;
-                        };
-                        /** @default [] */
-                        requiredInputs?: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
-                        toolIds: string[];
-                        steps: {
-                            id: string;
-                            toolId: string;
-                            input: {
-                                [key: string]: unknown;
-                            };
-                            /** @enum {string} */
-                            artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                            ui?: {
-                                /** @enum {string} */
-                                componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                /** @enum {string} */
-                                action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                                /** @enum {string} */
-                                tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                            };
-                        }[];
-                        /** @default [] */
-                        expectedArtifacts?: {
-                            stepId: string;
-                            /** @enum {string} */
-                            kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                        }[];
-                        /** @default [] */
-                        requiredDisplays?: string[];
-                    };
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        catalogRevision: number;
-                        skill: {
-                            skillId: string;
-                            name: string;
-                            description: string;
-                            toolIds: string[];
-                            enabled: boolean;
-                            currentVersion: string | null;
-                            /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                        version: {
-                            /** Format: uuid */
-                            ownerId: string;
-                            binding: {
-                                skillId: string;
-                                version: string;
-                                contentHash: string;
-                                adapterVersion: string;
-                            };
-                            definition: {
-                                /** @enum {number} */
-                                schemaVersion: 1;
-                                name: string;
-                                description: string;
-                                body: string;
-                                /** @default {} */
-                                references: {
-                                    [key: string]: string;
-                                };
-                                /** @default [] */
-                                requiredInputs: ("region" | "vessels" | "time" | "goal" | "topic" | "vessel_selector")[];
-                                toolIds: string[];
-                                steps: {
-                                    id: string;
-                                    toolId: string;
-                                    input: {
-                                        [key: string]: unknown;
-                                    };
-                                    /** @enum {string} */
-                                    artifactKind?: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                    ui?: {
-                                        /** @enum {string} */
-                                        componentId: "app.page" | "page.list" | "page.editor" | "page.detail" | "page.archive" | "intelligence.draft" | "workspace.left" | "workspace.right" | "chart.vessel-tracks" | "chart.heatmap" | "chart.heatmap.legend" | "chart.heatmap.popup" | "chart.layers.ais" | "chart.layers.tracks" | "chart.layers.evidence" | "chart.viewport" | "agent.reply" | "agent.input" | "agent.sources" | "chart.evidence" | "chart.choices";
-                                        /** @enum {string} */
-                                        action: "open" | "close" | "show" | "hide" | "focus" | "tab";
-                                        /** @enum {string} */
-                                        tab?: "search" | "intelligence" | "layers" | "playback" | "heatmap" | "history-tracks" | "chat" | "push" | "tasks";
-                                    };
-                                }[];
-                                /** @default [] */
-                                expectedArtifacts: {
-                                    stepId: string;
-                                    /** @enum {string} */
-                                    kind: "vessel_list" | "vessel_detail" | "ais_heatmap" | "vessel_tracks" | "intelligence_search" | "analysis";
-                                }[];
-                                /** @default [] */
-                                requiredDisplays: string[];
-                            };
-                            /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            revokedAt: string | null;
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  OperationalEventsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    SkillsController_state: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody: {
+      content: {
+        'application/json': {
+          title: string;
+          /** @default  */
+          summary?: string;
+          /** @default other */
+          category?: string;
+          /**
+           * @default unknown
+           * @enum {string}
+           */
+          severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+          /**
+           * Format: date-time
+           * @default null
+           */
+          occurredAt?: string | null;
+          /** @default null */
+          geometry?:
+            | (
+                | {
+                    /** @enum {string} */
+                    type: 'Point';
+                    coordinates: number[];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'LineString';
+                    coordinates: number[][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'Polygon';
+                    coordinates: number[][][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiPoint';
+                    coordinates: number[][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiLineString';
+                    coordinates: number[][][];
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'MultiPolygon';
+                    coordinates: number[][][][];
+                  }
+              )
+            | null;
+          /** @default [] */
+          linkedMmsis?: string[];
+          /** @default [] */
+          linkedRouteIds?: string[];
+          /** Format: uuid */
+          operationId: string;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    operationId: string;
-                    expectedCatalogRevision: number;
-                    enabled: boolean;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        catalogRevision: number;
-                        skill: {
-                            skillId: string;
-                            name: string;
-                            description: string;
-                            toolIds: string[];
-                            enabled: boolean;
-                            currentVersion: string | null;
-                            /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    SkillsController_activate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    operationId: string;
-                    expectedCatalogRevision: number;
-                };
+        content: {
+          'application/json': {
+            title: string;
+            /** @default  */
+            summary: string;
+            /** @default other */
+            category: string;
+            /**
+             * @default unknown
+             * @enum {string}
+             */
+            severity: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+            /**
+             * Format: date-time
+             * @default null
+             */
+            occurredAt: string | null;
+            /** @default null */
+            geometry:
+              | (
+                  | {
+                      /** @enum {string} */
+                      type: 'Point';
+                      coordinates: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'LineString';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'Polygon';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPoint';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiLineString';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPolygon';
+                      coordinates: number[][][][];
+                    }
+                )
+              | null;
+            /** @default [] */
+            linkedMmsis: string[];
+            /** @default [] */
+            linkedRouteIds: string[];
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            /** @enum {string} */
+            status: 'active' | 'resolved' | 'archived' | 'merged';
+            primarySourceKey: string | null;
+            sourceSuggestions: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
             };
+            overrides: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
+            };
+            /** Format: uuid */
+            mergedInto: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
         };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        catalogRevision: number;
-                        skill: {
-                            skillId: string;
-                            name: string;
-                            description: string;
-                            toolIds: string[];
-                            enabled: boolean;
-                            currentVersion: string | null;
-                            /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    SkillsController_revoke: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    operationId: string;
-                    expectedCatalogRevision: number;
-                    reason: string;
-                };
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        catalogRevision: number;
-                        skill: {
-                            skillId: string;
-                            name: string;
-                            description: string;
-                            toolIds: string[];
-                            enabled: boolean;
-                            currentVersion: string | null;
-                            /** @enum {string} */
-                            source: "agent" | "user";
-                            /** Format: date-time */
-                            createdAt: string;
-                            /** Format: date-time */
-                            updatedAt: string;
-                        };
-                    };
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Session required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Role, origin or CSRF denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  OperationalEventsController_backfill: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            intelligence: number;
+            analysis: number;
+            applied: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OperationalEventsController_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            title: string;
+            /** @default  */
+            summary: string;
+            /** @default other */
+            category: string;
+            /**
+             * @default unknown
+             * @enum {string}
+             */
+            severity: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+            /**
+             * Format: date-time
+             * @default null
+             */
+            occurredAt: string | null;
+            /** @default null */
+            geometry:
+              | (
+                  | {
+                      /** @enum {string} */
+                      type: 'Point';
+                      coordinates: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'LineString';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'Polygon';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPoint';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiLineString';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPolygon';
+                      coordinates: number[][][][];
+                    }
+                )
+              | null;
+            /** @default [] */
+            linkedMmsis: string[];
+            /** @default [] */
+            linkedRouteIds: string[];
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            /** @enum {string} */
+            status: 'active' | 'resolved' | 'archived' | 'merged';
+            primarySourceKey: string | null;
+            sourceSuggestions: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
+            };
+            overrides: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
+            };
+            /** Format: uuid */
+            mergedInto: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OperationalEventsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          expectedRevision: number;
+          /** @default {} */
+          fields?: {
+            title?: string;
+            summary?: string;
+            category?: string;
+            /** @enum {string} */
+            severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+            /** Format: date-time */
+            occurredAt?: string | null;
+            geometry?:
+              | (
+                  | {
+                      /** @enum {string} */
+                      type: 'Point';
+                      coordinates: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'LineString';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'Polygon';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPoint';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiLineString';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPolygon';
+                      coordinates: number[][][][];
+                    }
+                )
+              | null;
+            linkedMmsis?: string[];
+            linkedRouteIds?: string[];
+          };
+          /** @default [] */
+          releaseOverrides?: (
+            | 'title'
+            | 'summary'
+            | 'category'
+            | 'severity'
+            | 'occurredAt'
+            | 'geometry'
+            | 'linkedMmsis'
+            | 'linkedRouteIds'
+          )[];
+          /** @enum {string} */
+          status?: 'active' | 'resolved' | 'archived';
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            title: string;
+            /** @default  */
+            summary: string;
+            /** @default other */
+            category: string;
+            /**
+             * @default unknown
+             * @enum {string}
+             */
+            severity: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+            /**
+             * Format: date-time
+             * @default null
+             */
+            occurredAt: string | null;
+            /** @default null */
+            geometry:
+              | (
+                  | {
+                      /** @enum {string} */
+                      type: 'Point';
+                      coordinates: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'LineString';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'Polygon';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPoint';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiLineString';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPolygon';
+                      coordinates: number[][][][];
+                    }
+                )
+              | null;
+            /** @default [] */
+            linkedMmsis: string[];
+            /** @default [] */
+            linkedRouteIds: string[];
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            /** @enum {string} */
+            status: 'active' | 'resolved' | 'archived' | 'merged';
+            primarySourceKey: string | null;
+            sourceSuggestions: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
+            };
+            overrides: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
+            };
+            /** Format: uuid */
+            mergedInto: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OperationalEventsController_merge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          operationId: string;
+          /** Format: uuid */
+          targetId: string;
+          expectedRevision: number;
+          targetExpectedRevision: number;
+          primarySourceKey: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            title: string;
+            /** @default  */
+            summary: string;
+            /** @default other */
+            category: string;
+            /**
+             * @default unknown
+             * @enum {string}
+             */
+            severity: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+            /**
+             * Format: date-time
+             * @default null
+             */
+            occurredAt: string | null;
+            /** @default null */
+            geometry:
+              | (
+                  | {
+                      /** @enum {string} */
+                      type: 'Point';
+                      coordinates: number[];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'LineString';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'Polygon';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPoint';
+                      coordinates: number[][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiLineString';
+                      coordinates: number[][][];
+                    }
+                  | {
+                      /** @enum {string} */
+                      type: 'MultiPolygon';
+                      coordinates: number[][][][];
+                    }
+                )
+              | null;
+            /** @default [] */
+            linkedMmsis: string[];
+            /** @default [] */
+            linkedRouteIds: string[];
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            /** @enum {string} */
+            status: 'active' | 'resolved' | 'archived' | 'merged';
+            primarySourceKey: string | null;
+            sourceSuggestions: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
+            };
+            overrides: {
+              title?: string;
+              summary?: string;
+              category?: string;
+              /** @enum {string} */
+              severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /** Format: date-time */
+              occurredAt?: string | null;
+              geometry?:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              linkedMmsis?: string[];
+              linkedRouteIds?: string[];
+            };
+            /** Format: uuid */
+            mergedInto: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OperationalEventsController_history: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              title: string;
+              /** @default  */
+              summary: string;
+              /** @default other */
+              category: string;
+              /**
+               * @default unknown
+               * @enum {string}
+               */
+              severity: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+              /**
+               * Format: date-time
+               * @default null
+               */
+              occurredAt: string | null;
+              /** @default null */
+              geometry:
+                | (
+                    | {
+                        /** @enum {string} */
+                        type: 'Point';
+                        coordinates: number[];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'LineString';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'Polygon';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPoint';
+                        coordinates: number[][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiLineString';
+                        coordinates: number[][][];
+                      }
+                    | {
+                        /** @enum {string} */
+                        type: 'MultiPolygon';
+                        coordinates: number[][][][];
+                      }
+                  )
+                | null;
+              /** @default [] */
+              linkedMmsis: string[];
+              /** @default [] */
+              linkedRouteIds: string[];
+              /** Format: uuid */
+              id: string;
+              revision: number;
+              /** @enum {string} */
+              status: 'active' | 'resolved' | 'archived' | 'merged';
+              primarySourceKey: string | null;
+              sourceSuggestions: {
+                title?: string;
+                summary?: string;
+                category?: string;
+                /** @enum {string} */
+                severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+                /** Format: date-time */
+                occurredAt?: string | null;
+                geometry?:
+                  | (
+                      | {
+                          /** @enum {string} */
+                          type: 'Point';
+                          coordinates: number[];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'LineString';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'Polygon';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPoint';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiLineString';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPolygon';
+                          coordinates: number[][][][];
+                        }
+                    )
+                  | null;
+                linkedMmsis?: string[];
+                linkedRouteIds?: string[];
+              };
+              overrides: {
+                title?: string;
+                summary?: string;
+                category?: string;
+                /** @enum {string} */
+                severity?: 'unknown' | 'low' | 'medium' | 'high' | 'critical';
+                /** Format: date-time */
+                occurredAt?: string | null;
+                geometry?:
+                  | (
+                      | {
+                          /** @enum {string} */
+                          type: 'Point';
+                          coordinates: number[];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'LineString';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'Polygon';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPoint';
+                          coordinates: number[][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiLineString';
+                          coordinates: number[][][];
+                        }
+                      | {
+                          /** @enum {string} */
+                          type: 'MultiPolygon';
+                          coordinates: number[][][][];
+                        }
+                    )
+                  | null;
+                linkedMmsis?: string[];
+                linkedRouteIds?: string[];
+              };
+              /** Format: uuid */
+              mergedInto: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OperationalEventsController_sources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              [key: string]: unknown;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OperationalEventsController_sourceHistory: {
+    parameters: {
+      query: {
+        key: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: {
+              [key: string]: unknown;
+            }[];
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
 }

@@ -260,6 +260,7 @@ function createUiRegistry() {
                 (c) => c.id === 'chart.vessel-highlights',
               )?.version,
               cameraVersion: snapshot().components.find((c) => c.id === 'chart.viewport')?.version,
+              focusVersion: snapshot().components.find((c) => c.id === 'chart.focus')?.version,
             }
           : undefined;
       });

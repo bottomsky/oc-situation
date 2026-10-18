@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import type { AnalysisResult, AgentMapContext, Bbox } from '@ais/contracts';
+import type {
+  AnalysisResult,
+  AgentMapContext,
+  Bbox,
+  FocusTargetRef,
+  IntelligenceGeometry,
+} from '@ais/contracts';
+import { RouteSchema, OperationalEventSchema } from '@ais/contracts';
+import { createHandoffGeneration } from '../utils/operationalEvents';
+import { focusBounds } from '../../../../packages/domain/agent-focus';
 import type { ChartLayerVisibility, ChartMapControls } from '../types/chart';
 import { readChartPreference, writeChartPreference } from '../utils/chartWorkspace';
 import { chartLayoutDefaults } from '../utils/chartLayout';
@@ -10,13 +19,73 @@ import { provideChartDetailHost } from '../composables/useChartDetail';
 const detailHost = provideChartDetailHost();
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
+const selectedBusiness = ref<
+  {
+    kind: 'route' | 'event';
+    id: string;
+    revision: number;
+    label: string;
+    geometry: IntelligenceGeometry | null;
+  }[]
+>([]);
+const selectedShips = ref<string[]>([]);
+const handoffError = ref('');
+const businessChoices = ref<{ kind: 'route' | 'event'; id: string; label: string }[]>([]);
+const businessChoice = ref('');
+async function loadBusinessChoices() {
+  const current = handoffGeneration.begin();
+  try {
+    const [routes, events] = await Promise.all([
+      api<{ items: unknown[] }>('/routes?limit=100&offset=0'),
+      api<{ items: unknown[] }>('/operational-events?limit=100&offset=0'),
+    ]);
+    if (!current()) return;
+    businessChoices.value = [
+      ...routes.items.map((raw) => {
+        const v = RouteSchema.parse(raw);
+        return { kind: 'route' as const, id: v.id, label: v.name };
+      }),
+      ...events.items.map((raw) => {
+        const v = OperationalEventSchema.parse(raw);
+        return { kind: 'event' as const, id: v.id, label: v.title };
+      }),
+    ];
+  } catch {
+    if (current()) handoffError.value = '业务对象列表读取失败，请重试。';
+  }
+}
+function addBusinessChoice() {
+  const value = businessChoices.value.find((v) => `${v.kind}:${v.id}` === businessChoice.value);
+  if (value) void businessHandoff(value.kind, value.id);
+}
+function addShip() {
+  const id = workspace.detail?.mmsi;
+  if (
+    id &&
+    !selectedShips.value.includes(id) &&
+    selectedBusiness.value.length + selectedShips.value.length < 100
+  )
+    selectedShips.value.push(id);
+}
 function mapContext(): AgentMapContext {
   const shipType = Number(workspace.shipType);
+  const mmsis = [...selectedShips.value].slice(0, 100 - selectedBusiness.value.length);
   return {
     bbox: [...currentMapBounds()],
     capturedAt: new Date().toISOString(),
     hours: workspace.hours,
-    ...(workspace.detail ? { selectedMmsis: [workspace.detail.mmsi] } : {}),
+    selectedMmsis: mmsis,
+    selectedTargets: [
+      ...mmsis.map((id): FocusTargetRef => ({ kind: 'vessel', id })),
+      ...selectedBusiness.value.map(({ kind, id, revision }): FocusTargetRef => ({
+        kind,
+        id,
+        revision,
+      })),
+    ],
+    ...(agentDrawnRegion.value
+      ? { region: { kind: 'bbox' as const, bbox: [...agentDrawnRegion.value] as Bbox } }
+      : {}),
     ...(workspace.sourceId ? { sourceId: workspace.sourceId } : {}),
     ...(Number.isInteger(shipType) && shipType >= 1 && shipType <= 99 ? { shipType } : {}),
   };
@@ -37,6 +106,23 @@ const agent = reactive(
     ui.readConfig,
     { begin: vesselTracks.beginAgent, accept: vesselTracks.acceptAgent, reset: vesselTracks.reset },
   ),
+);
+const focus = reactive(useAgentFocus());
+const focusCrowded = ref(false);
+watch(
+  () => agent.currentReply,
+  (reply) => {
+    focus.setScope(reply?.sessionId ?? null, reply?.taskId ?? null, reply?.inputRevision ?? 0);
+    if (!reply || reply.readable === false) focus.reset();
+    else if (
+      agent.config?.spatialFocusEnabled !== false &&
+      !reply.focusCommandDriven &&
+      reply.focus &&
+      !focus.artifactRef
+    )
+      focus.accept(reply.focus);
+  },
+  { flush: 'sync' },
 );
 const selectingHeatmapRegion = ref(false);
 watch(
@@ -117,9 +203,68 @@ function selectMapIntelligence(ids: string[]) {
   mapChoices.value = ids;
   if (ids[0]) void selectIntelligence(ids[0]);
 }
-const { session } = usePlatform();
+const { session, api } = usePlatform();
 const route = useRoute();
 const seaMap = useTemplateRef<ChartMapControls>('seaMap');
+const handoffGeneration = createHandoffGeneration();
+async function businessHandoff(kind: 'route' | 'event', id: string, ask = false) {
+  const current = handoffGeneration.begin(),
+    camera = seaMap.value?.cameraIntent();
+  handoffError.value = '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    handoffError.value = '业务对象标识无效。';
+    return;
+  }
+  try {
+    const raw = await api(
+      `/${kind === 'route' ? 'routes' : 'operational-events'}/${encodeURIComponent(id)}`,
+    );
+    const value = kind === 'route' ? RouteSchema.parse(raw) : OperationalEventSchema.parse(raw);
+    if (!current()) return;
+    const object = {
+      kind,
+      id: value.id,
+      revision: value.revision,
+      label: 'name' in value ? value.name : value.title,
+      geometry: value.geometry,
+    };
+    const index = selectedBusiness.value.findIndex((v) => v.id === value.id && v.kind === kind);
+    if (index >= 0) selectedBusiness.value[index] = object;
+    else if (selectedBusiness.value.length + selectedShips.value.length < 100)
+      selectedBusiness.value.push(object);
+    else {
+      handoffError.value = '关注集合最多100个对象，请移除部分对象后添加。';
+      return;
+    }
+    if (object.geometry) {
+      if (camera) {
+        const bbox = focusBounds([object.geometry]);
+        if (bbox) camera({ mode: 'bounds', maxZoom: 11, bbox });
+      } else seaMap.value?.focusGeometry(object.geometry);
+    }
+    if (ask) {
+      agent.draft = `分析这${kind === 'route' ? '条航线' : '个事件'}：${object.label}`;
+      openAgent();
+    }
+  } catch {
+    if (current()) handoffError.value = '业务对象读取失败，请检查权限或刷新重试。';
+  }
+}
+watch(
+  () => [route.query.routeId, route.query.operationalEventId, seaMap.value] as const,
+  ([routeId, eventId, map]) => {
+    handoffGeneration.invalidate();
+    if (!map) return;
+    if (typeof eventId === 'string')
+      void businessHandoff('event', eventId, route.query.askEvent === '1');
+    else if (typeof routeId === 'string')
+      void businessHandoff('route', routeId, route.query.askRoute === '1');
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => {
+  handoffGeneration.invalidate();
+});
 // Capture user intent before network work; a later camera action cancels its right to focus.
 const loadTrack = workspace.loadTrack;
 workspace.loadTrack = async () => {
@@ -283,6 +428,48 @@ useUiComponent('chart.vessel-highlights', {
       throw { code: 'POSTCONDITION_FAILED' };
   },
 });
+useUiComponent('chart.focus', {
+  read: () =>
+    uiProjection(!!focus.result, ['show', 'close', 'focus'], {
+      mounted: !!seaMap.value?.interactionState().ready,
+      visible: !!focus.result && focus.displayed,
+      loading: !!focus.result && !focus.displayed,
+      focused: !!focus.result && focus.displayed,
+      ...(focus.result && focus.artifactRef && focus.displayed
+        ? {
+            focusEvidence: {
+              artifactRef: focus.artifactRef,
+              taskId: focus.result.taskId,
+              version: focus.result.version,
+              inputRevision: focus.result.inputRevision,
+              displayStatus: focus.displayStatus,
+            },
+          }
+        : {}),
+    }),
+  execute: async (operation, command) => {
+    if (operation.action === 'close') {
+      focus.dismiss();
+      return;
+    }
+    if (
+      !command.focusPresentation ||
+      !command.artifactRef ||
+      !agent.currentReply ||
+      agent.currentReply.readable === false ||
+      agent.currentReply.taskId !== command.taskId
+    )
+      throw { code: 'UNAVAILABLE' };
+    if (!focus.accept(command.focusPresentation, command.artifactRef))
+      throw { code: 'STATE_CONFLICT' };
+    const result = focus.result,
+      deadline = Date.now() + 10000;
+    while (!focus.displayed && focus.result === result && Date.now() < deadline)
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    if (focus.result !== result) throw { code: 'STATE_CONFLICT' };
+    if (!focus.displayed) throw { code: 'POSTCONDITION_FAILED' };
+  },
+});
 useUiComponent('agent.reply', {
   read: () => uiProjection(!!agent.currentReply, ['close', 'open'], { order: 10 }),
   execute: (op) => {
@@ -409,6 +596,8 @@ function restorePrefs() {
 onMounted(() => {
   restorePrefs();
   if (typeof route.query.eventId === 'string') void selectIntelligence(route.query.eventId);
+  else if (typeof route.query.intelligenceId === 'string')
+    void selectIntelligence(route.query.intelligenceId);
   if (typeof route.query.objectId === 'string') {
     intelligence.filters.objectId = route.query.objectId;
     workspace.leftTab = 'intelligence';
@@ -465,6 +654,18 @@ watch(
         rightOpen = false;
       "
     />
+    <div v-if="agent.currentReply && focusCrowded" class="focus-space-notice" role="status">
+      海图回复空间不足
+      <button
+        type="button"
+        @click="
+          leftOpen = false;
+          rightOpen = false;
+        "
+      >
+        收起侧栏查看
+      </button>
+    </div>
     <div v-show="leftOpen" id="chart-left-slot" class="chart-left-slot open">
       <ChartLeftPanel
         v-model:workspace="workspace"
@@ -589,6 +790,57 @@ watch(
             "
             @select="selectVessel"
         /></ClientOnly>
+        <ChartBusinessObjects
+          :map="seaMap"
+          :objects="selectedBusiness"
+          @select="(kind, id) => businessHandoff(kind, id)"
+        />
+        <section class="business-selection" aria-label="人工关注集合">
+          <strong>人工关注集合 · {{ selectedBusiness.length + selectedShips.length }} / 100</strong>
+          <button @click="loadBusinessChoices">＋ 添加业务对象</button>
+          <select
+            v-if="businessChoices.length"
+            v-model="businessChoice"
+            aria-label="添加关注业务对象"
+            @change="addBusinessChoice"
+          >
+            <option value="">选择航线或事件加入集合</option>
+            <option
+              v-for="item in businessChoices"
+              :key="`${item.kind}:${item.id}`"
+              :value="`${item.kind}:${item.id}`"
+            >
+              {{ item.kind === 'route' ? '航线' : '事件' }} · {{ item.label }}
+            </option>
+          </select>
+          <button v-if="workspace.detail" @click="addShip">
+            ＋ 当前船舶 {{ workspace.detail.mmsi }}
+          </button>
+          <button
+            v-for="id in selectedShips"
+            :key="id"
+            @click="selectedShips = selectedShips.filter((v) => v !== id)"
+          >
+            船舶 {{ id }} ×
+          </button>
+          <button
+            v-for="item in selectedBusiness"
+            :key="`${item.kind}:${item.id}`"
+            @click="selectedBusiness = selectedBusiness.filter((v) => v !== item)"
+          >
+            {{ item.kind === 'route' ? '航线' : '事件' }} {{ item.label }} · r{{ item.revision
+            }}{{ item.geometry ? '' : ' · 未定位' }} ×
+          </button>
+          <button
+            @click="
+              selectedBusiness = [];
+              selectedShips = [];
+            "
+          >
+            清空关注
+          </button>
+          <p v-if="handoffError" role="alert">{{ handoffError }}</p>
+        </section>
         <div v-if="mapChoices.length > 1" class="intelligence-map-choices">
           <strong>重叠情报 {{ mapChoices.length }} 条</strong
           ><button v-for="id in mapChoices" :key="id" @click="selectIntelligence(id)">
@@ -684,14 +936,21 @@ watch(
           @stop-drawing="selectingAgentRegion = false"
         />
         <AgentIntelligenceSourcesDialog :state="agent" @locate="seaMap?.focusGeometry($event)" />
+        <ChartAgentFocusOverlay
+          v-if="agent.currentReply"
+          :key="agent.currentReply.createdAt"
+          :map="seaMap"
+          :reply="agent.currentReply"
+          :focus="agent.config?.spatialFocusEnabled === false ? null : focus.result"
+          :fleet="workspace.data"
+          :layout-key="[leftOpen, rightOpen, layout.sizes.left, layout.sizes.right].join(':')"
+          @displayed="(value, status) => focus.markDisplayed(value, status)"
+          @crowded="focusCrowded = $event"
+          @reference="agent.openSource"
+          @close="closeCurrentReply"
+          @open="openCurrentConversation"
+        />
         <div ref="agentDock" class="chart-agent-dock">
-          <ChartAgentReplyCard
-            v-if="agent.currentReply"
-            :reply="agent.currentReply"
-            @reference="agent.openSource"
-            @close="closeCurrentReply"
-            @open="openCurrentConversation"
-          />
           <ChartAgentComposer
             :state="agent"
             floating
@@ -812,6 +1071,62 @@ watch(
     </ChartDetailFloat>
   </section>
 </template>
+<style scoped>
+.focus-space-notice {
+  position: fixed;
+  top: calc(var(--console-header-height, 76px) + 8px);
+  left: 8px;
+  z-index: 45;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  max-width: calc(100vw - 80px);
+  padding: 8px;
+  border: 1px solid #38c9e9;
+  border-radius: 6px;
+  background: #092a3e;
+  color: #b5edf6;
+  font-size: 11px;
+}
+.focus-space-notice button {
+  padding: 4px;
+  border: 1px solid #337483;
+  border-radius: 4px;
+  color: #b5edf6;
+  background: #123c4b;
+  cursor: pointer;
+}
+.business-selection {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  z-index: 5;
+  display: flex;
+  max-width: 65%;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px;
+  background: #092c38e8;
+  border: 1px solid #3c7d85;
+  border-radius: 8px;
+  color: #c9e6e4;
+  font-size: 12px;
+}
+.business-selection strong {
+  width: 100%;
+  letter-spacing: 1px;
+}
+.business-selection button {
+  padding: 4px 8px;
+  border: 1px solid #336370;
+  border-radius: 4px;
+  background: #164653;
+  color: #c9ede8;
+}
+.business-selection p {
+  color: #ffc7ae;
+}
+</style>
 
 <style scoped>
 .heatmap-legend,

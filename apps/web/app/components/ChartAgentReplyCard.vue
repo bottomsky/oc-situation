@@ -6,7 +6,8 @@ import type {
 import { agentStatusLabel } from '../composables/useAgentConversation';
 import { dateLabel } from '../utils/display';
 
-const props = defineProps<{ reply: CurrentAgentReply }>();
+const props = defineProps<{ reply: CurrentAgentReply; compact?: boolean }>();
+const expanded = ref(false);
 const emit = defineEmits<{
   close: [];
   open: [];
@@ -37,6 +38,7 @@ const waitingText = computed(() => {
 <template>
   <section
     class="chart-agent-reply-card"
+    :class="{ compact: compact && !expanded }"
     aria-label="当前问题的 AI 回复"
     data-testid="chart-agent-current-reply"
     :data-task-id="reply.taskId ?? undefined"
@@ -49,7 +51,7 @@ const waitingText = computed(() => {
     @keydown.esc.stop.prevent="emit('close')"
   >
     <header class="reply-card-heading">
-      <span class="reply-card-bot"><ChartIcon name="Bot" :size="23" /></span>
+      <ChartHolographicAvatar :status="reply.status" />
       <div class="reply-card-title">
         <h2>AI 回复</h2>
         <div class="reply-card-meta">
@@ -68,6 +70,15 @@ const waitingText = computed(() => {
         <ChartIcon name="X" :size="18" />
       </button>
     </header>
+    <button
+      v-if="compact"
+      class="reply-expand"
+      type="button"
+      :aria-expanded="expanded"
+      @click="expanded = !expanded"
+    >
+      {{ expanded ? '收起回复' : '展开回复' }}
+    </button>
     <div class="reply-card-body" tabindex="0" aria-label="当前回复内容">
       <p class="reply-card-question" :title="reply.question">{{ reply.question }}</p>
       <p v-if="reply.assistant" class="reply-card-answer" :data-message-id="reply.assistant.id">
@@ -98,8 +109,8 @@ const waitingText = computed(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  max-height: 360px;
-  overflow: auto;
+  max-height: min(320px, var(--focus-card-max-height, 320px));
+  overflow: hidden;
   border: 1px solid #38c9e9;
   border-radius: 17px;
   background: linear-gradient(135deg, rgb(9 42 62 / 98%), rgb(5 26 44 / 96%));
@@ -228,9 +239,26 @@ const waitingText = computed(() => {
   }
 }
 @media (max-height: 650px) {
+  .chart-agent-reply-card .holographic-avatar {
+    width: 24px;
+    height: 28px;
+    flex: 0 0 24px;
+  }
+  .reply-card-question {
+    display: none;
+  }
+  .reply-card-close {
+    padding: 4px;
+  }
+  .chart-agent-reply-card .reply-expand {
+    padding: 3px 8px;
+    font-size: 10px;
+    line-height: 14px;
+    flex: 0 0 auto;
+  }
   .reply-card-heading {
-    gap: 8px;
-    padding: 9px 12px 7px;
+    gap: 6px;
+    padding: 4px 8px;
   }
   .reply-card-bot {
     width: 30px;
@@ -240,23 +268,36 @@ const waitingText = computed(() => {
   }
   .reply-card-title h2 {
     margin-bottom: 2px;
-    font-size: 14px;
-    line-height: 17px;
+    font-size: 12px;
+    line-height: 14px;
   }
   .reply-card-meta {
-    font-size: 9px;
-    line-height: 12px;
+    font-size: 8px;
+    line-height: 10px;
   }
   .reply-card-body {
     min-height: 40px;
+    flex: 1 1 auto;
   }
   .reply-card-footer {
-    padding-block: 5px;
+    margin-inline: 8px;
+    padding-block: 3px;
   }
   .reply-card-footer button {
-    padding-block: 3px;
+    padding-block: 2px;
     font-size: 10px;
     line-height: 14px;
   }
+}
+.compact .reply-card-body,
+.compact .reply-card-footer {
+  display: none;
+}
+.reply-expand {
+  border: 0;
+  background: transparent;
+  color: #72ddef;
+  padding: 4px 16px 10px;
+  text-align: right;
 }
 </style>

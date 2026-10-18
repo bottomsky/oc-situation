@@ -31,7 +31,7 @@ import {
   intelligenceFeatureGroup,
   intelligenceFeatureBounds,
 } from '../utils/intelligenceMap';
-import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+import { configureMapLibreWorker } from '../utils/mapLibreWorker';
 import type { GeoJSONSource, Map as GLMap } from 'maplibre-gl';
 import type {
   Bbox,
@@ -146,6 +146,10 @@ watch(
   },
 );
 let map: GLMap | undefined;
+const focusRenderListeners = new Set<() => void>();
+function notifyFocusRender() {
+  for (const listener of focusRenderListeners) listener();
+}
 let camera: ReturnType<typeof createMapCamera> | undefined;
 let sourceAcknowledgements: ReturnType<typeof createSourceRenderAcknowledgements> | undefined;
 let highlightAnimation: ReturnType<typeof createHighlightAnimation> | undefined;
@@ -153,11 +157,14 @@ const highlightTimeline = createHighlightTimeline();
 let highlightSourceSignature = '';
 let reducedMotion: MediaQueryList | undefined;
 let automaticCameraAllowed = true;
+let reserveFocusReply = false;
 let cameraRevision = 0;
 function visibleCameraPadding() {
   const view = host.value!.getBoundingClientRect();
   const overlays = [
-    ...document.querySelectorAll<HTMLElement>('.chart-panel, .chart-agent-input, .chart-input-bar'),
+    ...document.querySelectorAll<HTMLElement>(
+      '.chart-panel, .chart-agent-input, .chart-input-bar, .chart-agent-dock',
+    ),
   ]
     .filter(
       (element) =>
@@ -165,8 +172,26 @@ function visibleCameraPadding() {
         getComputedStyle(element).visibility !== 'hidden' &&
         !element.closest('[inert]'),
     )
-    .map((element) => element.getBoundingClientRect());
-  return cameraPadding(view, overlays);
+    .map((element) => {
+      const rect = element.getBoundingClientRect();
+      const side = element.closest('#chart-left-slot')
+        ? ('left' as const)
+        : element.closest('#chart-right-slot')
+          ? ('right' as const)
+          : undefined;
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        side,
+        gap: element.classList.contains('chart-agent-dock') ? 8 : undefined,
+      };
+    });
+  const padding = cameraPadding(view, overlays);
+  if (reserveFocusReply && view.width - padding.left - padding.right >= 640)
+    padding.right = Math.min(padding.right + 384, view.width - padding.left - 160);
+  return padding;
 }
 function applyCamera(
   request: MapCameraRequest & { commandId?: string },
@@ -188,7 +213,7 @@ function interruptCamera() {
   cameraRevision++;
   camera?.interrupt();
 }
-function cameraIntent(): (request: MapCameraRequest) => void {
+function cameraIntent(options?: { reserveReply?: boolean }): (request: MapCameraRequest) => void {
   automaticCameraAllowed = false;
   const revision = ++cameraRevision;
   camera?.interrupt();
@@ -200,7 +225,12 @@ function cameraIntent(): (request: MapCameraRequest) => void {
       props.selectingRegion
     )
       return;
-    localCamera(request);
+    reserveFocusReply = options?.reserveReply ?? false;
+    try {
+      localCamera(request);
+    } finally {
+      reserveFocusReply = false;
+    }
   };
 }
 function updateAnimationState() {
@@ -608,6 +638,8 @@ function registerBusinessLayers() {
   updateIntelligence();
   update();
   ready.value = true;
+  map?.off('render', notifyFocusRender);
+  map?.on('render', notifyFocusRender);
   scheduling?.viewport();
 }
 function updateVesselTracks() {
@@ -689,7 +721,7 @@ onMounted(async () => {
   await nextTick();
   if (disposed || !host.value) return;
   try {
-    maplibregl.setWorkerUrl(workerUrl);
+    configureMapLibreWorker();
     map = new maplibregl.Map({
       container: host.value,
       style: createOfflineChartStyle(),
@@ -887,6 +919,33 @@ watch(
   { deep: true },
 );
 defineExpose<ChartMapControls>({
+  projectFocus: (point, anchorLongitude) => {
+    if (!map || !ready.value) return null;
+    const anchor = anchorLongitude ?? point[0];
+    const local =
+      anchorLongitude === undefined
+        ? point[0]
+        : anchor + ((((point[0] - anchor + 180) % 360) + 360) % 360) - 180;
+    const lon = local + 360 * Math.round((map.getCenter().lng - anchor) / 360);
+    return map.project([lon, point[1]]);
+  },
+  focusViewport: () => {
+    if (!map || !host.value || !ready.value) return null;
+    const padding = visibleCameraPadding();
+    return {
+      left: padding.left,
+      top: padding.top,
+      right: host.value.clientWidth - padding.right,
+      bottom: host.value.clientHeight - padding.bottom,
+    };
+  },
+  onFocusRender: (listener) => {
+    focusRenderListeners.add(listener);
+    return () => focusRenderListeners.delete(listener);
+  },
+  requestFocusRender: () => {
+    map?.triggerRepaint();
+  },
   applyCamera,
   currentCamera: () => camera?.current() ?? null,
   cameraState: () => (ready.value ? (camera?.state() ?? null) : null),

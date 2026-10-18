@@ -20,6 +20,42 @@ export function errorLabel(status: number, path?: string) {
   if (status === 400) return '输入参数不符合要求，请检查后重试';
   return '服务暂时无法完成请求，请重试';
 }
+export function businessError(message: unknown, status: number): { message: string; code: string } {
+  const text = typeof message === 'string' ? message : '';
+  const values: [RegExp, string, string][] = [
+    [
+      /revision conflict|revision_conflict/i,
+      'revision_conflict',
+      '数据版本已更新，请读取最新版本后合并；当前草稿已保留。',
+    ],
+    [
+      /operation.*reused|operation_conflict/i,
+      'operation_conflict',
+      '该操作编号已用于其他内容，请刷新详情后重新提交。',
+    ],
+    [
+      /plan_not_completed|plan.*not.*completed/i,
+      'plan_not_completed',
+      '规划尚未完成，请等待候选方案生成后保存。',
+    ],
+    [/not.found|not_found/i, 'not_found', '对象已不存在或当前账号无权访问，请刷新列表。'],
+    [
+      /Primary source must belong/i,
+      'invalid_primary_source',
+      '请选择当前事件或合并目标所属的来源。',
+    ],
+    [
+      /Released field requires/i,
+      'missing_source_suggestion',
+      '该字段暂无来源建议值，请保留人工值。',
+    ],
+    [/Cannot merge an event into itself/i, 'same_merge_target', '请选择其他事件作为合并目标。'],
+  ];
+  const match = values.find(([pattern]) => pattern.test(text));
+  return match
+    ? { code: match[1], message: match[2] }
+    : { code: `HTTP_${status}`, message: errorLabel(status) };
+}
 export function dateLabel(value: string | null | undefined) {
   return value
     ? new Date(value).toLocaleString('zh-CN', { hour12: false, timeZone: 'UTC' }) + ' UTC'

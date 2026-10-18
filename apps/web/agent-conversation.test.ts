@@ -1194,3 +1194,75 @@ describe('智能体历史航线自动展示授权', () => {
     fixture.stop();
   });
 });
+
+describe('本轮空间关注快照', () => {
+  it('已绑定UI的任务由命令驱动关注，普通任务继续自动呈现', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.config.value = { ...config, uiEnabled: true };
+    fixture.state.draft.value = '查询船舶';
+    await fixture.state.send();
+    expect(fixture.state.currentReply.value?.focusCommandDriven).toBe(false);
+    fixture.state.tasks.value = fixture.state.tasks.value.map((value) => ({
+      ...value,
+      status: 'waiting_ui',
+      uiBinding: { clientId: 'client', pageGeneration: 1 },
+    }));
+    expect(fixture.state.currentReply.value?.focusCommandDriven).toBe(true);
+    fixture.stop();
+  });
+  it('历史任务读取与关闭后的迟到结果保持本轮关注边界', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.draft.value = '查询船舶';
+    await fixture.state.send();
+    const release = fixture.deferTaskRead();
+    const reading = fixture.state.loadTask('task-1');
+    release({
+      task: fixture.tasks[0],
+      results: [],
+      steps: [],
+      queryResult: {
+        kind: 'vessel_list',
+        version: 0,
+        inputRevision: 0,
+        total: 1,
+        truncated: false,
+        items: [
+          {
+            mmsi: '413123456',
+            name: '当前船',
+            latestPosition: {
+              lon: 122,
+              lat: 31,
+              observedAt: '2026-10-18T00:00:00.000Z',
+              sourceId: 'ais',
+              sogKnots: 1,
+            },
+          },
+        ],
+      },
+    });
+    await reading;
+    expect(fixture.state.currentReply.value?.focus?.targets[0]?.ref.id).toBe('413123456');
+    const historyRelease = fixture.deferTaskRead();
+    const historyReading = fixture.state.loadTask('historical-task');
+    historyRelease({
+      task: { ...task, id: 'historical-task' },
+      results: [],
+      steps: [],
+      queryResult: { kind: 'vessel_list', version: 1, inputRevision: 0, items: [] },
+    });
+    await historyReading;
+    expect(fixture.state.currentReply.value?.focus?.targets[0]?.ref.id).toBe('413123456');
+    fixture.failEvents('无权访问');
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value?.focus).toBeNull();
+    expect(fixture.state.currentReply.value?.readable).toBe(false);
+    fixture.failEvents('');
+    fixture.state.dismissCurrentReply();
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value).toBeNull();
+    fixture.stop();
+  });
+});

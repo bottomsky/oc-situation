@@ -3,6 +3,8 @@ import { chartFixture } from './fixtures/chart-fixture';
 import { chartResult } from './fixtures/chart-data';
 import { openLeftPanel, selectLeftTab } from './chart-helpers';
 import type { AgentInputRequest, AgentIntelligenceResult, AgentSelection } from '@ais/contracts';
+import { UiCommandSchema, UiStateSchema, UiReceiptSchema } from '@ais/contracts';
+import type { UiState, UiCommand, UiReceipt } from '@ais/contracts';
 
 async function agentFixture(
   page: Page,
@@ -10,6 +12,8 @@ async function agentFixture(
     enabled?: boolean;
     role?: string;
     queued?: boolean;
+    spatial?: boolean;
+    artifacts?: unknown[];
     interactive?: boolean;
     inputFields?: AgentInputRequest['fields'];
     inputPrefill?: AgentSelection;
@@ -195,6 +199,42 @@ async function agentFixture(
       const task = tasks.find((item) => item.id === path.split('/').at(-1));
       json = {
         task,
+        artifacts: options.artifacts ?? [],
+        ...(options.spatial && task
+          ? {
+              focusResult: {
+                kind: 'map_focus',
+                version: task.resultVersion,
+                inputRevision: 0,
+                sessionId: session.id,
+                taskId: task.id,
+                targets: [
+                  {
+                    ref: { kind: 'vessel', id: '413123456' },
+                    label: '关注船甲',
+                    geometry: { type: 'Point', coordinates: [122, 31] },
+                    observedAt: session.createdAt,
+                  },
+                  {
+                    ref: { kind: 'event', id: 'incident-a', revision: 1 },
+                    label: '关注事件乙',
+                    geometry: {
+                      type: 'LineString',
+                      coordinates: [
+                        [123, 32],
+                        [124, 33],
+                      ],
+                    },
+                    observedAt: session.createdAt,
+                  },
+                ],
+                missing: [],
+                bbox: [122, 31, 124, 33],
+                displayStatus: 'complete',
+                cameraPolicy: 'if-needed-once',
+              },
+            }
+          : {}),
         ...(options.interactive
           ? {
               pendingInputRequests: inputRequests,
@@ -1110,6 +1150,8 @@ for (const viewport of [
     await expect(card).toContainText('长回复末尾');
     await expect(page.getByTestId('chart-right-panel')).toBeVisible({ visible: sidebarWasOpen });
     await expect(card).toBeInViewport();
+    if (viewport.width < 640)
+      await card.getByRole('button', { name: '展开回复', exact: true }).click();
     if (!sidebarWasOpen) {
       await card.getByRole('button', { name: '查看完整对话', exact: true }).click();
       await expect(page.getByTestId('chart-right-panel')).toBeVisible();
@@ -1123,6 +1165,10 @@ for (const viewport of [
         await page.getByRole('button', { name: '关闭协同面板', exact: true }).click();
       if (await page.getByTestId('chart-left-panel').isVisible())
         await page.getByRole('button', { name: '折叠操作面板', exact: true }).click();
+    }
+    if (viewport.width === 1002) {
+      await expect(card).not.toHaveClass(/compact/);
+      await expect(card.getByRole('button', { name: '展开回复', exact: true })).toHaveCount(0);
     }
     const bounds = (await card.boundingBox())!;
     const mapBounds = (await map.boundingBox())!;
@@ -1535,3 +1581,285 @@ test('悬浮输入空闲透明无阴影，聚焦或非空草稿高亮并随清�
   await expect(capsule).toHaveAttribute('data-active', 'false');
   expect(calls.submitted).toHaveLength(0);
 });
+
+test('空间回复浮卡连接混合对象并在窄屏展开摘要', async ({ page }) => {
+  await agentFixture(page, {
+    spatial: true,
+    chatReplies: { 关注这两个对象: '已关注船甲和事件乙。' },
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true');
+  const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
+  await input.fill('关注这两个对象');
+  await input.press('Enter');
+  const overlay = page.getByTestId('chart-focus-overlay');
+  await expect(overlay).toContainText('2 个关注对象');
+  await expect(overlay.locator('.focus-frame')).not.toHaveAttribute('d', '');
+  await expect(overlay.locator('.focus-guide')).not.toHaveAttribute('d', '');
+  await expect(page.locator('.chart-agent-dock .chart-agent-reply-card')).toHaveCount(0);
+  await expect(overlay.locator('.holographic-avatar')).toHaveAttribute('data-state', 'completed');
+  await page.screenshot({ path: '.data/spatial-e2e-focus-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 600, height: 800 });
+  await expect(overlay.getByRole('button', { name: '展开回复' })).toBeVisible();
+  const drawer = page.getByTestId('chart-right-panel');
+  await expect(drawer).toBeVisible();
+  await expect
+    .poll(async () => {
+      const card = (await overlay.getByTestId('chart-agent-current-reply').boundingBox())!;
+      const panel = (await drawer.boundingBox())!;
+      return card.x + card.width <= panel.x;
+    })
+    .toBe(true);
+  await overlay.getByRole('button', { name: '展开回复' }).click();
+  await expect(overlay.getByLabel('当前回复内容')).toBeVisible();
+  await expect(drawer.getByRole('button', { name: '关闭协同面板', exact: true })).toBeVisible();
+  await drawer.getByRole('tab', { name: '任务中心', exact: true }).click();
+  await expect(drawer.getByRole('tab', { name: '任务中心', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await drawer.getByRole('tab', { name: 'AI 对话', exact: true }).click();
+  await page.screenshot({ path: '.data/spatial-e2e-focus-compact.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 800 });
+  await expect(page.getByText('海图回复空间不足', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '收起侧栏查看', exact: true }).click();
+  await expect(drawer).not.toBeVisible();
+  await expect(overlay.getByTestId('chart-agent-current-reply')).toBeVisible();
+  await overlay.getByRole('button', { name: '关闭当前回复', exact: true }).click();
+  await expect(overlay).toHaveCount(0);
+});
+
+test('本轮业务产物展示修订快照与当前实体入口，非法快照保持隐藏', async ({ page }) => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  const route = {
+    id,
+    revision: 2,
+    name: '东海业务航线',
+    status: 'draft',
+    mmsis: [],
+    waypoints: [
+      [120, 30],
+      [121, 31],
+    ],
+    geometry: {
+      type: 'LineString',
+      coordinates: [
+        [120, 30],
+        [121, 31],
+      ],
+    },
+    lengthMeters: 18520,
+    generatedBy: 'manual',
+    planId: null,
+    createdAt: '2026-10-18T00:00:00Z',
+    updatedAt: '2026-10-18T00:00:00Z',
+  };
+  const event = {
+    id,
+    revision: 3,
+    title: '临时管制事件',
+    summary: '航道临时管制的业务摘要',
+    category: 'other',
+    severity: 'unknown',
+    occurredAt: null,
+    geometry: null,
+    linkedMmsis: [],
+    linkedRouteIds: [],
+    status: 'active',
+    primarySourceKey: null,
+    sourceSuggestions: {},
+    overrides: {},
+    mergedInto: null,
+    createdAt: route.createdAt,
+    updatedAt: route.updatedAt,
+  };
+  await agentFixture(page, {
+    scriptedTasks: { 查看业务产物: { status: 'completed', reply: '结果见本轮产物。' } },
+    artifacts: [
+      { kind: 'route', routes: [route], total: 4, truncated: true },
+      { kind: 'operational_event', event },
+      { kind: 'route', route: { ...route, id: 'javascript:alert(1)', name: '非法快照标题' } },
+    ].map((payload, i) => ({
+      id: String(i),
+      stepId: `business-${i}`,
+      kind: payload.kind,
+      inputRevision: 0,
+      payload,
+    })),
+  });
+  await openAgent(page);
+  const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
+  await input.fill('查看业务产物');
+  await input.press('Enter');
+  const detail = await openTaskDetails(page);
+  const artifacts = detail.getByRole('region', { name: '技能多步骤产物' });
+  await expect(artifacts).toContainText('东海业务航线');
+  await expect(artifacts).toContainText('共 4 条');
+  await expect(artifacts).toContainText('修订 2');
+  await expect(artifacts).toContainText('10.0 海里');
+  await expect(artifacts).toContainText('航道临时管制的业务摘要');
+  await expect(artifacts).not.toContainText('非法快照标题');
+  await expect(artifacts.getByRole('link', { name: '查看当前航线', exact: true })).toHaveAttribute(
+    'href',
+    `/routes?id=${id}`,
+  );
+  await expect(
+    artifacts.getByRole('link', { name: '查看当前事件与来源', exact: true }),
+  ).toHaveAttribute('href', `/events?id=${id}`);
+});
+
+async function focusCommandFixture(page: Page) {
+  await chartFixture(page, { role: 'operator' });
+  const binding = { clientId: crypto.randomUUID(), pageGeneration: 1 };
+  const session = {
+    id: crypto.randomUUID(),
+    ownerId: 'fixture-user',
+    title: '空间命令',
+    createdAt: new Date().toISOString(),
+  };
+  const task = {
+    id: crypto.randomUUID(),
+    sessionId: session.id,
+    ownerId: session.ownerId,
+    goal: '关注目标',
+    status: 'waiting_ui',
+    inputRevision: 0,
+    resultVersion: 1,
+    historyHours: 24,
+    createdAt: session.createdAt,
+    updatedAt: session.createdAt,
+    uiBinding: binding,
+  };
+  const focus = {
+    kind: 'map_focus',
+    sessionId: session.id,
+    taskId: task.id,
+    version: 1,
+    inputRevision: 0,
+    targets: [
+      {
+        ref: { kind: 'vessel', id: '413123456' },
+        label: '命令关注目标',
+        geometry: { type: 'Point', coordinates: [122, 31] },
+        observedAt: session.createdAt,
+      },
+    ],
+    missing: [],
+    omittedCount: 0,
+    bbox: [122, 31, 122, 31],
+    displayStatus: 'complete',
+    cameraPolicy: 'if-needed-once',
+  };
+  let state: UiState | undefined;
+  let command: UiCommand | undefined;
+  let released = false,
+    taskReads = 0,
+    sent = false;
+  const receipts: UiReceipt[] = [];
+  await page.route('**/api/v1/agent/**', async (route) => {
+    const req = route.request(),
+      path = new URL(req.url()).pathname;
+    let json: unknown;
+    if (path.endsWith('/config'))
+      json = {
+        enabled: true,
+        uiEnabled: true,
+        spatialFocusEnabled: true,
+        defaultHistoryHours: 24,
+        maxHistoryHours: 168,
+        maxModelCalls: 12,
+        maxToolCalls: 24,
+      };
+    else if (path.endsWith('/ui/clients')) json = binding;
+    else if (path.endsWith('/state')) {
+      state = UiStateSchema.parse(req.postDataJSON().state);
+      json = binding;
+    } else if (path.endsWith('/commands')) json = { items: released && command ? [command] : [] };
+    else if (path.endsWith('/claim')) {
+      command = UiCommandSchema.parse({
+        ...command,
+        status: 'claimed',
+        claimToken: crypto.randomUUID(),
+      });
+      json = command;
+    } else if (path.endsWith('/receipts')) {
+      const receipt = UiReceiptSchema.parse(req.postDataJSON());
+      receipts.push(receipt);
+      if (receipt.status !== 'executing') command = undefined;
+      json = {};
+    } else if (path.endsWith('/sessions')) json = req.method() === 'POST' ? session : { items: [] };
+    else if (path.endsWith('/messages')) {
+      sent = true;
+      const body = req.postDataJSON();
+      command = UiCommandSchema.parse({
+        id: crypto.randomUUID(),
+        taskId: task.id,
+        ...binding,
+        stepId: 'focus-step',
+        artifactRef: crypto.randomUUID(),
+        operation: { componentId: 'chart.focus', action: 'show' },
+        expectedVersion: body.uiBinding.focusVersion,
+        status: 'queued',
+        focusPresentation: focus,
+      });
+      json = {
+        task,
+        message: {
+          id: 'message-focus',
+          role: 'user',
+          content: task.goal,
+          sessionId: session.id,
+          taskId: task.id,
+          createdAt: session.createdAt,
+        },
+      };
+    } else if (path.endsWith('/events'))
+      json = {
+        items: sent ? [{ id: String(taskReads + 1), type: 'task.updated' }] : [],
+        nextCursor: String(taskReads + 1),
+      };
+    else if (path.includes('/tasks/')) {
+      taskReads++;
+      json = { task, results: [], steps: [], focusResult: focus };
+    } else json = { session, tasks: [task], messages: [], pendingInputRequests: [] };
+    await route.fulfill({ json });
+  });
+  return {
+    receipts,
+    reads: () => taskReads,
+    ready: () => !!state?.components.find((c) => c.id === 'chart.focus' && c.mounted),
+    release: () => {
+      released = true;
+    },
+  };
+}
+
+for (const manualClose of [false, true])
+  test(`空间关注命令等待任务轮询后真实回执，人工关闭=${manualClose}`, async ({ page }) => {
+    const fixture = await focusCommandFixture(page);
+    await openAgent(page);
+    await expect.poll(fixture.ready).toBe(true);
+    const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
+    await input.fill('关注目标');
+    await input.press('Enter');
+    await expect.poll(fixture.reads).toBeGreaterThanOrEqual(2);
+    const overlay = page.getByTestId('chart-focus-overlay');
+    await expect(overlay.locator('.focus-caption')).toHaveCount(0);
+    if (manualClose)
+      await overlay.getByRole('button', { name: '关闭当前回复', exact: true }).click();
+    fixture.release();
+    await expect.poll(() => fixture.receipts.some((r) => r.status !== 'executing')).toBe(true);
+    if (manualClose) {
+      expect(fixture.receipts.some((r) => r.status === 'succeeded')).toBe(false);
+      await expect(overlay).toHaveCount(0);
+    } else {
+      expect(fixture.receipts.map((r) => r.status)).toEqual(['executing', 'succeeded']);
+      expect(
+        fixture.receipts.at(-1)!.state.components.find((c) => c.id === 'chart.focus'),
+      ).toMatchObject({
+        visible: true,
+        focusEvidence: { taskId: expect.any(String), displayStatus: 'complete' },
+      });
+      await expect(overlay.locator('.focus-frame')).not.toHaveAttribute('d', '');
+    }
+  });

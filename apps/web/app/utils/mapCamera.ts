@@ -7,6 +7,8 @@ interface Rect {
   top: number;
   right: number;
   bottom: number;
+  side?: 'left' | 'right';
+  gap?: number;
 }
 export interface CameraPadding {
   top: number;
@@ -26,27 +28,33 @@ export function cameraBounds([w, s, e, n]: Bbox): [[number, number], [number, nu
   ];
 }
 
-// Only edge-connected overlays consume map space. Clamp opposing sides so a
-// narrow window always retains a usable target region.
+// Explicit drawer identity wins over geometry: a wide right drawer can cross the midpoint.
 export function cameraPadding(view: Rect, overlays: Rect[]): CameraPadding {
   const width = view.right - view.left;
   const height = view.bottom - view.top;
-  const padding = { top: 24, right: 24, bottom: 24, left: 24 };
+  const verticalGap = height < 360 ? 8 : 24;
+  const padding = { top: verticalGap, right: 24, bottom: verticalGap, left: 24 };
   for (const rect of overlays) {
     const w = Math.min(rect.right, view.right) - Math.max(rect.left, view.left);
     const h = Math.min(rect.bottom, view.bottom) - Math.max(rect.top, view.top);
+    const gap = rect.gap ?? verticalGap;
     if (w <= 0 || h <= 0) continue;
-    if (h >= height * 0.45 && rect.left <= view.left + width * 0.45)
+    if (rect.side === 'left') padding.left = Math.max(padding.left, rect.right - view.left + 24);
+    else if (rect.side === 'right')
+      padding.right = Math.max(padding.right, view.right - rect.left + 24);
+    else if (h >= height * 0.45 && rect.left <= view.left + width * 0.45)
       padding.left = Math.max(padding.left, rect.right - view.left + 24);
     else if (h >= height * 0.45 && rect.right >= view.right - width * 0.45)
       padding.right = Math.max(padding.right, view.right - rect.left + 24);
     else if (w >= width * 0.25 && rect.top <= view.top + height * 0.25)
-      padding.top = Math.max(padding.top, rect.bottom - view.top + 24);
+      padding.top = Math.max(padding.top, rect.bottom - view.top + gap);
     else if (w >= width * 0.25 && rect.bottom >= view.bottom - height * 0.3)
-      padding.bottom = Math.max(padding.bottom, view.bottom - rect.top + 24);
+      padding.bottom = Math.max(padding.bottom, view.bottom - rect.top + gap);
   }
   const constrain = (a: 'left' | 'top', b: 'right' | 'bottom', size: number) => {
-    const max = Math.max(0, size - Math.min(160, size * 0.4));
+    // Preserve the actual obstruction instead of inventing 160px beneath a drawer.
+    // One remaining pixel keeps MapLibre padding mathematically valid when fully covered.
+    const max = Math.max(0, size - 1);
     const sum = padding[a] + padding[b];
     if (sum > max) {
       padding[a] *= max / sum;

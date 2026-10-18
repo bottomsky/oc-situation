@@ -22,6 +22,8 @@ describe('top navigation permissions and route grouping', () => {
         '/topics',
         '/intelligence',
         '/skills',
+        '/routes',
+        '/events',
         '/sources',
         '/jobs',
         '/runs',
@@ -47,9 +49,11 @@ describe('top navigation permissions and route grouping', () => {
 
   it.each([
     ['/', 'chart'],
+    ['/routes', 'chart'],
     ['/sources', 'ais'],
     ['/topics', 'analysis'],
     ['/intelligence', 'analysis'],
+    ['/events', 'analysis'],
     ['/skills', 'analysis'],
     ['/jobs', 'tasks'],
     ['/runs', 'tasks'],

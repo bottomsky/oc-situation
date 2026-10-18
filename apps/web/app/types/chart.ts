@@ -17,13 +17,18 @@ export interface ChartLayerVisibility {
 }
 
 export interface ChartMapControls {
+  projectFocus(point: [number, number], anchorLongitude?: number): { x: number; y: number } | null;
+  focusViewport(): { left: number; top: number; right: number; bottom: number } | null;
+  onFocusRender(listener: () => void): () => void;
+  requestFocusRender(): void;
+
   applyCamera(
     request: MapCameraRequest & { commandId?: string },
     signal?: AbortSignal,
   ): Promise<MapCameraResult>;
   currentCamera(): MapCameraResult | null;
   cameraState(): Omit<MapCameraResult, 'commandId'> | null;
-  cameraIntent(): (request: MapCameraRequest) => void;
+  cameraIntent(options?: { reserveReply?: boolean }): (request: MapCameraRequest) => void;
   interactionState(): { ready: boolean; moving: boolean; drawing: boolean };
   currentBounds(): Bbox | null;
   editGeometry(geometry: IntelligenceGeometry): void;

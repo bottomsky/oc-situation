@@ -1,5 +1,5 @@
 import type { UserRole } from '@ais/contracts';
-import { errorLabel } from '../utils/display';
+import { errorLabel, businessError } from '../utils/display';
 export interface Session {
   user: { id: string; username: string; role: UserRole };
   csrfToken: string;
@@ -11,7 +11,7 @@ export function usePlatform() {
   async function api<T>(
     path: string,
     options: {
-      method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+      method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
       body?: unknown;
       idempotent?: boolean;
       idempotencyKey?: string;
@@ -46,14 +46,21 @@ export function usePlatform() {
         ? ((await response.json().catch(() => null)) as { error?: { message?: unknown } } | null)
         : null;
       const skillMessage = skillError?.error?.message;
+      const business = /^\/(routes|operational-events)(\/|\?|$)/.test(path)
+        ? ((await response.json().catch(() => null)) as { error?: { message?: unknown } } | null)
+        : null;
+      const mapped = businessError(business?.error?.message, response.status);
       throw Object.assign(
         new Error(
           typeof skillMessage === 'string' && [400, 409].includes(response.status)
             ? skillMessage
-            : errorLabel(response.status, path),
+            : business
+              ? mapped.message
+              : errorLabel(response.status, path),
         ),
         {
           status: response.status,
+          ...(business ? { businessCode: mapped.code } : {}),
         },
       );
     }

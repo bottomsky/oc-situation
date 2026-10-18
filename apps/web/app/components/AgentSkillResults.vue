@@ -6,6 +6,8 @@ import type {
 import type { AgentHeatmapResult, AgentVesselTracksResult } from '@ais/contracts';
 import { readSkillArtifacts } from '../utils/skillArtifacts';
 import { dateLabel } from '../utils/display';
+import { eventStatusLabels, eventSeverityLabels } from '../utils/operationalEvents';
+import { routePlanError } from '../utils/routeWorkspace';
 const props = defineProps<{
   execution?: DynamicSkillExecution;
   artifacts: DynamicSkillArtifact[];
@@ -23,7 +25,21 @@ const labels: Record<string, string> = {
   ais_heatmap: 'AIS 热力图',
   intelligence_search: '情报检索',
   analysis: '分析结果',
+  route: '计划航线',
+  route_plan: '航路规划候选',
+  operational_event: '业务事件',
+  operational_events: '业务事件清单',
+  map_focus: '空间关注',
 };
+const routeStates = { draft: '草稿', active: '启用', archived: '已归档' };
+const planStates = {
+  queued: '排队中',
+  running: '规划中',
+  completed: '候选已生成',
+  failed: '规划失败',
+  cancelled: '已取消',
+};
+const focusStates = { complete: '完整展示', partial: '部分展示', unlocated: '未定位' };
 </script>
 <template>
   <section
@@ -66,7 +82,7 @@ const labels: Record<string, string> = {
     </div>
   </section>
   <section v-if="cards.length" class="skill-task-artifacts" aria-label="技能多步骤产物">
-    <h4>步骤产物 · {{ cards.length }} 项</h4>
+    <h4>步骤产物 · {{ cards.length }} 项（本轮修订快照）</h4>
     <article
       v-for="item in cards"
       :key="item.id"
@@ -97,7 +113,86 @@ const labels: Record<string, string> = {
         <p>{{ dateLabel(item.result.query.from) }} ～ {{ dateLabel(item.result.query.to) }}</p>
         <button @click="emit('heatmap', item.result)">在海图展示此热力快照</button>
       </template>
-      <p v-else>此产物已记录，当前页面暂无对应的快照预览。</p>
+      <template v-else-if="item.result?.kind === 'route'">
+        <p>
+          共 {{ item.result.total }} 条<span v-if="item.result.truncated">
+            · 已截断，展示 {{ item.result.routes.length }} 条</span
+          >
+        </p>
+        <div v-for="route in item.result.routes" :key="route.id" class="business-snapshot">
+          <strong>{{ route.name }}</strong>
+          <p>
+            {{ routeStates[route.status] }} · 修订 {{ route.revision }} ·
+            {{ (route.lengthMeters / 1852).toFixed(1) }} 海里 · {{ route.waypoints.length }} 航点
+          </p>
+          <NuxtLink :to="{ path: '/routes', query: { id: route.id } }">查看当前航线</NuxtLink>
+          <NuxtLink :to="{ path: '/', query: { routeId: route.id } }">在海图查看当前对象</NuxtLink>
+        </div>
+        <p v-if="!item.result.routes.length">当前条件下没有匹配航线。</p>
+      </template>
+      <template v-else-if="item.result?.kind === 'route_plan'">
+        <p>规划候选 · {{ planStates[item.result.plan.status] }}</p>
+        <p>
+          路网版本 {{ item.result.plan.datasetVersion ?? '待确定' }} · 禁区版本
+          {{ item.result.plan.restrictionVersion
+          }}<span v-if="item.result.plan.stale"> · 数据版本已更新</span>
+        </p>
+        <p v-if="item.result.plan.result">
+          候选里程 {{ (item.result.plan.result.lengthMeters / 1852).toFixed(1) }} 海里
+        </p>
+        <p v-if="item.result.plan.error" role="status">
+          {{ routePlanError(item.result.plan.error) }}
+        </p>
+        <p>候选经工作台保存后形成正式计划航线。</p>
+        <NuxtLink to="/routes">进入航线工作台</NuxtLink>
+      </template>
+      <template
+        v-else-if="
+          item.result?.kind === 'operational_event' || item.result?.kind === 'operational_events'
+        "
+      >
+        <p v-if="item.result.kind === 'operational_events'">
+          共 {{ item.result.total }} 条<span v-if="item.result.truncated">
+            · 已截断，展示 {{ item.result.items.length }} 条</span
+          >
+        </p>
+        <div
+          v-for="event in item.result.kind === 'operational_event'
+            ? [item.result.event]
+            : item.result.items"
+          :key="event.id"
+          class="business-snapshot"
+        >
+          <strong>{{ event.title }}</strong>
+          <p>
+            {{ eventStatusLabels[event.status] }} · {{ eventSeverityLabels[event.severity] }} · 修订
+            {{ event.revision }}
+          </p>
+          <p>{{ event.summary || '暂无摘要' }}</p>
+          <p>
+            {{ event.occurredAt ? dateLabel(event.occurredAt) : '发生时间待确认' }} ·
+            {{ event.geometry ? '已定位' : '未定位' }}
+          </p>
+          <NuxtLink :to="{ path: '/events', query: { id: event.id } }">查看当前事件与来源</NuxtLink>
+          <NuxtLink
+            v-if="event.geometry"
+            :to="{ path: '/', query: { operationalEventId: event.id } }"
+            >海图定位</NuxtLink
+          >
+        </div>
+        <p v-if="item.result.kind === 'operational_events' && !item.result.items.length">
+          当前条件下没有匹配事件。
+        </p>
+      </template>
+      <template v-else-if="item.result?.kind === 'map_focus'">
+        <p>
+          {{ focusStates[item.result.displayStatus] }} · {{ item.result.targets.length }} 个关注对象
+          · {{ item.result.missing.length }} 个未定位<span v-if="item.result.omittedCount">
+            · {{ item.result.omittedCount }} 个超出展示上限</span
+          >
+        </p>
+      </template>
+      <p v-else>此产物已记录，当前页面暂无有效的快照预览。</p>
     </article>
   </section>
 </template>
@@ -147,5 +242,14 @@ const labels: Record<string, string> = {
 .skill-artifact-card button {
   justify-self: start;
   font-size: 12px;
+}
+.business-snapshot {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.skill-artifact-card a {
+  color: var(--teal);
+  font-size: 12px;
+  margin-right: 12px;
 }
 </style>

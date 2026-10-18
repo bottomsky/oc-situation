@@ -1,5 +1,7 @@
+import { focusFromTask } from '../utils/agentFocus';
+import type { AgentFocusResult } from '../../../../packages/contracts/agent-focus';
 import { isUiIntent } from '../../../../packages/domain/agent-ui-intent';
-import type { UnwrapNestedRefs } from 'vue';
+import { shallowRef, type UnwrapNestedRefs } from 'vue';
 import type {
   AgentEvent,
   UiBinding,
@@ -28,6 +30,8 @@ import type {
 export interface AgentConfig {
   enabled: boolean;
   uiEnabled?: boolean;
+  spatialFocusEnabled?: boolean;
+  businessWriteEnabled?: boolean;
   dynamicSkillsEnabled?: boolean;
   defaultHistoryHours: number;
   maxHistoryHours: number;
@@ -42,6 +46,7 @@ interface SessionDetail {
   snapshotCursor?: string;
 }
 interface TaskDetail {
+  focusResult?: AgentFocusResult | null;
   task: AgentTask;
   results: AnalysisResult[];
   steps: AgentStep[];
@@ -73,6 +78,10 @@ export interface CurrentAgentReply {
   status: CurrentAgentReplyStatus;
   error: string;
   createdAt: string;
+  readable?: boolean;
+  focusCommandDriven?: boolean;
+  focus?: AgentFocusResult | null;
+  inputRevision?: number;
 }
 export const agentStatusLabel: Record<AgentTask['status'], string> = {
   awaiting_input: '等待补充',
@@ -226,6 +235,20 @@ export function useAgentConversation(
   const error = computed(() => sendError.value || operationError.value || pollingError.value);
   const submittedMessageId = ref('');
   const currentRequest = ref<Omit<CurrentAgentReply, 'assistant'> | null>(null);
+  const currentFocus = shallowRef<AgentFocusResult | null>(null);
+  function displayFocus(response: TaskDetail) {
+    const request = currentRequest.value;
+    if (
+      replyDismissed.value ||
+      !request ||
+      response.task.id !== request.taskId ||
+      response.task.sessionId !== request.sessionId
+    )
+      return;
+    const latest = tasks.value.find((item) => item.id === request.taskId);
+    if (latest && (latest.inputRevision ?? 0) !== (response.task.inputRevision ?? 0)) return;
+    currentFocus.value = focusFromTask(response);
+  }
   const replyDismissed = ref(false);
   const replyReadable = ref(true);
   const currentReply = computed<CurrentAgentReply | null>(() => {
@@ -246,6 +269,15 @@ export function useAgentConversation(
     return {
       ...request,
       assistant,
+      readable: replyReadable.value,
+      focusCommandDriven: config.value?.uiEnabled === true && !!task?.uiBinding,
+      inputRevision: task?.inputRevision ?? 0,
+      focus:
+        currentFocus.value?.taskId === request.taskId &&
+        currentFocus.value?.sessionId === request.sessionId &&
+        currentFocus.value?.inputRevision === (task?.inputRevision ?? 0)
+          ? currentFocus.value
+          : null,
       status: task?.status ?? request.status,
       error: request.error || pollingError.value || task?.error || '',
     };
@@ -301,6 +333,7 @@ export function useAgentConversation(
     messages.value = [];
     tasks.value = [];
     detail.value = null;
+    currentFocus.value = null;
     inputRequests.value = [];
     openInputId.value = '';
     inputError.value = '';
@@ -337,6 +370,7 @@ export function useAgentConversation(
     detailGeneration++;
     detailLoading.value = false;
     replyReadable.value = false;
+    currentFocus.value = null;
     messages.value = [];
     detail.value = null;
     pollingError.value = message;
@@ -423,6 +457,7 @@ export function useAgentConversation(
         detail.value = response;
         displayHeatmap(response);
         displayTracks(response);
+        displayFocus(response);
       }
     } catch (e) {
       if (current(turn) && request === detailGeneration) hideCachedReply((e as Error).message);
@@ -447,7 +482,7 @@ export function useAgentConversation(
       if (selected) await loadTask(selected.id, true);
       const liveId = currentRequest.value?.taskId;
       if (
-        (heatmapTicket !== undefined || tracksTicket !== undefined) &&
+        (heatmapTicket !== undefined || tracksTicket !== undefined || !!currentRequest.value) &&
         liveId &&
         liveId !== selected?.id
       ) {
@@ -455,6 +490,7 @@ export function useAgentConversation(
         if (current(turn) && epoch === readEpoch) {
           displayHeatmap(live);
           displayTracks(live);
+          displayFocus(live);
         }
       }
       return current(turn) && epoch === readEpoch;

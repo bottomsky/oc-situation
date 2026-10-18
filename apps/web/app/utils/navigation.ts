@@ -12,7 +12,10 @@ const groups: NavigationGroup[] = [
     id: 'chart',
     label: '海图态势',
     icon: 'i-lucide-anchor',
-    links: [{ path: '/', label: '船位海图' }],
+    links: [
+      { path: '/', label: '船位海图' },
+      { path: '/routes', label: '计划航线' },
+    ],
   },
   {
     id: 'ais',
@@ -27,6 +30,7 @@ const groups: NavigationGroup[] = [
     links: [
       { path: '/topics', label: '分析专题' },
       { path: '/intelligence', label: '情报公告' },
+      { path: '/events', label: '事件中心' },
       { path: '/skills', label: '我的技能' },
     ],
   },
