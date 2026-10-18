@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { AgentQueryResult } from '../../packages/contracts/agent';
 import { z } from 'zod';
 import {
   AgentVesselHighlightsResultSchema,
@@ -64,7 +65,21 @@ export async function executeMapSkill(
       if (saved) await validateRestoredSkill(skillId, context, ports, options);
       else {
         const capability = await bindBusinessCapability(skillId, context, ports, options);
-        const registry = createBusinessToolRegistry(context, ports, options.signal);
+        let vesselSnapshot: AgentQueryResult | undefined;
+        const registry = createBusinessToolRegistry(
+          context,
+          {
+            ...ports,
+            queryVessels: ports.queryVessels
+              ? async (kind, selection) => {
+                  const result = await ports.queryVessels!(kind, selection);
+                  vesselSnapshot = result;
+                  return result;
+                }
+              : undefined,
+          },
+          options.signal,
+        );
         const execute = capability.executor([registry.get(toolId).tool]);
         const input =
           kind === 'map_camera' && preparedHighlights
@@ -94,6 +109,11 @@ export async function executeMapSkill(
               }
             : {};
         const result = await abortable(execute(toolId, 'query', input), controller.signal);
+        if (
+          vesselSnapshot &&
+          !(await ports.saveStep('map_vessel_snapshot', '地图对象快照', vesselSnapshot))
+        )
+          return;
         saved = savedSchema.parse({ artifactRef: randomUUID(), payload: result.local });
         if (!(await ports.active()) || !(await ports.saveStep(stepId, skillId, saved))) return;
       }
@@ -119,7 +139,7 @@ export async function executeMapSkill(
     }
     await ports.finish({
       status: 'completed',
-      summary: `${preparedHighlights?.operation === 'clear' ? '已清除指定船舶高亮' : intent === 'map_camera' ? '海图镜头已调整' : selection.highlightAndFocus ? '船舶已高亮并聚焦' : '船舶已高亮，水波将跟随最新 AIS 船位，直到本页主动清除'}。${missingMmsis.length ? `以下船舶缺少有效船位，未高亮：${missingMmsis.join('、')}。` : ''}`,
+      summary: `${preparedHighlights?.operation === 'clear' ? '已清除指定船舶高亮' : intent === 'map_camera' ? '海图镜头已调整' : selection.highlightAndFocus ? '船舶已高亮并聚焦' : '船舶已高亮，高亮标记将跟随最新 AIS 船位，直到本页主动清除'}。${missingMmsis.length ? `以下船舶缺少有效船位，未高亮：${missingMmsis.join('、')}。` : ''}`,
     });
   } catch (error) {
     const candidate =

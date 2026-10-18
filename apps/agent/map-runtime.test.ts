@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { executeAgent, type RuntimeContext, type RuntimePorts } from './runtime';
 import { AgentTaskSchema } from '../../packages/contracts/agent';
+import { focusFromContext } from './focus-runtime';
 
 function setup() {
   const now = new Date().toISOString();
@@ -166,6 +167,18 @@ describe('builtin map skills', () => {
     expect(context.steps.find((s) => s.key === 'map_map_camera')?.output).toMatchObject({
       payload: { request: { mode: 'point', center: [120, 30], zoom: 8 } },
     });
+  });
+  it('persists the vessel camera snapshot so the resumed reply stays attached without another position lookup', async () => {
+    const { context, ports, statuses } = setup();
+    context.task.intent = 'map_camera';
+    await executeAgent(context, ports, { apiKey: '' });
+    statuses.set('map_map_camera', 'succeeded');
+    context.queryResult = null;
+    await executeAgent(context, ports, { apiKey: '' });
+    const focus = await focusFromContext(context, {} as RuntimePorts);
+    expect(focus.targets[0]?.ref).toEqual({ kind: 'vessel', id: '123456789' });
+    expect(focus.targets[0]?.geometry).toEqual({ type: 'Point', coordinates: [120, 30] });
+    expect(ports.queryVessels).toHaveBeenCalledTimes(1);
   });
   it('clears only the displayed task group chosen by index', async () => {
     const { context, ports } = setup();

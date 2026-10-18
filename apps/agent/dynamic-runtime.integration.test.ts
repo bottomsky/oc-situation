@@ -191,7 +191,7 @@ describe('dynamic host, Pi and durable PostgreSQL task composition', () => {
     }
   });
 
-  it('creates and resumes the same task through two UI receipts, then reuses the skill without a model', async () => {
+  it('creates and resumes the same task through three UI receipts, then reuses the skill without a model', async () => {
     const session = await createAgentSession(infra, owner, '动态组合验收');
     const state = UiStateSchema.parse({
       sequence: 1,
@@ -212,6 +212,14 @@ describe('dynamic host, Pi and durable PostgreSQL task composition', () => {
           open: false,
           visible: false,
           actions: ['show', 'close'],
+        },
+        {
+          id: 'chart.focus',
+          version: 1,
+          mounted: true,
+          open: false,
+          visible: false,
+          actions: ['show', 'close', 'focus'],
         },
       ],
     });
@@ -249,7 +257,24 @@ describe('dynamic host, Pi and durable PostgreSQL task composition', () => {
       expect(command).not.toBeNull();
       const claimed = await claimUiCommand(infra, owner, command.id, binding);
       expect(claimed.artifactRef).toBeTruthy();
-      expect(stepId === 'tracks' ? claimed.tracksPresentation : claimed.presentation).toBeTruthy();
+      expect(
+        stepId === 'tracks'
+          ? claimed.tracksPresentation
+          : stepId === 'map_map_focus'
+            ? claimed.focusPresentation
+            : claimed.presentation,
+      ).toBeTruthy();
+      if (stepId === 'map_map_focus') {
+        expect(claimed.focusPresentation).toMatchObject({
+          taskId,
+          inputRevision: 0,
+          displayStatus: 'complete',
+          targets: expect.arrayContaining([
+            expect.objectContaining({ ref: { kind: 'vessel', id: cargo } }),
+            expect.objectContaining({ ref: { kind: 'track', id: cargo } }),
+          ]),
+        });
+      }
       const receipt = {
         ...binding,
         claimToken: claimed.claimToken!,
@@ -267,12 +292,23 @@ describe('dynamic host, Pi and durable PostgreSQL task composition', () => {
       component.version++;
       component.open = true;
       component.visible = true;
-      await receiptUiCommand(infra, owner, claimed.id, {
-        ...receipt,
-        receiptId: randomUUID(),
-        status: 'succeeded',
-        state: structuredClone(state),
-      });
+      if (stepId === 'map_map_focus') {
+        component.focusEvidence = {
+          artifactRef: claimed.artifactRef!,
+          taskId,
+          version: claimed.focusPresentation!.version,
+          inputRevision: claimed.focusPresentation!.inputRevision,
+          displayStatus: claimed.focusPresentation!.displayStatus,
+        };
+      }
+      expect(
+        await receiptUiCommand(infra, owner, claimed.id, {
+          ...receipt,
+          receiptId: randomUUID(),
+          status: 'succeeded',
+          state: structuredClone(state),
+        }),
+      ).toEqual({ status: 'succeeded' });
     };
     const sent = await submitAgentMessage(infra, owner, session.id, randomUUID(), input);
     expect(sent.task).toMatchObject({ intent: 'skill', status: 'queued' });
@@ -289,7 +325,20 @@ describe('dynamic host, Pi and durable PostgreSQL task composition', () => {
     expect((await getDynamicSkillExecution(infra, owner, sent.task.id))?.calls).toHaveLength(3);
     await acknowledge(sent.task.id, 'heatmap');
     await processAgentTask(infra, sent.task.id, options, 'after-second-restart');
-    expect((await getAgentTaskContext(infra, sent.task.id))?.task.status).toBe('completed');
+    expect((await getAgentTaskContext(infra, sent.task.id))?.task.status).toBe('waiting_ui');
+    await acknowledge(sent.task.id, 'map_map_focus');
+    await processAgentTask(infra, sent.task.id, options, 'after-focus-restart');
+    const completed = await getAgentTaskContext(infra, sent.task.id);
+    expect(completed?.task.status, JSON.stringify(completed?.task)).toBe('completed');
+    expect(
+      Number(
+        (
+          await infra.pool.query('SELECT count(*) FROM agent_ui_commands WHERE task_id=$1', [
+            sent.task.id,
+          ])
+        ).rows[0].count,
+      ),
+    ).toBe(3);
     expect(requests).toBe(1);
     expect((await listOwnedSkills(infra, owner)).items).toHaveLength(1);
     const next = await submitAgentMessage(infra, owner, session.id, randomUUID(), {
@@ -314,7 +363,19 @@ describe('dynamic host, Pi and durable PostgreSQL task composition', () => {
     await processAgentTask(infra, next.task.id, options, 'reuse-tracks');
     await acknowledge(next.task.id, 'heatmap');
     await processAgentTask(infra, next.task.id, options, 'reuse-heatmap');
+    expect((await getAgentTaskContext(infra, next.task.id))?.task.status).toBe('waiting_ui');
+    await acknowledge(next.task.id, 'map_map_focus');
+    await processAgentTask(infra, next.task.id, options, 'reuse-focus');
     expect((await getAgentTaskContext(infra, next.task.id))?.task.status).toBe('completed');
+    expect(
+      Number(
+        (
+          await infra.pool.query('SELECT count(*) FROM agent_ui_commands WHERE task_id=$1', [
+            next.task.id,
+          ])
+        ).rows[0].count,
+      ),
+    ).toBe(3);
     expect(requests).toBe(1);
     expect(reused.calls[0]!.callId).not.toBe(first.calls[0]!.callId);
   });

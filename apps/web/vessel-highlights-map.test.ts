@@ -80,33 +80,46 @@ it('共享时钟最多30fps，后台暂停且恢复不计隐藏时长，静态�
   animation.dispose();
 });
 
-it('三次600ms提醒结束后转为2秒水波，逐船feature-state不修改数据源', () => {
+it('先400ms由大收拢，再连续闪烁三次，完成后保留静态环且停止动画帧', () => {
   let callback!: FrameRequestCallback;
   const map = { setFeatureState: vi.fn() };
-  const animation = createHighlightAnimation(map, {
-    request: (cb) => {
+  const frames = {
+    request: vi.fn((cb: FrameRequestCallback) => {
       callback = cb;
       return 1;
-    },
-    cancel: () => {},
-  });
+    }),
+    cancel: vi.fn(),
+  };
+  const animation = createHighlightAnimation(map, frames);
   animation.targets(
     Array.from({ length: 100 }, (_, i) => ({ mmsi: String(413000001 + i), startedAt: 0 })),
   );
   animation.update({ active: true, hidden: false, reduced: false });
   callback(0);
   expect(map.setFeatureState).toHaveBeenCalledTimes(100);
-  for (const time of [600, 1200]) {
+  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ radius: 42 });
+  callback(200);
+  const midway = map.setFeatureState.mock.calls.at(-1)?.[1].radius;
+  expect(midway).toBeGreaterThan(16);
+  expect(midway).toBeLessThan(42);
+  for (const time of [400, 1000, 1600]) {
     callback(time);
     expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({
-      radius: 10,
+      radius: 16,
+      strokeOpacity: 0.95,
       alertOpacity: 1,
     });
+    callback(time + 300);
+    expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ strokeOpacity: 0.18 });
   }
-  callback(1800);
-  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ radius: 10, alertOpacity: 0 });
-  callback(2800);
-  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ radius: 22, alertOpacity: 0 });
+  const scheduled = frames.request.mock.calls.length;
+  callback(2200);
+  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({
+    radius: 16,
+    strokeOpacity: 0.65,
+    alertOpacity: 0,
+  });
+  expect(frames.request).toHaveBeenCalledTimes(scheduled);
   animation.dispose();
 });
 
@@ -127,4 +140,36 @@ it('专用未聚合源可重复恢复，持续波纹通过共享时钟更新而�
   expect(map.addSource).toHaveBeenCalledTimes(1);
   expect(map.addSource.mock.calls[0]?.[0]).toBe('vessel-highlights');
   expect(map.addLayer).toHaveBeenCalledTimes(4);
+});
+
+it('结束时不足一帧节流间隔也绘制静态状态，旧船位更新不重播，新effect继续播放', () => {
+  let callback!: FrameRequestCallback;
+  const frames = {
+    request: vi.fn((cb: FrameRequestCallback) => {
+      callback = cb;
+      return 1;
+    }),
+    cancel: vi.fn(),
+  };
+  const map = { setFeatureState: vi.fn() };
+  const animation = createHighlightAnimation(map, frames);
+  const existing = { mmsi: '413000001', startedAt: 0 };
+  animation.targets([existing]);
+  animation.update({ active: true, hidden: false, reduced: false });
+  callback(0);
+  callback(2190);
+  callback(2200);
+  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({
+    radius: 16,
+    strokeOpacity: 0.65,
+    alertOpacity: 0,
+  });
+  const count = frames.request.mock.calls.length;
+  animation.targets([{ ...existing }]);
+  animation.update({ active: true, hidden: false, reduced: false });
+  expect(frames.request).toHaveBeenCalledTimes(count);
+  animation.targets([{ mmsi: existing.mmsi, startedAt: animation.now() }]);
+  callback(10000);
+  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ radius: 42 });
+  animation.dispose();
 });

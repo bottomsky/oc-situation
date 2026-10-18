@@ -117,41 +117,57 @@ export function createHighlightAnimation(
   let previous: number | undefined;
   let lastPaint = -Infinity;
   let targets: { mmsi: string; startedAt: number }[] = [];
+  const duration = 2200;
+  const animating = () => targets.some((target) => clock - target.startedAt < duration);
   const paint = () => {
     for (const target of targets) {
       const elapsed = Math.max(0, clock - target.startedAt);
-      const initial = elapsed < 1800;
-      const phase = initial ? (elapsed % 600) / 600 : ((elapsed - 1800) % 2000) / 2000;
+      const initial = !reduced && elapsed < duration;
+      const contracting = initial && elapsed < 400;
+      const phase = ((elapsed - 400) % 600) / 600;
       map.setFeatureState(
         { source: 'vessel-highlights', id: target.mmsi },
         {
-          radius: reduced ? 16 : 10 + phase * 24,
-          strokeWidth: initial && !reduced ? 3 : 2,
-          strokeOpacity: reduced ? 0.65 : (1 - phase) * 0.95,
-          alertOpacity: initial && !reduced ? 1 : 0,
+          radius: contracting ? 16 + 26 * (1 - elapsed / 400) ** 2 : 16,
+          strokeWidth: initial ? 3 : 2,
+          strokeOpacity: !initial ? 0.65 : contracting ? 0.95 : phase < 0.5 ? 0.95 : 0.18,
+          alertOpacity: initial && (contracting || phase < 0.5) ? 1 : 0,
         },
       );
     }
   };
   const schedule = () => {
-    if (active && !hidden && !reduced && frame === undefined) frame = frames.request(tick);
+    if (active && !hidden && !reduced && animating() && frame === undefined)
+      frame = frames.request(tick);
   };
   const tick = (now: number) => {
     frame = undefined;
     if (!active || hidden || reduced) return;
     if (previous !== undefined) clock += now - previous;
     previous = now;
-    if (clock - lastPaint >= 1000 / 30) {
+    if (clock - lastPaint >= 1000 / 30 || !animating()) {
       paint();
       lastPaint = clock;
     }
     schedule();
+    if (frame === undefined) previous = undefined;
   };
   return {
     now: () => clock,
     targets(next: { mmsi: string; startedAt: number }[]) {
+      if (
+        next.some(
+          (candidate) =>
+            !targets.some(
+              (target) =>
+                target.mmsi === candidate.mmsi && target.startedAt === candidate.startedAt,
+            ),
+        )
+      )
+        lastPaint = -Infinity;
       targets = next;
-      if (reduced) paint();
+      if (reduced || !animating()) paint();
+      schedule();
     },
     update(next: { active: boolean; hidden: boolean; reduced: boolean }) {
       active = next.active;

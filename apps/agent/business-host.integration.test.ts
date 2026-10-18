@@ -1007,6 +1007,183 @@ describe('trusted business host PostgreSQL recovery', () => {
       expect(completed.task.summary).toContain('尚无位置');
     },
   );
+  it('preserves a located business focus through the real worker completed hook', async () => {
+    const priorUi = process.env.AGENT_UI_ENABLED;
+    process.env.AGENT_UI_ENABLED = 'false';
+    try {
+      const session = await createAgentSession(infra, ownerId, 'located business focus');
+      const sent = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), {
+        content: '创建事件 标题：有位置的回复关联 坐标：121,30',
+        historyHours: 24,
+      });
+      await processAgentTask(infra, sent.task.id, { apiKey: 'unused' }, 'located-business-worker');
+      const result = (await getAgentTaskContext(infra, sent.task.id))!;
+      expect(result.task.status).toBe('completed');
+      const business = result.artifacts.find((artifact) => artifact.kind === 'operational_event')!
+        .payload as { event: { id: string; revision: number } };
+      const focus = result.artifacts.find((artifact) => artifact.kind === 'map_focus')!.payload;
+      expect(result.focusResult).toEqual(focus);
+      expect(result.focusResult).toMatchObject({
+        displayStatus: 'complete',
+        targets: [
+          {
+            ref: { kind: 'event', id: business.event.id, revision: business.event.revision },
+            geometry: { type: 'Point', coordinates: [121, 30] },
+          },
+        ],
+      });
+    } finally {
+      if (priorUi === undefined) delete process.env.AGENT_UI_ENABLED;
+      else process.env.AGENT_UI_ENABLED = priorUi;
+    }
+  });
+  it('reuses the successful dynamic focus receipt without queueing a second focus display', async () => {
+    const priorDynamic = process.env.AGENT_DYNAMIC_SKILLS_ENABLED;
+    const priorUi = process.env.AGENT_UI_ENABLED;
+    process.env.AGENT_DYNAMIC_SKILLS_ENABLED = 'true';
+    process.env.AGENT_UI_ENABLED = 'true';
+    try {
+      const event = await createOperationalEvent(
+        infra,
+        CreateOperationalEventSchema.parse({
+          operationId: randomUUID(),
+          title: '动态关注回复',
+          geometry: { type: 'Point', coordinates: [121, 30] },
+        }),
+        { id: ownerId, role: 'operator' },
+      );
+      const definition = DynamicSkillDefinitionSchema.parse({
+        schemaVersion: 1,
+        name: `focus-once-${randomUUID()}`,
+        description: '展示本轮对象关注',
+        body: '使用宿主可信对象并等待真实绘制回执。',
+        requiredInputs: [],
+        toolIds: ['prepare_map_focus'],
+        steps: [
+          {
+            id: 'object_focus',
+            toolId: 'prepare_map_focus',
+            input: { selection: { $ref: 'input.selection' } },
+            artifactKind: 'map_focus',
+            ui: { componentId: 'chart.focus', action: 'show' },
+          },
+        ],
+        expectedArtifacts: [{ stepId: 'object_focus', kind: 'map_focus' }],
+        requiredDisplays: ['object_focus'],
+      });
+      const published = await publishOwnedSkill(infra, ownerId, {
+        operationId: randomUUID(),
+        expectedCatalogRevision: (await listOwnedSkills(infra, ownerId)).catalogRevision,
+        definition,
+      });
+      const session = await createAgentSession(infra, ownerId, 'dynamic focus once');
+      const state = UiStateSchema.parse({
+        sequence: 1,
+        route: '/',
+        components: [
+          {
+            id: 'chart.focus',
+            version: 1,
+            mounted: true,
+            open: false,
+            visible: false,
+            actions: ['show', 'close', 'focus'],
+          },
+        ],
+      });
+      const binding = await updateUiState(
+        infra,
+        ownerId,
+        await registerUiClient(infra, ownerId, randomUUID()),
+        session.id,
+        state,
+      );
+      const noReference = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), {
+        content: '执行空间关注',
+        historyHours: 24,
+        skillRef: { skillId: published.skill.skillId },
+        mapContext: {
+          bbox: [120, 29, 122, 31],
+          capturedAt: new Date().toISOString(),
+          selectedTargets: [{ kind: 'event', id: event.id, revision: event.revision }],
+        },
+      });
+      expect(noReference.task.selection?.focusTargets).toBeUndefined();
+      const sent = await submitAgentMessage(infra, ownerId, session.id, randomUUID(), {
+        content: '关注选中事件',
+        historyHours: 24,
+        skillRef: { skillId: published.skill.skillId },
+        uiBinding: binding,
+        mapContext: {
+          bbox: [120, 29, 122, 31],
+          capturedAt: new Date().toISOString(),
+          selectedTargets: [{ kind: 'event', id: event.id, revision: event.revision }],
+        },
+      });
+      const options = { apiKey: 'unused', dynamicSkillsEnabled: true };
+      await processAgentTask(infra, sent.task.id, options, 'dynamic-focus-first');
+      const command = (await getUiTaskCommand(infra, sent.task.id, 0, 'object_focus'))!;
+      expect(command).not.toBeNull();
+      const claimed = await claimUiCommand(infra, ownerId, command.id, binding);
+      const common = {
+        ...binding,
+        stepId: 'object_focus',
+        artifactRef: claimed.artifactRef,
+        claimToken: claimed.claimToken!,
+      };
+      await receiptUiCommand(infra, ownerId, command.id, {
+        ...common,
+        receiptId: randomUUID(),
+        status: 'executing',
+        state,
+      });
+      state.sequence++;
+      Object.assign(state.components[0]!, {
+        version: 2,
+        open: true,
+        visible: true,
+        focusEvidence: {
+          artifactRef: claimed.artifactRef,
+          taskId: sent.task.id,
+          version: 0,
+          inputRevision: 0,
+          displayStatus: 'complete',
+        },
+      });
+      await receiptUiCommand(infra, ownerId, command.id, {
+        ...common,
+        receiptId: randomUUID(),
+        status: 'succeeded',
+        state,
+      });
+      await processAgentTask(infra, sent.task.id, options, 'dynamic-focus-resume');
+      const result = (await getAgentTaskContext(infra, sent.task.id))!;
+      expect(result.task.status, JSON.stringify(result.task)).toBe('completed');
+      expect(result.focusResult?.targets[0]?.ref).toMatchObject({
+        kind: 'event',
+        id: event.id,
+        revision: event.revision,
+      });
+      expect(await getUiTaskCommand(infra, sent.task.id, 0, 'map_map_focus')).toBeNull();
+      expect(
+        Number(
+          (
+            await pool.query('SELECT count(*) FROM agent_ui_commands WHERE task_id=$1', [
+              sent.task.id,
+            ])
+          ).rows[0].count,
+        ),
+      ).toBe(1);
+    } finally {
+      for (const [key, value] of [
+        ['AGENT_DYNAMIC_SKILLS_ENABLED', priorDynamic],
+        ['AGENT_UI_ENABLED', priorUi],
+      ] as const) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
   it('completes business writes without queueing invisible focus commands when spatial focus is disabled', async () => {
     const prior = process.env.AGENT_SPATIAL_FOCUS_ENABLED;
     process.env.AGENT_SPATIAL_FOCUS_ENABLED = 'false';

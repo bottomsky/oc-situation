@@ -293,6 +293,33 @@ const waitingText = computed(() => {
 .compact .reply-card-footer {
   display: none;
 }
+.compact .reply-card-heading {
+  gap: 8px;
+  padding: 5px 10px;
+}
+.compact .holographic-avatar {
+  width: 28px;
+  height: 32px;
+  flex: 0 0 28px;
+}
+.compact .reply-card-title h2 {
+  margin-bottom: 2px;
+  font-size: 12px;
+  line-height: 14px;
+}
+.compact .reply-card-meta {
+  font-size: 10px;
+  line-height: 12px;
+}
+.compact .reply-card-close {
+  padding: 4px;
+}
+.compact .reply-expand {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  font-size: 10px;
+  line-height: 14px;
+}
 .reply-expand {
   border: 0;
   background: transparent;

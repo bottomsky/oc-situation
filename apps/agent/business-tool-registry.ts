@@ -119,7 +119,10 @@ export function createBusinessToolRegistry(
     context.task.intent === 'vessel_detail' || selection.purpose === 'vessel_detail';
   const mapVessels = async (input: z.infer<typeof inputSchema>) => {
     const scope = scoped(input);
-    if (input.vessels) return input.vessels;
+    if (input.vessels) {
+      context.queryResult = input.vessels;
+      return input.vessels;
+    }
     if (!ports.queryVessels) throw new Error('configuration');
     const explicit =
       scope.mmsis?.length ||
@@ -139,6 +142,7 @@ export function createBusinessToolRegistry(
       !/全部|所有|这些|多艘/.test(context.task.goal)
     )
       throw new Error('ambiguous_vessels');
+    context.queryResult = result;
     return result;
   };
   add(

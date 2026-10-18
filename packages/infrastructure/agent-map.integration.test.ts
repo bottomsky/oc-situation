@@ -54,6 +54,14 @@ describe('trusted builtin map artifacts and page group ownership', () => {
           actions: ['focus'],
           cameraState: { center: [120, 30], zoom: 7, bbox: [119, 29, 121, 31] },
         },
+        {
+          id: 'chart.focus',
+          version: 1,
+          mounted: true,
+          open: false,
+          visible: false,
+          actions: ['show', 'close', 'focus'],
+        },
       ],
     });
   beforeAll(async () => {
@@ -165,6 +173,66 @@ describe('trusted builtin map artifacts and page group ownership', () => {
     p.state = after;
     return result;
   }
+  it('restores the highlighted object snapshot and confirms its reply focus after a new worker resumes', async () => {
+    const p = await page(),
+      q = await queue(p);
+    const claimed = await claimUiCommand(infra, owner, q.id, p.binding);
+    const after = structuredClone(p.state);
+    after.sequence++;
+    Object.assign(after.components[0]!, {
+      version: 2,
+      open: true,
+      visible: true,
+      highlightGroups: [{ groupId: q.artifactRef, taskId: q.task.id, mmsis: ['123456789'] }],
+      highlightEvidence: {
+        artifactRef: q.artifactRef,
+        groups: [{ groupId: q.artifactRef, taskId: q.task.id, mmsis: ['123456789'] }],
+      },
+    });
+    expect(await acknowledge(p, claimed, after)).toEqual({ status: 'succeeded' });
+    await processAgentTask(infra, q.task.id, { apiKey: '' }, 'highlight-reply-resume');
+    const waiting = (await getAgentTaskContext(infra, q.task.id))!;
+    expect(waiting.task.status).toBe('waiting_ui');
+    expect(waiting.focusResult).toMatchObject({
+      displayStatus: 'complete',
+      targets: [
+        {
+          ref: { kind: 'vessel', id: '123456789' },
+          geometry: { type: 'Point', coordinates: [120, 30] },
+          source: 'highlight-snapshot',
+        },
+      ],
+    });
+    const command = (await getUiTaskCommand(infra, q.task.id, 0, 'map_map_focus'))!;
+    const focus = await claimUiCommand(infra, owner, command.id, p.binding);
+    expect(focus.focusPresentation).toEqual(waiting.focusResult);
+    const focused = structuredClone(p.state);
+    focused.sequence++;
+    Object.assign(focused.components[2]!, {
+      version: 2,
+      open: true,
+      visible: true,
+      focusEvidence: {
+        artifactRef: focus.artifactRef,
+        taskId: q.task.id,
+        version: 0,
+        inputRevision: 0,
+        displayStatus: 'complete',
+      },
+    });
+    expect(await acknowledge(p, focus, focused)).toEqual({ status: 'succeeded' });
+    await processAgentTask(infra, q.task.id, { apiKey: '' }, 'highlight-reply-complete');
+    expect((await getAgentTaskContext(infra, q.task.id))?.task.status).toBe('completed');
+    expect(
+      Number(
+        (
+          await infra.pool.query('SELECT count(*) FROM agent_ui_commands WHERE task_id=$1', [
+            q.task.id,
+          ])
+        ).rows[0].count,
+      ),
+    ).toBe(2);
+  });
   it('injects typed artifacts and permits a new session task to clear a verified group on the same document', async () => {
     const p = await page(),
       q = await queue(p);

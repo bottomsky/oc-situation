@@ -27,6 +27,7 @@ import {
   getIntelligenceSourceHealth,
 } from '../../packages/infrastructure/intelligence-search';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { queryAisHeatmap } from '../../packages/infrastructure/heatmap';
 import { getBusinessSkillCatalog } from './business-capabilities';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -356,7 +357,19 @@ export async function processAgentTask(
           task.intent !== 'map_focus' &&
           process.env.AGENT_SPATIAL_FOCUS_ENABLED !== 'false'
         ) {
-          await prepareTaskFocus(context, runtimePorts);
+          const completedContext = await getAgentTaskContext(infra, task.id);
+          if (!completedContext) return false;
+          await prepareTaskFocus(
+            {
+              ...context,
+              ...completedContext,
+              queryResult: completedContext.queryResult ?? context.queryResult,
+              tracksResult: completedContext.tracksResult ?? context.tracksResult,
+              intelligenceResult: completedContext.intelligenceResult ?? context.intelligenceResult,
+              task: boundTask,
+            },
+            runtimePorts,
+          );
           const latestFocusContext = await getAgentTaskContext(infra, task.id);
           const focus = latestFocusContext?.focusResult;
           if (
@@ -365,14 +378,39 @@ export async function processAgentTask(
             process.env.AGENT_UI_ENABLED === 'true' &&
             (focus.targets.length || focus.missing.length)
           ) {
-            const command = await getUiTaskCommand(
+            let command = await getUiTaskCommand(
               infra,
               task.id,
               task.inputRevision ?? 0,
               'map_map_focus',
             );
             if (!command) {
-              const latest = await getAgentTaskContext(infra, task.id);
+              for (const artifact of latestFocusContext.artifacts) {
+                if (
+                  artifact.kind !== 'map_focus' ||
+                  artifact.taskId !== task.id ||
+                  artifact.inputRevision !== (task.inputRevision ?? 0) ||
+                  !isDeepStrictEqual(artifact.payload, focus)
+                )
+                  continue;
+                const displayed = await getUiTaskCommand(
+                  infra,
+                  task.id,
+                  task.inputRevision ?? 0,
+                  artifact.stepId,
+                );
+                if (displayed?.artifactRef === artifact.id) {
+                  command = displayed;
+                  break;
+                }
+              }
+            }
+            if (!command) {
+              let latest = await getAgentTaskContext(infra, task.id);
+              if (!latest?.steps.some((step) => step.key === 'map_map_focus')) {
+                await runtimePorts.saveFocus?.(focus);
+                latest = await getAgentTaskContext(infra, task.id);
+              }
               const saved = latest?.steps.find((s) => s.key === 'map_map_focus')?.output as
                 { artifactRef?: string } | undefined;
               if (saved?.artifactRef)

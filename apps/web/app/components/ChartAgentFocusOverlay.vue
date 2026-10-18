@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AgentFocusResult } from '../../../../packages/contracts/agent-focus';
 import { focusCoordinates } from '../../../../packages/domain/agent-focus';
-import { placeFocusReply, type FocusSide } from '../utils/focusLayout';
+import { focusReplyGuide, placeFocusReply, type FocusSide } from '../utils/focusLayout';
 import type { ChartMapControls } from '../types/chart';
 import type { CurrentAgentReply } from '../composables/useAgentConversation';
 import type { MapResponse } from '@ais/contracts';
@@ -34,7 +34,14 @@ const root = ref<HTMLElement | null>(null),
   labels = ref<SVGGElement | null>(null);
 const compact = ref(false),
   offscreen = ref(false),
-  crowded = ref(false);
+  crowded = ref(false),
+  pageHidden = ref(false),
+  attentionArmed = ref(false);
+const attentionKey = computed(() => key());
+watch(attentionKey, () => (attentionArmed.value = false), { flush: 'sync' });
+function updateVisibility() {
+  pageHidden.value = document.hidden;
+}
 let projectionStamp = '';
 let side: FocusSide | undefined,
   raf = 0,
@@ -158,7 +165,7 @@ function draw() {
     box.top <= view.bottom
       ? box
       : null;
-  const height = Math.min(320, card.value.offsetHeight || 240);
+  const height = card.value.offsetHeight || 240;
   const layout = placeFocusReply(view, visibleBox, 360, height, side);
   const blocked = layout.width < 120;
   if (crowded.value !== blocked) {
@@ -188,25 +195,7 @@ function draw() {
     frame.value.setAttribute('d', d);
   }
   if (guide.value) {
-    let d = '';
-    if (visibleBox && !layout.compact) {
-      const x =
-          layout.side === 'right'
-            ? visibleBox.right + 16
-            : layout.side === 'left'
-              ? visibleBox.left - 16
-              : (visibleBox.left + visibleBox.right) / 2,
-        y =
-          layout.side === 'top'
-            ? visibleBox.top - 16
-            : layout.side === 'bottom'
-              ? visibleBox.bottom + 16
-              : (visibleBox.top + visibleBox.bottom) / 2;
-      const cx = Math.max(layout.left, Math.min(x, layout.left + layout.width)),
-        cy = Math.max(layout.top, Math.min(y, layout.top + height));
-      d = `M${x},${y}L${(x + cx) / 2},${y}L${cx},${cy}`;
-    }
-    guide.value.setAttribute('d', d);
+    guide.value.setAttribute('d', blocked ? '' : focusReplyGuide(visibleBox, layout, height));
   }
   if (focus && hasMapFrame && props.map?.interactionState().ready) {
     const k = key();
@@ -228,6 +217,7 @@ function draw() {
       : outside || blocked
         ? 'partial'
         : focus.displayStatus;
+    if (!blocked && visibleBox && !props.map.interactionState().moving) attentionArmed.value = true;
     const receiptKey = `${k}:${actualStatus}`;
     if (!props.map.interactionState().moving && acknowledged !== receiptKey) {
       acknowledged = receiptKey;
@@ -280,6 +270,8 @@ watch(
   { flush: 'post' },
 );
 onMounted(() => {
+  updateVisibility();
+  document.addEventListener('visibilitychange', updateVisibility);
   unsubscribe = props.map?.onFocusRender(mapRendered);
   focusIntent = props.map?.cameraIntent({ reserveReply: true });
   observer = new ResizeObserver(schedule);
@@ -293,14 +285,29 @@ onBeforeUnmount(() => {
   emit('crowded', false);
   unsubscribe?.();
   observer?.disconnect();
+  document.removeEventListener('visibilitychange', updateVisibility);
   cancelAnimationFrame(raf);
 });
 </script>
 <template>
   <div ref="root" class="chart-focus-overlay" data-testid="chart-focus-overlay">
     <svg class="focus-svg" aria-hidden="true">
-      <g ref="shapes" class="focus-shapes"><path /></g>
-      <path ref="frame" class="focus-frame" />
+      <g
+        :key="`shapes:${attentionKey}`"
+        ref="shapes"
+        class="focus-shapes"
+        :class="{ 'focus-attention': attentionArmed }"
+        :style="{ animationPlayState: pageHidden ? 'paused' : 'running' }"
+      >
+        <path />
+      </g>
+      <path
+        :key="attentionKey"
+        ref="frame"
+        class="focus-frame"
+        :class="{ 'focus-attention': attentionArmed }"
+        :style="{ animationPlayState: pageHidden ? 'paused' : 'running' }"
+      />
       <path ref="guide" class="focus-guide" />
       <g ref="labels" class="focus-labels" />
     </svg>
@@ -368,11 +375,43 @@ onBeforeUnmount(() => {
   stroke-width: 2;
   fill: none;
 }
+.focus-attention {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: focus-acquire 2200ms ease-out both;
+}
+@keyframes focus-acquire {
+  0% {
+    transform: scale(1.65);
+    opacity: 1;
+  }
+  18.18%,
+  45.45%,
+  72.73% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  31.82%,
+  59.09%,
+  86.36% {
+    transform: scale(1);
+    opacity: 0.18;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-attention {
+    animation: none;
+  }
+}
 .focus-guide {
-  stroke: #51bed6;
-  stroke-width: 1;
+  stroke: #77e6f7;
+  stroke-width: 1.5;
   fill: none;
-  stroke-dasharray: 4 3;
+  filter: drop-shadow(0 0 2px #1db9d655);
 }
 .focus-reply-position {
   position: absolute;

@@ -7,6 +7,12 @@ import {
   FOCUS_TARGET_LIMIT,
 } from '../../packages/contracts/agent-focus';
 import { focusBounds } from '../../packages/domain/agent-focus';
+import { AgentVesselHighlightsResultSchema } from '../../packages/contracts/agent-map';
+import { AgentQueryResultSchema } from '../../packages/contracts/agent';
+import { AgentVesselTracksResultSchema } from '../../packages/contracts/vessel-tracks';
+import { AgentIntelligenceResultSchema } from '../../packages/contracts/intelligence-search';
+import { RouteSchema, RoutePlanSchema } from '../../packages/contracts/routes';
+import { OperationalEventSchema } from '../../packages/contracts/operational-events';
 import { UiStateSchema } from '../../packages/contracts/agent-ui';
 import type { RuntimeContext, RuntimePorts, RuntimeOptions } from './runtime';
 
@@ -16,7 +22,23 @@ export async function focusFromContext(
   ports: RuntimePorts,
 ): Promise<AgentFocusResult> {
   const revision = context.task.inputRevision ?? 0;
-  let query = context.queryResult?.inputRevision === revision ? context.queryResult : undefined;
+  const artifacts = (context.artifacts ?? []).filter(
+    (artifact) => artifact.taskId === context.task.id && artifact.inputRevision === revision,
+  );
+  const restored = <T extends { inputRevision?: number }>(schema: {
+    safeParse(value: unknown): { data?: T };
+  }) =>
+    artifacts
+      .map((artifact) => schema.safeParse(artifact.payload).data)
+      .findLast((payload) => payload?.inputRevision === revision);
+  let query =
+    context.queryResult?.inputRevision === revision
+      ? context.queryResult
+      : (restored(AgentQueryResultSchema) ??
+        (context.steps ?? [])
+          .filter((step) => step.key === 'map_vessel_snapshot')
+          .map((step) => AgentQueryResultSchema.safeParse(step.output).data)
+          .findLast((payload) => payload?.inputRevision === revision));
   if (
     !query &&
     context.task.intent === 'map_focus' &&
@@ -31,29 +53,124 @@ export async function focusFromContext(
     context.queryResult = query;
   }
   const tracks =
-    context.tracksResult?.inputRevision === revision ||
-    context.tracksResult?.inputRevision === undefined
+    context.tracksResult &&
+    (context.tracksResult.inputRevision === revision ||
+      context.tracksResult.inputRevision === undefined)
       ? context.tracksResult
-      : undefined;
+      : restored(AgentVesselTracksResultSchema);
+  const intelligence =
+    context.intelligenceResult?.inputRevision === revision
+      ? context.intelligenceResult
+      : restored(AgentIntelligenceResultSchema);
+  const highlights = [
+    ...(context.steps ?? [])
+      .filter((step) => step.key === 'map_vessel_highlights')
+      .map((step) => (step.output as { payload?: unknown } | null)?.payload),
+    ...artifacts
+      .filter((artifact) => artifact.kind === 'vessel_highlights')
+      .map((artifact) => artifact.payload),
+  ]
+    .map((payload) => AgentVesselHighlightsResultSchema.safeParse(payload).data)
+    .filter((payload) => payload?.inputRevision === revision && payload.operation === 'show');
+  const highlighted = new Map(
+    highlights.flatMap((payload) => payload!.vessels).map((vessel) => [vessel.mmsi, vessel]),
+  );
+  const missingHighlighted = new Set(highlights.flatMap((payload) => payload!.missingMmsis));
+  const businessSnapshots = new Map<string, FocusTargetSnapshot>();
+  const businessMissing = new Map<string, FocusTargetRef>();
+  let businessOmittedCount = 0;
+  for (const artifact of artifacts) {
+    if (!['route', 'route_plan', 'operational_event', 'operational_events'].includes(artifact.kind))
+      continue;
+    const payload = artifact.payload;
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) continue;
+    const candidates =
+      artifact.kind === 'route'
+        ? payload.route
+          ? [payload.route]
+          : Array.isArray(payload.routes)
+            ? payload.routes
+            : []
+        : artifact.kind === 'route_plan'
+          ? payload.plan
+            ? [payload.plan]
+            : []
+          : ['operational_event', 'operational_events'].includes(artifact.kind)
+            ? payload.event
+              ? [payload.event]
+              : Array.isArray(payload.items)
+                ? payload.items
+                : []
+            : [];
+    if (typeof payload.total === 'number')
+      businessOmittedCount += Math.max(0, payload.total - candidates.length);
+    for (const candidate of candidates) {
+      const route = artifact.kind === 'route' ? RouteSchema.safeParse(candidate).data : undefined;
+      const plan =
+        artifact.kind === 'route_plan' ? RoutePlanSchema.safeParse(candidate).data : undefined;
+      const event = artifact.kind.startsWith('operational_event')
+        ? OperationalEventSchema.safeParse(candidate).data
+        : undefined;
+      const object = route ?? event ?? plan;
+      if (!object) continue;
+      const ref: FocusTargetRef = {
+        kind: event ? 'event' : 'route',
+        id: object.id,
+        ...('revision' in object ? { revision: object.revision } : {}),
+      };
+      const key = `${ref.kind}:${ref.id}`;
+      const geometry =
+        route?.geometry ??
+        event?.geometry ??
+        (plan?.status === 'completed' ? plan.result?.geometry : undefined);
+      if (!geometry) businessMissing.set(key, ref);
+      else
+        businessSnapshots.set(key, {
+          ref,
+          label: route?.name ?? event?.title ?? '本轮规划航线',
+          geometry,
+          source: 'business-result-snapshot',
+        });
+    }
+  }
   const region = query?.selection?.region ?? context.task.selection?.region;
   const refs: FocusTargetRef[] = context.task.selection?.focusTargets?.length
     ? context.task.selection.focusTargets
-    : [
-        ...(region ? [{ kind: 'region' as const, id: 'task-region' }] : []),
-        ...(tracks?.tracks.map((t) => ({ kind: 'track' as const, id: t.mmsi })) ?? []),
-        ...(query?.items.map((v) => ({ kind: 'vessel' as const, id: v.mmsi })) ?? []),
-        ...(context.intelligenceResult?.inputRevision === revision
-          ? context.intelligenceResult.evidence
-              .filter((e) => e.kind === 'event')
-              .map((e) => ({ kind: 'intelligence' as const, id: e.event.id }))
-          : []),
-        ...(context.results?.map((r) => ({ kind: 'vessel' as const, id: r.mmsi })) ?? []),
-      ];
+    : context.task.selection?.highlightClear ||
+        context.task.selection?.highlightTaskIndex ||
+        context.task.selection?.highlightClearUnclear
+      ? []
+      : [
+          ...(region ? [{ kind: 'region' as const, id: 'task-region' }] : []),
+          ...(tracks?.tracks.map((t) => ({ kind: 'track' as const, id: t.mmsi })) ?? []),
+          ...(query?.items.map((v) => ({ kind: 'vessel' as const, id: v.mmsi })) ?? []),
+          ...[...highlighted.keys(), ...missingHighlighted].map((id) => ({
+            kind: 'vessel' as const,
+            id,
+          })),
+          ...[...businessSnapshots.values()].map((snapshot) => snapshot.ref),
+          ...businessMissing.values(),
+          ...(intelligence
+            ? intelligence.evidence
+                .filter((e) => e.kind === 'event')
+                .map((e) => ({ kind: 'intelligence' as const, id: e.event.id }))
+            : []),
+          ...(context.results?.map((r) => ({ kind: 'vessel' as const, id: r.mmsi })) ?? []),
+        ];
   const unique = [...new Map(refs.map((ref) => [`${ref.kind}:${ref.id}`, ref])).values()];
   const targets: FocusTargetSnapshot[] = [],
     missing: FocusTargetRef[] = [];
   for (const ref of unique.slice(0, FOCUS_TARGET_LIMIT)) {
-    let snapshot: FocusTargetSnapshot | null = null;
+    const businessSnapshot = businessSnapshots.get(`${ref.kind}:${ref.id}`);
+    let snapshot: FocusTargetSnapshot | null =
+      businessSnapshot &&
+      (ref.revision === undefined || ref.revision === businessSnapshot.ref.revision)
+        ? businessSnapshot
+        : null;
+    if (!snapshot && businessMissing.has(`${ref.kind}:${ref.id}`)) {
+      missing.push(ref);
+      continue;
+    }
     if (ref.kind === 'region' && region && query?.regionGeometry) {
       const anchor = query.regionAnchor;
       snapshot = {
@@ -67,9 +184,22 @@ export async function focusFromContext(
       };
     }
     if (ref.kind === 'vessel') {
+      const highlightedVessel = highlighted.get(ref.id);
+      if (highlightedVessel) {
+        snapshot = {
+          ref,
+          label: highlightedVessel.name ?? ref.id,
+          geometry: { type: 'Point', coordinates: [highlightedVessel.lon, highlightedVessel.lat] },
+          observedAt: highlightedVessel.observedAt,
+          source: 'highlight-snapshot',
+        };
+      } else if (missingHighlighted.has(ref.id)) {
+        missing.push(ref);
+        continue;
+      }
       const vessel = query?.items.find((v) => v.mmsi === ref.id);
       const p = vessel?.latestPosition;
-      if (p)
+      if (!snapshot && p)
         snapshot = {
           ref,
           label: vessel.name ?? ref.id,
@@ -77,10 +207,10 @@ export async function focusFromContext(
           observedAt: p.observedAt,
           source: p.sourceId ?? 'vessel-query',
         };
-      else if (vessel) {
+      else if (!snapshot && vessel) {
         missing.push(ref);
         continue;
-      } else {
+      } else if (!snapshot) {
         const analysis = context.results?.find((r) => r.mmsi === ref.id);
         if (analysis?.evidence.ais.length)
           snapshot = {
@@ -137,7 +267,9 @@ export async function focusFromContext(
               ...context,
               task: { ...context.task, selection: { ...context.task.selection, region } },
             }
-          : context,
+          : intelligence
+            ? { ...context, intelligenceResult: intelligence }
+            : context,
       )) ??
       null;
     if (Array.isArray(resolved)) targets.push(...resolved);
@@ -155,6 +287,7 @@ export async function focusFromContext(
     Math.max(0, unique.length - FOCUS_TARGET_LIMIT) +
     Math.max(0, targets.length - FOCUS_TARGET_LIMIT) +
     (context.focusOmittedCount ?? 0) +
+    (inferredTargets ? businessOmittedCount : 0) +
     sourceOmittedCount;
   const displayed = targets.slice(0, FOCUS_TARGET_LIMIT);
   return AgentFocusResultSchema.parse({
@@ -181,6 +314,22 @@ export async function prepareTaskFocus(
   ports: RuntimePorts,
 ): Promise<AgentFocusResult | undefined> {
   if (!ports.resolveFocus && !ports.saveFocus) return;
+  const saved = [
+    context.focusResult,
+    ...(context.steps ?? [])
+      .filter((step) => step.key === 'map_map_focus')
+      .map((step) => (step.output as { payload?: unknown } | null)?.payload),
+  ]
+    .map((payload) => AgentFocusResultSchema.safeParse(payload).data)
+    .find(
+      (payload) =>
+        payload &&
+        payload.taskId === context.task.id &&
+        payload.sessionId === context.task.sessionId &&
+        payload.inputRevision === (context.task.inputRevision ?? 0) &&
+        (payload.targets.length || payload.missing.length),
+    );
+  if (saved) return saved;
   const result = await focusFromContext(context, ports);
   await ports.saveFocus?.(result);
   return result;

@@ -98,7 +98,7 @@ export function getBuiltinCapabilityMetadata(capabilityId: string): CapabilityRo
 export const BUILTIN_SKILL_BINDINGS: readonly SkillToolBinding[] = Object.freeze([
   {
     skillId: 'map-focus',
-    version: '1.0.0',
+    version: '1.0.1',
     adapterVersion: '1',
     toolIds: ['prepare_map_focus'],
     referencePaths: [],
@@ -134,7 +134,7 @@ export const BUILTIN_SKILL_BINDINGS: readonly SkillToolBinding[] = Object.freeze
 
   Object.freeze({
     skillId: 'vessel-highlight',
-    version: '1.0.0',
+    version: '1.0.1',
     adapterVersion: '1',
     toolIds: Object.freeze(['prepare_vessel_highlights']),
     referencePaths: Object.freeze([]),

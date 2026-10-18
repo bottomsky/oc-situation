@@ -6,6 +6,78 @@ import type { AgentInputRequest, AgentIntelligenceResult, AgentSelection } from 
 import { UiCommandSchema, UiStateSchema, UiReceiptSchema } from '@ais/contracts';
 import type { UiState, UiCommand, UiReceipt } from '@ais/contracts';
 
+async function replyConnection(page: Page) {
+  return page.getByTestId('chart-focus-overlay').evaluate((overlay) => {
+    const guide = overlay.querySelector<SVGPathElement>('.focus-guide')!;
+    const frame = overlay.querySelector<SVGPathElement>('.focus-frame')!;
+    const card = overlay.querySelector<HTMLElement>('.focus-reply-position')!;
+    const length = guide.getTotalLength();
+    const frameRect = frame.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const target = {
+      x: frameRect.x + frameRect.width / 2,
+      y: frameRect.y + frameRect.height / 2,
+    };
+    const bounds = { frame: frameRect.toJSON(), card: cardRect.toJSON() };
+    if (!length)
+      return {
+        path: guide.getAttribute('d'),
+        length,
+        targetGap: Infinity,
+        cardGap: Infinity,
+        target,
+        ...bounds,
+        start: null,
+        end: null,
+        separated: false,
+      };
+    const matrix = guide.getScreenCTM()!;
+    const start = guide.getPointAtLength(0).matrixTransform(matrix);
+    const end = guide.getPointAtLength(length).matrixTransform(matrix);
+    const edgeDistance = (point: DOMPoint, rect: DOMRect) => {
+      const x = Math.max(rect.left, Math.min(point.x, rect.right));
+      const y = Math.max(rect.top, Math.min(point.y, rect.bottom));
+      return Math.min(
+        Math.hypot(point.x - rect.left, point.y - y),
+        Math.hypot(point.x - rect.right, point.y - y),
+        Math.hypot(point.x - x, point.y - rect.top),
+        Math.hypot(point.x - x, point.y - rect.bottom),
+      );
+    };
+    return {
+      path: guide.getAttribute('d'),
+      length,
+      targetGap: edgeDistance(start, frameRect),
+      cardGap: edgeDistance(end, cardRect),
+      target,
+      ...bounds,
+      start: { x: start.x, y: start.y },
+      end: { x: end.x, y: end.y },
+      separated:
+        frameRect.right <= cardRect.left ||
+        cardRect.right <= frameRect.left ||
+        frameRect.bottom <= cardRect.top ||
+        cardRect.bottom <= frameRect.top,
+    };
+  });
+}
+
+async function expectConnectedReply(page: Page) {
+  await expect
+    .poll(async () => {
+      const geometry = await replyConnection(page);
+      return {
+        ...geometry,
+        connected:
+          geometry.length >= 23.9 &&
+          geometry.targetGap < 2 &&
+          geometry.cardGap < 2 &&
+          geometry.separated,
+      };
+    })
+    .toMatchObject({ connected: true });
+}
+
 async function agentFixture(
   page: Page,
   options: {
@@ -1596,6 +1668,7 @@ test('空间回复浮卡连接混合对象并在窄屏展开摘要', async ({ pa
   await expect(overlay).toContainText('2 个关注对象');
   await expect(overlay.locator('.focus-frame')).not.toHaveAttribute('d', '');
   await expect(overlay.locator('.focus-guide')).not.toHaveAttribute('d', '');
+  await expectConnectedReply(page);
   await expect(page.locator('.chart-agent-dock .chart-agent-reply-card')).toHaveCount(0);
   await expect(overlay.locator('.holographic-avatar')).toHaveAttribute('data-state', 'completed');
   await page.screenshot({ path: '.data/spatial-e2e-focus-desktop.png', fullPage: true });
@@ -1863,3 +1936,119 @@ for (const manualClose of [false, true])
       await expect(overlay.locator('.focus-frame')).not.toHaveAttribute('d', '');
     }
   });
+
+test('对象关注先收拢再闪烁三次，靠边拖动与紧凑回复仍真实连线', async ({ page }) => {
+  const fixture = await focusCommandFixture(page);
+  await openAgent(page);
+  await expect.poll(fixture.ready).toBe(true);
+  const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
+  await input.fill('关注目标');
+  await input.press('Enter');
+  await expect.poll(fixture.reads).toBeGreaterThanOrEqual(2);
+  fixture.release();
+  await expect.poll(() => fixture.receipts.some((r) => r.status === 'succeeded')).toBe(true);
+  const overlay = page.getByTestId('chart-focus-overlay');
+  const frame = overlay.locator('.focus-frame');
+  await expect(frame).toHaveClass(/focus-attention/);
+  const samples = await frame.evaluate((element) => {
+    const animation = element.getAnimations().find((item) => item instanceof CSSAnimation)!;
+    if (!animation) throw new Error('关注框没有真实浏览器动画');
+    animation.pause();
+    return [0, 200, 400, 700, 1000, 1300, 1600, 1900, 2200, 2600].map((time) => {
+      animation.currentTime = time;
+      const style = getComputedStyle(element);
+      return {
+        time,
+        scale: new DOMMatrixReadOnly(style.transform).a,
+        opacity: Number(style.opacity),
+        duration: animation.effect!.getTiming().duration,
+      };
+    });
+  });
+  expect(samples.every((sample) => sample.duration === 2200)).toBe(true);
+  expect(samples[0]!.scale).toBeCloseTo(1.65, 2);
+  expect(samples[1]!.scale).toBeGreaterThan(1);
+  expect(samples[1]!.scale).toBeLessThan(samples[0]!.scale);
+  expect(samples[2]!.scale).toBeCloseTo(1, 2);
+  for (const time of [700, 1300, 1900])
+    expect(samples.find((sample) => sample.time === time)!.opacity).toBeCloseTo(0.18, 2);
+  for (const time of [400, 1000, 1600, 2200, 2600]) {
+    const sample = samples.find((value) => value.time === time)!;
+    expect(sample.scale).toBeCloseTo(1, 2);
+    expect(sample.opacity).toBeCloseTo(1, 2);
+  }
+  await expectConnectedReply(page);
+  const before = await replyConnection(page);
+  const destination = await page.getByTestId('sea-map').evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const rightPanel = document.querySelector<HTMLElement>('#chart-right-slot .chart-panel');
+    const dock = document.querySelector<HTMLElement>('.chart-agent-dock');
+    return {
+      x: Math.min(rect.right, rightPanel?.getBoundingClientRect().left ?? rect.right) - 48,
+      y: Math.min(rect.bottom, dock?.getBoundingClientRect().top ?? rect.bottom) - 48,
+    };
+  });
+  await page.mouse.move(before.target.x, before.target.y);
+  await page.mouse.down();
+  await page.mouse.move(destination.x, destination.y, { steps: 12 });
+  // Hold at the edge past MapLibre's 160ms inertia window to model stopping before release.
+  await page.waitForTimeout(200);
+  await page.mouse.up();
+  await expect.poll(async () => (await replyConnection(page)).path).not.toBe(before.path);
+  await expect(overlay.locator('.focus-caption')).not.toContainText('视野外');
+  await test.info().attach('focus-after-edge-stop', {
+    body: JSON.stringify(await replyConnection(page), null, 2),
+    contentType: 'application/json',
+  });
+  await expectConnectedReply(page);
+  expect(
+    await frame.evaluate((element) => element.getAnimations()[0]?.currentTime),
+    '拖动或船位投影更新保持本轮已完成动效，不重播',
+  ).toBe(2600);
+  await page.screenshot({ path: test.info().outputPath('focus-near-edge-connected.png') });
+
+  const edge = await replyConnection(page);
+  const map = (await page.getByTestId('sea-map').boundingBox())!;
+  await page.mouse.move(edge.target.x, edge.target.y);
+  await page.mouse.down();
+  // End above the map's 24px safe inset; visibility must not depend on gesture velocity.
+  await page.mouse.move(map.x + 120, map.y + 8, { steps: 12 });
+  await page.mouse.up();
+  await expect(overlay.locator('.focus-caption')).toContainText('视野外');
+  await expect(overlay.locator('.focus-guide')).toHaveAttribute('d', '');
+  await page.screenshot({ path: test.info().outputPath('focus-flung-offscreen.png') });
+  await overlay.getByRole('button', { name: '重新聚焦', exact: true }).click();
+  await expect(overlay.locator('.focus-caption')).not.toContainText('视野外');
+  await expectConnectedReply(page);
+
+  await page.setViewportSize({ width: 600, height: 800 });
+  for (const name of ['折叠操作面板', '关闭协同面板']) {
+    const close = page.getByRole('button', { name, exact: true });
+    if (await close.isVisible()) await close.click();
+  }
+  const refocus = overlay.getByRole('button', { name: '重新聚焦', exact: true });
+  await expect(overlay.getByRole('button', { name: '展开回复', exact: true })).toBeVisible();
+  if (await refocus.isVisible()) await refocus.click();
+  await expectConnectedReply(page);
+  await page.screenshot({ path: test.info().outputPath('focus-compact-connected.png') });
+});
+
+test('减少动态效果时关注框静态显示并保留对象连线', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const fixture = await focusCommandFixture(page);
+  await openAgent(page);
+  await expect.poll(fixture.ready).toBe(true);
+  const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
+  await input.fill('关注目标');
+  await input.press('Enter');
+  await expect.poll(fixture.reads).toBeGreaterThanOrEqual(2);
+  fixture.release();
+  await expect.poll(() => fixture.receipts.some((r) => r.status === 'succeeded')).toBe(true);
+  await expectConnectedReply(page);
+  expect(
+    await page
+      .getByTestId('chart-focus-overlay')
+      .locator('.focus-frame')
+      .evaluate((element) => element.getAnimations().length),
+  ).toBe(0);
+});

@@ -566,9 +566,10 @@ export async function submitAgentMessage(
       }
       selection = bindAgentMapSelection(input.content, selection);
     }
+    const focusIntent = useDynamic ? deriveAgentIntent(input.content).intent : derived.intent;
     if (
       ['map_focus', 'route_plan', 'route_manage', 'event_query', 'event_manage'].includes(
-        derived.intent,
+        focusIntent,
       )
     ) {
       const explicitId = input.content.match(
@@ -610,11 +611,7 @@ export async function submitAgentMessage(
       } else if (/选中|选定|区域|范围/.test(input.content) && input.mapContext?.region) {
         selection.region = input.mapContext.region;
         delete selection.bbox;
-      } else if (
-        derived.intent === 'map_focus' &&
-        /区域|范围/.test(input.content) &&
-        selection.bbox
-      )
+      } else if (focusIntent === 'map_focus' && /区域|范围/.test(input.content) && selection.bbox)
         selection.region = { kind: 'bbox', bbox: selection.bbox };
     }
     if (derived.intent === 'ais_heatmap') {

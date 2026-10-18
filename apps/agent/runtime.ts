@@ -8,6 +8,8 @@ import { executeMapSkill } from './map-runtime';
 import { executeFocusSkill } from './focus-runtime';
 import { executeBusinessRequest } from './business-runtime';
 import type { BusinessToolId } from './business-request';
+import type { DynamicSkillArtifact } from '../../packages/contracts/dynamic-skills';
+import { SPATIAL_PRESENTATION_POLICY } from './spatial-presentation-policy';
 import type {
   AgentFocusResult,
   FocusTargetRef,
@@ -133,6 +135,8 @@ export interface RuntimeOptions {
   dynamicSkillsAllowed?: () => boolean;
 }
 export interface RuntimeContext {
+  focusResult?: AgentFocusResult | null;
+  artifacts?: Pick<DynamicSkillArtifact, 'taskId' | 'inputRevision' | 'kind' | 'payload'>[];
   focusOmittedCount?: number;
   task: AgentTask;
   results: AnalysisResult[];
@@ -308,7 +312,8 @@ export function guardedFetch(
   };
 }
 
-const CONVERSATION_PROMPT = `你是海上多元情报分析系统的中文助手。根据固定语义意图简短自然地回复。
+const CONVERSATION_PROMPT = `${SPATIAL_PRESENTATION_POLICY}
+你是海上多元情报分析系统的中文助手。根据固定语义意图简短自然地回复。
 greeting：礼貌问候，可以简要介绍系统。
 capabilities：依据请求中 capabilities 目录的 description 介绍平台能力，以及已有结果和证据的解释。条件不足时可使用选择框补充区域、船舶和时间，确认后继续同一任务。
 current_time：回复中必须出现且只出现一次独立的 CURRENT_TIME 语义标记。平台会读取服务器时钟，并规范呈现北京时间和时区。你只负责确认时间查询意图；具体时间、日期与星期由平台提供。
