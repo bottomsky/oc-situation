@@ -676,3 +676,61 @@ describe('frozen intelligence tools and privacy gate', () => {
     });
   });
 });
+
+describe('intelligence thinking transport', () => {
+  it.each([undefined, 'off'] as const)(
+    'retains evidence tool loop with %s thinking',
+    async (thinkingLevel) => {
+      const m = setup();
+      const requests: Record<string, unknown>[] = [];
+      await executeAgent(m.context, m.ports, {
+        apiKey: 'fixture',
+        thinkingLevel,
+        fetch: async (_url, init) => {
+          requests.push(JSON.parse(String(init?.body)));
+          return requests.length === 1
+            ? toolReply('search_intelligence')
+            : requests.length === 2
+              ? toolReply('read_intelligence', { reference: 'I1' })
+              : sse(
+                  { reasoning_content: 'PRIVATE REASONING', content: '来源称存在候选公告 [I1]。' },
+                  'stop',
+                );
+        },
+      });
+      expect(m.state.status).toBe('completed');
+      for (const request of requests) {
+        expect(request.thinking).toEqual({
+          type: thinkingLevel === 'off' ? 'disabled' : 'enabled',
+        });
+        expect(request.reasoning_effort).toBe(thinkingLevel === 'off' ? undefined : 'high');
+        expect(request.max_tokens).toBe(thinkingLevel === 'off' ? 1000 : 16384);
+        expect(JSON.stringify(request)).not.toContain('PRIVATE REASONING');
+      }
+      expect(JSON.stringify(m.state)).not.toContain('PRIVATE REASONING');
+    },
+  );
+});
+
+describe('incomplete intelligence thinking responses', () => {
+  it.each(['stop', 'length'])(
+    'thinking-only %s never completes evidence summary',
+    async (finish) => {
+      const m = setup();
+      let calls = 0;
+      await executeAgent(m.context, m.ports, {
+        apiKey: 'fixture',
+        maxModelCalls: 5,
+        fetch: async () =>
+          ++calls === 1
+            ? toolReply('search_intelligence')
+            : calls === 2
+              ? toolReply('read_intelligence', { reference: 'I1' })
+              : sse({ reasoning_content: 'PRIVATE REASONING' }, finish),
+      });
+      expect(m.state.status).toBe('failed');
+      expect(JSON.stringify(m.state)).not.toContain('PRIVATE REASONING');
+      expect(calls).toBeLessThanOrEqual(5);
+    },
+  );
+});

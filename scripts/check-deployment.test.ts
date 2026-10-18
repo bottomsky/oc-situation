@@ -1,6 +1,38 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
 import { documents, validateResources } from './check-deployment.js';
+
+test('ships enabled model thinking with configurable Compose and Kubernetes settings', () => {
+  for (const path of ['../.env.example', '../infra/.env.production.example'])
+    assert.match(
+      readFileSync(new URL(path, import.meta.url), 'utf8'),
+      /^AGENT_THINKING_LEVEL=high$/m,
+    );
+  const compose = documents(
+    readFileSync(new URL('../infra/compose.production.yaml', import.meta.url), 'utf8'),
+  )[0]!;
+  assert.equal(
+    (compose.services as Record<string, { environment: Record<string, string> }>).agent!.environment
+      .AGENT_THINKING_LEVEL,
+    '${AGENT_THINKING_LEVEL:-high}',
+  );
+  const config = documents(
+    readFileSync(new URL('../infra/k8s/bootstrap/config.yaml', import.meta.url), 'utf8'),
+  )[0]!;
+  assert.equal((config.data as Record<string, string>).AGENT_THINKING_LEVEL, 'high');
+  const agent = documents(
+    readFileSync(new URL('../infra/k8s/components/agent/agent.yaml', import.meta.url), 'utf8'),
+  )[0]!;
+  const spec = agent.spec as {
+    template: { spec: { containers: { env: { name: string; valueFrom?: unknown }[] }[] } };
+  };
+  assert.deepEqual(
+    spec.template.spec.containers[0]!.env.find((env) => env.name === 'AGENT_THINKING_LEVEL')
+      ?.valueFrom,
+    { configMapKeyRef: { name: 'ais-config', key: 'AGENT_THINKING_LEVEL' } },
+  );
+});
 
 const fixture = `
 apiVersion: apps/v1

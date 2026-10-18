@@ -119,6 +119,7 @@ export function agentEnvironment(
     enabled: env.AGENT_ENABLED === 'true',
     apiKey: env.DEEPSEEK_API_KEY ?? '',
     model: env.DEEPSEEK_MODEL ?? 'deepseek-flash',
+    thinkingLevel: z.enum(['off', 'high']).parse(env.AGENT_THINKING_LEVEL ?? 'high'),
     maxModelCalls: positive(env.AGENT_MAX_MODEL_CALLS, 12, 100),
     maxToolCalls: positive(env.AGENT_MAX_TOOL_CALLS, 24, 200),
     maxRecords: positive(env.AGENT_MAX_RECORDS, 50000, 100000),

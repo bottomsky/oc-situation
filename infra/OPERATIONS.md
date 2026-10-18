@@ -51,6 +51,8 @@ docker compose --env-file /secure/ais.production.env -f infra/compose.production
 
 动态个人技能另由 `AGENT_DYNAMIC_SKILLS_ENABLED` 控制，默认 `false`。启用时，Docker Compose 的 API 与 Agent 使用同一变量；Kubernetes 修改 `bootstrap/config.yaml` 中共享 ConfigMap 的该值，并滚动更新 API、Agent。升级先执行 020 迁移，再启用开关；关闭开关停止新的动态任务和管理写入，技能版本及已保存任务结果仍可读取。技能正文、版本和执行产物均保存在 PostgreSQL，无需额外文件卷。
 
+模型思考由 Agent 的 `AGENT_THINKING_LEVEL` 控制，默认 `high` 开启，支持 `off` 关闭。Compose 从生产环境文件传入该值；Kubernetes 在 `bootstrap/config.yaml` 的共享 ConfigMap 中配置，并由 Agent 的 `configMapKeyRef` 引用。修改后重新创建 Agent 容器或滚动更新 Agent Deployment 生效。模型思考与工具循环分别管理，具体请求预算见[区域研判智能体](../docs/agent-analysis.md#服务与运行)。当前配置及离线测试可核验请求参数，真实模型质量和延迟需另行联调测评。
+
 启用 Agent 和监控后的完整启动命令如下；profile 参数位于 up 前。仅启用 Agent 时去掉 monitoring 参数。
 
 ```sh

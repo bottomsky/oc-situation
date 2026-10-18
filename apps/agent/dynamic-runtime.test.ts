@@ -46,7 +46,7 @@ const definition: DynamicSkillDefinition = {
     },
   ],
 };
-function sseCandidate(candidate: unknown) {
+function sseCandidate(candidate: unknown, reasoning = false, finish = 'tool_calls') {
   const envelope = {
     id: 'fixture',
     object: 'chat.completion.chunk',
@@ -54,7 +54,7 @@ function sseCandidate(candidate: unknown) {
     model: 'deepseek-flash',
   };
   return new Response(
-    `data: ${JSON.stringify({ ...envelope, choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: 'create', type: 'function', function: { name: 'skills_create', arguments: JSON.stringify({ definition: candidate }) } }] }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ ...envelope, choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }] })}\n\ndata: [DONE]\n\n`,
+    `data: ${JSON.stringify({ ...envelope, choices: [{ index: 0, delta: { ...(reasoning ? { reasoning_content: 'PRIVATE REASONING' } : {}), tool_calls: [{ index: 0, id: 'create', type: 'function', function: { name: 'skills_create', arguments: JSON.stringify({ definition: candidate }) } }] }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ ...envelope, choices: [{ index: 0, delta: {}, finish_reason: finish }] })}\n\ndata: [DONE]\n\n`,
     { headers: { 'content-type': 'text/event-stream' } },
   );
 }
@@ -739,5 +739,58 @@ describe('durable dynamic composition', () => {
     expect(n.counts.finish).toBe('failed');
     expect(n.counts.error).toBe('ui_unknown');
     expect(n.counts.heatmap).toBe(0);
+  });
+});
+
+describe('dynamic thinking transport', () => {
+  it.each([undefined, 'off'] as const)(
+    'publishes tool candidate with %s thinking',
+    async (thinkingLevel) => {
+      const m = fixture(false);
+      const requests: Record<string, unknown>[] = [];
+      await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+        apiKey: 'fixture',
+        dynamicSkillsEnabled: true,
+        thinkingLevel,
+        fetch: async (_url, init) => {
+          requests.push(JSON.parse(String(init?.body)));
+          return sseCandidate(definition, true);
+        },
+      });
+      expect(m.counts).toMatchObject({ models: 1, publish: 1, query: 1 });
+      m.acknowledge('tracks');
+      await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+        apiKey: 'fixture',
+        dynamicSkillsEnabled: true,
+        thinkingLevel,
+      });
+      m.acknowledge('heatmap');
+      await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+        apiKey: 'fixture',
+        dynamicSkillsEnabled: true,
+        thinkingLevel,
+      });
+      expect(m.counts.finish).toBe('completed');
+      expect(requests[0]!.thinking).toEqual({
+        type: thinkingLevel === 'off' ? 'disabled' : 'enabled',
+      });
+      expect(requests[0]!.reasoning_effort).toBe(thinkingLevel === 'off' ? undefined : 'high');
+      expect(requests[0]!.max_tokens).toBe(thinkingLevel === 'off' ? 2500 : 16384);
+      expect(JSON.stringify(m.execution)).not.toContain('PRIVATE REASONING');
+    },
+  );
+});
+
+describe('incomplete dynamic thinking responses', () => {
+  it('never publishes a candidate cut off by the token limit', async () => {
+    const m = fixture(false);
+    await executeDynamicSkill(m.context, m.ports, m.dynamic, {
+      apiKey: 'fixture',
+      dynamicSkillsEnabled: true,
+      fetch: async () => sseCandidate(definition, true, 'length'),
+    });
+    expect(m.counts.publish).toBe(0);
+    expect(m.counts.finish).toBe('failed');
+    expect(JSON.stringify(m.execution)).not.toContain('PRIVATE REASONING');
   });
 });

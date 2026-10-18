@@ -64,6 +64,11 @@ spec:
               value: 'true'
             - name: DEEPSEEK_MODEL
               value: deepseek-flash
+            - name: AGENT_THINKING_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: ais-config
+                  key: AGENT_THINKING_LEVEL
             - name: DEEPSEEK_API_KEY
               valueFrom:
                 secretKeyRef:

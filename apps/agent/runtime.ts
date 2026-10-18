@@ -1,3 +1,4 @@
+import { thinkingPolicy, type AgentThinkingLevel } from './thinking-policy';
 import type {
   AgentVesselTracksResult,
   VesselTracksQuery,
@@ -126,6 +127,7 @@ export interface RuntimePorts {
 export interface RuntimeOptions {
   apiKey: string;
   model?: string;
+  thinkingLevel?: AgentThinkingLevel;
   maxModelCalls?: number;
   maxToolCalls?: number;
   fetch?: typeof fetch;
@@ -302,15 +304,17 @@ export function guardedFetch(
       typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
     );
     if (url.origin !== 'https://api.deepseek.com') throw new RuntimeStop('configuration');
+    const requestSignal = init?.signal ? AbortSignal.any([signal, init.signal]) : signal;
     for (let attempt = 0; attempt < 3; attempt++) {
       if (signal.aborted || !(await ports.active())) throw new RuntimeStop('fenced');
+      requestSignal.throwIfAborted();
       if (!(await ports.reserve('model', options.maxModelCalls ?? 12)))
         throw new RuntimeStop('budget');
-      const response = await fetcher(input, { ...init, signal, redirect: 'error' });
+      const response = await fetcher(input, { ...init, signal: requestSignal, redirect: 'error' });
       if (response.status !== 429 && response.status < 500) return response;
       if (attempt === 2) return response;
       await response.body?.cancel();
-      await delay(250 * 2 ** attempt, undefined, { signal });
+      await delay(250 * 2 ** attempt, undefined, { signal: requestSignal });
     }
     throw new RuntimeStop('provider');
   };
@@ -365,14 +369,18 @@ async function executeConversation(
         : {}),
     });
     const agent = new Agent({
-      initialState: { model, systemPrompt: CONVERSATION_PROMPT, tools: [], thinkingLevel: 'off' },
+      initialState: {
+        model,
+        systemPrompt: CONVERSATION_PROMPT,
+        tools: [],
+        thinkingLevel: thinkingPolicy(options, 500).thinkingLevel,
+      },
       streamFn: (currentModel, transcript, streamOptions) =>
         models.streamSimple(currentModel, transcript, {
           ...streamOptions,
           apiKey: options.apiKey,
-          maxTokens: 500,
+          ...thinkingPolicy(options, 500),
           maxRetries: 0,
-          timeoutMs: 60_000,
           maxRetryDelayMs: 2000,
           fetch: async (input, init) => {
             try {
@@ -404,7 +412,7 @@ async function executeConversation(
       .find((message) => message.role === 'assistant');
     if (!final || final.role !== 'assistant' || final.stopReason !== 'stop')
       throw new RuntimeStop('provider');
-    if (final.content.some((part) => part.type !== 'text'))
+    if (final.content.some((part) => part.type !== 'text' && part.type !== 'thinking'))
       throw new RuntimeStop('invalid_conversation');
     let summary = final.content
       .filter((part) => part.type === 'text')
@@ -1014,15 +1022,19 @@ export async function executeAgent(
     );
   };
   const agent = new Agent({
-    initialState: { model, systemPrompt: SYSTEM_PROMPT, tools, thinkingLevel: 'off' },
+    initialState: {
+      model,
+      systemPrompt: SYSTEM_PROMPT,
+      tools,
+      thinkingLevel: thinkingPolicy(options, 1500).thinkingLevel,
+    },
     toolExecution: 'sequential',
     streamFn: (currentModel, transcript, streamOptions) =>
       models.streamSimple(currentModel, transcript, {
         ...streamOptions,
         apiKey: options.apiKey,
-        maxTokens: 1500,
+        ...thinkingPolicy(options, 1500),
         maxRetries: 0,
-        timeoutMs: 60_000,
         maxRetryDelayMs: 2000,
         fetch: async (input, init) => {
           try {
@@ -1075,12 +1087,7 @@ export async function executeAgent(
     await checkActive();
     if (stop) throw stop;
     const final = [...agent.state.messages].reverse().find((m) => m.role === 'assistant');
-    if (
-      !final ||
-      final.role !== 'assistant' ||
-      final.stopReason === 'error' ||
-      final.stopReason === 'aborted'
-    )
+    if (!final || final.role !== 'assistant' || final.stopReason !== 'stop')
       throw new RuntimeStop('provider');
     const summary = final.content
       .filter((c) => c.type === 'text')

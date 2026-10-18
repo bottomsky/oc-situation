@@ -1,3 +1,4 @@
+import { thinkingPolicy } from './thinking-policy';
 import type {
   DynamicSkillArtifact,
   DynamicSkillCall,
@@ -321,15 +322,19 @@ async function generateAndBind(
       })),
     });
     const agent = new Agent({
-      initialState: { model, systemPrompt: GENERATION_SYSTEM, tools, thinkingLevel: 'off' },
+      initialState: {
+        model,
+        systemPrompt: GENERATION_SYSTEM,
+        tools,
+        thinkingLevel: thinkingPolicy(options, 2500).thinkingLevel,
+      },
       toolExecution: 'sequential',
       streamFn: (current, transcript, settings) =>
         models.streamSimple(current, transcript, {
           ...settings,
           apiKey: options.apiKey,
-          maxTokens: 2500,
+          ...thinkingPolicy(options, 2500),
           maxRetries: 0,
-          timeoutMs: 60_000,
           fetch: async (input, init) => {
             await check();
             try {

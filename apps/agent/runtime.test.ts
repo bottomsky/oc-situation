@@ -1250,3 +1250,140 @@ it('provider transport disables redirects even when the serializer asks to follo
   await transport('https://api.deepseek.com/chat/completions', { redirect: 'follow' });
   expect(redirected).toBe('error');
 });
+
+describe('DeepSeek thinking transport', () => {
+  it.each([undefined, 'high', 'off'] as const)(
+    'conversation uses %s thinking with final text only',
+    async (thinkingLevel) => {
+      const { ports, state } = memoryPorts();
+      const deltas: string[] = [];
+      let payload: Record<string, unknown> = {};
+      await executeAgent(
+        { task: { ...task, goal: '你好', intent: 'conversation' }, results: [], steps: [] },
+        ports,
+        {
+          apiKey: 'fixture',
+          thinkingLevel,
+          onTextDelta: (text) => deltas.push(text),
+          fetch: async (_url, init) => {
+            payload = JSON.parse(String(init?.body));
+            return sse({ reasoning_content: 'PRIVATE REASONING', content: '您好。' }, 'stop');
+          },
+        },
+      );
+      expect(state.status).toBe('completed');
+      expect(state.summary).toBe('您好。');
+      expect(JSON.stringify(state)).not.toContain('PRIVATE REASONING');
+      expect(deltas.join('')).not.toContain('PRIVATE REASONING');
+      expect(payload.thinking).toEqual({ type: thinkingLevel === 'off' ? 'disabled' : 'enabled' });
+      expect(payload.reasoning_effort).toBe(thinkingLevel === 'off' ? undefined : 'high');
+      expect(payload.max_tokens).toBe(thinkingLevel === 'off' ? 500 : 8192);
+    },
+  );
+  it.each(['stop', 'length'])('thinking-only %s cannot complete conversation', async (finish) => {
+    const { ports, state } = memoryPorts();
+    await executeAgent(
+      { task: { ...task, goal: '你好', intent: 'conversation' }, results: [], steps: [] },
+      ports,
+      {
+        apiKey: 'fixture',
+        fetch: async () => sse({ reasoning_content: 'PRIVATE REASONING' }, finish),
+      },
+    );
+    expect(state.status).toBe('failed');
+    expect(JSON.stringify(state)).not.toContain('PRIVATE REASONING');
+  });
+  it.each([
+    [undefined, 'stop'],
+    ['off', 'stop'],
+    [undefined, 'length'],
+  ] as const)('analysis validates %s thinking and %s finish', async (thinkingLevel, finish) => {
+    const { ports, state } = memoryPorts();
+    const requests: Record<string, unknown>[] = [];
+    await executeAgent({ task, results: [], steps: [] }, ports, {
+      apiKey: 'fixture',
+      thinkingLevel,
+      fetch: async (_url, init) => {
+        requests.push(JSON.parse(String(init?.body)));
+        return requests.length === 1
+          ? sse(
+              {
+                reasoning_content: 'PRIVATE REASONING',
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'c1',
+                    type: 'function',
+                    function: {
+                      name: 'create_task',
+                      arguments: '{"algorithm":"area-low-speed-notice"}',
+                    },
+                  },
+                  {
+                    index: 1,
+                    id: 'c2',
+                    type: 'function',
+                    function: { name: 'run_analysis', arguments: '{}' },
+                  },
+                ],
+              },
+              'tool_calls',
+            )
+          : sse(
+              {
+                reasoning_content: 'PRIVATE REASONING',
+                content:
+                  '观测事实：没有匹配结果。规则匹配：无。推测与限制：数据覆盖不足，无法确定原因。',
+              },
+              finish,
+            );
+      },
+    });
+    expect(state.status).toBe(finish === 'stop' ? 'completed' : 'failed');
+    expect(requests).toHaveLength(2);
+    for (const request of requests) {
+      expect(request.thinking).toEqual({ type: thinkingLevel === 'off' ? 'disabled' : 'enabled' });
+      expect(request.reasoning_effort).toBe(thinkingLevel === 'off' ? undefined : 'high');
+      expect(request.max_tokens).toBe(thinkingLevel === 'off' ? 1500 : 16384);
+      expect(JSON.stringify(request)).not.toContain('PRIVATE REASONING');
+    }
+    expect(JSON.stringify(state)).not.toContain('PRIVATE REASONING');
+  });
+});
+
+describe('provider request cancellation', () => {
+  it('preserves the SDK request timeout signal alongside the task signal', async () => {
+    const { ports } = memoryPorts();
+    const request = new AbortController();
+    const taskAbort = new AbortController();
+    let received: AbortSignal | null | undefined;
+    await guardedFetch(
+      ports,
+      {
+        apiKey: 'fixture',
+        fetch: async (_url, init) => {
+          received = init?.signal;
+          return new Response('{}');
+        },
+      },
+      taskAbort.signal,
+    )('https://api.deepseek.com/chat/completions', { signal: request.signal });
+    request.abort();
+    expect(received?.aborted).toBe(true);
+    expect(taskAbort.signal.aborted).toBe(false);
+  });
+});
+
+it('classifies request timeout separately from loss of the task lease', async () => {
+  const { ports } = memoryPorts();
+  const request = new AbortController();
+  request.abort(new Error('request timed out'));
+  const transport = guardedFetch(
+    ports,
+    { apiKey: 'fixture', fetch: async () => new Response('{}') },
+    new AbortController().signal,
+  );
+  await expect(
+    transport('https://api.deepseek.com/chat/completions', { signal: request.signal }),
+  ).rejects.toThrow('request timed out');
+});

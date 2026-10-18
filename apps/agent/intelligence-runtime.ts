@@ -1,3 +1,4 @@
+import { thinkingPolicy } from './thinking-policy';
 import { Agent, type AgentTool } from '@earendil-works/pi-agent-core';
 import { Type, createModels, createInitialSystemMessage } from '@earendil-works/pi-ai';
 import { deepseekProvider } from '@earendil-works/pi-ai/providers/deepseek';
@@ -436,16 +437,15 @@ export async function executeIntelligence(
         model,
         systemPrompt: SYSTEM + '\n' + capability.body,
         tools: [...tools, referenceTool],
-        thinkingLevel: 'off',
+        thinkingLevel: thinkingPolicy(options, 1000).thinkingLevel,
       },
       toolExecution: 'sequential',
       streamFn: (m, c, o) =>
         models.streamSimple(m, c, {
           ...o,
           apiKey: options.apiKey,
-          maxTokens: 1000,
+          ...thinkingPolicy(options, 1000),
           maxRetries: 0,
-          timeoutMs: 60000,
           fetch: async (input, init) => {
             try {
               return await transport(input, init);

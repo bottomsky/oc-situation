@@ -193,3 +193,11 @@ describe('worker pull heartbeat recovery', () => {
     expect(fetch).toHaveBeenCalledOnce();
   });
 });
+
+describe('agent thinking environment', () => {
+  it('defaults to high and permits an explicit off switch', () => {
+    expect(worker.agentEnvironment({}).thinkingLevel).toBe('high');
+    expect(worker.agentEnvironment({ AGENT_THINKING_LEVEL: 'off' }).thinkingLevel).toBe('off');
+    expect(() => worker.agentEnvironment({ AGENT_THINKING_LEVEL: 'low' })).toThrow();
+  });
+});

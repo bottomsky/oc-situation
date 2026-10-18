@@ -25,15 +25,20 @@ node --env-file=.env.local --import tsx apps/agent/main.ts
 
 本地 demo 在启用功能后启动智能体子进程。生产 Compose 提供 `agent` profile；为 API 与智能体配置功能开关，然后以 `--profile agent` 启动。密钥只配置给智能体服务。
 
-| 配置                    | 默认值           | 用途                                          |
-| ----------------------- | ---------------- | --------------------------------------------- |
-| `AGENT_UI_ENABLED`      | `false`          | 启用界面感知与海图白名单操作，依赖 Agent 开关 |
-| `AGENT_ENABLED`         | `false`          | 启用接口与工作进程                            |
-| `DEEPSEEK_API_KEY`      | 空               | 官方 DeepSeek API 密钥                        |
-| `DEEPSEEK_MODEL`        | `deepseek-flash` | Pi 模型目录中的 DeepSeek 模型                 |
-| `AGENT_MAX_MODEL_CALLS` | `12`             | 每次任务的模型调用预算                        |
-| `AGENT_MAX_TOOL_CALLS`  | `24`             | 每次任务的工具调用预算                        |
-| `AGENT_MAX_RECORDS`     | `50000`          | 单次查询记录上限                              |
+| 配置                    | 默认值           | 用途                                              |
+| ----------------------- | ---------------- | ------------------------------------------------- |
+| `AGENT_UI_ENABLED`      | `false`          | 启用界面感知与海图白名单操作，依赖 Agent 开关     |
+| `AGENT_ENABLED`         | `false`          | 启用接口与工作进程                                |
+| `DEEPSEEK_API_KEY`      | 空               | 官方 DeepSeek API 密钥                            |
+| `DEEPSEEK_MODEL`        | `deepseek-flash` | Pi 模型目录中的 DeepSeek 模型                     |
+| `AGENT_THINKING_LEVEL`  | `high`           | 模型思考级别，支持 `high`（开启）与 `off`（关闭） |
+| `AGENT_MAX_MODEL_CALLS` | `12`             | 每次任务的模型调用预算                            |
+| `AGENT_MAX_TOOL_CALLS`  | `24`             | 每次任务的工具调用预算                            |
+| `AGENT_MAX_RECORDS`     | `50000`          | 单次查询记录上限                                  |
+
+模型思考默认开启，覆盖普通咨询、区域研判、情报总结与动态技能生成的模型请求。`AGENT_THINKING_LEVEL=off` 可关闭模型思考；工具循环继续按任务执行，模型和工具调用次数分别由 `AGENT_MAX_MODEL_CALLS`、`AGENT_MAX_TOOL_CALLS` 管理。思考内容供模型内部推理使用，界面和会话结果保存最终回复与执行步骤。
+
+开启思考后，普通咨询每次模型请求的输出 token 预算为 8192，其他请求为 16384，供思考与最终回复共同使用；关闭后沿用各路径原有预算。思考可能增加响应耗时，任务继续受执行时限和调用次数预算管理。修改此配置后重启 Agent 工作进程生效。
 
 ## 使用与权限
 
