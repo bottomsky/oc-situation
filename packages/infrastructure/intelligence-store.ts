@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg';
 import type { Infrastructure } from './clients';
 import type { IntelligenceEvent } from '../contracts/intelligence';
 import { intelligenceTextPredicate } from './intelligence-search';
+import { enqueueIntelligenceOperationalEvent } from './operational-event-sync';
 import {
   GeoObjectInputSchema,
   RelationInputSchema,
@@ -159,6 +160,7 @@ export async function saveRelation(
           : null,
     ],
   );
+  await enqueueIntelligenceOperationalEvent(db, eventId);
   return relation;
 }
 export async function writeRelation(
@@ -265,6 +267,7 @@ export async function projectIntelligenceRelations(db: DB, event: IntelligenceEv
       );
     }
   }
+  await enqueueIntelligenceOperationalEvent(db, event.id);
 }
 export async function queryIntelligenceEvents(infra: Infrastructure, q: IntelligenceEventQuery) {
   const params: unknown[] = [];
@@ -571,6 +574,7 @@ export async function reviewIntelligenceEvent(
         createdAt: new Date().toISOString(),
       }),
     ]);
+    await enqueueIntelligenceOperationalEvent(c, eventId);
     await c.query('COMMIT');
   } catch (e) {
     await c.query('ROLLBACK');

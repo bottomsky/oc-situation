@@ -39,7 +39,9 @@
     "demo": "node --import tsx scripts/workspace.ts demo",
     "bench": "node --import tsx scripts/workspace.ts bench",
     "api:generate": "node --import tsx scripts/workspace.ts api:generate",
-    "build:smoke": "node --import tsx scripts/workspace.ts build:smoke"
+    "build:smoke": "node --import tsx scripts/workspace.ts build:smoke",
+    "routes:data:import": "node --import tsx scripts/import-route-data.ts",
+    "routes:data:prepare": "node --import tsx scripts/prepare-route-data.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1144.0",

@@ -22,3 +22,8 @@ export * from './vessel-tracks';
 export * from './intelligence-search';
 export * from './intelligence-weather';
 export * from './intelligence-ingestion';
+export * from './routes';
+export * from './route-planning';
+export * from './operational-event-store';
+export * from './operational-event-sync';
+export * from './agent-focus';

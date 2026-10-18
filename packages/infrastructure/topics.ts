@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { enqueueAnalysisOperationalEvent } from './operational-event-sync';
 import type { PoolClient } from 'pg';
 import type { z } from 'zod';
 import type {
@@ -502,6 +503,7 @@ async function persistResult(
     'INSERT INTO analysis_feed(result_id,instance_id,generation,revision,status) VALUES($1,$2,$3,$4,$5)',
     [value.id, value.instanceId, lease.instance.generation, value.revision, value.status],
   );
+  await enqueueAnalysisOperationalEvent(client, value);
 }
 export async function completeTopicRun(
   infra: Infrastructure,

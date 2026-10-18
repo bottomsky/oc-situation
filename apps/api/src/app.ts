@@ -1,5 +1,9 @@
 import { AgentUiController } from './agent/ui-controller';
 import { SkillsController } from './agent/skills-controller';
+import { RoutesController } from './routes/controller';
+import { RoutePlanningService } from './routes/service';
+import { OperationalEventsController } from './operational-events/controller';
+import { startOperationalEventSync } from '../../../packages/infrastructure/operational-event-sync';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import 'reflect-metadata';
 import { Module } from '@nestjs/common';
@@ -56,12 +60,15 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
       AgentController,
       AgentUiController,
       SkillsController,
+      RoutesController,
+      OperationalEventsController,
     ],
     providers: [
       { provide: INFRA, useValue: infra },
       { provide: OPTIONS, useValue: settings },
       AuthService,
       JobsService,
+      RoutePlanningService,
       { provide: APP_GUARD, useClass: AccessGuard },
     ],
   })
@@ -77,7 +84,7 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
     origin: origins,
     credentials: true,
     allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Idempotency-Key'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
   const adapter = app.getHttpAdapter().getInstance();
   adapter.set('trust proxy', trustedProxies(production, process.env.TRUSTED_PROXY_CIDRS));
@@ -115,11 +122,16 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
   });
   const jobs = app.get(JobsService);
   if (settings.scheduler) jobs.start();
+  const eventSync =
+    settings.scheduler && process.env.EVENT_SYNC_ENABLED !== 'false'
+      ? startOperationalEventSync(infra)
+      : undefined;
   return {
     app,
     openapi,
     stop: async () => {
       jobs.stop();
+      await eventSync?.stop();
       await live.close();
       await app.close();
     },

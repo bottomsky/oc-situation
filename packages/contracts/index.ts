@@ -349,3 +349,7 @@ export * from './agent-ui';
 export * from './agent-map';
 export * from './vessel-tracks';
 export * from './dynamic-skills';
+export * from './spatial';
+export * from './agent-focus';
+export * from './routes';
+export * from './operational-events';

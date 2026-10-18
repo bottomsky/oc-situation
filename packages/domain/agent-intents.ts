@@ -1,4 +1,5 @@
 import { isUiIntent } from './agent-ui-intent';
+import { parseBusinessRequest } from './agent-business';
 import { isIntelligenceQuestion } from './intelligence-intent';
 import type { TopicDefinitionId } from '../contracts/topics';
 import type {
@@ -52,6 +53,23 @@ export function derivePurposeIntent(purpose: AgentPurpose): AgentIntent {
     : 'analysis';
 }
 export function deriveAgentIntent(goal: string): { intent: AgentIntent; purpose?: AgentPurpose } {
+  const business = parseBusinessRequest(goal);
+  if (business)
+    return {
+      intent: business.toolId.includes('event')
+        ? /create|update/.test(business.toolId)
+          ? 'event_manage'
+          : 'event_query'
+        : /create|update/.test(business.toolId)
+          ? 'route_manage'
+          : 'route_plan',
+    };
+  if (
+    /^(?:请)?(?:(?:关注|定位)(?:选中|这些|该|这|船|事件|航线|情报|区域|MMSI|\d)|聚焦(?:选中的?)?(?:事件|计划航线|情报))/i.test(
+      goal.trim(),
+    )
+  )
+    return { intent: 'map_focus' };
   if (!/不要|不必|无需|不用|别再/.test(goal)) {
     if (/高亮|水波(?:提醒|扩散)/.test(goal)) return { intent: 'vessel_highlights' };
     if (
@@ -145,7 +163,8 @@ export function requiredAgentInputFields(
       actual === 'analysis' ||
       actual === 'ais_heatmap' ||
       actual === 'vessel_tracks') &&
-    !selection.bbox
+    !selection.bbox &&
+    !(actual === 'vessel_list' && selection.region)
   )
     fields.push('region');
   if (actual === 'vessel_detail' && !selection.mmsis?.length) fields.push('vessels');

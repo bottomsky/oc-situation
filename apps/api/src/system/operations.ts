@@ -23,11 +23,12 @@ export async function startOperationsServer(
         return;
       }
       if (req.url === '/metrics') {
+        const metrics = await system.metricsText();
         res.writeHead(200, {
           'Content-Type': system.metricsContentType(),
           'Cache-Control': 'no-store',
         });
-        res.end(await system.metricsText());
+        res.end(metrics);
         return;
       }
       res.writeHead(404);

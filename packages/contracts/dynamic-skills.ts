@@ -3,6 +3,11 @@ import { SkillBindingSchema, ToolExecutionIdentitySchema } from './agent-capabil
 import { UiOperationSchema } from './agent-ui';
 
 export const DynamicSkillArtifactKindSchema = z.enum([
+  'map_focus',
+  'route_plan',
+  'route',
+  'operational_events',
+  'operational_event',
   'vessel_list',
   'vessel_detail',
   'ais_heatmap',

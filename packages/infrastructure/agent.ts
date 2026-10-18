@@ -1,3 +1,5 @@
+import { parseCircleRegion } from '../domain/agent-focus';
+import { parseBusinessRequest } from '../domain/agent-business';
 import { vesselTracksSelection } from '../domain/vessel-tracks-intent';
 import { mapTaskSelection } from '../domain/agent-map';
 import { dynamicTaskSelection, shouldUseDynamicSkill } from '../domain/agent-dynamic-routing';
@@ -479,6 +481,16 @@ export async function submitAgentMessage(
       },
       ...(derived.purpose ? { purpose: derived.purpose } : {}),
     };
+    let circleRegion;
+    try {
+      circleRegion = parseCircleRegion(input.content);
+    } catch {
+      throw new AgentInputError('invalid_input', '圆形范围需要有效经纬度和 0.1～2000 公里半径。');
+    }
+    if (circleRegion && derived.intent === 'vessel_list') {
+      selection.region = circleRegion;
+      delete selection.bbox;
+    }
     const explicitIntelligenceRegion =
       /当前.*(?:视野|视图|地图|海图)|(?:视野|视图)内|所选区域|这个区域|当前区域/.test(
         input.content,
@@ -516,7 +528,11 @@ export async function submitAgentMessage(
       )
         selection.vesselSelector = { mmsis: input.mapContext.selectedMmsis };
     }
-    if (derived.intent === 'vessel_highlights' || derived.intent === 'map_camera') {
+    if (
+      derived.intent === 'vessel_highlights' ||
+      derived.intent === 'map_camera' ||
+      derived.intent === 'map_focus'
+    ) {
       selection.bbox = input.bbox ?? input.mapContext?.bbox;
       if (
         input.mapContext?.selectedMmsis?.length &&
@@ -526,6 +542,57 @@ export async function submitAgentMessage(
         selection.vesselSelector = { mmsis: input.mapContext.selectedMmsis };
       }
       selection = bindAgentMapSelection(input.content, selection);
+    }
+    if (
+      ['map_focus', 'route_plan', 'route_manage', 'event_query', 'event_manage'].includes(
+        derived.intent,
+      )
+    ) {
+      const explicitId = input.content.match(
+        /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
+      )?.[0];
+      const explicitMmsis = [...input.content.matchAll(/(?<!\d)([1-9]\d{8})(?!\d)/g)].map(
+        (m) => m[1]!,
+      );
+      if (explicitId) {
+        const kind = /事件/.test(input.content)
+          ? 'event'
+          : /情报/.test(input.content)
+            ? 'intelligence'
+            : 'route';
+        const selected = input.mapContext?.selectedTargets?.find(
+          (ref) => ref.id === explicitId && ref.kind === kind,
+        );
+        selection.focusTargets = [selected ?? { kind, id: explicitId }];
+      } else if (explicitMmsis.length)
+        selection.focusTargets = explicitMmsis.map((id) => ({ kind: 'vessel' as const, id }));
+      else if (
+        /选中|选定|该|这|此/.test(input.content) &&
+        input.mapContext?.selectedTargets?.length
+      )
+        selection.focusTargets = input.mapContext.selectedTargets;
+      if (
+        /选中|选定|该船|这艘/.test(input.content) &&
+        !selection.focusTargets?.length &&
+        input.mapContext?.selectedMmsis?.length
+      )
+        selection.focusTargets = input.mapContext.selectedMmsis.map((id) => ({
+          kind: 'vessel' as const,
+          id,
+        }));
+      const region = parseCircleRegion(input.content);
+      if (region) {
+        selection.region = region;
+        delete selection.bbox;
+      } else if (/选中|选定|区域|范围/.test(input.content) && input.mapContext?.region) {
+        selection.region = input.mapContext.region;
+        delete selection.bbox;
+      } else if (
+        derived.intent === 'map_focus' &&
+        /区域|范围/.test(input.content) &&
+        selection.bbox
+      )
+        selection.region = { kind: 'bbox', bbox: selection.bbox };
     }
     if (derived.intent === 'ais_heatmap') {
       delete selection.timeRange;
@@ -642,6 +709,10 @@ export async function submitAgentMessage(
       );
       if (!binding.rowCount) throw new AgentInputError('conflict', '当前页面绑定已失效，请重试。');
       const taskBinding = { ...input.uiBinding };
+      if (binding.rows[0].state)
+        taskBinding.focusVersion ??= UiStateSchema.parse(binding.rows[0].state).components.find(
+          (component) => component.id === 'chart.focus',
+        )?.version;
       if (
         (useDynamic || derived.intent === 'vessel_highlights' || derived.intent === 'map_camera') &&
         binding.rows[0].state
@@ -718,10 +789,26 @@ async function readTaskContext(
         ? Number(task.input_revision)
         : Number(result.rows[0]?.input_revision ?? task.input_revision)),
   );
+  const builtinArtifacts = (
+    await client.query(
+      'SELECT * FROM agent_ui_artifacts WHERE task_id=$1 AND owner_id=$2 AND input_revision=$3 AND id NOT IN (SELECT id FROM agent_skill_artifacts WHERE task_id=$1)',
+      [taskId, task.owner_id, task.input_revision],
+    )
+  ).rows.map((r) => ({
+    id: String(r.id),
+    ownerId: String(r.owner_id),
+    taskId,
+    inputRevision: Number(r.input_revision),
+    stepId: String(r.step_id),
+    kind: r.kind,
+    payload: r.payload,
+    modelProjection: { kind: r.kind },
+    createdAt: iso(r.created_at),
+  }));
   return {
     task: taskRow(task),
     dynamicSkill,
-    artifacts: dynamicSkill.artifacts,
+    artifacts: [...dynamicSkill.artifacts, ...builtinArtifacts],
     messages: messages.rows.map(messageRow),
     steps: steps.rows.map((r): AgentStep => ({
       key: r.step_key,
@@ -736,6 +823,10 @@ async function readTaskContext(
       null) as AgentIntelligenceResult | null,
     heatmapResult: (result.rows[0]?.heatmap_result ?? null) as AgentHeatmapResult | null,
     tracksResult: (result.rows[0]?.tracks_result ?? null) as AgentVesselTracksResult | null,
+    focusResult:
+      steps.rows.find((r) => r.step_key === 'map_map_focus')?.output?.payload ??
+      dynamicSkill.artifacts.find((a) => a.kind === 'map_focus')?.payload ??
+      null,
     pendingInputRequests: await pendingRequests(client, String(task.session_id), taskId),
     snapshotCursor: await snapshotCursor(client, String(task.session_id)),
   };
@@ -1685,16 +1776,15 @@ export async function retryAgentTask(
         'conflict',
         'Only a finished or legacy waiting task can start a new attempt',
       );
-    if (
-      uiBinding &&
-      !(
-        await client.query(
-          'SELECT id FROM agent_ui_clients WHERE id=$1 AND owner_id=$2 AND page_generation=$3 AND session_id=$4 AND lease_until>now()',
-          [uiBinding.clientId, ownerId, uiBinding.pageGeneration, source.session_id],
-        )
-      ).rowCount
-    )
-      throw new AgentInputError('conflict', '页面绑定已失效');
+    const retryUiClient = uiBinding
+      ? (
+          await client.query(
+            'SELECT state FROM agent_ui_clients WHERE id=$1 AND owner_id=$2 AND page_generation=$3 AND session_id=$4 AND lease_until>now()',
+            [uiBinding.clientId, ownerId, uiBinding.pageGeneration, source.session_id],
+          )
+        ).rows[0]
+      : undefined;
+    if (uiBinding && !retryUiClient) throw new AgentInputError('conflict', '页面绑定已失效');
     const derived = deriveAgentIntent(String(source.goal));
     const selection = canonicalSelection({
       ...(source.bbox ? { bbox: source.bbox as AgentSelection['bbox'] } : {}),
@@ -1765,6 +1855,20 @@ export async function retryAgentTask(
       `INSERT INTO agent_steps(task_id,input_revision,step_key,name,input,output) SELECT $1,0,step_key,name,input,output FROM agent_steps WHERE task_id=$2 AND input_revision=$3 AND step_key IN ('input_snapshot','input_digest','overview')`,
       [id, taskId, source.input_revision],
     );
+    // Retries replay one business operation while receiving their own UI artifacts.
+    // A changed input revision has no inherited origin and starts a new operation.
+    if (
+      /^(create|update)_/.test(
+        parseBusinessRequest(String(source.goal), selection.focusTargets)?.toolId ?? '',
+      )
+    )
+      await client.query(
+        `INSERT INTO agent_steps(task_id,input_revision,step_key,name,input,output)
+       VALUES($1,0,'business_retry_origin','业务重试来源','null'::jsonb,
+         COALESCE((SELECT output FROM agent_steps WHERE task_id=$2 AND input_revision=$3 AND step_key='business_retry_origin'),
+           jsonb_build_object('taskId',$2::text,'inputRevision',$3::int)))`,
+        [id, taskId, source.input_revision],
+      );
     if (
       source.intent !== 'skill' &&
       Number(source.result_version) > 0 &&
@@ -1783,11 +1887,16 @@ export async function retryAgentTask(
       );
     }
     if (uiBinding) {
+      const retryBinding = { ...uiBinding };
+      if (retryUiClient?.state)
+        retryBinding.focusVersion ??= UiStateSchema.parse(retryUiClient.state).components.find(
+          (component) => component.id === 'chart.focus',
+        )?.version;
       await client.query('UPDATE agent_tasks SET ui_binding=$2::jsonb WHERE id=$1', [
         id,
-        JSON.stringify(uiBinding),
+        JSON.stringify(retryBinding),
       ]);
-      task.ui_binding = uiBinding;
+      task.ui_binding = retryBinding;
     }
     const message = (
       await client.query(

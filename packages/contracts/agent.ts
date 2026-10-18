@@ -1,3 +1,6 @@
+import { GeometrySchema } from './intelligence-spatial';
+import { SpatialRegionSchema } from './spatial';
+import { FocusTargetRefSchema } from './agent-focus';
 import { VesselTracksSelectorSchema } from './vessel-tracks';
 import { UiBindingSchema, UiResultSchema } from './agent-ui';
 import { z } from 'zod';
@@ -41,6 +44,11 @@ export const AgentIntentSchema = z.enum([
   'vessel_tracks',
   'vessel_highlights',
   'map_camera',
+  'map_focus',
+  'route_plan',
+  'route_manage',
+  'event_query',
+  'event_manage',
   'ui_control',
   'skill',
 ]);
@@ -72,6 +80,8 @@ export const AgentFiltersSchema = z.strictObject({
   hours: z.number().int().min(1).max(720).optional(),
 });
 export const AgentSelectionSchema = z.strictObject({
+  region: SpatialRegionSchema.optional(),
+  focusTargets: z.array(FocusTargetRefSchema).max(100).optional(),
   skillRef: DynamicSkillRefSchema.optional(),
   skillCandidates: AgentSkillCandidatesSchema.optional(),
   bbox: Bbox.optional(),
@@ -111,6 +121,8 @@ export const AgentInputValuesSchema = AgentSelectionSchema.extend({
 );
 export type AgentInputValues = z.infer<typeof AgentInputValuesSchema>;
 export const AgentMapContextSchema = AgentFiltersSchema.extend({
+  selectedTargets: z.array(FocusTargetRefSchema).max(100).optional(),
+  region: SpatialRegionSchema.optional(),
   bbox: Bbox,
   capturedAt: z.iso.datetime(),
   selectedMmsis: Mmsis.optional(),
@@ -190,6 +202,7 @@ export const AgentVesselItemSchema = z.object({
 });
 export type AgentVesselItem = z.infer<typeof AgentVesselItemSchema>;
 export const AgentQueryResultSchema = z.object({
+  regionGeometry: GeometrySchema.optional(),
   kind: z.enum(['vessel_list', 'vessel_detail']),
   version: z.number().int().nonnegative(),
   inputRevision: z.number().int().nonnegative(),

@@ -1,3 +1,4 @@
+import { AgentFocusResultSchema } from './agent-focus';
 import { AgentVesselTracksResultSchema } from './vessel-tracks';
 import { AgentHeatmapResultSchema } from './heatmap';
 import { z } from 'zod';
@@ -27,6 +28,7 @@ export const UI_COMPONENTS = {
   'chart.layers.ais': '船位图层',
   'chart.layers.tracks': '轨迹图层',
   'chart.layers.evidence': '证据图层',
+  'chart.focus': '空间关注',
   'chart.viewport': '海图视野',
   'chart.vessel-highlights': '船舶高亮',
   'agent.reply': 'AI 回复浮卡',
@@ -59,6 +61,7 @@ export const UiBindingSchema = z.strictObject({
   heatmapVersion: z.number().int().positive().optional(),
   highlightsVersion: z.number().int().positive().optional(),
   cameraVersion: z.number().int().positive().optional(),
+  focusVersion: z.number().int().positive().optional(),
 });
 export type UiBinding = z.infer<typeof UiBindingSchema>;
 export const UiComponentSchema = z.strictObject({
@@ -78,6 +81,15 @@ export const UiComponentSchema = z.strictObject({
   blocked: z.enum(['editing', 'drawing', 'loading', 'unavailable']).optional(),
   highlightEvidence: HighlightEvidenceSchema.optional(),
   highlightGroups: z.array(HighlightGroupSchema).max(100).optional(),
+  focusEvidence: z
+    .strictObject({
+      artifactRef: z.uuid(),
+      taskId: z.string(),
+      version: z.number().int().nonnegative(),
+      inputRevision: z.number().int().nonnegative(),
+      displayStatus: z.enum(['complete', 'partial', 'unlocated']),
+    })
+    .optional(),
   cameraEvidence: MapCameraResultSchema.optional(),
   cameraState: MapCameraStateSchema.optional(),
 });
@@ -88,6 +100,8 @@ export const UiStateSchema = z.strictObject({
     '/',
     '/intelligence',
     '/topics',
+    '/routes',
+    '/events',
     '/sources',
     '/runs',
     '/replays',
@@ -125,6 +139,7 @@ export const UiCommandSchema = z.object({
   tracksPresentation: AgentVesselTracksResultSchema.optional(),
   highlightsPresentation: AgentVesselHighlightsResultSchema.optional(),
   cameraPresentation: AgentMapCameraResultSchema.optional(),
+  focusPresentation: AgentFocusResultSchema.optional(),
   id: z.uuid(),
   taskId: z.uuid(),
   clientId: z.uuid(),
@@ -189,6 +204,7 @@ export function uiOperationAllowed(op: UiOperation): boolean {
     op.componentId === 'chart.vessel-highlights'
   )
     return ['show', 'close'].includes(op.action);
+  if (op.componentId === 'chart.focus') return ['show', 'close', 'focus'].includes(op.action);
   if (op.componentId === 'chart.viewport') return op.action === 'focus';
   if (op.componentId === 'agent.input' || op.componentId === 'agent.reply')
     return ['open', 'close'].includes(op.action);
@@ -226,6 +242,21 @@ export function uiCommandPostcondition(
 ): boolean {
   const component = state.components.find((item) => item.id === command.operation.componentId);
   if (!component?.mounted || component.loading || component.interacting) return false;
+  if (command.operation.componentId === 'chart.focus' && command.operation.action !== 'close') {
+    const result = command.focusPresentation,
+      evidence = component.focusEvidence;
+    return (
+      !!result &&
+      !!evidence &&
+      !!command.artifactRef &&
+      evidence.artifactRef === command.artifactRef &&
+      evidence.taskId === command.taskId &&
+      evidence.version === result.version &&
+      evidence.inputRevision === result.inputRevision &&
+      (evidence.displayStatus === result.displayStatus ||
+        (evidence.displayStatus === 'partial' && result.targets.length > 0))
+    );
+  }
   if (command.operation.componentId === 'chart.vessel-highlights') {
     const presentation = command.highlightsPresentation,
       evidence = component.highlightEvidence;

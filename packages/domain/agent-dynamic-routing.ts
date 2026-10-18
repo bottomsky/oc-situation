@@ -1,3 +1,5 @@
+import { parseCircleRegion } from './agent-focus';
+import { parseBusinessRequest } from './agent-business';
 import type { AgentIntent, AgentSelection, AgentPurpose } from '../contracts/agent';
 import { deriveAgentIntent } from './agent-intents';
 import { heatmapSelection } from './heatmap-intent';
@@ -13,6 +15,11 @@ export function dynamicTaskSelection(
   now: Date,
 ): AgentSelection {
   const output = { ...selection };
+  const circle = parseCircleRegion(goal);
+  if (circle) {
+    output.region = circle;
+    delete output.bbox;
+  }
   if (!output.timeRange || /最近|过去|昨天|今天|小时|天|时间|时段|\d{4}-\d{2}-\d{2}/.test(goal)) {
     const temporal = heatmapSelection(goal, now);
     if (temporal.heatmapTimeUnclear) {
@@ -86,6 +93,15 @@ export interface DynamicGoalProjection {
 }
 export function dynamicGoalProjection(goal: string, purpose?: AgentPurpose): DynamicGoalProjection {
   const operations: string[] = [];
+  const business = parseBusinessRequest(goal);
+  if (business)
+    return {
+      operations: [business.toolId],
+      vesselClasses: [],
+      presentation: false,
+      inputRefs: ['input.selection'],
+      goalKind: 'resolve',
+    };
   const chartRequest = /航线|历史轨迹|船舶轨迹|vessel.?tracks|热力图|热度图|密度图|heatmap/i.test(
     goal,
   );

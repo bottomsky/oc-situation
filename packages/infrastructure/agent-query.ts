@@ -1,3 +1,4 @@
+import { projectCircleRegion } from './agent-focus';
 import { z } from 'zod';
 import {
   AgentQueryResultSchema,
@@ -37,7 +38,8 @@ export async function queryAgentVessels(
   options: { signal?: AbortSignal } = {},
 ): Promise<AgentQueryResult> {
   const { kind, inputRevision, selection } = QueryInputSchema.parse(input);
-  if (kind === 'vessel_list' && !selection.bbox) throw new Error('region_required');
+  if (kind === 'vessel_list' && !selection.bbox && !selection.region)
+    throw new Error('region_required');
   if (
     kind === 'vessel_detail' &&
     !selection.mmsis?.length &&
@@ -82,6 +84,26 @@ export async function queryAgentVessels(
       `p.latitude BETWEEN $6 AND $8 AND (p.longitude >= $5 ${west <= east ? 'AND' : 'OR'} p.longitude <= $7)`,
     );
   }
+  if (selection.region?.kind === 'circle') {
+    const { center, radiusMeters } = selection.region;
+    values.push(center[0], center[1], radiusMeters);
+    const n = values.length;
+    filters.push(
+      `ST_DWithin(ST_SetSRID(ST_MakePoint(p.longitude,p.latitude),4326)::geography, ST_SetSRID(ST_MakePoint($${n - 2},$${n - 1}),4326)::geography, $${n})`,
+    );
+  } else if (selection.region?.kind === 'polygon') {
+    values.push(JSON.stringify(selection.region.geometry));
+    filters.push(
+      `ST_Intersects(ST_SetSRID(ST_MakePoint(p.longitude,p.latitude),4326),ST_SetSRID(ST_GeomFromGeoJSON($${values.length}),4326))`,
+    );
+  } else if (selection.region?.kind === 'bbox') {
+    const [west, south, east, north] = selection.region.bbox;
+    values.push(west, south, east, north);
+    const n = values.length;
+    filters.push(
+      `p.latitude BETWEEN $${n - 2} AND $${n} AND (p.longitude >= $${n - 3} ${west <= east ? 'AND' : 'OR'} p.longitude <= $${n - 1})`,
+    );
+  }
   if (selection.vesselSelector?.shipTypes?.length) {
     values.push(selection.vesselSelector.shipTypes);
     filters.push(`v.ship_type=ANY($${values.length}::integer[])`);
@@ -115,7 +137,12 @@ export async function queryAgentVessels(
         }
       : null,
   }));
+  const regionGeometry =
+    selection.region?.kind === 'circle'
+      ? await projectCircleRegion(infra, selection.region)
+      : undefined;
   return AgentQueryResultSchema.parse({
+    ...(regionGeometry ? { regionGeometry } : {}),
     kind,
     version: 0,
     inputRevision,

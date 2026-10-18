@@ -32,6 +32,19 @@ type Json = z.infer<ReturnType<typeof z.json>>;
 export const DYNAMIC_SKILL_ADAPTER_VERSION = 'declarative-v1';
 /** Shared admission ceiling; implementations and argument schemas remain in the host registry. */
 export const DYNAMIC_SKILL_HOST_TOOLS: readonly DynamicSkillToolDescriptor[] = Object.freeze([
+  { id: 'prepare_map_focus', artifactKinds: ['map_focus'], allowedPhases: ['skill'] },
+  ...(['query_routes', 'read_route', 'create_route', 'update_route'] as const).map((id) => ({
+    id,
+    artifactKinds: ['route'],
+    allowedPhases: ['skill'],
+  })),
+  { id: 'plan_route', artifactKinds: ['route_plan'], allowedPhases: ['skill'] },
+  { id: 'query_events', artifactKinds: ['operational_events'], allowedPhases: ['skill'] },
+  ...(['read_event', 'create_event', 'update_event'] as const).map((id) => ({
+    id,
+    artifactKinds: ['operational_event'],
+    allowedPhases: ['skill'],
+  })),
   {
     id: 'prepare_vessel_highlights',
     artifactKinds: ['vessel_highlights'],
@@ -698,6 +711,7 @@ export async function beginDynamicSkillCall(
     input: unknown;
     maxToolCalls: number;
     recoverableRead?: boolean;
+    execution?: 'read' | 'idempotent_write';
   },
 ): Promise<DynamicSkillCall> {
   return transaction(infra, async (client) => {
@@ -717,8 +731,16 @@ export async function beginDynamicSkillCall(
     if (old) {
       if (old.tool_id !== input.toolId || old.input_hash !== inputHash)
         return reject('conflict', '稳定调用身份对应不同输入');
-      if (old.status === 'running' && Number(old.generation) !== fence.generation) {
-        const status = input.recoverableRead ? 'running' : 'unknown';
+      if (
+        (old.status === 'running' && Number(old.generation) !== fence.generation) ||
+        (['unknown', 'failed'].includes(String(old.status)) &&
+          input.execution === 'idempotent_write')
+      ) {
+        const recoverable =
+          input.execution === 'read' ||
+          input.execution === 'idempotent_write' ||
+          input.recoverableRead === true;
+        const status = recoverable ? 'running' : 'unknown';
         const updated = (
           await client.query(
             'UPDATE agent_skill_calls SET status=$4,generation=$5,error_code=$6,updated_at=now() WHERE task_id=$1 AND input_revision=$2 AND step_id=$3 RETURNING *',
@@ -728,7 +750,7 @@ export async function beginDynamicSkillCall(
               input.stepId,
               status,
               fence.generation,
-              input.recoverableRead ? null : 'call_outcome_unknown',
+              recoverable ? null : 'call_outcome_unknown',
             ],
           )
         ).rows[0];

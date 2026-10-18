@@ -1,3 +1,4 @@
+import { registerBusinessMetrics } from './business-metrics';
 import { Controller, Get, Inject, Res } from '@nestjs/common';
 import { HeadBucketCommand } from '@aws-sdk/client-s3';
 import { busHealth, type Infrastructure } from '@ais/infrastructure';
@@ -38,8 +39,10 @@ export const HealthSchema = z.object({
 @Controller('system')
 export class SystemController {
   private readonly metrics = new Registry();
+  private readonly refreshBusinessMetrics: () => Promise<void>;
   constructor(@Inject(INFRA) private readonly infra: Infrastructure) {
     collectDefaultMetrics({ register: this.metrics, prefix: 'ais_api_' });
+    this.refreshBusinessMetrics = registerBusinessMetrics(this.metrics, infra);
   }
   @Public()
   @Get('health')
@@ -88,7 +91,8 @@ export class SystemController {
   async getMetrics(@Res() res: Response) {
     res.type(this.metrics.contentType).send(await this.metricsText());
   }
-  metricsText() {
+  async metricsText() {
+    await this.refreshBusinessMetrics();
     return this.metrics.metrics();
   }
   metricsContentType() {

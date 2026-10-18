@@ -127,6 +127,9 @@ export function validateDynamicSkillDefinition(
     if (
       step.ui &&
       !(
+        (step.artifactKind === 'map_focus' &&
+          step.ui.componentId === 'chart.focus' &&
+          step.ui.action === 'show') ||
         (step.artifactKind === 'vessel_tracks' &&
           step.ui.componentId === 'chart.vessel-tracks' &&
           step.ui.action === 'show') ||

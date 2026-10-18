@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
+import { AgentFocusResultSchema } from '../contracts/agent-focus';
 import type { AgentSkillFence } from '../contracts/dynamic-skills';
 import { AgentHeatmapResultSchema } from '../contracts/heatmap';
 import { AgentVesselTracksResultSchema } from '../contracts/vessel-tracks';
@@ -126,7 +127,7 @@ const commandView = (row: Record<string, unknown>, token = false): UiCommand => 
   ...(token ? { claimToken: String(row.claim_token) } : {}),
 });
 const isBuiltinMap = (task: Record<string, unknown>) =>
-  ['vessel_highlights', 'map_camera'].includes(String(task.intent));
+  ['vessel_highlights', 'map_camera', 'map_focus'].includes(String(task.intent));
 async function mapArtifact(
   c: PoolClient,
   task: Record<string, unknown>,
@@ -141,6 +142,19 @@ async function mapArtifact(
   ).rows[0];
   if (!row || row.output?.artifactRef !== artifactRef) return conflict('地图产物与任务不匹配。');
   const payload = row.output.payload;
+  if (stepId === 'map_map_focus') {
+    const result = AgentFocusResultSchema.parse(payload);
+    if (
+      result.inputRevision !== Number(task.input_revision) ||
+      result.taskId !== task.id ||
+      result.sessionId !== task.session_id
+    )
+      return conflict();
+    return {
+      payload: result,
+      operation: { componentId: 'chart.focus', action: 'show' } as UiOperation,
+    };
+  }
   if (stepId === 'map_vessel_highlights' && task.intent === 'vessel_highlights') {
     const result = AgentVesselHighlightsResultSchema.parse(payload);
     if (result.inputRevision !== Number(task.input_revision)) return conflict();
@@ -173,11 +187,12 @@ async function injectArtifact(
   q: Record<string, unknown>,
   view: UiCommand,
 ) {
-  if (isBuiltinMap(task)) {
+  if (isBuiltinMap(task) || q.step_id === 'map_map_focus') {
     const artifact = await mapArtifact(c, task, String(q.step_id), String(q.artifact_ref));
     if (!isDeepStrictEqual(artifact.operation, view.operation)) return conflict();
     if (artifact.payload.kind === 'vessel_highlights')
       view.highlightsPresentation = artifact.payload;
+    else if (artifact.payload.kind === 'map_focus') view.focusPresentation = artifact.payload;
     else view.cameraPresentation = artifact.payload;
   } else if (task.intent === 'skill') {
     const admitted = await assertDynamicSkillUiAvailable(
@@ -196,6 +211,8 @@ async function injectArtifact(
       );
     if (admitted.artifact.kind === 'map_camera')
       view.cameraPresentation = AgentMapCameraResultSchema.parse(admitted.artifact.payload);
+    if (admitted.artifact.kind === 'map_focus')
+      view.focusPresentation = AgentFocusResultSchema.parse(admitted.artifact.payload);
   }
   if (
     view.highlightsPresentation &&
@@ -300,7 +317,7 @@ export async function createUiCommand(
     if (task.intent === 'skill') {
       const admitted = await assertDynamicSkillUiAvailable(c, task, stepId, options.artifactRef);
       if (!isDeepStrictEqual(admitted.operation, op)) return conflict('界面操作与技能声明不匹配。');
-    } else if (isBuiltinMap(task)) {
+    } else if (isBuiltinMap(task) || stepId === 'map_map_focus') {
       const admitted = await mapArtifact(c, task, stepId, String(options.artifactRef));
       if (!isDeepStrictEqual(admitted.operation, op)) return conflict();
       await c.query(
@@ -339,7 +356,8 @@ export async function createUiCommand(
         (op.action === 'show' ||
           op.componentId === 'chart.viewport' ||
           op.componentId === 'chart.vessel-highlights')) ||
-      isBuiltinMap(task)
+      isBuiltinMap(task) ||
+      stepId === 'map_map_focus'
     ) {
       const previous = (
         await c.query(
@@ -355,11 +373,13 @@ export async function createUiCommand(
         acknowledged ??
         (op.componentId === 'chart.heatmap'
           ? binding.heatmapVersion
-          : op.componentId === 'chart.vessel-highlights'
-            ? binding.highlightsVersion
-            : op.componentId === 'chart.viewport'
-              ? binding.cameraVersion
-              : binding.tracksVersion);
+          : op.componentId === 'chart.focus'
+            ? binding.focusVersion
+            : op.componentId === 'chart.vessel-highlights'
+              ? binding.highlightsVersion
+              : op.componentId === 'chart.viewport'
+                ? binding.cameraVersion
+                : binding.tracksVersion);
       if (baseline === undefined || baseline !== component?.version)
         return conflict('图层状态已被人工改变；已保存计算产物，请在新任务中确认展示。');
     }
@@ -554,7 +574,7 @@ export async function receiptUiCommand(
   return transaction(infra, async (c) => {
     const { task, client, q } = await commandLocks(c, owner, id, receipt);
     if (
-      (task.intent === 'skill' || isBuiltinMap(task)) &&
+      (task.intent === 'skill' || isBuiltinMap(task) || q.step_id === 'map_map_focus') &&
       (receipt.stepId !== q.step_id || receipt.artifactRef !== q.artifact_ref)
     )
       return conflict();

@@ -1,6 +1,7 @@
 import { AgentVesselTracksResultSchema } from '../../../../packages/contracts/vessel-tracks';
 import { AgentIntelligenceResultSchema } from '../../../../packages/contracts/intelligence-search';
 import { AgentHeatmapResultSchema } from '../../../../packages/contracts/heatmap';
+import { AgentFocusResultSchema } from '../../../../packages/contracts/agent-focus';
 import {
   DynamicSkillArtifactSchema,
   DynamicSkillExecutionSchema,
@@ -60,6 +61,8 @@ const TaskQuery = z.strictObject({
   inputRevision: z.coerce.number().int().nonnegative().optional(),
 });
 const ConfigResponse = z.object({
+  spatialFocusEnabled: z.boolean(),
+  businessWriteEnabled: z.boolean(),
   enabled: z.boolean(),
   uiEnabled: z.boolean(),
   dynamicSkillsEnabled: z.boolean(),
@@ -76,6 +79,7 @@ const SessionResponse = z.object({
   snapshotCursor: z.string(),
 });
 const TaskResponse = z.object({
+  focusResult: AgentFocusResultSchema.nullable(),
   task: AgentTaskSchema,
   results: z.array(ObjectResponse),
   steps: z.array(AgentStepSchema),
@@ -104,6 +108,10 @@ export class AgentController {
   config() {
     return {
       enabled: process.env.AGENT_ENABLED === 'true',
+      spatialFocusEnabled:
+        process.env.AGENT_ENABLED === 'true' && process.env.AGENT_SPATIAL_FOCUS_ENABLED !== 'false',
+      businessWriteEnabled:
+        process.env.AGENT_ENABLED === 'true' && process.env.AGENT_BUSINESS_WRITE_ENABLED === 'true',
       uiEnabled: process.env.AGENT_UI_ENABLED === 'true',
       dynamicSkillsEnabled: process.env.AGENT_DYNAMIC_SKILLS_ENABLED === 'true',
       defaultHistoryHours: 24,
@@ -214,6 +222,7 @@ export class AgentController {
       tracksResult: result.tracksResult,
       dynamicSkill: result.dynamicSkill,
       artifacts: result.artifacts,
+      focusResult: result.focusResult,
     };
   }
   private inputError(error: unknown): never {
