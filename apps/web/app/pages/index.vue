@@ -350,12 +350,18 @@ for (const key of ['ais', 'tracks', 'evidence'] as const)
   });
 useUiComponent('chart.heatmap', {
   read: () =>
-    uiProjection(!!heatmap.result, ['close', 'show'], {
-      visible: !!heatmap.result && heatmap.displayed,
-      loading: heatmap.loading,
-      interacting: selectingHeatmapRegion.value,
-      revision: heatmap.closeRevision,
-    }),
+    uiProjection(
+      heatmap.currentEnabled || (heatmap.mode === 'historical' && !!heatmap.result),
+      ['close', 'show'],
+      {
+        visible:
+          (heatmap.currentEnabled && layers.ais !== false) ||
+          (heatmap.mode === 'historical' && !!heatmap.result && heatmap.displayed),
+        loading: heatmap.loading,
+        interacting: selectingHeatmapRegion.value,
+        revision: heatmap.closeRevision,
+      },
+    ),
   execute: async (op, command) => {
     if (op.action === 'close') {
       selectingHeatmapRegion.value = false;
@@ -404,7 +410,10 @@ useUiComponent('chart.vessel-tracks', {
     if (!vesselTracks.displayed) throw { code: 'POSTCONDITION_FAILED' };
   },
 });
-useUiComponent('chart.heatmap.legend', { read: () => uiProjection(!!heatmap.result, []) });
+useUiComponent('chart.heatmap.legend', {
+  read: () =>
+    uiProjection(heatmap.currentEnabled || (heatmap.mode === 'historical' && !!heatmap.result), []),
+});
 useUiComponent('chart.vessel-highlights', {
   read: () =>
     uiProjection(!!vesselHighlights.groups.length, ['show', 'close'], {
@@ -791,7 +800,8 @@ watch(
             @vessel-tracks-displayed="
               if (vesselTracks.result === $event) vesselTracks.displayed = true;
             "
-            :heatmap="heatmap.result"
+            :heatmap="heatmap.mode === 'historical' ? heatmap.result : null"
+            :current-density="heatmap.currentEnabled"
             @heatmap-displayed="if (heatmap.result === $event) heatmap.displayed = true;"
             :track="workspace.track"
             :frame="workspace.track ? workspace.frame : null"
@@ -913,12 +923,32 @@ watch(
           </section>
           <p v-if="vesselTracks.error" class="error" role="alert">{{ vesselTracks.error }}</p>
           <section
-            v-if="heatmap.result"
+            v-if="heatmap.currentEnabled"
+            class="heatmap-legend"
+            aria-label="当前船位密度图例"
+            data-testid="current-density-legend"
+          >
+            <strong>当前显示船位密度</strong>
+            <span
+              >复用当前单船图层 ·
+              {{ workspace.data?.items.filter((item) => item.kind === 'point').length ?? 0 }}
+              艘</span
+            >
+            <span>每船权重 1；低密度 → 高密度，颜色为相对平滑强度。</span>
+            <span
+              >遵循地图最近
+              {{ workspace.hours }} 小时观测、来源及船型筛选；加载进度与完整状态见地图状态栏。</span
+            >
+            <span v-if="layers.ais === false">单船图层已关闭，密度层同步隐藏。</span>
+            <button @click="heatmap.close">关闭热力图</button>
+          </section>
+          <section
+            v-if="heatmap.mode === 'historical' && heatmap.result"
             class="heatmap-legend"
             aria-label="热图统计图例"
             data-testid="heatmap-legend"
           >
-            <strong>AIS 热力图 · 每格去重船数</strong>
+            <strong>历史时段网格统计 · 每格去重船数</strong>
             <span
               >{{ heatmap.displayed ? '海图已展示' : '计算完成，等待地图绘制' }} · 全区
               {{ heatmap.result.totalVessels }} 艘</span
@@ -932,7 +962,10 @@ watch(
               >范围 {{ heatmap.result.query.bbox.map((n) => n.toFixed(2)).join('，') }} · 格宽
               {{ heatmap.result.grid.cellDegrees }}°</span
             >
-            <span>色彩为平滑强度，非单位面积密度；点击网格查看实际船数。</span>
+            <span
+              >历史范围内去重船数，与当前船位时间口径不同；蓝 1 · 青 10 · 黄 50 · 红 ≥100
+              艘，点击网格查看实际船数。</span
+            >
             <span v-if="heatmap.result.query.shipType"
               >船型 {{ heatmap.result.query.shipType }}（当前资料）</span
             >

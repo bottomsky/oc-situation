@@ -11,6 +11,8 @@ export function useAisHeatmap() {
   const loading = ref(false);
   const error = ref('');
   const displayed = ref(false);
+  const mode = ref<'current' | 'historical'>('current');
+  const currentEnabled = ref(false);
   let generation = 0;
   let controller: AbortController | undefined;
   const seen = new Set<string>();
@@ -26,6 +28,18 @@ export function useAisHeatmap() {
     lockedQuery.value = null;
     displayed.value = false;
     error.value = '';
+    currentEnabled.value = false;
+  }
+  function selectMode(value: 'current' | 'historical') {
+    invalidate();
+    mode.value = value;
+    currentEnabled.value = false;
+    displayed.value = false;
+    error.value = '';
+  }
+  function showCurrent() {
+    selectMode('current');
+    currentEnabled.value = true;
   }
   function apply(value: unknown) {
     const parsed = HeatmapResultSchema.safeParse(value);
@@ -34,6 +48,8 @@ export function useAisHeatmap() {
       return false;
     }
     result.value = parsed.data;
+    mode.value = 'historical';
+    currentEnabled.value = false;
     lastSnapshot.value = parsed.data;
     lockedQuery.value = parsed.data.query;
     displayed.value = false;
@@ -41,6 +57,8 @@ export function useAisHeatmap() {
     return true;
   }
   async function generate(input: HeatmapQuery, now = new Date()) {
+    mode.value = 'historical';
+    currentEnabled.value = false;
     const turn = invalidate();
     error.value = '';
     const snapshot = JSON.parse(JSON.stringify(input)) as HeatmapQuery;
@@ -111,6 +129,10 @@ export function useAisHeatmap() {
     loading,
     error,
     displayed,
+    mode,
+    currentEnabled,
+    selectMode,
+    showCurrent,
     generate,
     close,
     cancel: invalidate,

@@ -26,6 +26,21 @@ function setup(api: (path: string, options?: unknown) => Promise<unknown>) {
   return { state, identity, stop: () => scope.stop() };
 }
 describe('AIS 热图展示生命周期', () => {
+  it('当前船位密度与历史快照互斥，恢复历史自动切换模式', () => {
+    const h = setup(async () => result);
+    expect(h.state.mode.value).toBe('current');
+    expect(h.state.currentEnabled.value).toBe(false);
+    h.state.showCurrent();
+    expect(h.state.currentEnabled.value).toBe(true);
+    h.state.showSnapshot(result);
+    expect(h.state.mode.value).toBe('historical');
+    expect(h.state.currentEnabled.value).toBe(false);
+    h.state.showCurrent();
+    expect(h.state.result.value).toEqual(result);
+    h.state.close();
+    expect(h.state.currentEnabled.value).toBe(false);
+    h.stop();
+  });
   it('账号切换清空结果并使旧请求和自动展示票据失效', async () => {
     const h = setup(async () => result);
     h.state.showSnapshot(result);

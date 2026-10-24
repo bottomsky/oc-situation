@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
+import { captureChartMap } from './fixtures/chart-map';
 import { openLeftPanel, selectLeftTab } from './chart-helpers';
 
 function result() {
@@ -103,6 +104,7 @@ async function heatmapFixture(page: Page, delayed = false) {
 async function openHeatmap(page: Page) {
   await openLeftPanel(page);
   await selectLeftTab(page, 'AIS 热力图');
+  await page.getByLabel('热力图统计口径', { exact: true }).selectOption('historical');
 }
 test('人工生成锁定范围，缩放不重查，关闭移除图层', async ({ page }) => {
   await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));
@@ -111,31 +113,7 @@ test('人工生成锁定范围，缩放不重查，关闭移除图层', async ({
   await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true', {
     timeout: 45000,
   });
-  await page.evaluate(async () => {
-    const url = performance
-      .getEntriesByType('resource')
-      .map((entry) => entry.name)
-      .find((name) => /\/maplibre[-_]gl.*\.js/.test(name) && !name.includes('worker'));
-    if (!url)
-      throw new Error(
-        'MapLibre module was not loaded: ' +
-          performance
-            .getEntriesByType('resource')
-            .map((entry) => entry.name)
-            .filter((name) => name.includes('maplibre'))
-            .join(','),
-      );
-    const library = await import(url);
-    const prototype = library.Map.prototype;
-    const original = prototype.getSource;
-    prototype.getSource = function (id: string) {
-      if (id === 'ais-heatmap') {
-        Object.assign(globalThis, { heatmapTestMap: this });
-        prototype.getSource = original;
-      }
-      return original.call(this, id);
-    };
-  });
+  await captureChartMap(page, 'heatmapTestMap');
   await openHeatmap(page);
   await page.getByRole('button', { name: '生成热力图', exact: true }).click();
   const legend = page.getByTestId('heatmap-legend');

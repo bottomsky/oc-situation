@@ -189,20 +189,26 @@ export function createRegionalChartCoverage(
 ) {
   let state: RegionalChartState = 'loading';
   let disposed = false;
+  let presented = false;
   let pending = true;
   let moving = false;
   const available = regionalLayers.every((id) => map.getSource(id) && map.getLayer(id));
   function change(next: RegionalChartState) {
     if (disposed || state === next) return;
+    const wasPresented = presented;
     state = next;
-    // MapLibre batches synchronous style mutations before rendering the next frame.
-    for (const id of regionalLayers)
-      if (map.getLayer(id))
-        map.setPaintProperty(
-          id,
-          id === 'regional-coastline' ? 'line-opacity' : 'fill-opacity',
-          next === 'ready' ? 1 : 0,
-        );
+    if (next === 'ready') presented = true;
+    else if (next === 'fallback') presented = false;
+    // Keep retained parent/child tiles visible during normal viewport loading.
+    // First presentation and a real source failure still update the group atomically.
+    if (wasPresented !== presented)
+      for (const id of regionalLayers)
+        if (map.getLayer(id))
+          map.setPaintProperty(
+            id,
+            id === 'regional-coastline' ? 'line-opacity' : 'fill-opacity',
+            presented ? 1 : 0,
+          );
     onState(next);
   }
   function check() {

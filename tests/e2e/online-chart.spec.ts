@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
+import { captureChartMap } from './fixtures/chart-map';
 import { syntheticChartTile, transparentSeamark } from './fixtures/online-chart-fixture';
 
 async function renderedPixels(page: Page, light = false) {
@@ -191,6 +192,80 @@ test('底图404回退锁存且人工重试恢复，海标失败独立处理', as
   await expect(map).toHaveAttribute('data-online-seamarks-state', 'ready');
   await expect(map).toHaveAttribute('data-map-instance', instance!);
   await expect(map).toHaveAttribute('data-vessel-source-loaded', 'true');
+  expect(fixture.unexpected).toEqual([]);
+  expect(fixture.pageErrors).toEqual([]);
+});
+
+test('跨级滚轮与拖动保留已呈现底图，后续瓦片按需加载', async ({ page }) => {
+  await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));
+  const fixture = await onlineFixture(page);
+  await page.goto('/?mapDiagnostics=1');
+  const map = page.getByTestId('sea-map');
+  await expect(map).toHaveAttribute('data-online-chart-state', 'ready');
+  await expect(map).toHaveAttribute('data-moving', 'false');
+  await captureChartMap(page, 'continuityTestMap');
+  const initial = await page.evaluate(() => {
+    const current = (
+      globalThis as typeof globalThis & { continuityTestMap: import('maplibre-gl').Map }
+    ).continuityTestMap;
+    const samples: number[] = [];
+    current.on('render', () =>
+      samples.push(Number(current.getPaintProperty('online-background', 'background-opacity'))),
+    );
+    Object.assign(globalThis, { continuityOpacitySamples: samples });
+    return current.getZoom();
+  });
+  const requests = fixture.state.tileRequests;
+  let release!: () => void;
+  fixture.state.release = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const canvas = page.locator('.maplibregl-canvas');
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -600);
+  await expect.poll(() => fixture.state.tileRequests).toBeGreaterThan(requests);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (
+          globalThis as typeof globalThis & { continuityTestMap: import('maplibre-gl').Map }
+        ).continuityTestMap.getZoom(),
+      ),
+    )
+    .toBeGreaterThan(initial + 0.5);
+  await expect(map).toHaveAttribute('data-moving', 'false');
+  const pending = await page.evaluate(() => {
+    const current = (
+      globalThis as typeof globalThis & { continuityTestMap: import('maplibre-gl').Map }
+    ).continuityTestMap;
+    return {
+      background: current.getPaintProperty('online-background', 'background-opacity'),
+      ocean: current.getPaintProperty('online-ocean', 'fill-opacity'),
+      samples: (globalThis as typeof globalThis & { continuityOpacitySamples: number[] })
+        .continuityOpacitySamples,
+    };
+  });
+  // A newer level is deliberately pending: the visible parent tiles stay on screen.
+  expect(pending.background).toBe(1);
+  expect(pending.ocean).toBe(1);
+  expect(pending.samples.length).toBeGreaterThan(0);
+  expect(pending.samples.every((opacity) => opacity === 1)).toBe(true);
+  release();
+  await expect(map).toHaveAttribute('data-online-chart-state', 'ready');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2 + 30, { steps: 8 });
+  await page.mouse.up();
+  await expect(map).toHaveAttribute('data-moving', 'false');
+  await expect(map).toHaveAttribute('data-online-chart-state', 'ready');
+  const opacitySamples = await page.evaluate(
+    () =>
+      (globalThis as typeof globalThis & { continuityOpacitySamples: number[] })
+        .continuityOpacitySamples,
+  );
+  expect(opacitySamples.every((opacity) => opacity === 1)).toBe(true);
+  await expect(map).toHaveAttribute('data-map-initializations', '1');
   expect(fixture.unexpected).toEqual([]);
   expect(fixture.pageErrors).toEqual([]);
 });

@@ -277,7 +277,7 @@ it('资源初次加载失败保持全球背景，生命周期卸载后停止监�
   lifecycle.dispose();
 });
 
-it('新视口加载期间共同回退，移动结束且三源当前瓦片就绪后恢复，AIS事件保持区域状态', () => {
+it('已呈现区域组移动与后继瓦片加载时保持可见，实际源错误才共同回退', () => {
   const fixture = regionalMap();
   const states: string[] = [];
   const lifecycle = createRegionalChartCoverage(fixture.map, (state) => states.push(state));
@@ -290,20 +290,20 @@ it('新视口加载期间共同回退，移动结束且三源当前瓦片就绪�
   fixture.fire('sourcedataloading', 'vessels');
   expect(opacity()).toMatchObject({ 'fill-opacity': 1 });
   fixture.fire('movestart');
-  expect(opacity()).toMatchObject({ 'fill-opacity': 0 });
+  expect(opacity()).toMatchObject({ 'fill-opacity': 1 });
   fixture.fire('render');
-  expect(opacity()).toMatchObject({ 'fill-opacity': 0 });
+  expect(opacity()).toMatchObject({ 'fill-opacity': 1 });
   fixture.loaded.delete('regional-land');
   fixture.fire('moveend');
   fixture.fire('render');
-  expect(opacity()).toMatchObject({ 'fill-opacity': 0 });
+  expect(opacity()).toMatchObject({ 'fill-opacity': 1 });
   fixture.loaded.add('regional-land');
   fixture.fire('sourcedata', 'regional-land');
   fixture.fire('render');
   expect(opacity()).toMatchObject({ 'fill-opacity': 1 });
   fixture.loaded.delete('regional-coastline');
   fixture.fire('sourcedataloading', 'regional-coastline');
-  expect(opacity()).toMatchObject({ 'fill-opacity': 0 });
+  expect(opacity()).toMatchObject({ 'fill-opacity': 1 });
   fixture.loaded.add('regional-coastline');
   fixture.fire('sourcedata', 'regional-coastline');
   fixture.fire('render');

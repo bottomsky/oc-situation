@@ -68,7 +68,13 @@ import {
 } from '../utils/onlineChartStyle';
 import { createOnlineChartCoverage, type OnlineChartState } from '../utils/onlineChartState';
 import { createOnlineChartRequests } from '../utils/onlineChartRequests';
-import { heatmapGeoJson, registerHeatmapLayers, heatmapViewportBounds } from '../utils/heatmapMap';
+import {
+  heatmapGeoJson,
+  registerHeatmapLayers,
+  heatmapViewportBounds,
+  heatmapCellAt,
+  registerCurrentDensityLayer,
+} from '../utils/heatmapMap';
 import { registerVesselTracksLayers, vesselTracksGeoJson } from '../utils/vesselTracksMap';
 import type { VesselTracksResult, HeatmapResult } from '@ais/contracts';
 import type { ChartLayerVisibility, ChartMapControls, ChartVesselHighlight } from '../types/chart';
@@ -99,6 +105,7 @@ const props = defineProps<{
   layers?: Partial<ChartLayerVisibility>;
   selectingRegion?: boolean;
   heatmap?: HeatmapResult | null;
+  currentDensity?: boolean;
   vesselTracks?: VesselTracksResult | null;
   vesselHighlights?: ChartVesselHighlight[];
   prediction?: PredictionMapResult | null;
@@ -194,7 +201,13 @@ let portLabels: maplibregl.Marker[] = [];
 function updatePortLabels() {
   portLabels.forEach((label) => label.remove());
   portLabels = [];
-  if (!map || map.getZoom() < 5 || onlineState.value.base === 'ready') return;
+  if (
+    !map ||
+    map.getZoom() < 5 ||
+    (map.getLayer('online-background') &&
+      map.getPaintProperty('online-background', 'background-opacity') === 1)
+  )
+    return;
   const occupied = new Set<string>();
   for (const port of ports) {
     const name = port.properties?.['name:zh'] || port.properties?.name;
@@ -880,6 +893,8 @@ function registerBusinessLayers() {
   registerVesselTracksLayers(map);
   updateVesselTracks();
   registerChartBusinessLayers(map, grid);
+  registerCurrentDensityLayer(map);
+  updateCurrentDensity();
   map.setLayerZoomRange('vessels', 7, 24);
   map.setPaintProperty('vessels', 'icon-opacity', ['case', ['get', 'stale'], 0.45, 1]);
   for (const [source, line] of [
@@ -1071,6 +1086,14 @@ function updateHeatmap() {
           emit('heatmapDisplayed', snapshot);
     },
   );
+}
+function updateCurrentDensity() {
+  if (map?.getLayer('ais-current-density'))
+    map.setLayoutProperty(
+      'ais-current-density',
+      'visibility',
+      props.currentDensity && props.layers?.ais !== false ? 'visible' : 'none',
+    );
 }
 function updateVesselHighlights() {
   const source = map?.getSource('vessel-highlights') as GeoJSONSource | undefined;
@@ -1329,15 +1352,10 @@ onMounted(async () => {
       if (reference) emit('object', String(reference.properties.objectId));
       else if (
         props.heatmap &&
-        !map!.queryRenderedFeatures(e.point, { layers: ['vessels', 'clusters'] }).length
+        !map!.queryRenderedFeatures(e.point, { layers: ['vessels', 'vessels-distant', 'clusters'] })
+          .length
       ) {
-        const cell = props.heatmap.cells.find((item) => {
-          const half = props.heatmap!.grid.cellDegrees / 2;
-          return (
-            Math.abs(e.lngLat.wrap().lng - item.lon) <= half &&
-            Math.abs(e.lngLat.lat - item.lat) <= half
-          );
-        });
+        const cell = heatmapCellAt(props.heatmap, e.lngLat.lng, e.lngLat.lat);
         if (cell) {
           const content = document.createElement('div');
           content.textContent = `网格 ${cell.id}：${cell.vesselCount} 艘去重船舶`;
@@ -1499,6 +1517,7 @@ function currentBounds(): Bbox | null {
 }
 watch(() => [props.data, props.track, props.frame], update);
 watch(() => props.heatmap, updateHeatmap);
+watch(() => [props.currentDensity, props.layers?.ais], updateCurrentDensity);
 watch(() => props.vesselTracks, updateVesselTracks);
 watch(
   () => [

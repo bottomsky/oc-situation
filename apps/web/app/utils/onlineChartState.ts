@@ -34,7 +34,7 @@ interface OnlineChartMap {
   off(type: ChartEvent, listener: (event: SourceEvent) => void): unknown;
 }
 
-/** Keep each online group transparent until real viewport tiles have reached a render. */
+/** Warm up each source generation atomically, then let MapLibre retain tiles during navigation. */
 export function createOnlineChartCoverage(
   map: OnlineChartMap,
   config: OnlineChartConfig,
@@ -50,6 +50,7 @@ export function createOnlineChartCoverage(
       layers: ONLINE_BASE_LAYER_OPACITIES,
       state: (config.enabled ? 'loading' : 'disabled') as OnlineChartStatus,
       hasTile: false,
+      presented: false,
       pending: true,
       generation: 0,
       retries: 2,
@@ -64,6 +65,7 @@ export function createOnlineChartCoverage(
       layers: [{ id: ONLINE_SEAMARK_LAYER_ID, property: 'raster-opacity', readyValue: 1 }],
       state: (config.seamarksEnabled ? 'loading' : 'disabled') as OnlineChartStatus,
       hasTile: false,
+      presented: false,
       pending: true,
       generation: 0,
       retries: 2,
@@ -96,13 +98,18 @@ export function createOnlineChartCoverage(
   });
   function change(group: (typeof groups)[number], next: OnlineChartStatus) {
     if (disposed || group.state === next) return;
+    const wasPresented = group.presented;
     group.state = next;
+    if (next === 'ready') group.presented = true;
+    else if (next === 'fallback' || next === 'disabled') group.presented = false;
     if (next !== 'loading') clearDeadline(group);
     else startDeadline(group);
-    // Synchronous paint updates are applied together by the following MapLibre frame.
-    for (const layer of group.layers)
-      if (map.getLayer(layer.id))
-        map.setPaintProperty(layer.id, layer.property, next === 'ready' ? layer.readyValue : 0);
+    // Loading a new viewport must not hide tiles already retained by MapLibre's tile
+    // pyramid. Only first presentation or actual fallback changes the group's paint.
+    if (wasPresented !== group.presented)
+      for (const layer of group.layers)
+        if (map.getLayer(layer.id))
+          map.setPaintProperty(layer.id, layer.property, group.presented ? layer.readyValue : 0);
     onState(snapshot());
   }
   function sourceChanged(event: SourceEvent) {

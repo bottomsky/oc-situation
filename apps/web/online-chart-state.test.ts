@@ -139,20 +139,69 @@ it('源错误被锁存，迟到loaded/render及移动不能复活失败组', () 
   expect(f.state().base).toBe('fallback');
 });
 
-it('移动缩放时整组关闭，停下后等待当前视口全部加载且render才恢复', () => {
+it('已呈现在线组在移动及后继瓦片加载时保持可见，让MapLibre连续复用父子瓦片', () => {
   const f = fixture();
   f.ready(baseId);
+  f.ready(seamarkId);
+  f.map.setPaintProperty.mockClear();
   f.fire('movestart');
   expect(f.state().base).toBe('loading');
+  expect(f.map.setPaintProperty).not.toHaveBeenCalled();
   f.loaded.delete(baseId);
+  f.fire('sourcedataloading', baseId, {});
   f.fire('render');
   f.fire('moveend');
   f.fire('render');
   expect(f.state().base).toBe('loading');
+  expect(f.map.setPaintProperty).not.toHaveBeenCalled();
   f.ready(baseId, true);
   expect(f.state().base).toBe('ready');
   f.fire('sourcedataloading', baseId, {});
   expect(f.state().base).toBe('loading');
+  f.ready(baseId);
+  f.ready(seamarkId);
+  expect(f.map.setPaintProperty).not.toHaveBeenCalled();
+  for (let i = 0; i < 4; ++i) {
+    f.fire('movestart');
+    f.fire('moveend');
+    f.fire('render');
+  }
+  expect(f.state()).toMatchObject({ base: 'ready', seamarks: 'ready' });
+  expect(f.map.setPaintProperty).not.toHaveBeenCalled();
+});
+
+it('已呈现在线组正常长拖动保持可见，停下后后继瓦片超时才回退并重新预热', () => {
+  vi.useFakeTimers();
+  const f = fixture({ enabled: true, seamarksEnabled: false }, 100);
+  f.ready(baseId);
+  f.map.setPaintProperty.mockClear();
+  f.fire('movestart');
+  f.loaded.delete(baseId);
+  f.fire('sourcedataloading', baseId, {});
+  vi.advanceTimersByTime(1_000);
+  expect(f.state().base).toBe('loading');
+  expect(f.map.setPaintProperty).not.toHaveBeenCalled();
+  f.fire('moveend');
+  vi.advanceTimersByTime(99);
+  expect(f.map.setPaintProperty).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(1);
+  expect(f.state().base).toBe('fallback');
+  expect(f.map.setPaintProperty.mock.calls).toEqual(
+    ONLINE_BASE_LAYER_OPACITIES.map((l) => [l.id, l.property, 0]),
+  );
+  f.controller.retry('base');
+  f.map.setPaintProperty.mockClear();
+  f.fire('movestart');
+  f.fire('moveend');
+  f.loaded.add(`${baseId}-g1`);
+  f.fire('render');
+  expect(f.state().base).toBe('loading');
+  expect(f.map.setPaintProperty).not.toHaveBeenCalled();
+  f.ready(`${baseId}-g1`);
+  expect(f.map.setPaintProperty.mock.calls).toEqual(
+    ONLINE_BASE_LAYER_OPACITIES.map((l) => [l.id, l.property, l.readyValue]),
+  );
+  f.controller.dispose();
 });
 
 it('海标就绪与失败只改变海标，底图就绪状态保持独立', () => {
