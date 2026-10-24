@@ -14,6 +14,7 @@ scrape_configs:
           - intelligence:13107
           - topic-port-restriction:13108
           - topic-low-speed:13109
+          - topic-predictions:13111
   - job_name: ais-agent
     dns_sd_configs:
       - names:

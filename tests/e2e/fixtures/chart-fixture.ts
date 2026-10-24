@@ -55,7 +55,7 @@ export async function chartFixture(
           lastError: null,
         },
       ];
-    else if (path.endsWith('/map')) {
+    else if (path.endsWith('/map') || path.endsWith('/map/points')) {
       calls.mapQueries.push(url);
       json = {
         items: options.clusters
@@ -75,6 +75,15 @@ export async function chartFixture(
         truncated: false,
         generatedAt: chartPoint.observedAt,
       };
+      if (path.endsWith('/map/points') && !options.clusters)
+        json = {
+          ...(json as Record<string, unknown>),
+          snapshotId: 'fixture-points',
+          sequence: 1,
+          nextCursor: null,
+          complete: true,
+          expiresAt: '2099-01-01T00:00:00Z',
+        };
     } else if (path.endsWith('/analysis/feed')) json = { items: [], nextCursor: '0' };
     else if (path.endsWith('/analysis/results')) {
       calls.resultList++;
@@ -133,7 +142,8 @@ export async function chartFixture(
         latestPosition: chartPoint,
         provenance: {},
       };
-    } else if (path.endsWith('/topics')) json = { definitions: [], instances: [chartTopic] };
+    } else if (path.endsWith('/topics/predictions')) json = { items: [], instances: [] };
+    else if (path.endsWith('/topics')) json = { definitions: [], instances: [chartTopic] };
     else if (path.endsWith('/runs')) {
       calls.runs.push(path);
       json = { items: calls.manual ? [chartRun] : [] };

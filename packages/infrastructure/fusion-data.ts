@@ -19,6 +19,7 @@ import {
 } from '../contracts/intelligence';
 import type { Infrastructure } from './clients';
 import { projectIntelligenceRelations } from './intelligence-store';
+import { predictionQuery } from './predictions-land';
 
 export function boxesOverlap(a: Bbox, b: Bbox): boolean {
   if (a[1] > b[3] || b[1] > a[3]) return false;
@@ -301,6 +302,8 @@ const WindowSchema = z
       .max(100000)
       .optional(),
     sourceId: z.string().min(1).max(200).optional(),
+    intelligenceFrom: z.iso.datetime().optional(),
+    intelligenceTo: z.iso.datetime().optional(),
   })
   .refine((v) => Date.parse(v.from) <= Date.parse(v.to), 'Reversed window');
 export async function queryFusionDataset(
@@ -312,9 +315,34 @@ export async function queryFusionDataset(
     maxRecords?: number;
     mmsis?: string[];
     sourceId?: string;
+    intelligenceFrom?: string;
+    intelligenceTo?: string;
+    signal?: AbortSignal;
+    deadline?: number;
   },
 ): Promise<FusionDataset> {
-  const { from, to, maxRecords, bbox, mmsis: selectedMmsis, sourceId } = WindowSchema.parse(input);
+  const {
+    from,
+    to,
+    maxRecords,
+    bbox,
+    mmsis: selectedMmsis,
+    sourceId,
+    intelligenceFrom = from,
+    intelligenceTo = to,
+  } = WindowSchema.parse(input);
+  const sql: Infrastructure['pool']['query'] = input.signal
+    ? (((text: string, values?: unknown[]) =>
+        predictionQuery(
+          infra,
+          text,
+          values,
+          input.signal,
+          input.deadline,
+        )) as Infrastructure['pool']['query'])
+    : infra.pool.query.bind(infra.pool);
+  if (Date.parse(intelligenceFrom) > Date.parse(intelligenceTo))
+    throw new Error('Reversed intelligence window');
   if (Date.parse(from) < Date.now() - 30 * 86400000)
     throw new Error(
       'Requested AIS history precedes the 30-day online retention; restore the raw archive before recomputation',
@@ -323,6 +351,7 @@ export async function queryFusionDataset(
     ? ` AND latitude BETWEEN {south:Float64} AND {north:Float64} AND (longitude >= {west:Float64} ${bbox[0] <= bbox[2] ? 'AND' : 'OR'} longitude <= {east:Float64})`
     : '';
   const response = await infra.clickhouse.query({
+    abort_signal: input.signal,
     query: `SELECT observation FROM positions FINAL WHERE observedAt>=parseDateTime64BestEffort({from:String}) AND observedAt<=parseDateTime64BestEffort({to:String})${spatial}${selectedMmsis !== undefined ? ' AND mmsi IN {selectedMmsis:Array(String)}' : ''}${sourceId ? ' AND sourceId={sourceId:String}' : ''} ORDER BY observedAt,eventId LIMIT {limit:UInt32}`,
     query_params: {
       from,
@@ -341,7 +370,7 @@ export async function queryFusionDataset(
     .map((r) => parseNormalizedObservation(JSON.parse(r.observation)))
     .filter((o): o is PositionObservation => o.kind === 'position');
   const mmsis = [...new Set(positions.map((o) => o.mmsi))];
-  const identifiers = await infra.pool.query<{
+  const identifiers = await sql<{
     identifier: string;
     vessel_id: string;
     valid_from: Date;
@@ -355,6 +384,7 @@ export async function queryFusionDataset(
     const client = await infra.pool.connect();
     try {
       await client.query('BEGIN');
+      if (input.signal) await client.query("SET LOCAL statement_timeout='5000ms'");
       await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
         `vessel:${mmsi}`,
       ]);
@@ -380,7 +410,7 @@ export async function queryFusionDataset(
   }
   const identityRows = missing.length
     ? (
-        await infra.pool.query<{
+        await sql<{
           identifier: string;
           vessel_id: string;
           valid_from: Date;
@@ -393,6 +423,7 @@ export async function queryFusionDataset(
     : identifiers.rows;
   const staticResponse = mmsis.length
     ? await infra.clickhouse.query({
+        abort_signal: input.signal,
         query:
           'SELECT mmsi,observation FROM static_history_v2 FINAL WHERE mmsi IN {mmsis:Array(String)} AND coalesce(observedAt,receivedAt)<=parseDateTime64BestEffort({to:String}) ORDER BY coalesce(observedAt,receivedAt) DESC,sourcePriority DESC,eventId DESC LIMIT {limit:UInt32}',
         query_params: { mmsis, to, limit: maxRecords + 1 },
@@ -419,10 +450,10 @@ export async function queryFusionDataset(
     : '';
   // Select related logical documents by any historical revision, then retain every revision
   // so a later moved or withdrawn announcement can invalidate an earlier match.
-  const events = await infra.pool.query<{ event: IntelligenceEvent | null }>(
+  const events = await sql<{ event: IntelligenceEvent | null }>(
     `WITH related AS (SELECT e.event || jsonb_build_object('reviewStatus',COALESCE((SELECT review_status FROM intelligence_reviews WHERE event_id=e.id ORDER BY id DESC LIMIT 1),e.event->>'reviewStatus','confirmed')) event FROM intelligence_events e WHERE (e.source_id,e.external_id) IN (SELECT source_id,external_id FROM intelligence_events WHERE effective_from<=$2 AND (effective_to IS NULL OR effective_to>=$1)${documentRegion}) ORDER BY e.id LIMIT $3)
     SELECT CASE WHEN sum(octet_length(event::text)) OVER () <= 33554432 THEN event ELSE NULL END event FROM related`,
-    [from, to, maxRecords + 1, ...(bbox ? [...bbox] : [])],
+    [intelligenceFrom, intelligenceTo, maxRecords + 1, ...(bbox ? [...bbox] : [])],
   );
   if (events.rows.length > maxRecords || events.rows.some((row) => row.event === null))
     throw new FusionDatasetLimitError();

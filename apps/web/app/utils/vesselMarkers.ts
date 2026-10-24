@@ -38,6 +38,7 @@ export const vesselSymbolLayout: SymbolLayerSpecification['layout'] = {
   'icon-pitch-alignment': 'map',
   'icon-allow-overlap': true,
   'icon-ignore-placement': true,
+  'icon-size': ['interpolate', ['linear'], ['zoom'], 2, 0.25, 6, 0.6, 10, 0.95, 14, 1.15],
 };
 // The raster points north before MapLibre applies clockwise rotation. Unknown
 // directions use a hollow ring whose rotational symmetry communicates no bearing.
@@ -50,12 +51,13 @@ export function createVesselIcon(color: string, unknown: boolean) {
       const dx = x + 0.5 - width / 2;
       const dy = y + 0.5 - width / 2;
       const radius = Math.hypot(dx, dy);
+      const halfWidth = y < 13 ? (y - 2) * 0.55 : y <= 28 ? 6 : Math.max(0, 6 - (y - 28) * 1.5);
       const outer = unknown
         ? radius >= 5 && radius <= 12
-        : y >= 3 && y <= 31 && Math.abs(dx) <= (y - 2) * 0.44;
+        : y >= 3 && y <= 31 && Math.abs(dx) <= halfWidth;
       const inner = unknown
         ? radius >= 7 && radius <= 10
-        : y >= 8 && y <= 28 && Math.abs(dx) <= (y - 7) * 0.44;
+        : y >= 7 && y <= 29 && Math.abs(dx) <= halfWidth - 1.5;
       if (!outer) continue;
       const offset = (y * width + x) * 4;
       data.set(inner ? rgb : [255, 255, 255], offset);

@@ -1420,6 +1420,269 @@
         "tags": ["Vessels"]
       }
     },
+    "/api/v1/map/points/{snapshotId}": {
+      "delete": {
+        "operationId": "MapController_release",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Release an owned read snapshot; repeated and foreign identifiers return no content",
+        "tags": ["Map"]
+      }
+    },
+    "/api/v1/map/points": {
+      "get": {
+        "operationId": "MapController_points",
+        "parameters": [
+          {
+            "name": "bbox",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 150
+            }
+          },
+          {
+            "name": "zoom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 3,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 22
+            }
+          },
+          {
+            "name": "hours",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 24,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 720
+            }
+          },
+          {
+            "name": "sourceId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "shipType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 99
+            }
+          },
+          {
+            "name": "snapshotId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,8})$"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "snapshotId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "sequence": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991
+                    },
+                    "items": {
+                      "maxItems": 1000,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": ["point"]
+                          },
+                          "mmsi": {
+                            "type": "string"
+                          },
+                          "lat": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "lon": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          "observedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "sourceId": {
+                            "type": "string"
+                          },
+                          "sogKnots": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "cogDegrees": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "headingDegrees": {
+                            "nullable": true,
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 360,
+                            "exclusiveMaximum": true
+                          },
+                          "quality": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "mmsi",
+                          "lat",
+                          "lon",
+                          "observedAt",
+                          "sourceId",
+                          "sogKnots",
+                          "cogDegrees",
+                          "headingDegrees",
+                          "quality"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "nextCursor": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "complete": {
+                      "type": "boolean"
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "snapshotId",
+                    "sequence",
+                    "items",
+                    "total",
+                    "nextCursor",
+                    "complete",
+                    "generatedAt",
+                    "expiresAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Complete paginated current vessel points at every zoom",
+        "tags": ["Map"]
+      }
+    },
     "/api/v1/map/heatmap": {
       "get": {
         "operationId": "MapController_heatmap",
@@ -9750,6 +10013,202 @@
         "tags": ["Intelligence"]
       }
     },
+    "/api/v1/topics/predictions": {
+      "post": {
+        "operationId": "TopicsController_predict",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mmsi": {
+                    "type": "string",
+                    "pattern": "^[1-9]\\d{8}$"
+                  },
+                  "watch": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["mmsi"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Queue an owned bounded single-vessel prediction task",
+        "tags": ["Topics"]
+      },
+      "get": {
+        "operationId": "TopicsController_predictions",
+        "parameters": [
+          {
+            "name": "mmsi",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d{8}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Owned latest prediction metadata, with geometry only for a selected MMSI",
+        "tags": ["Topics"]
+      }
+    },
+    "/api/v1/topics/predictions/{instanceId}/watch": {
+      "put": {
+        "operationId": "TopicsController_watch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "watch": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["watch"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Persist an owned vessel watch within the twenty-vessel account quota",
+        "tags": ["Topics"]
+      }
+    },
+    "/api/v1/topics/predictions/{instanceId}/cancel": {
+      "post": {
+        "operationId": "TopicsController_cancel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Cancel an owned prediction and fence all in-flight leases",
+        "tags": ["Topics"]
+      }
+    },
     "/api/v1/topics": {
       "get": {
         "operationId": "TopicsController_list",
@@ -9811,7 +10270,12 @@
                 "properties": {
                   "definitionId": {
                     "type": "string",
-                    "enum": ["port-restriction", "area-low-speed-notice"]
+                    "enum": [
+                      "port-restriction",
+                      "area-low-speed-notice",
+                      "vessel-reachability",
+                      "navigation-warning-impact"
+                    ]
                   },
                   "name": {
                     "type": "string",
@@ -9879,6 +10343,10 @@
                         "type": "integer",
                         "minimum": 10,
                         "maximum": 86400
+                      },
+                      "mmsi": {
+                        "type": "string",
+                        "pattern": "^[1-9]\\d{8}$"
                       }
                     },
                     "required": ["bbox"],
@@ -10174,6 +10642,10 @@
                         "type": "integer",
                         "minimum": 10,
                         "maximum": 86400
+                      },
+                      "mmsi": {
+                        "type": "string",
+                        "pattern": "^[1-9]\\d{8}$"
                       }
                     },
                     "required": ["bbox"],
@@ -10215,6 +10687,53 @@
         ],
         "summary": "Update configuration and restart historical warmup with a fenced generation",
         "tags": ["Topics"]
+      }
+    },
+    "/api/v1/analysis/results/{id}/artifact": {
+      "get": {
+        "operationId": "AnalysisController_artifact",
+        "parameters": [
+          {
+            "name": "revision",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
+              "maximum": 9007199254740991
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Session required"
+          },
+          "403": {
+            "description": "Role, origin or CSRF denied"
+          }
+        },
+        "security": [
+          {
+            "ais_session": []
+          }
+        ],
+        "summary": "Immutable prediction geometry and warning impacts for one result revision",
+        "tags": ["Analysis"]
       }
     },
     "/api/v1/analysis/results": {
@@ -10912,6 +11431,7 @@
                                         "playback",
                                         "heatmap",
                                         "history-tracks",
+                                        "prediction",
                                         "chat",
                                         "push",
                                         "tasks"
@@ -11246,7 +11766,12 @@
                           "definitionId": {
                             "nullable": true,
                             "type": "string",
-                            "enum": ["port-restriction", "area-low-speed-notice"]
+                            "enum": [
+                              "port-restriction",
+                              "area-low-speed-notice",
+                              "vessel-reachability",
+                              "navigation-warning-impact"
+                            ]
                           },
                           "generation": {
                             "type": "number"
@@ -14893,6 +15418,7 @@
                                       "playback",
                                       "heatmap",
                                       "history-tracks",
+                                      "prediction",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -15227,7 +15753,12 @@
                         "definitionId": {
                           "nullable": true,
                           "type": "string",
-                          "enum": ["port-restriction", "area-low-speed-notice"]
+                          "enum": [
+                            "port-restriction",
+                            "area-low-speed-notice",
+                            "vessel-reachability",
+                            "navigation-warning-impact"
+                          ]
                         },
                         "generation": {
                           "type": "number"
@@ -19017,6 +19548,7 @@
                                       "playback",
                                       "heatmap",
                                       "history-tracks",
+                                      "prediction",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -19351,7 +19883,12 @@
                         "definitionId": {
                           "nullable": true,
                           "type": "string",
-                          "enum": ["port-restriction", "area-low-speed-notice"]
+                          "enum": [
+                            "port-restriction",
+                            "area-low-speed-notice",
+                            "vessel-reachability",
+                            "navigation-warning-impact"
+                          ]
                         },
                         "generation": {
                           "type": "number"
@@ -24893,6 +25430,7 @@
                                               "playback",
                                               "heatmap",
                                               "history-tracks",
+                                              "prediction",
                                               "chat",
                                               "push",
                                               "tasks"
@@ -25324,6 +25862,7 @@
                                                 "playback",
                                                 "heatmap",
                                                 "history-tracks",
+                                                "prediction",
                                                 "chat",
                                                 "push",
                                                 "tasks"
@@ -26663,6 +27202,7 @@
                                       "playback",
                                       "heatmap",
                                       "history-tracks",
+                                      "prediction",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -26997,7 +27537,12 @@
                         "definitionId": {
                           "nullable": true,
                           "type": "string",
-                          "enum": ["port-restriction", "area-low-speed-notice"]
+                          "enum": [
+                            "port-restriction",
+                            "area-low-speed-notice",
+                            "vessel-reachability",
+                            "navigation-warning-impact"
+                          ]
                         },
                         "generation": {
                           "type": "number"
@@ -30111,6 +30656,7 @@
                                       "playback",
                                       "heatmap",
                                       "history-tracks",
+                                      "prediction",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -30445,7 +30991,12 @@
                         "definitionId": {
                           "nullable": true,
                           "type": "string",
-                          "enum": ["port-restriction", "area-low-speed-notice"]
+                          "enum": [
+                            "port-restriction",
+                            "area-low-speed-notice",
+                            "vessel-reachability",
+                            "navigation-warning-impact"
+                          ]
                         },
                         "generation": {
                           "type": "number"
@@ -31691,6 +32242,7 @@
                                   "playback",
                                   "heatmap",
                                   "history-tracks",
+                                  "prediction",
                                   "chat",
                                   "push",
                                   "tasks"
@@ -32018,7 +32570,12 @@
                     "definitionId": {
                       "nullable": true,
                       "type": "string",
-                      "enum": ["port-restriction", "area-low-speed-notice"]
+                      "enum": [
+                        "port-restriction",
+                        "area-low-speed-notice",
+                        "vessel-reachability",
+                        "navigation-warning-impact"
+                      ]
                     },
                     "generation": {
                       "type": "number"
@@ -33395,6 +33952,7 @@
                                 "playback",
                                 "heatmap",
                                 "history-tracks",
+                                "prediction",
                                 "chat",
                                 "push",
                                 "tasks"
@@ -35219,6 +35777,7 @@
                                   "playback",
                                   "heatmap",
                                   "history-tracks",
+                                  "prediction",
                                   "chat",
                                   "push",
                                   "tasks"
@@ -36832,6 +37391,7 @@
                             "playback",
                             "heatmap",
                             "history-tracks",
+                            "prediction",
                             "chat",
                             "push",
                             "tasks"
@@ -37094,6 +37654,7 @@
                                 "playback",
                                 "heatmap",
                                 "history-tracks",
+                                "prediction",
                                 "chat",
                                 "push",
                                 "tasks"
@@ -39321,6 +39882,7 @@
                                             "playback",
                                             "heatmap",
                                             "history-tracks",
+                                            "prediction",
                                             "chat",
                                             "push",
                                             "tasks"
@@ -39623,6 +40185,7 @@
                                       "playback",
                                       "heatmap",
                                       "history-tracks",
+                                      "prediction",
                                       "chat",
                                       "push",
                                       "tasks"
@@ -39896,6 +40459,7 @@
                                     "playback",
                                     "heatmap",
                                     "history-tracks",
+                                    "prediction",
                                     "chat",
                                     "push",
                                     "tasks"
@@ -40209,6 +40773,7 @@
                                           "playback",
                                           "heatmap",
                                           "history-tracks",
+                                          "prediction",
                                           "chat",
                                           "push",
                                           "tasks"

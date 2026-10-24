@@ -55,6 +55,7 @@ function checkMetricsBindings(ports: number[]) {
 
 describe('local demo worker orchestration', () => {
   it('assigns separate metrics listeners to agent and both topic workers', () => {
+    expect(demoWorker('topicPredictions').env.TOPIC_PREDICTIONS_ONLY).toBe('true');
     const roles = Object.keys(demoWorkers) as (keyof typeof demoWorkers)[];
     const ports = roles.map((role) => demoWorker(role).metricsPort);
     expect(new Set(ports).size).toBe(roles.length);

@@ -2,7 +2,7 @@ import { build } from 'esbuild';
 import { readFile, mkdir, cp, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { spawn } from 'node:child_process';
-import { buildPlan } from './build-plan';
+import { buildPlan, extraBuildEntries } from './build-plan';
 import { syncAgentSkillAssets } from './build-skill-assets';
 
 const root = resolve(import.meta.dirname, '..');
@@ -55,6 +55,19 @@ for (const name of names) {
   if (plan.migrations)
     await cp(join(root, 'packages/infrastructure/migrations'), join(directory, 'dist/migrations'), {
       recursive: true,
+    });
+  for (const entry of extraBuildEntries(name))
+    await build({
+      entryPoints: [join(directory, entry.entry)],
+      outfile: join(directory, entry.output),
+      bundle: true,
+      platform: 'node',
+      format: 'esm',
+      target: 'node24',
+      sourcemap: true,
+      external,
+      tsconfig: join(root, 'tsconfig.base.json'),
+      logLevel: 'warning',
     });
   if (name === 'intelligence')
     await cp(join(directory, 'fixtures'), join(directory, 'dist/fixtures'), { recursive: true });

@@ -30,6 +30,9 @@ import type {
   TopicInstance,
 } from '../../packages/contracts/topics';
 import { executeExternalTopic } from './protocol';
+import { isPredictionDefinition } from '../../packages/contracts/topics';
+import { executePredictionTopic } from './prediction-execution';
+import { schedulePredictionRuns } from '../../packages/infrastructure/predictions';
 
 const ReadyEvent = z.object({
   id: z.string().min(1).max(200),
@@ -130,48 +133,111 @@ export async function processNextTopicRun(
   definitionId?: TopicDefinitionId,
   instanceId?: string,
   events: TopicRunEvents = {},
+  signal?: AbortSignal,
 ) {
   const lease = await claimTopicRun(infra, definitionId, instanceId);
   if (!lease) return false;
   let outcome: 'succeeded' | 'failed' | 'fenced' = 'fenced';
   let renewing = false;
-  const timer = setInterval(() => {
-    if (renewing) return;
-    renewing = true;
-    void renewTopicLease(infra, lease)
-      .catch((error) => logger.error({ error: String(error) }, 'Topic lease renewal failed'))
-      .finally(() => {
-        renewing = false;
-      });
-  }, 30_000);
+  const abort = new AbortController();
+  const deadline = Date.now() + 30000;
+  let timedOut = false;
+  const deadlineTimer = isPredictionDefinition(lease.instance.definitionId)
+    ? setTimeout(() => {
+        timedOut = true;
+        abort.abort();
+      }, 30000)
+    : undefined;
+  const cancel = () => abort.abort();
+  signal?.addEventListener('abort', cancel, { once: true });
+  if (signal?.aborted) abort.abort();
+  const timer = setInterval(
+    () => {
+      if (renewing) return;
+      renewing = true;
+      void renewTopicLease(infra, lease)
+        .then((valid) => {
+          if (!valid && isPredictionDefinition(lease.instance.definitionId)) abort.abort();
+        })
+        .catch((error) => logger.error({ error: String(error) }, 'Topic lease renewal failed'))
+        .finally(() => {
+          renewing = false;
+        });
+    },
+    isPredictionDefinition(lease.instance.definitionId) ? 1000 : 30_000,
+  );
   try {
-    const input = await queryFusionDataset(infra, {
-      from: lease.run.from,
-      to: lease.run.to,
-      bbox: lease.instance.config.bbox,
-    });
-    const dataset: TopicDataset = {
-      ...input,
-      intelligence: input.intelligence.map((d) => ({ ...d, kind: d.category })),
-    };
-    await saveTopicInput(infra, lease, dataset);
-    const results = process.env.TOPIC_EXECUTOR_COMMAND
-      ? await executeExternalTopic(process.env.TOPIC_EXECUTOR_COMMAND, lease.instance, dataset)
-      : evaluateTopic(lease.instance, dataset);
-    if (await completeTopicRun(infra, lease, results)) outcome = 'succeeded';
+    if (isPredictionDefinition(lease.instance.definitionId)) {
+      const output = await executePredictionTopic(infra, lease, abort.signal, deadline);
+      if (
+        !abort.signal.aborted &&
+        (await completeTopicRun(infra, lease, output.results, output.artifacts, {
+          signal: abort.signal,
+          deadline,
+        }))
+      )
+        outcome = 'succeeded';
+    } else {
+      const input = await queryFusionDataset(infra, {
+        from: lease.run.from,
+        to: lease.run.to,
+        bbox: lease.instance.config.bbox,
+      });
+      const dataset: TopicDataset = {
+        ...input,
+        intelligence: input.intelligence.map((d) => ({ ...d, kind: d.category })),
+      };
+      await saveTopicInput(infra, lease, dataset);
+      const results = process.env.TOPIC_EXECUTOR_COMMAND
+        ? await executeExternalTopic(process.env.TOPIC_EXECUTOR_COMMAND, lease.instance, dataset)
+        : evaluateTopic(lease.instance, dataset);
+      if (await completeTopicRun(infra, lease, results)) outcome = 'succeeded';
+    }
   } catch (error) {
-    await failTopicRun(infra, lease, error);
-    outcome = 'failed';
-    logger.warn(
-      { runId: lease.run.id, error: error instanceof Error ? error.message : String(error) },
-      'Topic run failed; durable retry policy applied',
-    );
+    if (!abort.signal.aborted || timedOut) {
+      const failure = timedOut
+        ? new Error('Prediction task exceeded its 30-second end-to-end deadline')
+        : error;
+      await failTopicRun(infra, lease, failure);
+      outcome = 'failed';
+      logger.warn(
+        {
+          runId: lease.run.id,
+          error: failure instanceof Error ? failure.message : String(failure),
+        },
+        'Topic run failed; durable retry policy applied',
+      );
+    }
   } finally {
     clearInterval(timer);
+    clearTimeout(deadlineTimer);
+    signal?.removeEventListener('abort', cancel);
   }
   if (outcome === 'succeeded') events.onSucceeded?.();
   if (outcome === 'failed') events.onFailed?.();
   return true;
+}
+export async function runPredictionTopics(
+  infra: Infrastructure,
+  signal: AbortSignal,
+  events: TopicRunEvents = {},
+) {
+  await ensureAnalysisBus(infra);
+  const work = async () => {
+    if (await processNextTopicRun(infra, 'vessel-reachability', undefined, events, signal)) return;
+    await processNextTopicRun(infra, 'navigation-warning-impact', undefined, events, signal);
+  };
+  while (!signal.aborted) {
+    await expireExhaustedTopicRuns(infra);
+    await schedulePredictionRuns(infra);
+    await Promise.all([work(), work()]);
+    await flushAnalysisOutbox(infra);
+    try {
+      await delay(1000, undefined, { signal });
+    } catch (error) {
+      if (!signal.aborted) throw error;
+    }
+  }
 }
 async function handleSubscription(
   infra: Infrastructure,

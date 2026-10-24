@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { AnalysisResult, MapPoint } from '@ais/contracts';
 import { dateLabel } from '../utils/display';
-defineProps<{
+import { vesselTablePage } from '../utils/chartWorkspace';
+const props = defineProps<{
   rows: (MapPoint & { name: string })[];
   total: number;
   clustered: boolean;
@@ -10,6 +11,15 @@ defineProps<{
   collapsed: boolean;
   selectedId?: string;
 }>();
+const page = ref(0);
+const pageCount = computed(() => Math.max(1, Math.ceil(props.rows.length / 100)));
+const pageRows = computed(() => vesselTablePage(props.rows, page.value));
+watch(
+  () => props.rows,
+  () => {
+    page.value = Math.min(page.value, pageCount.value - 1);
+  },
+);
 const emit = defineEmits<{
   selectVessel: [mmsi: string];
   selectResult: [result: AnalysisResult];
@@ -30,12 +40,17 @@ const emit = defineEmits<{
         <ChartIcon :name="collapsed ? 'ChevronDown' : 'Minus'" />
       </button>
     </header>
-    <div v-show="!collapsed" class="chart-bottom-grid">
+    <div v-if="!collapsed" class="chart-bottom-grid">
       <section class="chart-panel">
         <div class="section-heading">
           <h2>
             视野船舶 <small>{{ rows.length }} 单船 / {{ total.toLocaleString() }} 艘</small>
           </h2>
+          <nav aria-label="船舶表格分页">
+            <button :disabled="page === 0" @click="page--">上一页</button
+            ><span>{{ page + 1 }} / {{ pageCount }}</span
+            ><button :disabled="page >= pageCount - 1" @click="page++">下一页</button>
+          </nav>
         </div>
         <div class="table-scroll">
           <table>
@@ -50,7 +65,7 @@ const emit = defineEmits<{
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in rows" :key="row.mmsi">
+              <tr v-for="row in pageRows" :key="row.mmsi">
                 <td>
                   {{ row.name || '船名待补充' }}<small class="mono">{{ row.mmsi }}</small>
                   <span v-if="row.quality.includes('synthetic')" class="badge sample"

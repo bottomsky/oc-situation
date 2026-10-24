@@ -1,4 +1,6 @@
-# 离线开发地图
+# 海事地图资源
+
+海图优先读取 `maritime/manifest.json` 指向的版本化自托管资源。当前安装的陆地、港口、航海要素状态及校验值以该 manifest 为准，准备入口为 `bun run maps:prepare`。图源、显示精度和更新方式见[海事 GIS 与概率预测](../../../../docs/maritime-gis.md)。
 
 `ne_110m_land.geojson` 为 Natural Earth 110m 陆地矢量，仅绘制陆地和海岸线。
 
@@ -10,4 +12,4 @@
 
 仓库文件仅调整 JSON 排版，几何数据保持来源内容。
 
-生产通过 `NUXT_PUBLIC_MAP_STYLE_URL` 或 `NUXT_PUBLIC_MAP_TILER_KEY` 配置托管底图。浏览器 Key 应限制部署域名。
+Natural Earth 用于图源加载回退。专业电子海图与海底地形通过后续图源适配接入；数据许可、覆盖和服务条件随提供方确认。

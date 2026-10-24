@@ -5,7 +5,7 @@ import {
   startWorkerMetrics,
 } from '@ais/infrastructure';
 import { TopicDefinitionIdSchema } from '../../packages/contracts/topics';
-import { runTopics } from './index';
+import { runPredictionTopics, runTopics } from './index';
 const infra = await createInfrastructure();
 const shutdown = shutdownSignal();
 const metrics = startWorkerMetrics(
@@ -17,10 +17,13 @@ try {
   const definitionId = process.env.TOPIC_DEFINITION_ID
     ? TopicDefinitionIdSchema.parse(process.env.TOPIC_DEFINITION_ID)
     : undefined;
-  await runTopics(infra, shutdown.signal, definitionId, {
+  const events = {
     onSucceeded: () => metrics.processed.inc(),
     onFailed: () => metrics.failures.inc(),
-  });
+  };
+  if (process.env.TOPIC_PREDICTIONS_ONLY === 'true')
+    await runPredictionTopics(infra, shutdown.signal, events);
+  else await runTopics(infra, shutdown.signal, definitionId, events);
 } catch (error) {
   logger.fatal(
     { error: error instanceof Error ? error.message : String(error) },

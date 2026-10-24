@@ -75,9 +75,28 @@ export interface ChartMapPort {
 }
 
 const businessLayers = {
-  ais: ['vessels', 'clusters'],
-  tracks: ['tracks', 'frame'],
-  evidence: ['evidence-region-fill', 'evidence-region-line', 'evidence-tracks', 'evidence-points'],
+  ais: ['vessels', 'clusters', 'vessels-distant'],
+  tracks: [
+    'tracks',
+    'frame',
+    'track-stops',
+    'tracks-casing',
+    'tracks-arrows',
+    'history-stops',
+    'ais-history-tracks',
+    'ais-history-track-points',
+    'ais-history-tracks-casing',
+    'ais-history-tracks-arrows',
+  ],
+  evidence: [
+    'evidence-region-fill',
+    'evidence-region-line',
+    'evidence-tracks',
+    'evidence-points',
+    'evidence-stops',
+    'evidence-tracks-casing',
+    'evidence-tracks-arrows',
+  ],
 } as const;
 
 export function applyChartBusinessVisibility(

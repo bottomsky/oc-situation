@@ -261,6 +261,15 @@ onMounted(async () => {
       rel="noopener noreferrer"
       >查看来源原文 ↗</a
     >
+    <p
+      v-if="
+        (detail.event.raw as { applicabilityConfirmed?: unknown } | null)
+          ?.applicabilityConfirmed === true
+      "
+      class="detail-time"
+    >
+      适用条件：操作员已核验原文适用于全部船舶。
+    </p>
     <button @click="emit('locate')">定位情报</button>
     <div v-if="canManage" class="actions">
       <button :disabled="busy || timePending" @click="review(detail.event.id, 'confirmed')">

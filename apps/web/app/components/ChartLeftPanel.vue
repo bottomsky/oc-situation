@@ -95,6 +95,9 @@ function applyLayers() {
     </header>
     <ChartOverflowTabs v-model="workspace.leftTab" />
     <div class="chart-panel-scroll">
+      <div v-if="visitedTabs.has('prediction')" v-show="workspace.leftTab === 'prediction'">
+        <slot name="prediction" />
+      </div>
       <div v-if="visitedTabs.has('intelligence')" v-show="workspace.leftTab === 'intelligence'">
         <slot name="intelligence" />
       </div>

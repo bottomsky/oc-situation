@@ -24,6 +24,23 @@ export const TOPIC_DEFINITIONS: readonly TopicDefinition[] = [
     requiredCapabilities: ['ais.history', 'intelligence.history'],
     available: true,
   },
+  {
+    id: 'vessel-reachability',
+    name: '船舶未来可达域',
+    version: '1.0.0',
+    description:
+      '根据单船近期运动残差和完整陆地约束计算未来120分钟条件概率，保存输入、模型版本和修订证据。',
+    requiredCapabilities: ['ais.history', 'intelligence.history'],
+    available: true,
+  },
+  {
+    id: 'navigation-warning-impact',
+    name: '航警影响分析',
+    version: '1.0.0',
+    description: '对已审核精确航警范围计算同一单船路径在公告有效时段内的首次进入概率。',
+    requiredCapabilities: ['ais.history', 'intelligence.history'],
+    available: true,
+  },
 ];
 export const FUSION_CAPABILITIES = {
   'ais.history': true,
@@ -82,6 +99,11 @@ function lowSpeedEpisode(points: TopicAisEvidence[], instance: TopicInstance) {
   return [];
 }
 export function evaluateTopic(instance: TopicInstance, dataset: TopicDataset): AnalysisResult[] {
+  if (
+    instance.definitionId === 'vessel-reachability' ||
+    instance.definitionId === 'navigation-warning-impact'
+  )
+    throw new Error('Prediction topics require the isolated prediction worker and land validation');
   if (dataset.truncated) throw new Error('Truncated dataset cannot support a complete analysis');
   const definition = TOPIC_DEFINITIONS.find((d) => d.id === instance.definitionId);
   if (!definition) throw new Error('Unknown topic definition');

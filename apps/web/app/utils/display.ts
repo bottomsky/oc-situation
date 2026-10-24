@@ -76,3 +76,14 @@ export const statusLabel: Record<string, string> = {
   failed: '失败',
   cancelled: '已取消',
 };
+export function confidenceLabel(value: string) {
+  return (
+    (
+      {
+        'model-estimate': '模型估计（未校准）',
+        'rule-match': '规则匹配',
+        observation: '共现观察',
+      } as Record<string, string>
+    )[value] ?? '待分类'
+  );
+}

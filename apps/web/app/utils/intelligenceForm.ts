@@ -12,6 +12,7 @@ export interface IntelligenceForm {
   text: string;
   reviewStatus: string;
   originalUrl: string;
+  applicabilityConfirmed?: boolean;
 }
 export function createIntelligenceInput(
   form: IntelligenceForm,
@@ -30,6 +31,11 @@ export function createIntelligenceInput(
   inheritedRelations: IntelligenceRelation[] = [],
 ) {
   const utc = (value: string) => new Date(value.endsWith('Z') ? value : value + 'Z').toISOString();
+  if (
+    form.applicabilityConfirmed &&
+    ((previous?.mmsis?.length ?? 0) > 0 || (previous?.vesselTypes?.length ?? 0) > 0)
+  )
+    throw new Error('全船适用确认与限定船舶或船型条件冲突，请核实适用范围');
   if (!form.effectiveFrom) throw new Error('请填写实际有效时间（UTC）');
   const paragraphs = form.text
     .split(/\n\s*\n/)
@@ -79,6 +85,9 @@ export function createIntelligenceInput(
     raw: {
       ...(previous?.raw && typeof previous.raw === 'object' ? previous.raw : {}),
       enteredManually: true,
+      ...(form.applicabilityConfirmed !== undefined
+        ? { applicabilityConfirmed: form.applicabilityConfirmed }
+        : {}),
       manualTimeConfirmed: true,
       manualTimeBasis: '操作员填写有效期（UTC）：' + form.effectiveFrom,
       requiresEffectiveTimeReview: false,

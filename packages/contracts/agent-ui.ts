@@ -50,6 +50,7 @@ export const UiTabSchema = z.enum([
   'playback',
   'heatmap',
   'history-tracks',
+  'prediction',
   'chat',
   'push',
   'tasks',
@@ -188,9 +189,15 @@ export function uiOperationAllowed(op: UiOperation): boolean {
     return (
       ['open', 'close'].includes(op.action) ||
       (op.action === 'tab' &&
-        ['search', 'intelligence', 'layers', 'playback', 'heatmap', 'history-tracks'].includes(
-          op.tab ?? '',
-        ))
+        [
+          'search',
+          'intelligence',
+          'layers',
+          'playback',
+          'heatmap',
+          'history-tracks',
+          'prediction',
+        ].includes(op.tab ?? ''))
     );
   if (op.componentId === 'workspace.right')
     return (

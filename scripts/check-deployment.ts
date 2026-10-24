@@ -26,6 +26,7 @@ const metrics: Record<string, number> = {
   intelligence: 13107,
   'topic-port-restriction': 13108,
   'topic-low-speed': 13109,
+  'topic-predictions': 13111,
   agent: 13110,
 };
 export function documents(source: string): RecordValue[] {
@@ -172,6 +173,19 @@ export function validateResources(resources: RecordValue[]): string[] {
         check(
           list(container.env).some((env) => env.name === key && env.value === String(port)),
           `${context}: wrong metrics environment`,
+        );
+      }
+      if (container.name === 'topic-predictions') {
+        check(
+          list(container.env).some(
+            (env) => env.name === 'TOPIC_PREDICTIONS_ONLY' && env.value === 'true',
+          ),
+          `${context}: TOPIC_PREDICTIONS_ONLY must be true`,
+        );
+        check(
+          String(at(container, 'resources', 'limits', 'cpu')) === '2' &&
+            at(container, 'resources', 'limits', 'memory') === '2Gi',
+          `${context}: prediction resource limits must be 2 CPU and 2Gi`,
         );
       }
     }
@@ -345,6 +359,14 @@ export function checkDeployment(sourceOnly = false): string[] {
     'infra/k8s/components/monitoring/prometheus.yaml',
   ]) {
     const jobs = list(at(parse(read(path)), 'scrape_configs'));
+    if (
+      !jobs.some((job) =>
+        list(job.static_configs).some((config) =>
+          strings(config.targets).includes('topic-predictions:13111'),
+        ),
+      )
+    )
+      errors.push(`${path}: prediction metrics target required`);
     if (
       !jobs.some((job) =>
         list(job.dns_sd_configs).some(

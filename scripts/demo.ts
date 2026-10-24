@@ -165,6 +165,7 @@ try {
   worker('intelligence');
   worker('topicPortRestriction');
   worker('topicLowSpeed');
+  worker('topicPredictions');
   await writeFile(
     resolve(root, '.data/demo-ready.json'),
     JSON.stringify({ ready: true, at: new Date().toISOString(), mmsi: '413793000' }),

@@ -66,7 +66,13 @@ export function registerChartBusinessLayers(
     id: 'tracks',
     type: 'line',
     source: 'track',
-    paint: { 'line-color': '#d77935', 'line-width': 3 },
+    filter: ['all', ['==', ['geometry-type'], 'LineString'], ['!=', ['get', 'kind'], 'direction']],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['coalesce', ['get', 'color'], '#59c9d8'],
+      'line-width': 1.7,
+      'line-opacity': 0.9,
+    },
   });
   addBusinessLayer({
     id: 'clusters',
@@ -97,7 +103,13 @@ export function registerChartBusinessLayers(
     id: 'evidence-tracks',
     type: 'line',
     source: 'evidence-track',
-    paint: { 'line-color': '#ba4a43', 'line-width': 3 },
+    filter: ['all', ['==', ['geometry-type'], 'LineString'], ['!=', ['get', 'kind'], 'direction']],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['coalesce', ['get', 'color'], '#ba4a43'],
+      'line-width': 1.7,
+      'line-opacity': 0.9,
+    },
   });
   addBusinessLayer({
     id: 'evidence-points',

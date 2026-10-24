@@ -14,6 +14,9 @@ import type {
 } from '../contracts/topics';
 import { TOPIC_DEFINITIONS, assertTopicCapabilities } from '../domain/topics';
 import type { Infrastructure } from './clients';
+import { isPredictionDefinition } from '../contracts/topics';
+import type { PredictionArtifact } from './predictions';
+import { predictionQuery } from './predictions-land';
 
 const iso = (value: Date | string | null) =>
   value === null ? null : new Date(value).toISOString();
@@ -57,28 +60,79 @@ export function analysisFingerprint(result: AnalysisResult) {
     createdAt: _created,
     updatedAt: _updated,
     status: _status,
+    artifactRef: _artifact,
     evidence,
     ...content
   } = result;
   const { queriedAt: _queried, ...facts } = evidence;
   return createHash('sha256')
     .update(
-      JSON.stringify({ ...content, evidence: facts, withdrawn: result.status === 'withdrawn' }),
+      JSON.stringify(
+        { ...content, evidence: facts, withdrawn: result.status === 'withdrawn' },
+        (_key, value: unknown) =>
+          value && typeof value === 'object' && !Array.isArray(value)
+            ? Object.fromEntries(
+                Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+              )
+            : value,
+      ),
     )
     .digest('hex');
 }
-export async function listTopicInstances(infra: Infrastructure): Promise<TopicInstance[]> {
-  return (await infra.pool.query('SELECT * FROM topic_instances ORDER BY created_at,id')).rows.map(
-    instanceRow,
-  );
+export async function listTopicInstances(
+  infra: Infrastructure,
+  ownerId?: string,
+): Promise<TopicInstance[]> {
+  return (
+    await infra.pool.query(
+      ownerId
+        ? 'SELECT i.* FROM topic_instances i LEFT JOIN prediction_topics p ON p.instance_id=i.id WHERE p.instance_id IS NULL OR p.owner_id=$1 ORDER BY i.created_at,i.id'
+        : 'SELECT * FROM topic_instances ORDER BY created_at,id',
+      ownerId ? [ownerId] : [],
+    )
+  ).rows.map(instanceRow);
 }
 export async function createTopicInstance(
   infra: Infrastructure,
   value: z.infer<typeof CreateTopicInstanceSchema>,
+  ownerId?: string,
 ) {
   const definition = TOPIC_DEFINITIONS.find((d) => d.id === value.definitionId);
   if (!definition) throw new Error('Unknown topic definition');
   assertTopicCapabilities(definition.requiredCapabilities);
+  if (isPredictionDefinition(value.definitionId)) {
+    if (!ownerId || !value.config.mmsi)
+      throw new Error('Prediction topics require an owner and MMSI');
+    const client = await infra.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
+        `predictions:${ownerId}`,
+      ]);
+      const row = await client.query(
+        'INSERT INTO topic_instances(id,definition_id,name,config,enabled,status) VALUES($1,$2,$3,$4::jsonb,$5,$6) RETURNING *',
+        [
+          randomUUID(),
+          value.definitionId,
+          value.name,
+          JSON.stringify(value.config),
+          value.enabled,
+          value.enabled ? 'warming' : 'disabled',
+        ],
+      );
+      await client.query(
+        'INSERT INTO prediction_topics(instance_id,owner_id,mmsi,definition_id,watch) VALUES($1,$2,$3,$4,false)',
+        [row.rows[0].id, ownerId, value.config.mmsi, value.definitionId],
+      );
+      await client.query('COMMIT');
+      return instanceRow(row.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
   const row = await infra.pool.query(
     'INSERT INTO topic_instances(id,definition_id,name,config,enabled,status) VALUES($1,$2,$3,$4::jsonb,$5,$6) RETURNING *',
     [
@@ -254,6 +308,17 @@ export async function queueTopicRun(
     }
     const instance = instanceRow(row.rows[0]);
     if (!instance.enabled) throw new Error('Topic instance is disabled');
+    if (isPredictionDefinition(instance.definitionId)) {
+      await client.query('SELECT pg_advisory_xact_lock(72190313)');
+      const count = Number(
+        (
+          await client.query(
+            "SELECT count(*) count FROM topic_runs r JOIN prediction_topics p ON p.instance_id=r.instance_id WHERE r.status IN ('queued','running')",
+          )
+        ).rows[0]?.count ?? 0,
+      );
+      if (count >= 100) throw new Error('Prediction queue capacity reached');
+    }
     const run = await enqueue(client, instance, trigger, key, at);
     await client.query('COMMIT');
     return run;
@@ -270,6 +335,7 @@ export async function scheduleTopicRuns(infra: Infrastructure, definitionId?: To
     await client.query('BEGIN');
     const rows = await client.query(
       `SELECT * FROM topic_instances i WHERE enabled AND status<>'degraded' AND (next_run_at<=now() OR pending_from IS NOT NULL)
+      AND definition_id NOT IN ('vessel-reachability','navigation-warning-impact')
       AND ($1::text IS NULL OR definition_id=$1) AND NOT EXISTS(SELECT 1 FROM topic_runs r WHERE r.instance_id=i.id AND r.generation=i.generation AND r.status IN ('queued','running'))
       ORDER BY next_run_at FOR UPDATE SKIP LOCKED LIMIT 50`,
       [definitionId ?? null],
@@ -355,6 +421,20 @@ export async function claimTopicRun(
       return null;
     }
     const instance = instanceRow(candidates.rows[0]);
+    if (isPredictionDefinition(instance.definitionId)) {
+      await client.query('SELECT pg_advisory_xact_lock(72190314)');
+      const active = Number(
+        (
+          await client.query(
+            "SELECT count(*) count FROM topic_runs r JOIN prediction_topics p ON p.instance_id=r.instance_id WHERE r.status='running' AND r.lease_until>=now()",
+          )
+        ).rows[0]?.count ?? 0,
+      );
+      if (active >= 2) {
+        await client.query('COMMIT');
+        return null;
+      }
+    }
     const token = randomUUID();
     const claimed = await client.query(
       `UPDATE topic_runs SET status='running',attempts=attempts+1,lease_token=$2,lease_until=now()+interval '120 seconds'
@@ -382,9 +462,14 @@ export async function saveTopicInput(
   infra: Infrastructure,
   lease: TopicLease,
   input: TopicDataset,
+  signal?: AbortSignal,
+  deadline?: number,
 ) {
   const version = TOPIC_DEFINITIONS.find((d) => d.id === lease.instance.definitionId)!.version;
-  const row = await infra.pool.query(
+  const query = signal
+    ? (text: string, values: unknown[]) => predictionQuery(infra, text, values, signal, deadline)
+    : (text: string, values: unknown[]) => infra.pool.query(text, values);
+  const row = await query(
     `UPDATE topic_runs SET input_snapshot=$3::jsonb,definition_version=$4,config_snapshot=$5::jsonb
     WHERE id=$1 AND lease_token=$2 AND status='running' AND lease_until>now()`,
     [
@@ -475,6 +560,7 @@ async function persistResult(
   result: AnalysisResult,
   previous?: AnalysisResult,
   fingerprint?: string,
+  artifact?: PredictionArtifact,
 ) {
   const value = {
     ...result,
@@ -483,6 +569,7 @@ async function persistResult(
     createdAt: previous?.createdAt ?? result.createdAt,
     updatedAt: new Date().toISOString(),
   } as AnalysisResult;
+  if (value.prediction) value.artifactRef = { resultId: value.id, revision: value.revision };
   const payload = JSON.stringify(value);
   await client.query(
     `INSERT INTO analysis_results(id,instance_id,revision,fingerprint,payload) VALUES($1,$2,$3,$4,$5::jsonb)
@@ -503,16 +590,59 @@ async function persistResult(
     'INSERT INTO analysis_feed(result_id,instance_id,generation,revision,status) VALUES($1,$2,$3,$4,$5)',
     [value.id, value.instanceId, lease.instance.generation, value.revision, value.status],
   );
-  await enqueueAnalysisOperationalEvent(client, value);
+  if (artifact) {
+    const { paths, ...geometry } = artifact;
+    await client.query(
+      'INSERT INTO analysis_prediction_artifacts(result_id,revision,artifact,paths,input_fingerprint,land_dataset_version) VALUES($1,$2,$3::jsonb,$4::jsonb,$5,$6)',
+      [
+        value.id,
+        value.revision,
+        JSON.stringify(geometry),
+        JSON.stringify(paths),
+        value.prediction!.inputFingerprint,
+        value.prediction!.landDatasetVersion,
+      ],
+    );
+    await client.query(
+      'UPDATE prediction_topics SET last_input_fingerprint=$2,updated_at=now() WHERE instance_id=$1',
+      [lease.instance.id, value.prediction!.inputFingerprint],
+    );
+  }
+  if (!isPredictionDefinition(value.definitionId))
+    await enqueueAnalysisOperationalEvent(client, value);
 }
 export async function completeTopicRun(
   infra: Infrastructure,
   lease: TopicLease,
   results: AnalysisResult[],
+  artifacts: Record<string, PredictionArtifact> = {},
+  context: { signal?: AbortSignal; deadline?: number } = {},
 ): Promise<boolean> {
+  if (
+    results.some(
+      (result) =>
+        result.instanceId !== lease.instance.id ||
+        result.definitionId !== lease.instance.definitionId,
+    )
+  )
+    throw new Error('Result definition and instance must match the leased topic');
   const client = await infra.pool.connect();
+  let released = false;
+  const abort = () => {
+    if (!released) {
+      released = true;
+      client.release(true);
+    }
+  };
+  context.signal?.addEventListener('abort', abort, { once: true });
   try {
+    context.signal?.throwIfAborted();
     await client.query('BEGIN');
+    if (context.deadline)
+      await client.query(
+        "SELECT set_config('statement_timeout',$1,true),set_config('lock_timeout','3000ms',true)",
+        [`${Math.max(1, Math.min(15000, context.deadline - Date.now()))}ms`],
+      );
     const row = await client.query('SELECT * FROM topic_instances WHERE id=$1 FOR UPDATE', [
       lease.instance.id,
     ]);
@@ -546,8 +676,14 @@ export async function completeTopicRun(
     for (const result of results) {
       const before = old.get(result.id);
       const fingerprint = analysisFingerprint(result);
-      if (before?.fingerprint === fingerprint) continue;
-      await persistResult(client, lease, result, before?.value, fingerprint);
+      if (
+        before &&
+        (before.fingerprint === fingerprint || analysisFingerprint(before.value) === fingerprint)
+      )
+        continue;
+      if (isPredictionDefinition(result.definitionId) && !artifacts[result.id])
+        throw new Error('A new prediction revision requires its immutable geometry artifact');
+      await persistResult(client, lease, result, before?.value, fingerprint, artifacts[result.id]);
     }
     for (const { value } of old.values()) {
       // Retain observations that aged out of this complete rolling history query.
@@ -605,20 +741,31 @@ export async function completeTopicRun(
       next_run_at=CASE WHEN $2::timestamptz<now()-($3*interval '1 second') THEN now() ELSE next_run_at END,last_error=NULL WHERE id=$1`,
       [lease.instance.id, checkpoint, lease.instance.config.scheduleSeconds],
     );
+    context.signal?.throwIfAborted();
+    if (context.deadline && Date.now() >= context.deadline)
+      throw new Error('Prediction completion exceeded its request deadline');
     await client.query('COMMIT');
     return true;
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (!released) await client.query('ROLLBACK');
     throw error;
   } finally {
-    client.release();
+    context.signal?.removeEventListener('abort', abort);
+    if (!released) client.release();
   }
 }
-export async function listAnalysisResults(infra: Infrastructure, instanceId?: string, limit = 100) {
+export async function listAnalysisResults(
+  infra: Infrastructure,
+  instanceId?: string,
+  limit = 100,
+  ownerId?: string,
+) {
   return (
     await infra.pool.query(
-      'SELECT payload FROM analysis_results WHERE ($1::uuid IS NULL OR instance_id=$1) ORDER BY updated_at DESC,id LIMIT $2',
-      [instanceId ?? null, limit],
+      ownerId
+        ? 'SELECT r.payload FROM analysis_results r LEFT JOIN prediction_topics p ON p.instance_id=r.instance_id WHERE ($1::uuid IS NULL OR r.instance_id=$1) AND (p.instance_id IS NULL OR p.owner_id=$3) ORDER BY r.updated_at DESC,r.id LIMIT $2'
+        : 'SELECT payload FROM analysis_results WHERE ($1::uuid IS NULL OR instance_id=$1) ORDER BY updated_at DESC,id LIMIT $2',
+      [instanceId ?? null, limit, ...(ownerId ? [ownerId] : [])],
     )
   ).rows.map((r) => r.payload as AnalysisResult);
 }
@@ -653,23 +800,41 @@ function feedRow(row: Row): AnalysisFeedItem {
     createdAt: iso(row.created_at as Date)!,
   };
 }
-export async function readAnalysisFeed(infra: Infrastructure, cursor = '0', limit = 100) {
+export async function readAnalysisFeed(
+  infra: Infrastructure,
+  cursor = '0',
+  limit = 100,
+  ownerId?: string,
+) {
   const rows = await infra.pool.query(
-    'SELECT * FROM analysis_feed WHERE sequence>$1::bigint ORDER BY sequence LIMIT $2',
+    'SELECT f.*,p.owner_id AS prediction_owner FROM analysis_feed f LEFT JOIN prediction_topics p ON p.instance_id=f.instance_id WHERE f.sequence>$1::bigint ORDER BY f.sequence LIMIT $2',
     [cursor, limit],
   );
-  const items = rows.rows.map(feedRow);
-  return { items, nextCursor: items.at(-1)?.cursor ?? cursor };
+  const items = rows.rows
+    .filter((row) => !row.prediction_owner || row.prediction_owner === ownerId)
+    .map(feedRow);
+  return { items, nextCursor: rows.rows.at(-1)?.sequence?.toString() ?? cursor };
 }
-export async function readLiveAnalysisFeed(infra: Infrastructure, cursor = '0', limit = 100) {
+export async function readLiveAnalysisFeed(
+  infra: Infrastructure,
+  cursor = '0',
+  limit = 100,
+  ownerId?: string,
+) {
   const rows = await infra.pool.query(
-    `SELECT f.*,i.enabled,i.generation AS current_generation FROM analysis_feed f
-    JOIN topic_instances i ON i.id=f.instance_id WHERE f.sequence>$1::bigint ORDER BY f.sequence LIMIT $2`,
+    `SELECT f.*,i.enabled,i.generation AS current_generation,p.owner_id AS prediction_owner FROM analysis_feed f
+    JOIN topic_instances i ON i.id=f.instance_id LEFT JOIN prediction_topics p ON p.instance_id=f.instance_id WHERE f.sequence>$1::bigint ORDER BY f.sequence LIMIT $2`,
     [cursor, limit],
   );
   return {
     items: rows.rows
-      .filter((r) => r.enabled && r.generation === r.current_generation && !r.suppressed_at)
+      .filter(
+        (r) =>
+          r.enabled &&
+          r.generation === r.current_generation &&
+          !r.suppressed_at &&
+          (!r.prediction_owner || r.prediction_owner === ownerId),
+      )
       .map(feedRow),
     nextCursor: rows.rows.at(-1)?.sequence?.toString() ?? cursor,
   };

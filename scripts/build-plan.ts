@@ -9,6 +9,11 @@ const applicationEntries: Record<string, string> = {
   topics: 'main.ts',
   agent: 'main.ts',
 };
+export function extraBuildEntries(name: string): { entry: string; output: string }[] {
+  return name === 'topics'
+    ? [{ entry: 'prediction-worker.ts', output: 'dist/prediction-worker.mjs' }]
+    : [];
+}
 export function buildPlan(name: string) {
   if (applicationEntries[name])
     return { entry: applicationEntries[name], output: 'dist/main.mjs', migrations: true };

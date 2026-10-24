@@ -12,7 +12,7 @@ import type {
 import { classifyConversationIntent } from './agent-conversation';
 
 /** Local intent extraction is deliberately finite: user prose never becomes a model prompt. */
-export function classifyGoal(goal: string): TopicDefinitionId | null {
+export function classifyGoal(goal: string): 'port-restriction' | 'area-low-speed-notice' | null {
   const port = /港口|限制|禁航|port|restriction/i.test(goal);
   const slow = /低速|low.speed/i.test(goal);
   if (port && slow) return null;

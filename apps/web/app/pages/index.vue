@@ -19,6 +19,13 @@ import { provideChartDetailHost } from '../composables/useChartDetail';
 const detailHost = provideChartDetailHost();
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
+const prediction = reactive(useReachability());
+watch(
+  () => workspace.leftTab,
+  (tab) => {
+    if (tab === 'prediction') void prediction.loadWatchlist();
+  },
+);
 const selectedBusiness = ref<
   {
     kind: 'route' | 'event';
@@ -679,6 +686,12 @@ watch(
             @select="selectIntelligence"
             @locate="locateIntelligence"
         /></template>
+        <template #prediction
+          ><ChartPredictionPanel
+            :state="prediction"
+            :selected-mmsi="workspace.detail?.mmsi"
+            @locate="seaMap?.focusPrediction?.($event)"
+        /></template>
         <template #history-tracks
           ><ChartVesselTracksPanel
             :state="vesselTracks"
@@ -751,6 +764,21 @@ watch(
           ><SeaMap
             ref="seaMap"
             :data="workspace.data"
+            :vessel-names="workspace.vesselNames"
+            :query-bounds="workspace.queryBounds"
+            @area-query="workspace.queryArea($event)"
+            :prediction="
+              prediction.visible && prediction.result?.prediction.status === 'ready'
+                ? prediction.result.prediction
+                : null
+            "
+            :prediction-minutes="prediction.minutes"
+            :prediction-observation="prediction.visible ? prediction.inputObservation : null"
+            :prediction-view="prediction.view"
+            :prediction-levels="prediction.levels"
+            :prediction-impacts="
+              prediction.visible && !prediction.result?.stale ? prediction.result?.impacts : []
+            "
             :selecting-region="selectingAgentRegion || selectingHeatmapRegion"
             @region-selected="finishRegion"
             @region-cancelled="
@@ -958,12 +986,26 @@ watch(
             @submit="prepareAgentConversation"
           />
         </div>
-        <div class="map-status">
+        <div
+          class="map-status"
+          data-testid="map-snapshot-status"
+          :data-loaded="workspace.data?.items.filter((v) => v.kind === 'point').length ?? 0"
+          :data-complete="!!workspace.data && !workspace.data.truncated && !workspace.data.sampled"
+        >
           <span class="status-dot" />{{
             workspace.data ? workspace.data.total.toLocaleString() : '—'
           }}
           艘船 · {{ workspace.busy ? '更新中' : workspace.paused ? '更新已暂停' : '持续更新'
-          }}<span v-if="workspace.data?.truncated"> · 已达 5,000 元素上限，请放大视窗</span
+          }}<span v-if="workspace.busy">
+            · 快照 {{ workspace.snapshotProgress.loaded }} /
+            {{ workspace.snapshotProgress.total }}</span
+          ><span v-if="workspace.data?.truncated"> · 旧协议结果受限</span
+          ><span v-else-if="workspace.data">
+            · 完整单船
+            {{
+              workspace.data.items.filter((v) => v.kind === 'point').length.toLocaleString()
+            }}</span
+          >
           ><span> · UTC</span>
         </div>
         <button
@@ -1017,7 +1059,12 @@ watch(
         @close-evidence="topics.close"
         @locate="locateResult"
         @revision="reviseResult"
-      />
+        ><template #prediction
+          ><ChartPredictionImpact
+            v-if="prediction.result && workspace.leftTab === 'prediction'"
+            :record="prediction.result"
+            @evidence="selectIntelligence" /></template
+      ></ChartRightPanel>
     </div>
     <ChartDetailFloat
       :open="detailHost.isOpen('intelligence')"
@@ -1099,7 +1146,7 @@ watch(
 .business-selection {
   position: absolute;
   left: 16px;
-  top: 16px;
+  top: 54px;
   z-index: 5;
   display: flex;
   max-width: 65%;

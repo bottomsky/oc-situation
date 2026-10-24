@@ -92,6 +92,13 @@ export async function enqueueIntelligenceOperationalEvent(db: DB, eventId: strin
   });
 }
 export async function enqueueAnalysisOperationalEvent(db: DB, result: AnalysisResult) {
+  if (
+    result.kind === 'prediction' ||
+    result.kind === 'impact' ||
+    result.definitionId === 'vessel-reachability' ||
+    result.definitionId === 'navigation-warning-impact'
+  )
+    return;
   const [w, s, e, n] = result.bbox;
   const ring = (a: number, b: number): [number, number][] => [
     [a, s],

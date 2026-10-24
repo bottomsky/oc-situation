@@ -5,6 +5,34 @@ import {
   parseIntelligenceGeoJSON,
   intelligenceTimePending,
 } from './app/utils/intelligenceForm';
+it('全船适用必须显式确认并保留raw其他字段，与限定船集合冲突时拒绝', () => {
+  const form = {
+    sourceId: 'manual',
+    externalId: 'n1',
+    title: '航警',
+    summary: '',
+    category: 'notice',
+    publishedAt: '2026-10-11T08:00',
+    effectiveFrom: '2026-10-11T08:00',
+    effectiveTo: '',
+    text: '全部船舶',
+    reviewStatus: 'confirmed',
+    originalUrl: '',
+    applicabilityConfirmed: true,
+  };
+  expect(
+    createIntelligenceInput(form, { id: 'old', version: 1, raw: { originalFlag: 'keep' } }).raw,
+  ).toMatchObject({ applicabilityConfirmed: true, originalFlag: 'keep' });
+  expect(() =>
+    createIntelligenceInput(form, { id: 'old', version: 1, mmsis: ['123456789'] }),
+  ).toThrow('适用');
+  expect(
+    createIntelligenceInput(
+      { ...form, applicabilityConfirmed: false },
+      { id: 'old', version: 1, raw: { applicabilityConfirmed: true } },
+    ).raw,
+  ).toMatchObject({ applicabilityConfirmed: false });
+});
 it('修订保留来源链与递增版本，将每个原文段落转为独立证据', () => {
   const input = createIntelligenceInput(
     {

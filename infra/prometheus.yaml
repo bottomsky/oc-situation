@@ -16,5 +16,6 @@ scrape_configs:
             'host.docker.internal:13108',
             'host.docker.internal:13109',
             'host.docker.internal:13110',
+            'host.docker.internal:13111',
           ]
 rule_files: ['/etc/prometheus/alerts.yaml']

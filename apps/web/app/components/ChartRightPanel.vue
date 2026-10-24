@@ -139,6 +139,7 @@ watch(
       </button>
     </div>
     <div class="chart-panel-scroll">
+      <slot name="prediction" />
       <ChartAgentPanel
         v-if="tab === 'chat'"
         :bbox="bbox"

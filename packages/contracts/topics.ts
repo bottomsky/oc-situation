@@ -8,8 +8,15 @@ const TopicBboxSchema = z
   ])
   .refine((b) => b[1] <= b[3], 'South must precede north');
 
-export const TopicDefinitionIdSchema = z.enum(['port-restriction', 'area-low-speed-notice']);
+export const TopicDefinitionIdSchema = z.enum([
+  'port-restriction',
+  'area-low-speed-notice',
+  'vessel-reachability',
+  'navigation-warning-impact',
+]);
 export type TopicDefinitionId = z.infer<typeof TopicDefinitionIdSchema>;
+export const isPredictionDefinition = (id: string) =>
+  id === 'vessel-reachability' || id === 'navigation-warning-impact';
 export const TopicConfigSchema = z
   .strictObject({
     bbox: TopicBboxSchema,
@@ -18,15 +25,24 @@ export const TopicConfigSchema = z
     lowSpeedKnots: z.number().min(0).max(20).default(3),
     minPositions: z.number().int().min(2).max(1000).default(3),
     scheduleSeconds: z.number().int().min(10).max(86400).default(60),
+    mmsi: z
+      .string()
+      .regex(/^[1-9]\d{8}$/)
+      .optional(),
   })
   .refine((value) => value.windowMinutes <= value.historyHours * 60, 'Window exceeds history');
 export type TopicConfig = z.infer<typeof TopicConfigSchema>;
-export const CreateTopicInstanceSchema = z.strictObject({
-  definitionId: TopicDefinitionIdSchema,
-  name: z.string().trim().min(1).max(200),
-  config: TopicConfigSchema,
-  enabled: z.boolean().default(false),
-});
+export const CreateTopicInstanceSchema = z
+  .strictObject({
+    definitionId: TopicDefinitionIdSchema,
+    name: z.string().trim().min(1).max(200),
+    config: TopicConfigSchema,
+    enabled: z.boolean().default(false),
+  })
+  .refine(
+    (value) => !isPredictionDefinition(value.definitionId) || Boolean(value.config.mmsi),
+    'Prediction topic requires one MMSI',
+  );
 export const TopicStateSchema = z.strictObject({ enabled: z.boolean() });
 export interface TopicDefinition {
   id: TopicDefinitionId;
@@ -71,6 +87,8 @@ export interface TopicAisEvidence {
   longitude: number;
   latitude: number;
   speedOverGround: number | null;
+  courseOverGround?: number | null;
+  heading?: number | null;
   shipType: number | null;
   staticEvidence?: unknown;
   raw: unknown;
@@ -94,6 +112,20 @@ export interface TopicDocumentEvidence {
   raw: unknown;
 }
 export interface TopicDataset {
+  predictionContext?: {
+    asOf: string;
+    landDatasetVersion: string | null;
+    inputFingerprint: string;
+    relations: unknown[];
+    warnings: unknown[];
+    training?: {
+      from: string;
+      to: string;
+      selection: string;
+      observations: unknown[];
+      residualSamples: number;
+    };
+  };
   from: string;
   to: string;
   ais: TopicAisEvidence[];
@@ -108,6 +140,7 @@ export interface EvidenceStep {
   references: string[];
 }
 export interface AnalysisResult {
+  kind?: 'rule' | 'prediction' | 'impact';
   id: string;
   instanceId: string;
   definitionId: TopicDefinitionId;
@@ -117,12 +150,14 @@ export interface AnalysisResult {
   title: string;
   summary: string;
   mmsi: string;
-  documentId: string;
+  documentId?: string;
+  prediction?: PredictionResultMetadata;
+  artifactRef?: { resultId: string; revision: number };
   vesselId?: string;
   from: string;
   to: string;
   bbox: [number, number, number, number];
-  confidence: 'rule-match' | 'observation';
+  confidence: 'rule-match' | 'observation' | 'model-estimate';
   evidence: {
     ais: TopicAisEvidence[];
     documents: TopicDocumentEvidence[];
@@ -134,6 +169,20 @@ export interface AnalysisResult {
   createdAt: string;
   updatedAt: string;
 }
+export const PredictionResultMetadataSchema = z.strictObject({
+  runId: z.string().optional(),
+  asOf: z.iso.datetime(),
+  computedAt: z.iso.datetime(),
+  expiresAt: z.iso.datetime(),
+  status: z.enum(['ready', 'insufficient_data', 'model_not_applicable']),
+  modelVersion: z.string(),
+  latestObservedAt: z.iso.datetime().nullable(),
+  inputFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  landDatasetVersion: z.string().nullable(),
+  reason: z.string().nullable(),
+  impactsCount: z.number().int().nonnegative(),
+});
+export type PredictionResultMetadata = z.infer<typeof PredictionResultMetadataSchema>;
 export interface AnalysisFeedItem {
   cursor: string;
   type: 'analysis.updated';
@@ -144,80 +193,110 @@ export interface AnalysisFeedItem {
   createdAt: string;
 }
 
-export const AnalysisResultSchema = z.object({
-  id: z.string().regex(/^[a-f0-9]{64}$/),
-  instanceId: z.string().min(1),
-  definitionId: TopicDefinitionIdSchema,
-  definitionVersion: z.string().min(1).max(100),
-  revision: z.number().int().positive(),
-  status: z.enum(['active', 'revised', 'withdrawn']),
-  title: z.string().min(1).max(500),
-  summary: z.string().min(1).max(10000),
-  mmsi: z.string().regex(/^[1-9]\d{8}$/),
-  documentId: z.string().min(1),
-  vesselId: z.string().optional(),
-  from: z.iso.datetime(),
-  to: z.iso.datetime(),
-  bbox: TopicBboxSchema,
-  confidence: z.enum(['rule-match', 'observation']),
-  evidence: z.object({
-    ais: z
-      .array(
-        z
-          .object({
-            recordId: z.string().min(1),
-            mmsi: z.string(),
-            occurredAt: z.iso.datetime(),
-            longitude: z.number().min(-180).max(180),
-            latitude: z.number().min(-90).max(90),
-            speedOverGround: z.number().nullable(),
-            shipType: z.number().nullable(),
-            staticEvidence: z.unknown().optional(),
-            raw: z.unknown(),
-          })
-          .passthrough(),
-      )
-      .min(1)
-      .max(20000),
-    documents: z
-      .array(
-        z
-          .object({
+export const AnalysisResultSchema = z
+  .object({
+    kind: z.enum(['rule', 'prediction', 'impact']).optional(),
+    id: z.string().regex(/^[a-f0-9]{64}$/),
+    instanceId: z.string().min(1),
+    definitionId: TopicDefinitionIdSchema,
+    definitionVersion: z.string().min(1).max(100),
+    revision: z.number().int().positive(),
+    status: z.enum(['active', 'revised', 'withdrawn']),
+    title: z.string().min(1).max(500),
+    summary: z.string().min(1).max(10000),
+    mmsi: z.string().regex(/^[1-9]\d{8}$/),
+    documentId: z.string().min(1).optional(),
+    prediction: PredictionResultMetadataSchema.optional(),
+    artifactRef: z
+      .strictObject({
+        resultId: z.string().regex(/^[a-f0-9]{64}$/),
+        revision: z.number().int().positive(),
+      })
+      .optional(),
+    vesselId: z.string().optional(),
+    from: z.iso.datetime(),
+    to: z.iso.datetime(),
+    bbox: TopicBboxSchema,
+    confidence: z.enum(['rule-match', 'observation', 'model-estimate']),
+    evidence: z.object({
+      ais: z
+        .array(
+          z
+            .object({
+              recordId: z.string().min(1),
+              mmsi: z.string(),
+              occurredAt: z.iso.datetime(),
+              longitude: z.number().min(-180).max(180),
+              latitude: z.number().min(-90).max(90),
+              speedOverGround: z.number().nullable(),
+              shipType: z.number().nullable(),
+              staticEvidence: z.unknown().optional(),
+              raw: z.unknown(),
+            })
+            .passthrough(),
+        )
+        .max(20000),
+      documents: z
+        .array(
+          z
+            .object({
+              id: z.string(),
+              sourceId: z.string(),
+              externalId: z.string(),
+              version: z.number().int().positive(),
+              status: z.string(),
+              title: z.string(),
+              kind: z.string(),
+              effectiveFrom: z.iso.datetime(),
+              effectiveTo: z.iso.datetime().nullable(),
+              bbox: TopicBboxSchema.nullable().optional(),
+              vesselTypes: z.array(z.number()),
+              mmsis: z.array(z.string()),
+              paragraphs: z.array(z.object({ id: z.string(), text: z.string() })),
+              archiveKey: z.string().nullable().optional(),
+              raw: z.unknown(),
+            })
+            .passthrough(),
+        )
+        .max(100),
+      steps: z
+        .array(
+          z.object({
             id: z.string(),
-            sourceId: z.string(),
-            externalId: z.string(),
-            version: z.number().int().positive(),
-            status: z.string(),
-            title: z.string(),
-            kind: z.string(),
-            effectiveFrom: z.iso.datetime(),
-            effectiveTo: z.iso.datetime().nullable(),
-            bbox: TopicBboxSchema.nullable().optional(),
-            vesselTypes: z.array(z.number()),
-            mmsis: z.array(z.string()),
-            paragraphs: z.array(z.object({ id: z.string(), text: z.string() })),
-            archiveKey: z.string().nullable().optional(),
-            raw: z.unknown(),
-          })
-          .passthrough(),
+            rule: z.string(),
+            outcome: z.string(),
+            references: z.array(z.string()),
+          }),
+        )
+        .min(1)
+        .max(100),
+      limitations: z.array(z.string()).min(1),
+      parameters: TopicConfigSchema,
+      queriedAt: z.iso.datetime(),
+    }),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .superRefine((value, ctx) => {
+    if (isPredictionDefinition(value.definitionId)) {
+      if (
+        !value.prediction ||
+        value.kind !== (value.definitionId === 'vessel-reachability' ? 'prediction' : 'impact')
       )
-      .min(1)
-      .max(100),
-    steps: z
-      .array(
-        z.object({
-          id: z.string(),
-          rule: z.string(),
-          outcome: z.string(),
-          references: z.array(z.string()),
-        }),
-      )
-      .min(1)
-      .max(100),
-    limitations: z.array(z.string()).min(1),
-    parameters: TopicConfigSchema,
-    queriedAt: z.iso.datetime(),
-  }),
-  createdAt: z.iso.datetime(),
-  updatedAt: z.iso.datetime(),
-});
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Prediction topics require matching kind and metadata',
+        });
+      return;
+    }
+    if (
+      !value.documentId ||
+      !value.evidence.documents.length ||
+      !value.evidence.ais.length ||
+      (value.kind && value.kind !== 'rule')
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Rule results require AIS and document evidence and a document identifier',
+      });
+  });

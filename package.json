@@ -41,7 +41,9 @@
     "api:generate": "node --import tsx scripts/workspace.ts api:generate",
     "build:smoke": "node --import tsx scripts/workspace.ts build:smoke",
     "routes:data:import": "node --import tsx scripts/import-route-data.ts",
-    "routes:data:prepare": "node --import tsx scripts/prepare-route-data.ts"
+    "routes:data:prepare": "node --import tsx scripts/prepare-route-data.ts",
+    "maps:prepare": "node --import tsx scripts/prepare-maritime-map.ts",
+    "prediction:backtest": "node --import tsx scripts/reachability-backtest.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1144.0",

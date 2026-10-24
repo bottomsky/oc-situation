@@ -3,7 +3,15 @@ import { chartFixture } from './fixtures/chart-fixture';
 import { openLeftPanel } from './chart-helpers';
 import { UiCommandSchema, type UiCommand, type UiState, type UiReceipt } from '@ais/contracts';
 
-const names = ['船舶搜索', '情报标绘', '图层控制', '时间回放', '历史航线', 'AIS 热力图'];
+const names = [
+  '船舶搜索',
+  '航行预测',
+  '情报标绘',
+  '图层控制',
+  '时间回放',
+  '历史航线',
+  'AIS 热力图',
+];
 
 async function agentPanelFixture(page: Page) {
   await chartFixture(page);
@@ -97,7 +105,7 @@ test('300px功能栏保留自然宽度，更多菜单向下显示且选中项回
   await expect(menu).toBeHidden();
   expect((await tabs.getByRole('tab').allTextContents()).map((name) => name.trim())).toEqual([
     '船舶搜索',
-    '情报标绘',
+    '航行预测',
     'AIS 热力图',
   ]);
 });
@@ -120,7 +128,7 @@ test('Portal菜单常态、悬停与键盘焦点沿用深色青色主题', async
     await more.click();
     const menu = page.getByRole('menu');
     await expect(menu).toHaveCSS('background-color', 'rgb(8, 36, 56)');
-    const playback = menu.getByRole('menuitem', { name: '时间回放', exact: true });
+    const firstOverflow = menu.getByRole('menuitem').first();
     const heatmap = menu.getByRole('menuitem', { name: 'AIS 热力图', exact: true });
     await expect(heatmap).toHaveCSS('background-color', 'rgb(8, 36, 56)');
     await expect(heatmap).toHaveCSS('color', 'rgb(220, 238, 247)');
@@ -131,12 +139,12 @@ test('Portal菜单常态、悬停与键盘焦点沿用深色青色主题', async
     await page.keyboard.press('Escape');
     await expect(more).toBeFocused();
     await more.press('ArrowDown');
-    await expect(playback).toBeFocused();
-    await expect(playback).toHaveCSS('background-color', 'rgb(18, 91, 134)');
-    await expect(playback).toHaveCSS('color', 'rgb(230, 248, 255)');
-    await expect(playback).toHaveCSS('outline-color', 'rgb(40, 198, 242)');
-    await expect(playback).toHaveCSS('outline-style', 'solid');
-    await expect(playback).toHaveCSS('outline-width', '2px');
+    await expect(firstOverflow).toBeFocused();
+    await expect(firstOverflow).toHaveCSS('background-color', 'rgb(18, 91, 134)');
+    await expect(firstOverflow).toHaveCSS('color', 'rgb(230, 248, 255)');
+    await expect(firstOverflow).toHaveCSS('outline-color', 'rgb(40, 198, 242)');
+    await expect(firstOverflow).toHaveCSS('outline-style', 'solid');
+    await expect(firstOverflow).toHaveCSS('outline-width', '2px');
     await page.screenshot({ path: `.data/panel-menu-dark-${width}.png` });
     await page.keyboard.press('End');
     await page.keyboard.press('Enter');
@@ -163,7 +171,7 @@ test('Portal菜单常态、悬停与键盘焦点沿用深色青色主题', async
   }
 });
 
-test('拖动到全部容纳后隐藏入口，缩窄和字体宽度变化重新计算', async ({ page }) => {
+test('七项功能栏拖动、全容纳与字体宽度变化重新计算', async ({ page }) => {
   await openPanel(page);
   const tabs = page.getByRole('tablist', { name: '操作面板功能' });
   const more = page.getByRole('button', { name: '更多功能', exact: true });
@@ -175,10 +183,16 @@ test('拖动到全部容纳后隐藏入口，缩窄和字体宽度变化重新�
   await page.mouse.move(box.x + box.width / 2 + 140, box.y + box.height / 2, { steps: 6 });
   await page.mouse.up();
   await expect(handle).toHaveAttribute('aria-valuenow', '440');
+  await expect(more).toBeVisible();
+  const compactFont = await page.addStyleTag({
+    content: '.chart-function-tab { font-size: 9px !important; }',
+  });
   await expect(more).toHaveCount(0);
   await expect(page.getByRole('menu')).toBeHidden();
-  await expect(tabs.getByRole('tab')).toHaveCount(6);
+  await expect(tabs.getByRole('tab')).toHaveCount(names.length);
   expect((await tabs.getByRole('tab').allTextContents()).map((name) => name.trim())).toEqual(names);
+  await compactFont.evaluate((element) => element.parentNode?.removeChild(element));
+  await expect(more).toBeVisible();
   await handle.press('Home');
   await expect(more).toBeVisible();
   await expect(tabs.getByRole('tab')).toHaveCount(3);
@@ -197,11 +211,11 @@ test('键盘、Escape、外部点击和抽屉切换关闭菜单并保留选择',
   const search = tabs.getByRole('tab', { name: '船舶搜索', exact: true });
   await search.focus();
   await search.press('ArrowRight');
-  await expect(tabs.getByRole('tab', { name: '情报标绘', exact: true })).toBeFocused();
+  await expect(tabs.getByRole('tab', { name: '航行预测', exact: true })).toBeFocused();
   await more.focus();
   await more.press('ArrowDown');
   await expect(page.getByRole('menu')).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: '时间回放', exact: true })).toBeFocused();
+  await expect(page.getByRole('menuitem').first()).toBeFocused();
   await page.keyboard.press('End');
   await page.keyboard.press('Enter');
   const heatmap = tabs.getByRole('tab', { name: 'AIS 热力图', exact: true });
@@ -273,7 +287,7 @@ test('低高度抽屉中的更多菜单按可用高度滚动', async ({ page }) 
     const triggerBox = (await more.boundingBox())!;
     expect(menuBox.y).toBeGreaterThanOrEqual(triggerBox.y + triggerBox.height);
     expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(height);
-    const firstItem = menu.getByRole('menuitem', { name: '时间回放', exact: true });
+    const firstItem = menu.getByRole('menuitem').first();
     const rowHeight = (await firstItem.boundingBox())!.height;
     const visibleHeight = await viewport.evaluate((element) => element.clientHeight);
     if (height === 320) {

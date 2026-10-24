@@ -1,5 +1,7 @@
-import type { AnalysisFeedItem, MapResponse } from '@ais/contracts';
+import type { AnalysisFeedItem, MapResponse, MapPoint } from '@ais/contracts';
 import { createFeedSync } from '../utils/fusion';
+import { createPointSnapshot, type PointPage } from '../utils/mapPoints';
+import { markRaw } from 'vue';
 
 export interface ViewportQuery {
   bbox: string;
@@ -24,7 +26,9 @@ export function useFusionEvents() {
     viewport = query;
     version++;
     if (socket?.readyState === WebSocket.OPEN)
-      socket.send(JSON.stringify({ type: 'viewport', query, version }));
+      socket.send(
+        JSON.stringify({ type: 'viewport', query: { ...query, mode: 'points' }, version }),
+      );
   }
   return { status, error, feedError, analysisVersion, mapData, subscribeViewport };
 }
@@ -37,6 +41,7 @@ export function startFusionEvents() {
   let fallback: ReturnType<typeof setInterval> | undefined;
   let retry = 0;
   let sessionGeneration = 0;
+  let points = createPointSnapshot<MapPoint>();
   const sync = createFeedSync<AnalysisFeedItem>(
     (cursor) => api('/analysis/feed?cursor=' + encodeURIComponent(cursor)),
     () => {
@@ -64,7 +69,11 @@ export function startFusionEvents() {
       retry = 0;
       status.value = 'live';
       error.value = '';
-      if (viewport) active.send(JSON.stringify({ type: 'viewport', query: viewport, version }));
+      points = createPointSnapshot<MapPoint>();
+      if (viewport)
+        active.send(
+          JSON.stringify({ type: 'viewport', query: { ...viewport, mode: 'points' }, version }),
+        );
       void catchUp();
     };
     active.onmessage = (event) => {
@@ -82,6 +91,32 @@ export function startFusionEvents() {
           return;
         }
         if (message.version !== version) return;
+        if (message.type === 'ais.points.snapshot') {
+          const page = message.data as PointPage<MapPoint>;
+          const items = points.accept(page);
+          if (items)
+            mapData.value = markRaw({
+              items,
+              total: page.total,
+              sampled: false,
+              truncated: false,
+              generatedAt: page.generatedAt,
+            });
+        }
+        if (message.type === 'ais.points.delta') {
+          if (!points.delta(message)) {
+            error.value = '船位增量序列中断，正在重新同步完整快照';
+            active.close();
+            return;
+          }
+          mapData.value = markRaw({
+            items: points.items(),
+            total: message.total,
+            sampled: false,
+            truncated: false,
+            generatedAt: message.generatedAt,
+          });
+        }
         if (message.type === 'ais.snapshot') mapData.value = message.data as MapResponse;
         if (message.type === 'ais.delta' && mapData.value) {
           const key = (item: MapResponse['items'][number]) =>

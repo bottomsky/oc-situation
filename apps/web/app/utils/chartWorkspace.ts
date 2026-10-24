@@ -39,3 +39,6 @@ export function visibleVesselRows(items: MapResponse['items'], names: Map<string
     .filter((item): item is MapPoint => item.kind === 'point')
     .map((item) => ({ ...item, name: names.get(item.mmsi) ?? '' }));
 }
+export function vesselTablePage<T>(rows: T[], page: number, pageSize = 100) {
+  return rows.slice(page * pageSize, (page + 1) * pageSize);
+}

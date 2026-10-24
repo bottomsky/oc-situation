@@ -54,7 +54,11 @@ export function registerVesselTracksLayers(map: {
       id: 'ais-history-tracks',
       type: 'line',
       source: 'ais-history-tracks',
-      filter: ['==', ['geometry-type'], 'LineString'],
+      filter: [
+        'all',
+        ['==', ['geometry-type'], 'LineString'],
+        ['!=', ['get', 'kind'], 'direction'],
+      ],
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-opacity': 0.8 },
     });

@@ -158,6 +158,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/map/points/{snapshotId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Release an owned read snapshot; repeated and foreign identifiers return no content */
+    delete: operations['MapController_release'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/map/points': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Complete paginated current vessel points at every zoom */
+    get: operations['MapController_points'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/map/heatmap': {
     parameters: {
       query?: never;
@@ -762,6 +796,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/topics/predictions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Owned latest prediction metadata, with geometry only for a selected MMSI */
+    get: operations['TopicsController_predictions'];
+    put?: never;
+    /** Queue an owned bounded single-vessel prediction task */
+    post: operations['TopicsController_predict'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/predictions/{instanceId}/watch': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Persist an owned vessel watch within the twenty-vessel account quota */
+    put: operations['TopicsController_watch'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/topics/predictions/{instanceId}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel an owned prediction and fence all in-flight leases */
+    post: operations['TopicsController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/topics': {
     parameters: {
       query?: never;
@@ -874,6 +960,23 @@ export interface paths {
     get?: never;
     /** Update configuration and restart historical warmup with a fenced generation */
     put: operations['TopicsController_config'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/analysis/results/{id}/artifact': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Immutable prediction geometry and warning impacts for one result revision */
+    get: operations['AnalysisController_artifact'];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -2381,6 +2484,120 @@ export interface operations {
             truncated: boolean;
             total: number;
             returned: number;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MapController_release: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': Record<string, never>;
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MapController_points: {
+    parameters: {
+      query?: {
+        bbox?: string;
+        zoom?: number;
+        hours?: number;
+        sourceId?: string;
+        shipType?: number;
+        snapshotId?: string;
+        cursor?: string;
+        pageSize?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            snapshotId: string;
+            sequence: number;
+            items: {
+              /** @enum {string} */
+              kind: 'point';
+              mmsi: string;
+              lat: number;
+              lon: number;
+              /** Format: date-time */
+              observedAt: string;
+              sourceId: string;
+              sogKnots: number | null;
+              cogDegrees: number | null;
+              headingDegrees: number | null;
+              quality: string[];
+            }[];
+            total: number;
+            nextCursor: string | null;
+            complete: boolean;
+            /** Format: date-time */
+            generatedAt: string;
+            /** Format: date-time */
+            expiresAt: string;
           };
         };
       };
@@ -5715,6 +5932,191 @@ export interface operations {
       };
     };
   };
+  TopicsController_predictions: {
+    parameters: {
+      query?: {
+        mmsi?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_predict: {
+    parameters: {
+      query?: never;
+      header: {
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          mmsi: string;
+          watch?: boolean;
+        };
+      };
+    };
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_watch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          watch: boolean;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  TopicsController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   TopicsController_list: {
     parameters: {
       query?: never;
@@ -5773,7 +6175,11 @@ export interface operations {
       content: {
         'application/json': {
           /** @enum {string} */
-          definitionId: 'port-restriction' | 'area-low-speed-notice';
+          definitionId:
+            | 'port-restriction'
+            | 'area-low-speed-notice'
+            | 'vessel-reachability'
+            | 'navigation-warning-impact';
           name: string;
           config: {
             bbox: number[];
@@ -5787,6 +6193,7 @@ export interface operations {
             minPositions?: number;
             /** @default 60 */
             scheduleSeconds?: number;
+            mmsi?: string;
           };
           /** @default false */
           enabled?: boolean;
@@ -6027,10 +6434,55 @@ export interface operations {
             minPositions?: number;
             /** @default 60 */
             scheduleSeconds?: number;
+            mmsi?: string;
           };
         };
       };
     };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Session required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Role, origin or CSRF denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AnalysisController_artifact: {
+    parameters: {
+      query?: {
+        revision?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       200: {
         headers: {
@@ -6513,6 +6965,7 @@ export interface operations {
                     | 'playback'
                     | 'heatmap'
                     | 'history-tracks'
+                    | 'prediction'
                     | 'chat'
                     | 'push'
                     | 'tasks';
@@ -6583,7 +7036,12 @@ export interface operations {
               /** Format: date-time */
               to: string;
               /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              definitionId:
+                | 'port-restriction'
+                | 'area-low-speed-notice'
+                | 'vessel-reachability'
+                | 'navigation-warning-impact'
+                | null;
               generation: number;
               modelCalls: number;
               toolCalls: number;
@@ -7415,6 +7873,7 @@ export interface operations {
                     | 'playback'
                     | 'heatmap'
                     | 'history-tracks'
+                    | 'prediction'
                     | 'chat'
                     | 'push'
                     | 'tasks';
@@ -7485,7 +7944,12 @@ export interface operations {
               /** Format: date-time */
               to: string;
               /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              definitionId:
+                | 'port-restriction'
+                | 'area-low-speed-notice'
+                | 'vessel-reachability'
+                | 'navigation-warning-impact'
+                | null;
               generation: number;
               modelCalls: number;
               toolCalls: number;
@@ -8329,6 +8793,7 @@ export interface operations {
                     | 'playback'
                     | 'heatmap'
                     | 'history-tracks'
+                    | 'prediction'
                     | 'chat'
                     | 'push'
                     | 'tasks';
@@ -8399,7 +8864,12 @@ export interface operations {
               /** Format: date-time */
               to: string;
               /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              definitionId:
+                | 'port-restriction'
+                | 'area-low-speed-notice'
+                | 'vessel-reachability'
+                | 'navigation-warning-impact'
+                | null;
               generation: number;
               modelCalls: number;
               toolCalls: number;
@@ -9637,6 +10107,7 @@ export interface operations {
                         | 'playback'
                         | 'heatmap'
                         | 'history-tracks'
+                        | 'prediction'
                         | 'chat'
                         | 'push'
                         | 'tasks';
@@ -9802,6 +10273,7 @@ export interface operations {
                         | 'playback'
                         | 'heatmap'
                         | 'history-tracks'
+                        | 'prediction'
                         | 'chat'
                         | 'push'
                         | 'tasks';
@@ -10178,6 +10650,7 @@ export interface operations {
                     | 'playback'
                     | 'heatmap'
                     | 'history-tracks'
+                    | 'prediction'
                     | 'chat'
                     | 'push'
                     | 'tasks';
@@ -10248,7 +10721,12 @@ export interface operations {
               /** Format: date-time */
               to: string;
               /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              definitionId:
+                | 'port-restriction'
+                | 'area-low-speed-notice'
+                | 'vessel-reachability'
+                | 'navigation-warning-impact'
+                | null;
               generation: number;
               modelCalls: number;
               toolCalls: number;
@@ -10994,6 +11472,7 @@ export interface operations {
                     | 'playback'
                     | 'heatmap'
                     | 'history-tracks'
+                    | 'prediction'
                     | 'chat'
                     | 'push'
                     | 'tasks';
@@ -11064,7 +11543,12 @@ export interface operations {
               /** Format: date-time */
               to: string;
               /** @enum {string|null} */
-              definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+              definitionId:
+                | 'port-restriction'
+                | 'area-low-speed-notice'
+                | 'vessel-reachability'
+                | 'navigation-warning-impact'
+                | null;
               generation: number;
               modelCalls: number;
               toolCalls: number;
@@ -11412,6 +11896,7 @@ export interface operations {
                   | 'playback'
                   | 'heatmap'
                   | 'history-tracks'
+                  | 'prediction'
                   | 'chat'
                   | 'push'
                   | 'tasks';
@@ -11482,7 +11967,12 @@ export interface operations {
             /** Format: date-time */
             to: string;
             /** @enum {string|null} */
-            definitionId: 'port-restriction' | 'area-low-speed-notice' | null;
+            definitionId:
+              | 'port-restriction'
+              | 'area-low-speed-notice'
+              | 'vessel-reachability'
+              | 'navigation-warning-impact'
+              | null;
             generation: number;
             modelCalls: number;
             toolCalls: number;
@@ -11929,6 +12419,7 @@ export interface operations {
                 | 'playback'
                 | 'heatmap'
                 | 'history-tracks'
+                | 'prediction'
                 | 'chat'
                 | 'push'
                 | 'tasks';
@@ -12338,6 +12829,7 @@ export interface operations {
                   | 'playback'
                   | 'heatmap'
                   | 'history-tracks'
+                  | 'prediction'
                   | 'chat'
                   | 'push'
                   | 'tasks';
@@ -12714,6 +13206,7 @@ export interface operations {
                 | 'playback'
                 | 'heatmap'
                 | 'history-tracks'
+                | 'prediction'
                 | 'chat'
                 | 'push'
                 | 'tasks';
@@ -12853,6 +13346,7 @@ export interface operations {
                 | 'playback'
                 | 'heatmap'
                 | 'history-tracks'
+                | 'prediction'
                 | 'chat'
                 | 'push'
                 | 'tasks';
@@ -13955,6 +14449,7 @@ export interface operations {
                       | 'playback'
                       | 'heatmap'
                       | 'history-tracks'
+                      | 'prediction'
                       | 'chat'
                       | 'push'
                       | 'tasks';
@@ -14110,6 +14605,7 @@ export interface operations {
                     | 'playback'
                     | 'heatmap'
                     | 'history-tracks'
+                    | 'prediction'
                     | 'chat'
                     | 'push'
                     | 'tasks';
@@ -14255,6 +14751,7 @@ export interface operations {
                   | 'playback'
                   | 'heatmap'
                   | 'history-tracks'
+                  | 'prediction'
                   | 'chat'
                   | 'push'
                   | 'tasks';
@@ -14388,6 +14885,7 @@ export interface operations {
                       | 'playback'
                       | 'heatmap'
                       | 'history-tracks'
+                      | 'prediction'
                       | 'chat'
                       | 'push'
                       | 'tasks';

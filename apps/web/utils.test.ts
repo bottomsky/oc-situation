@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { canOperate, trackFrame, queryString, errorLabel } from './app/utils/display';
+import {
+  canOperate,
+  trackFrame,
+  queryString,
+  errorLabel,
+  confidenceLabel,
+} from './app/utils/display';
+it('模型估计、规则匹配与共现观察明确区分', () => {
+  expect(confidenceLabel('model-estimate')).toBe('模型估计（未校准）');
+  expect(confidenceLabel('rule-match')).toBe('规则匹配');
+  expect(confidenceLabel('observation')).toBe('共现观察');
+});
 import type { PositionObservation, TrackResponse } from '@ais/contracts';
 const point = (lon: number): PositionObservation => ({
   schemaVersion: 1,

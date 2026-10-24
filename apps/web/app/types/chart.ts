@@ -37,5 +37,6 @@ export interface ChartMapControls {
   zoomOut(): void;
   locateIntelligence(eventId?: string): void;
   focusGeometry(geometry: IntelligenceGeometry): void;
+  focusPrediction?(geometry: IntelligenceGeometry): void;
   draw(mode: 'point' | 'linestring' | 'polygon' | 'select' | 'cancel'): void;
 }

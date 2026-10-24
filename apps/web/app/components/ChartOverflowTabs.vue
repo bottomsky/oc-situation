@@ -3,6 +3,7 @@ import { partitionChartTabs } from '../utils/chartOverflowTabs';
 
 const tabs = [
   { id: 'search', name: '船舶搜索' },
+  { id: 'prediction', name: '航行预测' },
   { id: 'intelligence', name: '情报标绘' },
   { id: 'layers', name: '图层控制' },
   { id: 'playback', name: '时间回放' },

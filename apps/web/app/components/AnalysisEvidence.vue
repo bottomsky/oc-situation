@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AnalysisResult } from '@ais/contracts';
-import { dateLabel } from '../utils/display';
+import { dateLabel, confidenceLabel } from '../utils/display';
 const props = defineProps<{ result: AnalysisResult }>();
 const emit = defineEmits<{
   close: [];
@@ -10,6 +10,9 @@ const emit = defineEmits<{
 const { api } = usePlatform();
 const revisions = ref<AnalysisResult[]>([]);
 const revisionError = ref('');
+const artifactError = ref('');
+const artifactBusy = ref(false);
+const artifact = ref<unknown>(null);
 const active = ref(props.result);
 const synthetic = computed(() =>
   active.value.evidence.ais.some((point) => {
@@ -24,6 +27,8 @@ watch(
     const current = ++request;
     const sameResult = active.value.id === result.id;
     active.value = result;
+    artifact.value = null;
+    artifactError.value = '';
     if (sameResult && revisions.value.length) return;
     revisions.value = [];
     revisionError.value = '';
@@ -39,9 +44,30 @@ watch(
   { immediate: true },
 );
 function showRevision(result: AnalysisResult) {
+  artifact.value = null;
+  artifactError.value = '';
   active.value = result;
   emit('revision', result);
   emit('locate', result);
+}
+async function loadArtifact() {
+  artifactBusy.value = true;
+  artifactError.value = '';
+  const selected = active.value;
+  try {
+    const response = await api(
+      '/analysis/results/' +
+        encodeURIComponent(selected.id) +
+        '/artifact?revision=' +
+        selected.revision,
+    );
+    if (active.value.id === selected.id && active.value.revision === selected.revision)
+      artifact.value = response;
+  } catch (e) {
+    artifactError.value = (e as Error).message;
+  } finally {
+    artifactBusy.value = false;
+  }
 }
 </script>
 <template>
@@ -57,8 +83,19 @@ function showRevision(result: AnalysisResult) {
       </div>
     </div>
     <h3>{{ active.title }}</h3>
+    <span class="badge">{{ confidenceLabel(active.confidence) }}</span>
     <span v-if="synthetic" class="badge sample">样例数据 · 合成观测</span>
     <p>{{ active.summary }}</p>
+    <section v-if="active.artifactRef">
+      <button :disabled="artifactBusy" @click="loadArtifact">
+        {{ artifactBusy ? '正在读取…' : '读取本修订预测工件' }}
+      </button>
+      <p v-if="artifactError" class="error" role="alert">{{ artifactError }}</p>
+      <details v-if="artifact">
+        <summary>固定修订 {{ active.revision }} · 模型工件</summary>
+        <pre class="code-view">{{ JSON.stringify(artifact, null, 2) }}</pre>
+      </details>
+    </section>
     <div class="evidence-meta">
       <span class="badge"
         >修订 {{ active.revision }} ·

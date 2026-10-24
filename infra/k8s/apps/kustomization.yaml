@@ -13,6 +13,7 @@ resources:
   - intelligence.yaml
   - topic-port-restriction.yaml
   - topic-low-speed.yaml
+  - topic-predictions.yaml
   - ingress.yaml
 configMapGenerator:
   - name: ais-caddy

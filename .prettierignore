@@ -12,3 +12,5 @@ docs/product/产品方案.md
 ingest/
 *.docx
 references/osint/
+# Versioned map resources are generated with recorded byte hashes.
+apps/web/public/maps/maritime/

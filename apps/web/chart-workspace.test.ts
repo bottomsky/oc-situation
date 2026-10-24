@@ -4,9 +4,16 @@ import {
   writeChartPreference,
   createRequestGeneration,
   visibleVesselRows,
+  vesselTablePage,
 } from './app/utils/chartWorkspace';
 
 describe('海图工作台状态边界', () => {
+  it('五万身份保留全量，表格只挂载当前100行并支持末页', () => {
+    const ids = Array.from({ length: 50000 }, (_, i) => String(i));
+    expect(vesselTablePage(ids, 0)).toEqual(ids.slice(0, 100));
+    expect(vesselTablePage(ids, 499)).toEqual(ids.slice(49900));
+    expect(ids).toHaveLength(50000);
+  });
   it('面板偏好按账号隔离且损坏存储回到响应式默认值', () => {
     const values = new Map<string, string>();
     const storage = {

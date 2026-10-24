@@ -26,6 +26,80 @@ function harness(api: (path: string) => Promise<unknown>) {
   return { workspace, subscribeViewport, stop: () => scope.stop() };
 }
 describe('海图实际搜索状态', () => {
+  it('连续三次视窗中断释放HTTP快照，旧完整结果保持到最新快照提交', async () => {
+    const releases: string[] = [];
+    const cursors: { id: string; resolve: (value: unknown) => void }[] = [];
+    let count = 0;
+    const point = (mmsi: string) => ({ kind: 'point', mmsi, lon: 120, lat: 30, quality: [] });
+    const api = vi.fn(async (path: string, options?: { method?: string }) => {
+      if (options?.method === 'DELETE') {
+        releases.push(path.split('/').at(-1)!);
+        return;
+      }
+      const url = new URL(path, 'http://test');
+      if (url.searchParams.has('cursor'))
+        return new Promise((resolve) =>
+          cursors.push({ id: url.searchParams.get('snapshotId')!, resolve }),
+        );
+      const id = 'snapshot-' + ++count;
+      return {
+        snapshotId: id,
+        sequence: 1,
+        items: [point(id + 'a')],
+        total: 2,
+        nextCursor: 'next',
+        complete: false,
+        generatedAt: '2026-10-24T00:00:00Z',
+        expiresAt: '2099-01-01T00:00:00Z',
+      };
+    });
+    const { workspace, stop } = harness(api);
+    workspace.data.value = { items: [point('old')], total: 1 } as never;
+    workspace.viewport([120, 30, 124, 34], 6);
+    for (let index = 0; index < 3; index++) {
+      await vi.waitFor(() => expect(cursors).toHaveLength(index + 1));
+      expect(
+        workspace.data.value?.items[0]?.kind === 'point' && workspace.data.value.items[0].mmsi,
+      ).toBe('old');
+      if (index < 2) {
+        workspace.viewport([121 + index, 30, 124, 34], 6);
+      }
+      cursors[index]!.resolve({
+        snapshotId: cursors[index]!.id,
+        sequence: 1,
+        items: [point(cursors[index]!.id + 'b')],
+        total: 2,
+        nextCursor: null,
+        complete: true,
+        generatedAt: '2026-10-24T00:00:00Z',
+        expiresAt: '2099-01-01T00:00:00Z',
+      });
+      await vi.waitFor(() => expect(releases).toHaveLength(index + 1));
+    }
+    expect(releases).toEqual(['snapshot-1', 'snapshot-2', 'snapshot-3']);
+    expect(workspace.data.value?.items).toHaveLength(2);
+    stop();
+  });
+  it('人工框选区域保持HTTP和WS同一范围，清除后恢复当前视窗', async () => {
+    const api = vi.fn().mockResolvedValue({ items: [], total: 0 });
+    const { workspace, subscribeViewport, stop } = harness(api);
+    workspace.queryArea([120, 30, 121, 31]);
+    await workspace.refresh();
+    workspace.viewport([118, 28, 128, 41], 6);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(new URL(api.mock.calls.at(-1)![0], 'http://test').searchParams.get('bbox')).toBe(
+      '120,30,121,31',
+    );
+    expect(subscribeViewport).toHaveBeenLastCalledWith(
+      expect.objectContaining({ bbox: '120,30,121,31' }),
+    );
+    workspace.queryArea(null);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(new URL(api.mock.calls.at(-1)![0], 'http://test').searchParams.get('bbox')).toBe(
+      '118,28,128,41',
+    );
+    stop();
+  });
   it.each([
     [-2, 0],
     [0.5, 0.5],

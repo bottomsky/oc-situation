@@ -2,6 +2,8 @@ import { z } from 'zod';
 export * from './intelligence';
 export * from './intelligence-spatial';
 export * from './topics';
+export * from './reachability';
+export * from './map-snapshot';
 export * from './agent';
 export * from './agent-memory';
 export * from './intelligence-search';

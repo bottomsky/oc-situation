@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AnalysisResult } from '@ais/contracts';
-import { dateLabel } from '../utils/display';
+import { dateLabel, confidenceLabel } from '../utils/display';
 defineProps<{
   items: AnalysisResult[];
   busy: boolean;
@@ -38,7 +38,7 @@ const emit = defineEmits<{ select: [result: AnalysisResult]; retry: [] }>();
               ? '已撤回'
               : item.status === 'revised'
                 ? '已修订'
-                : '规则关联'
+                : confidenceLabel(item.confidence)
           }}</span
         ><span>修订 {{ item.revision }}</span></span
       >

@@ -2,6 +2,8 @@
 
 本文记录当前代码能力与待实施边界。运行方式见[系统架构](architecture.md)和[运维说明](../infra/OPERATIONS.md)；通用 Agent SDK 的目标与开发顺序分别见[架构设计](agent-sdk-architecture.md)和[路线图](agent-sdk-roadmap.md)。
 
+2026 年 10 月 24 日的海事 GIS 增量包含完整单船快照、深浅底图、统一航迹、单船概率预测、航行警告影响和按账号管理的关注集合。模型口径、公开地图资源、精细避陆与回测入口见[海事 GIS 与概率预测](maritime-gis.md)。新增模块沿用下表原有能力的接口与证据兼容基线，验证结果见[本轮交付记录](reports/maritime-gis-delivery-2026-10-24.md)。
+
 ## 当前能力
 
 | 范围                 | 当前实现                                                                                           | 后续交付边界                                                                           |

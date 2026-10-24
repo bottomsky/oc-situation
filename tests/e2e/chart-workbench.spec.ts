@@ -364,8 +364,13 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
   await page.goto('/');
   await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true');
   expect(externalRequests, '旧偏好及配置应无法触发外部底图请求').toEqual([]);
-  await expect(page.getByTestId('chart-source-note')).toContainText('本地深色底图');
-  await expect(page.getByTestId('chart-source-note')).toContainText('Natural Earth');
+  const manifestResponse = await page.request.get('/maps/maritime/manifest.json');
+  expect(manifestResponse.ok()).toBe(true);
+  const manifest = await manifestResponse.json();
+  expect(manifest.land.url).toMatch(/^\/maps\/maritime\//);
+  await expect(page.getByTestId('chart-source-note')).toContainText(manifest.version);
+  await expect(page.getByTestId('chart-source-note')).toContainText(manifest.land.attribution);
+  await expect(page.getByTestId('chart-source-note')).toContainText('WGS84');
   const map = page.getByTestId('sea-map');
   const instance = await map.getAttribute('data-map-instance');
   async function renderedColors() {
@@ -395,7 +400,15 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
           pixels[i + 2]! < 80
         )
           ais++;
-        if (pixels[i] === 215 && pixels[i + 1] === 121 && pixels[i + 2] === 53) tracks++;
+        if (
+          pixels[i]! >= 60 &&
+          pixels[i]! <= 90 &&
+          pixels[i + 1]! >= 150 &&
+          pixels[i + 1]! <= 240 &&
+          pixels[i + 2]! >= 145 &&
+          pixels[i + 2]! <= 250
+        )
+          tracks++;
         if (pixels[i] === 186 && pixels[i + 1] === 74 && pixels[i + 2] === 67) evidence++;
       }
       return { sea, land, ais, tracks, evidence };

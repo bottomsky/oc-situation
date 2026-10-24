@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildPlan } from './build-plan';
+import { buildPlan, extraBuildEntries } from './build-plan';
 describe('production build plan', () => {
+  it('bundles the isolated prediction thread beside the topics process', () => {
+    expect(extraBuildEntries('topics')).toEqual([
+      { entry: 'prediction-worker.ts', output: 'dist/prediction-worker.mjs' },
+    ]);
+    expect(extraBuildEntries('api')).toEqual([]);
+  });
   it('selects concrete Node entry points instead of noEmit checks', () => {
     expect(buildPlan('api')).toEqual({
       entry: 'src/main.ts',

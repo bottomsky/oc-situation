@@ -56,6 +56,12 @@ export const demoWorkers = {
     metricsVariable: 'INTERNAL_METRICS_PORT',
     env: { TOPIC_DEFINITION_ID: 'area-low-speed-notice' },
   },
+  topicPredictions: {
+    entry: 'apps/topics/main.ts',
+    metricsPort: 13111,
+    metricsVariable: 'INTERNAL_METRICS_PORT',
+    env: { TOPIC_PREDICTIONS_ONLY: 'true' },
+  },
   agent: {
     entry: 'apps/agent/main.ts',
     metricsPort: 13110,

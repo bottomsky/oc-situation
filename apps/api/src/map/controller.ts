@@ -1,12 +1,29 @@
-import { Controller, Get, HttpException, Inject, Query, Req } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpException,
+  Inject,
+  Param,
+  Query,
+  Req,
+  SetMetadata,
+} from '@nestjs/common';
 import { HeatmapQueryError, queryAisHeatmap, type Infrastructure } from '@ais/infrastructure';
 import { z } from 'zod';
 import type { MapResponse } from '@ais/contracts';
-import { DocumentQuery, DocumentRoute, INFRA } from '../common';
+import { DocumentQuery, DocumentRoute, INFRA, parse, Uuid } from '../common';
 import { bounds, MapQuerySchema, parseMapQuery } from './query';
 import { HeatmapResultSchema } from '../../../../packages/contracts/heatmap';
 import type { AuthRequest } from '../auth/guard';
 import { HeatmapHttpQuerySchema, parseHeatmapQuery } from './heatmap-query';
+import { MapPointSnapshotPageSchema } from '../../../../packages/contracts/map-snapshot';
+import {
+  getMapPointSnapshotService,
+  MapPointSnapshotError,
+} from '../../../../packages/infrastructure/map-snapshots';
+import { MapPointHttpQuerySchema, parseMapPointHttpQuery } from './points-query';
 export const MapResponseSchema = z.object({
   items: z.array(
     z.discriminatedUnion('kind', [
@@ -40,6 +57,56 @@ export const MapResponseSchema = z.object({
 @Controller('map')
 export class MapController {
   constructor(@Inject(INFRA) private readonly infra: Infrastructure) {}
+  readPoints(query: unknown, ownerId: string) {
+    return getMapPointSnapshotService(this.infra).read(parseMapQuery(query), ownerId);
+  }
+  @Delete('points/:snapshotId')
+  @HttpCode(204)
+  @SetMetadata('allowViewerWrite', true)
+  @DocumentRoute(
+    'Release an owned read snapshot; repeated and foreign identifiers return no content',
+    z.object({}),
+    undefined,
+    204,
+  )
+  release(@Param('snapshotId') snapshotId: string, @Req() req: AuthRequest) {
+    if (!req.user?.id)
+      throw new HttpException(
+        { code: 'MAP_POINTS_UNAUTHORIZED', message: '请登录后管理船位快照。' },
+        401,
+      );
+    parse(Uuid, snapshotId);
+    getMapPointSnapshotService(this.infra).release(req.user.id, snapshotId);
+  }
+  @Get('points')
+  @DocumentQuery(MapPointHttpQuerySchema)
+  @DocumentRoute(
+    'Complete paginated current vessel points at every zoom',
+    MapPointSnapshotPageSchema,
+  )
+  async points(@Query() query: unknown, @Req() req: AuthRequest) {
+    try {
+      if (!req.user?.id) throw new MapPointSnapshotError('unauthorized');
+      return await getMapPointSnapshotService(this.infra).page(
+        req.user.id,
+        parseMapPointHttpQuery(query),
+      );
+    } catch (error) {
+      if (!(error instanceof MapPointSnapshotError)) throw error;
+      const status = {
+        unauthorized: 401,
+        invalid_input: 400,
+        gone: 410,
+        busy: 429,
+        data_limit: 413,
+        unavailable: 503,
+      }[error.category];
+      throw new HttpException(
+        { code: `MAP_POINTS_${error.category.toUpperCase()}`, message: error.message },
+        status,
+      );
+    }
+  }
   @Get('heatmap')
   @DocumentQuery(HeatmapHttpQuerySchema)
   @DocumentRoute('Historical AIS unique-vessel heatmap', HeatmapResultSchema)

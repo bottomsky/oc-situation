@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'vitest';
 import { documents, validateResources } from './check-deployment.js';
 
@@ -120,4 +120,79 @@ test('rejects mixed application and initialization image versions', () => {
   assert.ok(
     validateResources([...resources, duplicate]).some((error) => error.includes('same version')),
   );
+});
+
+const predictionFixture = fixture
+  .replaceAll('processor', 'topic-predictions')
+  .replace('apps/topic-predictions/dist/main.mjs', 'apps/topics/dist/main.mjs')
+  .replaceAll('13101', '13111')
+  .replace(
+    "- {name: INTERNAL_METRICS_PORT, value: '13111'}",
+    "- {name: INTERNAL_METRICS_PORT, value: '13111'}\n            - {name: TOPIC_PREDICTIONS_ONLY, value: 'true'}",
+  )
+  .replace('limits: {memory: 1Gi}', "limits: {cpu: '2', memory: 2Gi}");
+
+test('requires the prediction-only worker mode and aligned resource limits', () => {
+  assert.deepEqual(validateResources(documents(predictionFixture)), []);
+  assert.ok(
+    validateResources(
+      documents(predictionFixture.replace("- {name: TOPIC_PREDICTIONS_ONLY, value: 'true'}", '')),
+    ).some((error) => error.includes('TOPIC_PREDICTIONS_ONLY')),
+  );
+  assert.ok(
+    validateResources(
+      documents(
+        predictionFixture.replace(
+          "limits: {cpu: '2', memory: 2Gi}",
+          "limits: {cpu: '1', memory: 1Gi}",
+        ),
+      ),
+    ).some((error) => error.includes('prediction resource limits')),
+  );
+});
+
+test('checks prediction metrics readiness instead of treating the new worker as unknown', () => {
+  assert.ok(
+    validateResources(
+      documents(
+        predictionFixture.replace(
+          "INTERNAL_METRICS_PORT, value: '13111'",
+          "INTERNAL_METRICS_PORT, value: '13109'",
+        ),
+      ),
+    ).some((error) => error.includes('wrong metrics environment')),
+  );
+});
+
+test('registers the prediction workload and metrics service in the shared apps base', () => {
+  const resource = new URL('../infra/k8s/apps/topic-predictions.yaml', import.meta.url);
+  assert.ok(existsSync(resource), 'Prediction Kubernetes workload is required');
+  const resources = documents(readFileSync(resource, 'utf8'));
+  assert.deepEqual(
+    resources.map((r) => [r.kind, (r.metadata as { name: string }).name]),
+    [
+      ['Deployment', 'topic-predictions'],
+      ['Service', 'topic-predictions'],
+    ],
+  );
+  const kustomization = documents(
+    readFileSync(new URL('../infra/k8s/apps/kustomization.yaml', import.meta.url), 'utf8'),
+  )[0]!;
+  assert.ok((kustomization.resources as string[]).includes('topic-predictions.yaml'));
+});
+
+test('scrapes prediction worker metrics in both production monitoring configurations', () => {
+  for (const path of [
+    '../infra/prometheus.production.yaml',
+    '../infra/k8s/components/monitoring/prometheus.yaml',
+  ]) {
+    const config = documents(readFileSync(new URL(path, import.meta.url), 'utf8'))[0]!;
+    const jobs = config.scrape_configs as { static_configs?: { targets: string[] }[] }[];
+    assert.ok(
+      jobs.some((job) =>
+        job.static_configs?.some((entry) => entry.targets.includes('topic-predictions:13111')),
+      ),
+      `${path}: prediction scrape target missing`,
+    );
+  }
 });

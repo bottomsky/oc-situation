@@ -1,6 +1,7 @@
 import type {
   Bbox,
   MapResponse,
+  MapPoint,
   TrackResponse,
   VesselDetail,
   VesselSummary,
@@ -9,6 +10,8 @@ import type {
 } from '@ais/contracts';
 import { queryString, trackFrame } from '../utils/display';
 import { createRequestGeneration, visibleVesselRows } from '../utils/chartWorkspace';
+import { createPointSnapshot, type PointPage } from '../utils/mapPoints';
+import { shallowRef, markRaw } from 'vue';
 export type ChartSource = SourceConfig & {
   lastReceivedAt?: string | null;
   lastError?: string | null;
@@ -17,9 +20,10 @@ export function useChartWorkspace() {
   const { api } = usePlatform();
   const route = useRoute();
   const leftTab = ref<
-    'search' | 'layers' | 'playback' | 'history-tracks' | 'intelligence' | 'heatmap'
+    'search' | 'layers' | 'playback' | 'history-tracks' | 'intelligence' | 'heatmap' | 'prediction'
   >('search');
   const nameCache = ref(new Map<string, string>());
+  const vesselNames = computed(() => Object.fromEntries(nameCache.value));
   const rows = computed(() => visibleVesselRows(data.value?.items ?? [], nameCache.value));
   const searchRequests = createRequestGeneration();
   const detailRequests = createRequestGeneration();
@@ -31,7 +35,7 @@ export function useChartWorkspace() {
     mapData,
     subscribeViewport,
   } = useFusionEvents();
-  const data = ref<MapResponse | null>(null);
+  const data = shallowRef<MapResponse | null>(null);
   const track = ref<TrackResponse | null>(null);
   const detail = ref<VesselDetail | null>(null);
   const sources = ref<ChartSource[]>([]);
@@ -61,6 +65,7 @@ export function useChartWorkspace() {
   const appliedSearch = ref('');
   const searchCompleted = ref(false);
   const busy = ref(false);
+  const snapshotProgress = ref({ loaded: 0, total: 0 });
   const searchBusy = ref(false);
   const trackBusy = ref(false);
   const error = ref('');
@@ -68,6 +73,7 @@ export function useChartWorkspace() {
   const trackError = ref('');
   const searchError = ref('');
   const bbox = ref<Bbox>([-180, -85, 180, 85]);
+  const queryBounds = ref<Bbox | null>(null);
   const zoom = ref(3);
   const lastSuccess = ref(0);
   const now = ref(Date.now());
@@ -83,6 +89,7 @@ export function useChartWorkspace() {
   let playback: ReturnType<typeof setInterval>;
   let refreshQueued = false;
   let viewportGeneration = 0;
+  let liveCommitGeneration = 0;
   let disposed = false;
   async function refresh() {
     if (busy.value) {
@@ -90,27 +97,73 @@ export function useChartWorkspace() {
       return;
     }
     const currentViewport = viewportGeneration;
+    const currentLiveCommit = liveCommitGeneration;
     const startedAt = Date.now();
     busy.value = true;
     error.value = '';
+    let snapshotId: string | undefined;
     try {
-      const response = await api<MapResponse>(
-        '/map' +
+      const snapshot = createPointSnapshot<MapPoint>();
+      let page = await api<PointPage<MapPoint> | MapResponse>(
+        '/map/points' +
           queryString({
-            bbox: bbox.value.join(','),
+            bbox: (queryBounds.value ?? bbox.value).join(','),
             zoom: zoom.value,
             hours: hours.value,
             sourceId: sourceId.value || undefined,
             shipType: shipType.value || undefined,
           }),
       );
-      if (!disposed && currentViewport === viewportGeneration && lastSuccess.value <= startedAt) {
-        data.value = response;
+      let response: MapResponse;
+      if ('snapshotId' in page) {
+        snapshotId = page.snapshotId;
+        let loaded = 0;
+        const seen = new Set<string>();
+        while (true) {
+          if (
+            disposed ||
+            currentViewport !== viewportGeneration ||
+            currentLiveCommit !== liveCommitGeneration
+          )
+            return;
+          if (page.snapshotId !== snapshotId) throw new Error('船位快照分页标识不一致，请重试');
+          loaded += page.items.length;
+          snapshotProgress.value = { loaded, total: page.total };
+          const items = snapshot.accept(page);
+          if (items) {
+            response = {
+              items,
+              total: page.total,
+              sampled: false,
+              truncated: false,
+              generatedAt: page.generatedAt,
+            };
+            break;
+          }
+          if (!page.nextCursor || seen.has(page.nextCursor))
+            throw new Error('船位快照分页中断，请重试；已保留上一完整视窗');
+          seen.add(page.nextCursor);
+          page = await api<PointPage<MapPoint>>(
+            '/map/points' + queryString({ snapshotId: page.snapshotId, cursor: page.nextCursor }),
+          );
+        }
+      } else response = page;
+      if (
+        !disposed &&
+        currentViewport === viewportGeneration &&
+        currentLiveCommit === liveCommitGeneration &&
+        lastSuccess.value <= startedAt
+      ) {
+        data.value = markRaw(response);
         lastSuccess.value = Date.now();
       }
     } catch (e) {
       if (!disposed && currentViewport === viewportGeneration) error.value = (e as Error).message;
     } finally {
+      if (snapshotId)
+        await api('/map/points/' + encodeURIComponent(snapshotId), { method: 'DELETE' }).catch(
+          () => {},
+        );
       busy.value = false;
       if (refreshQueued && !disposed) {
         refreshQueued = false;
@@ -124,10 +177,15 @@ export function useChartWorkspace() {
     subscribe();
     void refresh();
   }
+  function queryArea(bounds: Bbox | null) {
+    queryBounds.value = bounds;
+    subscribe();
+    void refresh();
+  }
   function subscribe() {
     viewportGeneration++;
     subscribeViewport({
-      bbox: bbox.value.join(','),
+      bbox: (queryBounds.value ?? bbox.value).join(','),
       zoom: zoom.value,
       hours: hours.value,
       sourceId: sourceId.value || undefined,
@@ -243,6 +301,7 @@ export function useChartWorkspace() {
   });
   watch(mapData, (next) => {
     if (!paused.value && next) {
+      liveCommitGeneration++;
       data.value = next;
       lastSuccess.value = Date.now();
       error.value = '';
@@ -291,6 +350,7 @@ export function useChartWorkspace() {
     appliedSearch,
     searchCompleted,
     busy,
+    snapshotProgress,
     searchBusy,
     trackBusy,
     error,
@@ -311,6 +371,9 @@ export function useChartWorkspace() {
     feedError,
     leftTab,
     rows,
+    vesselNames,
+    queryBounds,
+    queryArea,
     refresh,
     viewport,
     find,

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { TopicDefinition, TopicInstance, TopicDefinitionId } from '@ais/contracts';
+import { isPredictionDefinition } from '@ais/contracts';
+import { topicTargetConfig } from '../utils/topicConfig';
 import { parseBbox } from '../utils/fusion';
 import { dateLabel } from '../utils/display';
 const { api, session, notice } = usePlatform();
@@ -10,6 +12,8 @@ const busy = ref(false);
 const error = ref('');
 const definitionId = ref<TopicDefinitionId>('port-restriction');
 const name = ref('');
+const targetMmsi = ref('');
+const fixedMmsi = ref<string | undefined>();
 const bounds = ref('120,28,124,33');
 const historyHours = ref(24);
 const windowMinutes = ref(60);
@@ -57,6 +61,11 @@ async function create() {
       if (windowMinutes.value > historyHours.value * 60)
         throw new Error('分析窗口需位于历史查询范围内');
       const config = {
+        ...topicTargetConfig(
+          definitionId.value,
+          targetMmsi.value,
+          editing.value ? fixedMmsi.value : undefined,
+        ),
         bbox: parseBbox(bounds.value),
         historyHours: historyHours.value,
         windowMinutes: windowMinutes.value,
@@ -77,6 +86,8 @@ async function create() {
       });
       name.value = '';
       editing.value = null;
+      targetMmsi.value = '';
+      fixedMmsi.value = undefined;
     },
     editing.value
       ? '专题配置已保存，启用中的专题将重新预热'
@@ -89,6 +100,8 @@ function edit(instance: TopicInstance) {
   editing.value = instance.id;
   name.value = instance.name;
   definitionId.value = instance.definitionId;
+  targetMmsi.value = instance.config.mmsi ?? '';
+  fixedMmsi.value = instance.config.mmsi;
   bounds.value = instance.config.bbox.join(',');
   historyHours.value = instance.config.historyHours;
   windowMinutes.value = instance.config.windowMinutes;
@@ -129,6 +142,7 @@ useUiReadOnlyEditor(
     name: name.value,
     bounds: bounds.value,
     definitionId: definitionId.value,
+    targetMmsi: targetMmsi.value,
     historyHours: historyHours.value,
     windowMinutes: windowMinutes.value,
   }),
@@ -205,6 +219,18 @@ useUiReadOnlyEditor(
           required
           placeholder="120,28,124,33"
         /><small class="muted">WGS84 经度、纬度；跨日期变更线时西界可大于东界。</small></label
+      >
+      <label v-if="isPredictionDefinition(definitionId)"
+        >目标船舶 MMSI<input
+          v-model="targetMmsi"
+          :readonly="!!editing"
+          inputmode="numeric"
+          pattern="[1-9][0-9]{8}"
+          minlength="9"
+          maxlength="9"
+          required
+          placeholder="9位固定目标MMSI"
+        /><small v-if="editing" class="muted">目标已固定，切换目标需新建专题。</small></label
       >
       <label
         >历史预热（小时）<input

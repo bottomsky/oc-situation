@@ -114,8 +114,9 @@ export async function createApi(infra: Infrastructure, options: Partial<ApiOptio
   const live = attachLiveGateway(app.getHttpServer(), {
     origins,
     authenticate: (token) => app.get(AuthService).session(token),
-    readFeed: (cursor) => readLiveAnalysisFeed(infra, cursor),
+    readFeed: (cursor, ownerId) => readLiveAnalysisFeed(infra, cursor, 100, ownerId),
     readMap: (query) => app.get(MapController).get(query),
+    readMapPoints: (query, ownerId) => app.get(MapController).readPoints(query, ownerId),
     onError: (error) =>
       logger.warn(
         { error: error instanceof Error ? error.message : 'Live update failed' },

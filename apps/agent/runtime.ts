@@ -935,7 +935,7 @@ export async function executeAgent(
         const positions = new Map(input.ais.map((p) => [p.recordId, p]));
         const documents = new Map(input.intelligence.map((d) => [d.id, d]));
         for (const result of evaluated) {
-          const document = documents.get(result.documentId);
+          const document = result.documentId ? documents.get(result.documentId) : undefined;
           if (
             !document ||
             result.id !== analysisIdentity(instance, document, result.vesselId ?? result.mmsi) ||

@@ -23,6 +23,7 @@ const form = reactive({
   text: '',
   reviewStatus: 'confirmed',
   originalUrl: '',
+  applicabilityConfirmed: false,
 });
 function revise(event: IntelligenceEvent, status: 'revised' | 'withdrawn') {
   previousRelations.value =
@@ -43,6 +44,10 @@ function revise(event: IntelligenceEvent, status: 'revised' | 'withdrawn') {
     effectiveTo: event.effectiveTo?.slice(0, 16) || '',
     text: event.paragraphs.map((p) => p.text).join('\n\n'),
     originalUrl: event.originalUrl || '',
+    applicabilityConfirmed:
+      !event.mmsis.length &&
+      !event.vesselTypes.length &&
+      !!(event.raw as { applicabilityConfirmed?: unknown } | null)?.applicabilityConfirmed,
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -64,6 +69,7 @@ async function saveForm() {
     previous.value = undefined;
     form.title = '';
     form.text = '';
+    form.applicabilityConfirmed = false;
     await intelligence.load();
     await load();
   } catch (e) {
@@ -447,6 +453,16 @@ useUiComponent('page.archive', {
           ><input v-model="inheritRelations" type="checkbox" />沿用上一版本关联（重新核实） ·
           {{ previousRelations.length }} 条</label
         >
+        <label class="wide chart-layer-check"
+          ><input
+            v-model="form.applicabilityConfirmed"
+            type="checkbox"
+            :disabled="!!(previous?.mmsis.length || previous?.vesselTypes.length)"
+          />适用全部船舶（已核实原文条件）</label
+        >
+        <p v-if="previous?.mmsis.length || previous?.vesselTypes.length" class="wide muted">
+          当前公告限定船舶或船型，按已归档条件判断适用范围。
+        </p>
         <div class="wide actions">
           <button :disabled="busy">{{ previous ? '归档新版本' : '归档情报' }}</button
           ><button

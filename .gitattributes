@@ -10,3 +10,5 @@ docs/** text eol=lf
 *.docx binary
 *.png binary
 *.emf binary
+# Generated map resources retain exact bytes for manifest checksums.
+apps/web/public/maps/maritime/** -text
