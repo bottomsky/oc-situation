@@ -169,6 +169,7 @@ export function useIntelligenceWorkspace() {
     activeId.value = id;
     const current = ++detailGeneration;
     error.value = '';
+    detail.value = null;
     try {
       const response = await api<NonNullable<typeof detail.value>>(
         '/intelligence/events/' + encodeURIComponent(id),
@@ -178,6 +179,12 @@ export function useIntelligenceWorkspace() {
     } catch (e) {
       if (current === detailGeneration) error.value = (e as Error).message;
     }
+  }
+  function resetDetail() {
+    detailGeneration++;
+    activeId.value = '';
+    detail.value = null;
+    error.value = '';
   }
   async function safeRefreshPlot() {
     try {
@@ -248,6 +255,7 @@ export function useIntelligenceWorkspace() {
     hide,
     clear,
     select,
+    resetDetail,
     restore,
     refreshPlot: safeRefreshPlot,
     viewport,

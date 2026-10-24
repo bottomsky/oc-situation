@@ -15,7 +15,17 @@ import { chartLayoutDefaults } from '../utils/chartLayout';
 import { defaultChartVisibility } from '../utils/chartLayers';
 import { heatmapDateLabel } from '../utils/display';
 import { commandPresentation } from '../utils/agentArtifacts';
-import { provideChartDetailHost } from '../composables/useChartDetail';
+import {
+  createReplyObjectState,
+  createReplyObjectLocation,
+  createReplyDetailReader,
+  replyObjectFocus,
+  provideChartDetailHost,
+} from '../composables/useChartDetail';
+import { buildReplyObjects } from '../utils/replyObjects';
+import type { ReplyObjectViewModel } from '../types/agentReply';
+import { replyDockClearance } from '../utils/chartDetailPosition';
+import { isChartElementVisible } from '../utils/chartVisibility';
 const detailHost = provideChartDetailHost();
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
@@ -164,6 +174,50 @@ function prepareAgentConversation() {
   rightTab.value = 'chat';
 }
 const agentDock = useTemplateRef<HTMLElement>('agentDock');
+const replyDockBaseline = useTemplateRef<HTMLElement>('replyDockBaseline');
+const compactToolsTarget = useTemplateRef<HTMLElement>('compactToolsTarget');
+const compactFooter = ref(false);
+const replySourceClearance = ref(0);
+let dockObserver: ResizeObserver | undefined;
+let dockMeasureFrame: number | undefined;
+const observedDockElements = new Set<Element>();
+function measureReplyDock() {
+  dockMeasureFrame = undefined;
+  const dock = agentDock.value;
+  const stage = dock?.closest<HTMLElement>('.chart-map-stage');
+  for (const element of observedDockElements)
+    if (
+      !element.isConnected ||
+      (element !== stage && element !== dock && !stage?.contains(element))
+    ) {
+      dockObserver?.unobserve(element);
+      observedDockElements.delete(element);
+    }
+  if (!dock || !stage || !replyDockBaseline.value) return;
+  const notes = [
+    ...stage.querySelectorAll<HTMLElement>(
+      '[data-testid="chart-source-note"], [data-testid="direction-legend"], .maplibregl-ctrl-attrib, .maplibregl-ctrl-scale',
+    ),
+  ].filter((element) => isChartElementVisible(element));
+  for (const element of [stage, dock, ...notes])
+    if (!observedDockElements.has(element)) {
+      dockObserver?.observe(element);
+      observedDockElements.add(element);
+    }
+  const clearance = Math.ceil(
+    replyDockClearance(
+      stage.getBoundingClientRect().bottom,
+      dock.getBoundingClientRect(),
+      notes.map((note) => note.getBoundingClientRect()),
+      Number.parseFloat(getComputedStyle(replyDockBaseline.value).bottom),
+    ),
+  );
+  if (clearance !== replySourceClearance.value) replySourceClearance.value = clearance;
+}
+function scheduleReplyDock() {
+  if (dockMeasureFrame === undefined) dockMeasureFrame = requestAnimationFrame(measureReplyDock);
+}
+watch(compactFooter, scheduleReplyDock, { flush: 'post' });
 async function closeCurrentReply() {
   agent.dismissCurrentReply();
   await nextTick();
@@ -174,6 +228,7 @@ async function closeCurrentReply() {
 async function openCurrentConversation() {
   const reply = agent.currentReply;
   if (!reply) return;
+  replyObjectsState.panelOpen = false;
   openAgent();
   if (reply.taskId) await agent.loadTask(reply.taskId);
   await nextTick();
@@ -195,6 +250,7 @@ const intelligence = reactive(useIntelligenceWorkspace());
 const drawnGeometry = ref<unknown>();
 const mapChoices = ref<string[]>([]);
 async function selectIntelligence(id: string) {
+  clearReplySelection();
   leftOpen.value = true;
   detailHost.open('intelligence', 'left');
   workspace.leftTab = 'intelligence';
@@ -211,8 +267,150 @@ function selectMapIntelligence(ids: string[]) {
   if (ids[0]) void selectIntelligence(ids[0]);
 }
 const { session, api } = usePlatform();
+const replyFocusMetadata = computed(() => replyObjectFocus(agent.currentReply, focus.result));
+const replyObjects = computed(() => buildReplyObjects(replyFocusMetadata.value));
+const replyObjectLocation = createReplyObjectLocation();
+watch(
+  () => [replyFocusMetadata.value, workspace.data] as const,
+  ([result, fleet]) => {
+    replyObjectLocation.update(
+      agent.currentReply?.readable === false ? null : (result ?? null),
+      fleet?.items ?? [],
+    );
+  },
+  { immediate: true, flush: 'sync' },
+);
+const replyKey = computed(() =>
+  [
+    session.value?.user.id,
+    agent.currentReply?.sessionId,
+    agent.currentReply?.taskId ?? agent.currentReply?.createdAt,
+    agent.currentReply?.inputRevision,
+  ].join(':'),
+);
+const replyDetail = reactive(createReplyDetailReader());
+const replyObjectsState = reactive(
+  createReplyObjectState(() => {
+    if (replyObjectsState.selected) {
+      workspace.resetDetail();
+      intelligence.resetDetail();
+      replyDetail.reset();
+      if (['vessel', 'intelligence'].includes(detailHost.active.value?.kind ?? ''))
+        detailHost.close();
+    }
+  }),
+);
+let objectsTrigger: HTMLElement | null = null;
+let objectTrigger: HTMLElement | null = null;
+watch(
+  replyKey,
+  (key) => {
+    replyObjectsState.setScope(key);
+    replyDetail.reset();
+  },
+  { immediate: true, flush: 'sync' },
+);
+watch(replyObjects, (objects) => {
+  if (
+    replyObjectsState.selected &&
+    !objects.some((object) => object.key === replyObjectsState.selected?.key)
+  )
+    clearReplySelection();
+});
+function openReplyObjects() {
+  objectsTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  replyObjectsState.panelOpen = true;
+  if (detailHost.active.value?.side === 'right') detailHost.close();
+}
+function restoreReplyFocus(target: HTMLElement | null) {
+  if (
+    target?.isConnected &&
+    target.getClientRects().length &&
+    getComputedStyle(target).visibility !== 'hidden'
+  ) {
+    target.focus({ preventScroll: true });
+    return document.activeElement === target;
+  }
+  return false;
+}
+async function closeReplyObjects() {
+  const scope = replyKey.value;
+  replyObjectsState.panelOpen = false;
+  await nextTick();
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  if (replyObjectsState.panelOpen || replyKey.value !== scope) return;
+  const replacement =
+    workspaceElement.value?.querySelector<HTMLElement>('.reply-objects-more') ?? null;
+  if (!restoreReplyFocus(objectsTrigger?.isConnected ? objectsTrigger : replacement)) {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    if (!replyObjectsState.panelOpen && replyKey.value === scope) restoreReplyFocus(replacement);
+  }
+}
+async function closeReplyDetail() {
+  const trigger = replyObjectsState.selected ? objectTrigger : null;
+  detailHost.close();
+  await nextTick();
+  restoreReplyFocus(trigger);
+}
+async function selectReplyObject(object: ReplyObjectViewModel) {
+  const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if (trigger?.closest('.reply-object-name, .reply-object-detail') || !objectTrigger?.isConnected)
+    objectTrigger = trigger;
+  replyObjectsState.select(object);
+  replyDetail.reset();
+  if (object.ref.kind === 'vessel') {
+    const reading = replyDetail.read(object.ref.id, async (id) => {
+      await workspace.select(id);
+      return workspace.detailError;
+    });
+    detailHost.open('vessel', 'left');
+    await reading;
+  } else if (object.ref.kind === 'intelligence') {
+    workspace.leftTab = 'intelligence';
+    const reading = readReplyIntelligence(object.ref.id);
+    detailHost.open('intelligence', 'left');
+    await reading;
+  } else {
+    if (!replyObjectsState.panelOpen) openReplyObjects();
+  }
+}
+function readReplyIntelligence(id: string) {
+  return replyDetail.read(id, async (target) => {
+    await intelligence.select(target, false);
+    return intelligence.error;
+  });
+}
+function locateReplyObject(object: ReplyObjectViewModel) {
+  const bbox = replyObjectLocation.bounds(object);
+  if (!bbox) return;
+  seaMap.value?.cameraIntent({ reserveReply: true })({ mode: 'bounds', bbox, maxZoom: 10 });
+}
+function refreshIntelligenceDetail() {
+  if (replyObjectsState.selected?.ref.kind === 'intelligence') void replyDetail.retry();
+  else {
+    void intelligence.select(intelligence.activeId, false);
+    void intelligence.refreshPlot();
+  }
+}
+function openReplyBusiness(object: ReplyObjectViewModel) {
+  if (object.ref.kind === 'route' || object.ref.kind === 'event')
+    void navigateTo(
+      `/${object.ref.kind === 'route' ? 'routes' : 'events'}?id=${encodeURIComponent(object.ref.id)}`,
+    );
+}
+function clearReplySelection() {
+  if (replyObjectsState.selected) {
+    workspace.resetDetail();
+    intelligence.resetDetail();
+    if (['vessel', 'intelligence'].includes(detailHost.active.value?.kind ?? ''))
+      detailHost.close();
+  }
+  replyObjectsState.clearSelection();
+  replyDetail.reset();
+}
 const route = useRoute();
 const seaMap = useTemplateRef<ChartMapControls>('seaMap');
+watch(seaMap, scheduleReplyDock, { flush: 'post' });
 const handoffGeneration = createHandoffGeneration();
 async function businessHandoff(kind: 'route' | 'event', id: string, ask = false) {
   const current = handoffGeneration.begin(),
@@ -538,11 +736,13 @@ function layer(key: keyof ChartLayerVisibility, enabled: boolean) {
   layers[key] = enabled;
 }
 function selectVessel(mmsi: string) {
+  clearReplySelection();
   leftOpen.value = true;
   detailHost.open('vessel', 'left');
   void workspace.select(mmsi);
 }
 async function selectResult(result: AnalysisResult) {
+  clearReplySelection();
   const focus = seaMap.value?.cameraIntent();
   rightOpen.value = true;
   detailHost.open('evidence', 'right');
@@ -574,12 +774,41 @@ function updateFullscreen() {
   fullscreen.value = !!document.fullscreenElement;
 }
 function keydown(event: KeyboardEvent) {
+  if (document.querySelector('dialog:modal')) return;
+  if (event.key === 'Escape') {
+    if (detailHost.active.value) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void closeReplyDetail();
+      return;
+    }
+    if (replyObjectsState.panelOpen) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void closeReplyObjects();
+      return;
+    }
+    if (agent.currentReply && !selectingHeatmapRegion.value && !selectingAgentRegion.value) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void closeCurrentReply();
+      return;
+    }
+  }
   if (selectingHeatmapRegion.value) {
-    if (event.key === 'Escape') selectingHeatmapRegion.value = false;
+    if (event.key === 'Escape') {
+      selectingHeatmapRegion.value = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
     return;
   }
   if (selectingAgentRegion.value) {
-    if (event.key === 'Escape') selectingAgentRegion.value = false;
+    if (event.key === 'Escape') {
+      selectingAgentRegion.value = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
     return;
   }
   if (document.querySelector('dialog:modal')) return;
@@ -598,6 +827,12 @@ function keydown(event: KeyboardEvent) {
   if (event.key === '+' || event.key === '=') seaMap.value?.zoomIn();
   if (event.key === '-') seaMap.value?.zoomOut();
 }
+function captureEscape(event: KeyboardEvent) {
+  if (event.key === 'Escape') keydown(event);
+}
+function bubbleKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape') keydown(event);
+}
 function restorePrefs() {
   if (!session.value) return;
   leftOpen.value = false;
@@ -610,6 +845,8 @@ function restorePrefs() {
   if (route.query.q) leftOpen.value = true;
 }
 onMounted(() => {
+  dockObserver = new ResizeObserver(scheduleReplyDock);
+  scheduleReplyDock();
   restorePrefs();
   if (typeof route.query.eventId === 'string') void selectIntelligence(route.query.eventId);
   else if (typeof route.query.intelligenceId === 'string')
@@ -621,11 +858,22 @@ onMounted(() => {
     void intelligence.load();
   }
   document.addEventListener('fullscreenchange', updateFullscreen);
-  document.addEventListener('keydown', keydown);
+  document.addEventListener('fullscreenchange', scheduleReplyDock);
+  document.addEventListener('toggle', scheduleReplyDock, true);
+  window.addEventListener('resize', scheduleReplyDock);
+  document.addEventListener('keydown', captureEscape, true);
+  document.addEventListener('keydown', bubbleKeydown);
 });
 onBeforeUnmount(() => {
+  dockObserver?.disconnect();
+  observedDockElements.clear();
+  if (dockMeasureFrame !== undefined) cancelAnimationFrame(dockMeasureFrame);
   document.removeEventListener('fullscreenchange', updateFullscreen);
-  document.removeEventListener('keydown', keydown);
+  document.removeEventListener('fullscreenchange', scheduleReplyDock);
+  document.removeEventListener('toggle', scheduleReplyDock, true);
+  window.removeEventListener('resize', scheduleReplyDock);
+  document.removeEventListener('keydown', captureEscape, true);
+  document.removeEventListener('keydown', bubbleKeydown);
 });
 watch(
   () => session.value?.user.id,
@@ -650,7 +898,7 @@ watch(
   <section
     ref="workspaceElement"
     class="chart-workspace"
-    :class="{ 'left-open': leftOpen, 'right-open': rightOpen }"
+    :class="{ 'left-open': leftOpen, 'right-open': rightOpen && !replyObjectsState.panelOpen }"
     :style="layoutStyle"
     data-testid="chart-workspace"
   >
@@ -738,7 +986,7 @@ watch(
       />
     </div>
     <main ref="center" class="chart-center">
-      <header class="chart-map-heading">
+      <header class="chart-map-heading" :class="{ 'compact-footer': compactFooter }">
         <div>
           <ChartIcon name="Radar" />
           <h1>全球船位观测</h1>
@@ -767,11 +1015,15 @@ watch(
             <ChartIcon name="Maximize" />
           </button>
         </div>
+        <div ref="compactToolsTarget" class="chart-compact-tools" v-show="compactFooter" />
+        <div id="chart-compact-map-status" v-show="compactFooter" />
       </header>
-      <div class="chart-map-stage">
+      <div class="chart-map-stage" :class="{ 'compact-footer': compactFooter }">
         <ClientOnly
           ><SeaMap
             ref="seaMap"
+            @compact-footer="compactFooter = $event"
+            :compact-tools-target="compactToolsTarget"
             :data="workspace.data"
             :vessel-names="workspace.vesselNames"
             :query-bounds="workspace.queryBounds"
@@ -1002,16 +1254,35 @@ watch(
           :key="agent.currentReply.createdAt"
           :map="seaMap"
           :reply="agent.currentReply"
+          :objects="replyObjects"
+          :omitted-count="replyFocusMetadata?.omittedCount"
           :focus="agent.config?.spatialFocusEnabled === false ? null : focus.result"
           :fleet="workspace.data"
-          :layout-key="[leftOpen, rightOpen, layout.sizes.left, layout.sizes.right].join(':')"
+          :layout-key="
+            [
+              leftOpen,
+              rightOpen,
+              replyObjectsState.panelOpen,
+              replySourceClearance,
+              compactFooter,
+              layout.sizes.left,
+              layout.sizes.right,
+            ].join(':')
+          "
           @displayed="(value, status) => focus.markDisplayed(value, status)"
           @crowded="focusCrowded = $event"
           @reference="agent.openSource"
+          @object="selectReplyObject"
+          @objects="openReplyObjects"
           @close="closeCurrentReply"
           @open="openCurrentConversation"
         />
-        <div ref="agentDock" class="chart-agent-dock">
+        <span ref="replyDockBaseline" class="reply-dock-baseline" aria-hidden="true" />
+        <div
+          ref="agentDock"
+          class="chart-agent-dock"
+          :style="{ '--reply-source-clearance': replySourceClearance + 'px' }"
+        >
           <ChartAgentComposer
             :state="agent"
             floating
@@ -1019,28 +1290,32 @@ watch(
             @submit="prepareAgentConversation"
           />
         </div>
-        <div
-          class="map-status"
-          data-testid="map-snapshot-status"
-          :data-loaded="workspace.data?.items.filter((v) => v.kind === 'point').length ?? 0"
-          :data-complete="!!workspace.data && !workspace.data.truncated && !workspace.data.sampled"
-        >
-          <span class="status-dot" />{{
-            workspace.data ? workspace.data.total.toLocaleString() : '—'
-          }}
-          艘船 · {{ workspace.busy ? '更新中' : workspace.paused ? '更新已暂停' : '持续更新'
-          }}<span v-if="workspace.busy">
-            · 快照 {{ workspace.snapshotProgress.loaded }} /
-            {{ workspace.snapshotProgress.total }}</span
-          ><span v-if="workspace.data?.truncated"> · 旧协议结果受限</span
-          ><span v-else-if="workspace.data">
-            · 完整单船
-            {{
-              workspace.data.items.filter((v) => v.kind === 'point').length.toLocaleString()
-            }}</span
+        <Teleport to="#chart-compact-map-status" :disabled="!compactFooter" defer>
+          <div
+            class="map-status"
+            data-testid="map-snapshot-status"
+            :data-loaded="workspace.data?.items.filter((v) => v.kind === 'point').length ?? 0"
+            :data-complete="
+              !!workspace.data && !workspace.data.truncated && !workspace.data.sampled
+            "
           >
-          ><span> · UTC</span>
-        </div>
+            <span class="status-dot" />{{
+              workspace.data ? workspace.data.total.toLocaleString() : '—'
+            }}
+            艘船 · {{ workspace.busy ? '更新中' : workspace.paused ? '更新已暂停' : '持续更新'
+            }}<span v-if="workspace.busy">
+              · 快照 {{ workspace.snapshotProgress.loaded }} /
+              {{ workspace.snapshotProgress.total }}</span
+            ><span v-if="workspace.data?.truncated"> · 旧协议结果受限</span
+            ><span v-else-if="workspace.data">
+              · 完整单船
+              {{
+                workspace.data.items.filter((v) => v.kind === 'point').length.toLocaleString()
+              }}</span
+            >
+            ><span> · UTC</span>
+          </div>
+        </Teleport>
         <button
           v-if="!leftOpen"
           class="chart-reopen-left"
@@ -1061,7 +1336,12 @@ watch(
         </button>
       </div>
     </main>
-    <div v-show="rightOpen" id="chart-right-slot" class="chart-right-slot">
+    <div
+      v-show="rightOpen && !replyObjectsState.panelOpen"
+      :inert="replyObjectsState.panelOpen"
+      id="chart-right-slot"
+      class="chart-right-slot"
+    >
       <ChartResizeHandle
         v-if="layout.enabled.right"
         panel="right"
@@ -1099,18 +1379,47 @@ watch(
             @evidence="selectIntelligence" /></template
       ></ChartRightPanel>
     </div>
+    <ChartAgentObjectsPanel
+      :open="replyObjectsState.panelOpen"
+      :objects="replyObjects"
+      :omitted-count="replyFocusMetadata?.omittedCount"
+      :reply-key="replyKey"
+      :selected-key="replyObjectsState.selected?.key"
+      @close="closeReplyObjects"
+      @object="selectReplyObject"
+      @locate="locateReplyObject"
+      @business="openReplyBusiness"
+    />
     <ChartDetailFloat
       :open="detailHost.isOpen('intelligence')"
+      :layer="replyObjectsState.selected ? 70 : undefined"
       side="left"
       title="情报证据"
       subtitle="INTELLIGENCE EVIDENCE"
       aria-label="情报证据面板"
-      @close="detailHost.close('intelligence')"
+      @close="closeReplyDetail"
     >
+      <p
+        v-if="replyObjectsState.selected?.ref.kind === 'intelligence'"
+        class="reply-object-snapshot"
+        data-testid="reply-object-snapshot"
+      >
+        回复引用：{{ replyObjectsState.selected.label }} · 快照
+        {{ replyObjectsState.selected.observedAt ?? '时间未提供' }} · 版本
+        {{ replyObjectsState.selected.ref.revision ?? '未提供' }} <br />当前读取详情：{{
+          intelligence.detail?.event.version ?? '加载中'
+        }}
+        版；引用快照与当前详情分别保留。
+      </p>
       <FetchState
         v-if="!intelligence.detail"
-        :busy="!intelligence.error"
-        :error="intelligence.error"
+        :busy="replyObjectsState.selected ? replyDetail.busy : !intelligence.error"
+        :error="replyObjectsState.selected ? replyDetail.error : intelligence.error"
+        @retry="
+          replyObjectsState.selected
+            ? replyDetail.retry()
+            : intelligence.select(intelligence.activeId, false)
+        "
       />
       <IntelligenceDetail
         v-if="intelligence.detail"
@@ -1118,27 +1427,42 @@ watch(
         :panel-visible="detailHost.isOpen('intelligence')"
         :geometry="drawnGeometry"
         :can-draw="session?.user.role !== 'viewer'"
-        @history="selectIntelligence"
+        @history="
+          replyObjectsState.selected ? readReplyIntelligence($event) : selectIntelligence($event)
+        "
         @draw="seaMap?.draw($event)"
         @edit-geometry="seaMap?.editGeometry($event)"
-        @refresh="
-          intelligence.select(intelligence.activeId, false);
-          intelligence.refreshPlot();
-        "
+        @refresh="refreshIntelligenceDetail"
         @locate="locateIntelligence(intelligence.activeId)"
         @revise="navigateTo('/intelligence?revise=' + $event.id)"
       />
     </ChartDetailFloat>
     <ChartDetailFloat
       :open="detailHost.isOpen('vessel')"
+      :layer="replyObjectsState.selected ? 70 : undefined"
       side="left"
       title="船舶详情"
       subtitle="VESSEL INFORMATION"
-      @close="detailHost.close('vessel')"
+      @close="closeReplyDetail"
     >
+      <p
+        v-if="replyObjectsState.selected?.ref.kind === 'vessel'"
+        class="reply-object-snapshot"
+        data-testid="reply-object-snapshot"
+      >
+        回复引用：{{ replyObjectsState.selected.label }} · 快照
+        {{ replyObjectsState.selected.observedAt ?? '时间未提供' }} · 版本
+        {{ replyObjectsState.selected.ref.revision ?? '未提供' }}
+        <br />下方为当前读取的船舶资料，位置时间以详情观测为准。
+      </p>
       <FetchState
-        :busy="!workspace.detail && !workspace.detailError"
-        :error="workspace.detailError"
+        :busy="
+          replyObjectsState.selected
+            ? replyDetail.busy
+            : !workspace.detail && !workspace.detailError
+        "
+        :error="replyObjectsState.selected ? replyDetail.error : workspace.detailError"
+        @retry="replyObjectsState.selected && replyDetail.retry()"
       />
       <ChartVesselDetail
         v-if="workspace.detail"
@@ -1152,6 +1476,15 @@ watch(
   </section>
 </template>
 <style scoped>
+.reply-object-snapshot {
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  background: #0d3043;
+  border-left: 2px solid #36c8e6;
+  color: #b9dce9;
+  font-size: 12px;
+  line-height: 1.6;
+}
 .focus-space-notice {
   position: fixed;
   top: calc(var(--console-header-height, 76px) + 8px);
@@ -1231,41 +1564,54 @@ watch(
 .chart-workspace:not(.left-open) .chart-map-notices {
   top: 50px;
 }
-.chart-agent-dock {
+.chart-agent-dock,
+.reply-dock-baseline {
   --reply-dock-bottom: 40px;
+}
+.reply-dock-baseline {
+  position: absolute;
+  bottom: var(--reply-dock-bottom);
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.chart-agent-dock {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  bottom: var(--reply-dock-bottom);
-  max-height: calc(100% - var(--reply-dock-bottom) - 16px);
+  bottom: max(var(--reply-dock-bottom), var(--reply-source-clearance, 0px));
+  max-height: calc(100% - max(var(--reply-dock-bottom), var(--reply-source-clearance, 0px)) - 16px);
 }
 .chart-agent-dock > .chart-agent-composer {
   flex: 0 0 auto;
 }
 @container (max-width: 799px) {
-  .chart-agent-dock {
+  .chart-agent-dock,
+  .reply-dock-baseline {
     --reply-dock-bottom: clamp(40px, calc(100% - 200px), 132px);
   }
 }
 @media (max-height: 650px) {
   @container (max-width: 799px) {
-    .chart-agent-dock {
+    .chart-agent-dock,
+    .reply-dock-baseline {
       --reply-dock-bottom: 78px;
     }
-    .chart-map-stage :deep(.direction-legend) {
+    .chart-map-stage:not(.compact-footer) :deep(.direction-legend) {
       bottom: 46px;
       gap: 1px;
       padding: 3px 6px;
       font-size: 8px;
       line-height: 11px;
     }
-    .chart-map-stage :deep(.map-note) {
+    .chart-map-stage:not(.compact-footer) :deep(.map-note) {
       bottom: 28px;
       padding: 3px 6px;
       font-size: 8px;
       line-height: 10px;
     }
-    .chart-map-stage :deep(.map-note span) {
+    .chart-map-stage:not(.compact-footer) :deep(.map-note span) {
       display: inline;
       margin-left: 5px;
       font-size: 8px;
@@ -1276,6 +1622,37 @@ watch(
       line-height: 11px;
     }
   }
+}
+.chart-map-heading.compact-footer {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.chart-map-heading.compact-footer > div,
+.chart-map-heading.compact-footer .chart-map-actions {
+  flex: 0 0 auto;
+  width: auto;
+}
+.chart-compact-tools {
+  display: flex;
+  align-items: center;
+}
+#chart-compact-map-status {
+  white-space: nowrap;
+}
+#chart-compact-map-status > .map-status {
+  position: static;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 9px;
+  line-height: 12px;
+}
+.chart-map-stage.compact-footer .chart-agent-dock,
+.chart-map-stage.compact-footer .reply-dock-baseline {
+  --reply-dock-bottom: 28px;
 }
 .intelligence-map-choices {
   position: absolute;

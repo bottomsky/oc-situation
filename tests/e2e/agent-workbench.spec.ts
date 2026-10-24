@@ -1,428 +1,34 @@
 import { test, expect, type Page } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
+import { agentFixture } from './fixtures/agent-workbench-fixture';
 import { chartResult } from './fixtures/chart-data';
+import { captureChartMap } from './fixtures/chart-map';
 import { openLeftPanel, selectLeftTab } from './chart-helpers';
-import type { AgentInputRequest, AgentIntelligenceResult, AgentSelection } from '@ais/contracts';
+import type { AgentIntelligenceResult, AgentSelection } from '@ais/contracts';
 import { UiCommandSchema, UiStateSchema, UiReceiptSchema } from '@ais/contracts';
 import type { UiState, UiCommand, UiReceipt } from '@ais/contracts';
 
-async function replyConnection(page: Page) {
+async function replyPlacement(page: Page) {
   return page.getByTestId('chart-focus-overlay').evaluate((overlay) => {
-    const guide = overlay.querySelector<SVGPathElement>('.focus-guide')!;
-    const frame = overlay.querySelector<SVGPathElement>('.focus-frame')!;
+    const shapes = overlay.querySelector<SVGGElement>('.focus-shapes')!;
     const card = overlay.querySelector<HTMLElement>('.focus-reply-position')!;
-    const length = guide.getTotalLength();
-    const frameRect = frame.getBoundingClientRect();
-    const cardRect = card.getBoundingClientRect();
-    const target = {
-      x: frameRect.x + frameRect.width / 2,
-      y: frameRect.y + frameRect.height / 2,
-    };
-    const bounds = { frame: frameRect.toJSON(), card: cardRect.toJSON() };
-    if (!length)
-      return {
-        path: guide.getAttribute('d'),
-        length,
-        targetGap: Infinity,
-        cardGap: Infinity,
-        target,
-        ...bounds,
-        start: null,
-        end: null,
-        separated: false,
-      };
-    const matrix = guide.getScreenCTM()!;
-    const start = guide.getPointAtLength(0).matrixTransform(matrix);
-    const end = guide.getPointAtLength(length).matrixTransform(matrix);
-    const edgeDistance = (point: DOMPoint, rect: DOMRect) => {
-      const x = Math.max(rect.left, Math.min(point.x, rect.right));
-      const y = Math.max(rect.top, Math.min(point.y, rect.bottom));
-      return Math.min(
-        Math.hypot(point.x - rect.left, point.y - y),
-        Math.hypot(point.x - rect.right, point.y - y),
-        Math.hypot(point.x - x, point.y - rect.top),
-        Math.hypot(point.x - x, point.y - rect.bottom),
-      );
-    };
+    const target = shapes.getBoundingClientRect();
+    const reply = card.getBoundingClientRect();
     return {
-      path: guide.getAttribute('d'),
-      length,
-      targetGap: edgeDistance(start, frameRect),
-      cardGap: edgeDistance(end, cardRect),
-      target,
-      ...bounds,
-      start: { x: start.x, y: start.y },
-      end: { x: end.x, y: end.y },
-      separated:
-        frameRect.right <= cardRect.left ||
-        cardRect.right <= frameRect.left ||
-        frameRect.bottom <= cardRect.top ||
-        cardRect.bottom <= frameRect.top,
+      path: shapes.innerHTML,
+      target: { x: target.x + target.width / 2, y: target.y + target.height / 2 },
+      frame: target.toJSON(),
+      card: reply.toJSON(),
+      highlighted: !!shapes.firstElementChild?.getAttribute('d'),
+      noGuide: overlay.querySelectorAll('.focus-guide, .focus-frame').length === 0,
+      visible: reply.width > 0 && reply.height > 0 && reply.left >= 0 && reply.top >= 0,
     };
   });
 }
-
-async function expectConnectedReply(page: Page) {
+async function expectPositionedReply(page: Page) {
   await expect
-    .poll(async () => {
-      const geometry = await replyConnection(page);
-      return {
-        ...geometry,
-        connected:
-          geometry.length >= 23.9 &&
-          geometry.targetGap < 2 &&
-          geometry.cardGap < 2 &&
-          geometry.separated,
-      };
-    })
-    .toMatchObject({ connected: true });
-}
-
-async function agentFixture(
-  page: Page,
-  options: {
-    enabled?: boolean;
-    role?: string;
-    queued?: boolean;
-    spatial?: boolean;
-    artifacts?: unknown[];
-    interactive?: boolean;
-    inputFields?: AgentInputRequest['fields'];
-    inputPrefill?: AgentSelection;
-    messageDelayMs?: number;
-    chatReplies?: Record<string, string>;
-    scriptedTasks?: Record<
-      string,
-      { status: string; reply?: string; error?: string; summary?: string; completeOnPoll?: boolean }
-    >;
-  } = {},
-) {
-  const chartCalls = await chartFixture(page, { role: options.role ?? 'operator' });
-  const session = {
-    id: 'session-a',
-    ownerId: 'fixture-user',
-    title: '区域研判',
-    createdAt: '2026-10-11T00:00:00Z',
-  };
-  const messages: {
-    id: string;
-    content: string;
-    role: string;
-    sessionId: string;
-    taskId: string;
-    createdAt: string;
-  }[] = [];
-  const tasks: Record<string, unknown>[] = [];
-  const submitted: { body: Record<string, unknown>; headers: Record<string, string> }[] = [];
-  let inputRequests: AgentInputRequest[] = [];
-  const answers: { body: Record<string, unknown>; headers: Record<string, string> }[] = [];
-  let created = false;
-  let revision = 0;
-  const reads = { config: 0, sessions: 0, creates: 0, events: 0 };
-  await page.route('**/api/v1/agent/**', async (route) => {
-    const req = route.request();
-    const url = new URL(req.url());
-    const path = url.pathname;
-    let json: unknown;
-    if (path.endsWith('/config')) {
-      reads.config++;
-      json = {
-        enabled: options.enabled ?? true,
-        defaultHistoryHours: 24,
-        maxHistoryHours: 168,
-        maxModelCalls: 12,
-        maxToolCalls: 24,
-      };
-    } else if (path.endsWith('/sessions')) {
-      if (req.method() === 'POST') {
-        reads.creates++;
-        created = true;
-        json = session;
-      } else {
-        reads.sessions++;
-        json = { items: created ? [session] : [] };
-      }
-    } else if (path.endsWith('/messages')) {
-      const body = req.postDataJSON();
-      submitted.push({ body, headers: req.headers() });
-      if (options.messageDelayMs)
-        await new Promise((resolve) => setTimeout(resolve, options.messageDelayMs));
-      const id = `task-${tasks.length + 1}`;
-      // These scripted responses exercise the browser contract; intent routing and DeepSeek run in API tests.
-      const chatReply = options.chatReplies?.[body.content];
-      const script = options.scriptedTasks?.[body.content];
-      const task = {
-        id,
-        sessionId: session.id,
-        ownerId: session.ownerId,
-        goal: body.content,
-        status:
-          script?.status ??
-          (chatReply
-            ? 'queued'
-            : body.bbox
-              ? options.queued
-                ? 'queued'
-                : 'completed'
-              : 'awaiting_input'),
-        bbox: body.bbox ?? null,
-        historyHours: body.historyHours,
-        from: chartResult.from,
-        to: chartResult.to,
-        definitionId: chatReply || script ? null : 'area-low-speed-notice',
-        generation: 1,
-        modelCalls: 2,
-        toolCalls: 3,
-        resultVersion: body.bbox ? 1 : 0,
-        summaryResultVersion: body.bbox ? 1 : null,
-        summary:
-          script?.summary ??
-          (body.bbox
-            ? '观测事实：记录到低速活动。[E1]\n规则匹配：与公告范围共现。\n推测与限制：原因仍需补充证据。'
-            : null),
-        error: script?.error ?? null,
-        createdAt: session.createdAt,
-        updatedAt: session.createdAt,
-      };
-      const message = {
-        id: `message-${messages.length + 1}`,
-        content: body.content,
-        role: 'user',
-        sessionId: session.id,
-        taskId: id,
-        createdAt: session.createdAt,
-      };
-      tasks.push(task);
-      if (options.interactive) {
-        Object.assign(task, { inputRevision: 0 });
-        inputRequests = [
-          {
-            id: `request-${tasks.length}`,
-            taskId: id,
-            sessionId: session.id,
-            inputRevision: 0,
-            pauseGeneration: 1,
-            fields: options.inputFields ?? ['region'],
-            reason: options.inputFields?.includes('goal') ? 'missing_goal' : 'missing_region',
-            prefill:
-              options.inputPrefill ??
-              (options.inputFields?.includes('goal') ? {} : { purpose: 'vessel_list' }),
-            status: 'pending',
-            response: null,
-            createdAt: session.createdAt,
-            answeredAt: null,
-          },
-        ];
-      }
-      messages.push(message);
-      if (script?.reply && !['queued', 'running', 'waiting_result'].includes(script.status))
-        messages.push({
-          ...message,
-          id: `message-${messages.length + 1}`,
-          role: 'assistant',
-          content: script.reply,
-        });
-      else if (!body.bbox && !chatReply && !script)
-        messages.push({
-          ...message,
-          id: `message-${messages.length + 1}`,
-          role: 'assistant',
-          content: '请在海图确认需要分析的区域。',
-        });
-      json = {
-        message,
-        task,
-        ...(options.interactive ? { pendingInputRequests: inputRequests } : {}),
-      };
-      revision++;
-    } else if (path.endsWith('/responses')) {
-      const body = req.postDataJSON();
-      answers.push({ body, headers: req.headers() });
-      const request = inputRequests[0]!;
-      const task = tasks.find((item) => item.id === request.taskId)!;
-      Object.assign(task, {
-        status: 'completed',
-        inputRevision: 1,
-        resultInputRevision: 1,
-        summaryInputRevision: 1,
-        resultVersion: 1,
-        summaryResultVersion: 1,
-        summary: '已找到 1 艘船舶',
-        definitionId: null,
-      });
-      messages.push({
-        id: 'answer-a',
-        role: 'assistant',
-        content: '已找到 1 艘船舶',
-        sessionId: session.id,
-        taskId: String(task.id),
-        createdAt: session.createdAt,
-      });
-      json = { task, request: { ...request, status: 'answered', response: body.values } };
-      inputRequests = [];
-      revision++;
-    } else if (path.endsWith('/cancel')) {
-      const id = path.split('/').at(-2);
-      const task = tasks.find((item) => item.id === id)!;
-      task.status = 'cancelled';
-      revision++;
-      json = task;
-    } else if (path.includes('/tasks/')) {
-      const task = tasks.find((item) => item.id === path.split('/').at(-1));
-      json = {
-        task,
-        artifacts: options.artifacts ?? [],
-        ...(options.spatial && task
-          ? {
-              focusResult: {
-                kind: 'map_focus',
-                version: task.resultVersion,
-                inputRevision: 0,
-                sessionId: session.id,
-                taskId: task.id,
-                targets: [
-                  {
-                    ref: { kind: 'vessel', id: '413123456' },
-                    label: '关注船甲',
-                    geometry: { type: 'Point', coordinates: [122, 31] },
-                    observedAt: session.createdAt,
-                  },
-                  {
-                    ref: { kind: 'event', id: 'incident-a', revision: 1 },
-                    label: '关注事件乙',
-                    geometry: {
-                      type: 'LineString',
-                      coordinates: [
-                        [123, 32],
-                        [124, 33],
-                      ],
-                    },
-                    observedAt: session.createdAt,
-                  },
-                ],
-                missing: [],
-                bbox: [122, 31, 124, 33],
-                displayStatus: 'complete',
-                cameraPolicy: 'if-needed-once',
-              },
-            }
-          : {}),
-        ...(options.interactive
-          ? {
-              pendingInputRequests: inputRequests,
-              queryResult:
-                task?.status === 'completed'
-                  ? {
-                      kind: 'vessel_list',
-                      version: 1,
-                      inputRevision: 1,
-                      total: 1,
-                      truncated: false,
-                      asOf: session.createdAt,
-                      selection: {},
-                      items: [
-                        {
-                          mmsi: '123456789',
-                          name: '示例船舶',
-                          imo: null,
-                          shipType: 70,
-                          latestPosition: null,
-                        },
-                      ],
-                    }
-                  : null,
-            }
-          : {}),
-        results:
-          !options.interactive && task?.status === 'completed' && task.resultVersion === 1
-            ? [chartResult]
-            : [],
-        steps:
-          task?.status === 'completed' && task.resultVersion === 1
-            ? [
-                {
-                  key: 'step-a',
-                  name: 'run_analysis',
-                  input: {},
-                  output: {},
-                  createdAt: session.createdAt,
-                },
-              ]
-            : [],
-      };
-    } else if (path.endsWith('/events')) {
-      reads.events++;
-      for (const task of tasks) {
-        const script = options.scriptedTasks?.[String(task.goal)];
-        const reply = options.chatReplies?.[String(task.goal)] ?? script?.reply;
-        if (script?.completeOnPoll === false) continue;
-        if (task.status !== 'queued' || !reply) continue;
-        task.status = 'completed';
-        task.summary = reply;
-        task.summaryResultVersion = 0;
-        messages.push({
-          id: `message-${messages.length + 1}`,
-          role: 'assistant',
-          content: reply,
-          sessionId: session.id,
-          taskId: String(task.id),
-          createdAt: session.createdAt,
-        });
-        revision++;
-      }
-      json = {
-        items:
-          Number(url.searchParams.get('cursor')) < revision
-            ? [{ id: String(revision), type: 'task.completed' }]
-            : [],
-        nextCursor: String(revision),
-      };
-    } else
-      json = {
-        session,
-        messages,
-        tasks,
-        ...(options.interactive
-          ? { pendingInputRequests: inputRequests, snapshotCursor: String(revision) }
-          : {}),
-      };
-    await route.fulfill({ json });
-  });
-  return {
-    submitted,
-    answers,
-    reads,
-    messages,
-    mapQueries: chartCalls.mapQueries,
-    setTask(id: string, status: string, reply?: string) {
-      const task = tasks.find((item) => item.id === id)!;
-      task.status = status;
-      if (reply) {
-        task.summary = reply;
-        task.summaryResultVersion = task.resultVersion;
-        messages.push({
-          id: `message-${messages.length + 1}`,
-          role: 'assistant',
-          content: reply,
-          sessionId: session.id,
-          taskId: id,
-          createdAt: session.createdAt,
-        });
-      }
-      revision++;
-    },
-    appendReply(content: string) {
-      messages.push({
-        id: `message-${messages.length + 1}`,
-        content,
-        role: 'assistant',
-        sessionId: session.id,
-        taskId: String(tasks.at(-1)?.id),
-        createdAt: session.createdAt,
-      });
-      revision++;
-    },
-  };
+    .poll(() => replyPlacement(page))
+    .toMatchObject({ highlighted: true, noGuide: true, visible: true });
 }
 
 async function openAgent(page: Page) {
@@ -503,6 +109,32 @@ test('待补充请求刷新仅恢复卡片，矩形框选返回弹窗且保持�
   await expect(overlay).toHaveCount(0);
   await expect(map).toHaveAttribute('data-map-instance', instance!);
   expect(calls.answers).toHaveLength(0);
+});
+
+test('已有本轮回复时一次Escape仅取消矩形框选并保留回复', async ({ page }) => {
+  await agentFixture(page, { interactive: true });
+  await openAgent(page);
+  const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
+  await input.fill('分析范围并保留本轮回复');
+  await input.press('Enter');
+  const dialog = page.getByRole('dialog', { name: '补充任务条件' });
+  await expect(dialog).toBeVisible();
+  const reply = page.getByTestId('chart-agent-current-reply');
+  await expect(reply).toBeVisible();
+  await dialog.getByRole('button', { name: '地图矩形框选', exact: true }).click();
+  await expect(page.getByTestId('agent-region-overlay')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('agent-region-overlay')).toHaveCount(0);
+  await expect(reply).toBeVisible();
+  if (await dialog.isVisible())
+    await dialog.getByRole('button', { name: '收起', exact: true }).click();
+  await selectLeftTab(page, 'AIS 热力图');
+  await page.getByLabel('热力图统计口径', { exact: true }).selectOption('historical');
+  await page.getByRole('button', { name: '热图矩形框选', exact: true }).click();
+  await expect(page.getByTestId('agent-region-overlay')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('agent-region-overlay')).toHaveCount(0);
+  await expect(reply).toBeVisible();
 });
 
 test('选择船舶目标动态显示选船控件，收起重开保留选择', async ({ page }) => {
@@ -1126,31 +758,76 @@ for (const key of ['+', '-', 'Home']) {
       scriptedTasks: { 历史键盘问题: { status: 'completed', reply: '持久历史回答' } },
     });
     const panel = await openAgent(page);
+    await captureChartMap(page, '__historyKeyboardMap');
+    const camera = () =>
+      page.evaluate(() => {
+        const map = (globalThis as unknown as { __historyKeyboardMap: import('maplibre-gl').Map })
+          .__historyKeyboardMap;
+        const bounds = map.getBounds();
+        return {
+          center: map.getCenter().toArray(),
+          zoom: map.getZoom(),
+          moving: map.isMoving(),
+          bounds: [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()],
+        };
+      });
+    await expect.poll(async () => (await camera()).moving).toBe(false);
     const input = page.getByTestId('chart-agent-composer').getByLabel('分析问题或继续追问');
     await input.fill('历史键盘问题');
     await input.press('Enter');
     const card = page.getByTestId('chart-agent-current-reply');
     await expect(card).toContainText('持久历史回答');
     await expect.poll(() => calls.mapQueries.length).toBeGreaterThan(0);
-    const originalZoom = Number(calls.mapQueries.at(-1)!.searchParams.get('zoom'));
+    const originalZoom = (await camera()).zoom;
     await page.getByRole('button', { name: '放大海图', exact: true }).click();
     await expect
       .poll(() => Number(calls.mapQueries.at(-1)!.searchParams.get('zoom')))
       .toBeGreaterThan(originalZoom);
-    await page.waitForTimeout(600);
+    await expect.poll(async () => (await camera()).moving).toBe(false);
     await card.getByRole('button', { name: '查看完整对话', exact: true }).click();
     const message = calls.messages.find((item) => item.content === '持久历史回答')!;
     const historyMessage = panel
       .getByLabel('研判对话记录')
       .locator(`[data-message-id="${message.id}"]`);
     await expect(historyMessage).toBeFocused();
+    await expect
+      .poll(async () => {
+        const actual = await camera();
+        const query = calls.mapQueries.at(-1)!;
+        const bounds = query.searchParams.get('bbox')!.split(',').map(Number);
+        return (
+          !actual.moving &&
+          Math.abs(Number(query.searchParams.get('zoom')) - actual.zoom) < 1e-8 &&
+          actual.bounds.every((value, index) => Math.abs(value - bounds[index]!) < 1e-8)
+        );
+      })
+      .toBe(true);
+    const beforeCamera = await camera();
     const previous = calls.mapQueries.at(-1)!;
     const viewport = {
       bbox: previous.searchParams.get('bbox'),
       zoom: previous.searchParams.get('zoom'),
     };
     await historyMessage.press(key);
-    await page.waitForTimeout(750);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await expect.poll(async () => (await camera()).moving).toBe(false);
+    const afterCamera = await camera();
+    await test.info().attach('history-keyboard-camera', {
+      contentType: 'application/json',
+      body: JSON.stringify({
+        key,
+        beforeCamera,
+        afterCamera,
+        queryBefore: previous.href,
+        queryAfter: calls.mapQueries.at(-1)!.href,
+      }),
+    });
+    expect(afterCamera).toEqual(beforeCamera);
     await page.screenshot({
       path: test
         .info()
@@ -1238,8 +915,48 @@ for (const viewport of [
       if (await page.getByTestId('chart-left-panel').isVisible())
         await page.getByRole('button', { name: '折叠操作面板', exact: true }).click();
     }
+    await test.info().attach('reply-chrome-geometry', {
+      contentType: 'application/json',
+      body: JSON.stringify(
+        await page.evaluate(() =>
+          Object.fromEntries(
+            [
+              ['workspace', '[data-testid="chart-workspace"]'],
+              ['stage', '.chart-map-stage'],
+              ['map', '[data-testid="sea-map"]'],
+              ['card', '[data-testid="chart-agent-current-reply"]'],
+              ['header', '.reply-card-heading'],
+              ['body', '.reply-card-body'],
+              ['footer', '.reply-card-footer'],
+              ['composer', '.chart-agent-dock'],
+              ['source', '[data-testid="chart-source-note"]'],
+              ['attribution', '.maplibregl-ctrl-attrib'],
+              ['scale', '.maplibregl-ctrl-scale'],
+              ['legend', '[data-testid="direction-legend"]'],
+              ['status', '.map-status'],
+            ].map(([key, selector]) => {
+              const element = document.querySelector<HTMLElement>(selector!);
+              return [
+                key,
+                element
+                  ? {
+                      rect: element.getBoundingClientRect().toJSON(),
+                      display: getComputedStyle(element).display,
+                      visibility: getComputedStyle(element).visibility,
+                      height: element.clientHeight,
+                      scrollHeight: element.scrollHeight,
+                    }
+                  : null,
+              ];
+            }),
+          ),
+        ),
+        null,
+        2,
+      ),
+    });
     if (viewport.width === 1002) {
-      await expect(card).not.toHaveClass(/compact/);
+      await expect(card).not.toHaveClass(/(?:^|\s)compact(?:\s|$)/);
       await expect(card.getByRole('button', { name: '展开回复', exact: true })).toHaveCount(0);
     }
     const bounds = (await card.boundingBox())!;
@@ -1654,7 +1371,7 @@ test('悬浮输入空闲透明无阴影，聚焦或非空草稿高亮并随清�
   expect(calls.submitted).toHaveLength(0);
 });
 
-test('空间回复浮卡连接混合对象并在窄屏展开摘要', async ({ page }) => {
+test('空间回复逐对象高亮并在窄屏展开摘要', async ({ page }) => {
   await agentFixture(page, {
     spatial: true,
     chatReplies: { 关注这两个对象: '已关注船甲和事件乙。' },
@@ -1666,12 +1383,15 @@ test('空间回复浮卡连接混合对象并在窄屏展开摘要', async ({ pa
   await input.press('Enter');
   const overlay = page.getByTestId('chart-focus-overlay');
   await expect(overlay).toContainText('2 个关注对象');
-  await expect(overlay.locator('.focus-frame')).not.toHaveAttribute('d', '');
-  await expect(overlay.locator('.focus-guide')).not.toHaveAttribute('d', '');
-  await expectConnectedReply(page);
+  await expect(overlay.locator('.focus-shapes path')).toHaveAttribute('d', /.+/);
+  await expect(overlay.locator('.focus-guide, .focus-frame')).toHaveCount(0);
+  await expectPositionedReply(page);
   await expect(page.locator('.chart-agent-dock .chart-agent-reply-card')).toHaveCount(0);
   await expect(overlay.locator('.holographic-avatar')).toHaveAttribute('data-state', 'completed');
-  await page.screenshot({ path: '.data/spatial-e2e-focus-desktop.png', fullPage: true });
+  await page.screenshot({
+    path: test.info().outputPath('spatial-focus-desktop.png'),
+    fullPage: true,
+  });
   await page.setViewportSize({ width: 600, height: 800 });
   await expect(overlay.getByRole('button', { name: '展开回复' })).toBeVisible();
   const drawer = page.getByTestId('chart-right-panel');
@@ -1692,7 +1412,10 @@ test('空间回复浮卡连接混合对象并在窄屏展开摘要', async ({ pa
     'true',
   );
   await drawer.getByRole('tab', { name: 'AI 对话', exact: true }).click();
-  await page.screenshot({ path: '.data/spatial-e2e-focus-compact.png', fullPage: true });
+  await page.screenshot({
+    path: test.info().outputPath('spatial-focus-compact.png'),
+    fullPage: true,
+  });
   await page.setViewportSize({ width: 390, height: 800 });
   await expect(page.getByText('海图回复空间不足', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: '收起侧栏查看', exact: true }).click();
@@ -1933,11 +1656,11 @@ for (const manualClose of [false, true])
         visible: true,
         focusEvidence: { taskId: expect.any(String), displayStatus: 'complete' },
       });
-      await expect(overlay.locator('.focus-frame')).not.toHaveAttribute('d', '');
+      await expect(overlay.locator('.focus-shapes path')).toHaveAttribute('d', /.+/);
     }
   });
 
-test('对象关注先收拢再闪烁三次，靠边拖动与紧凑回复仍真实连线', async ({ page }) => {
+test('逐对象关注保留本轮动效，拖动仅更新投影且不出现组框或引导线', async ({ page }) => {
   const fixture = await focusCommandFixture(page);
   await openAgent(page);
   await expect.poll(fixture.ready).toBe(true);
@@ -1947,93 +1670,38 @@ test('对象关注先收拢再闪烁三次，靠边拖动与紧凑回复仍真�
   await expect.poll(fixture.reads).toBeGreaterThanOrEqual(2);
   fixture.release();
   await expect.poll(() => fixture.receipts.some((r) => r.status === 'succeeded')).toBe(true);
+  await expectPositionedReply(page);
   const overlay = page.getByTestId('chart-focus-overlay');
-  const frame = overlay.locator('.focus-frame');
-  await expect(frame).toHaveClass(/focus-attention/);
-  const samples = await frame.evaluate((element) => {
-    const animation = element.getAnimations().find((item) => item instanceof CSSAnimation)!;
-    if (!animation) throw new Error('关注框没有真实浏览器动画');
-    animation.pause();
-    return [0, 200, 400, 700, 1000, 1300, 1600, 1900, 2200, 2600].map((time) => {
-      animation.currentTime = time;
-      const style = getComputedStyle(element);
-      return {
-        time,
-        scale: new DOMMatrixReadOnly(style.transform).a,
-        opacity: Number(style.opacity),
-        duration: animation.effect!.getTiming().duration,
-      };
-    });
-  });
-  expect(samples.every((sample) => sample.duration === 2200)).toBe(true);
-  expect(samples[0]!.scale).toBeCloseTo(1.65, 2);
-  expect(samples[1]!.scale).toBeGreaterThan(1);
-  expect(samples[1]!.scale).toBeLessThan(samples[0]!.scale);
-  expect(samples[2]!.scale).toBeCloseTo(1, 2);
-  for (const time of [700, 1300, 1900])
-    expect(samples.find((sample) => sample.time === time)!.opacity).toBeCloseTo(0.18, 2);
-  for (const time of [400, 1000, 1600, 2200, 2600]) {
-    const sample = samples.find((value) => value.time === time)!;
-    expect(sample.scale).toBeCloseTo(1, 2);
-    expect(sample.opacity).toBeCloseTo(1, 2);
-  }
-  await expectConnectedReply(page);
-  const before = await replyConnection(page);
-  const destination = await page.getByTestId('sea-map').evaluate((element) => {
+  const shapes = overlay.locator('.focus-shapes');
+  await expect(shapes).toHaveClass(/focus-attention/);
+  const before = await replyPlacement(page);
+  const map = page.getByTestId('sea-map');
+  const instance = await map.getAttribute('data-map-instance');
+  const gesture = await map.evaluate((element) => {
     const rect = element.getBoundingClientRect();
-    const rightPanel = document.querySelector<HTMLElement>('#chart-right-slot .chart-panel');
-    const dock = document.querySelector<HTMLElement>('.chart-agent-dock');
-    return {
-      x: Math.min(rect.right, rightPanel?.getBoundingClientRect().left ?? rect.right) - 48,
-      y: Math.min(rect.bottom, dock?.getBoundingClientRect().top ?? rect.bottom) - 48,
-    };
+    const isCanvas = (x: number, y: number) =>
+      !!document.elementFromPoint(x, y)?.matches('.maplibregl-canvas');
+    for (let y = rect.top + 64; y < rect.bottom - 64; y += 40)
+      for (let x = rect.left + 64; x < rect.right - 144; x += 40)
+        if (
+          [0, 0.25, 0.5, 0.75, 1].every((fraction) =>
+            isCanvas(x + 70 * fraction, y + 30 * fraction),
+          )
+        )
+          return { x, y, endX: x + 70, endY: y + 30 };
+    throw new Error('没有可供真实拖动的连续海图画布区域');
   });
-  await page.mouse.move(before.target.x, before.target.y);
+  await page.mouse.move(gesture.x, gesture.y);
   await page.mouse.down();
-  await page.mouse.move(destination.x, destination.y, { steps: 12 });
-  // Hold at the edge past MapLibre's 160ms inertia window to model stopping before release.
-  await page.waitForTimeout(200);
+  await page.mouse.move(gesture.endX, gesture.endY, { steps: 12 });
   await page.mouse.up();
-  await expect.poll(async () => (await replyConnection(page)).path).not.toBe(before.path);
-  await expect(overlay.locator('.focus-caption')).not.toContainText('视野外');
-  await test.info().attach('focus-after-edge-stop', {
-    body: JSON.stringify(await replyConnection(page), null, 2),
-    contentType: 'application/json',
-  });
-  await expectConnectedReply(page);
-  expect(
-    await frame.evaluate((element) => element.getAnimations()[0]?.currentTime),
-    '拖动或船位投影更新保持本轮已完成动效，不重播',
-  ).toBe(2600);
-  await page.screenshot({ path: test.info().outputPath('focus-near-edge-connected.png') });
-
-  const edge = await replyConnection(page);
-  const map = (await page.getByTestId('sea-map').boundingBox())!;
-  await page.mouse.move(edge.target.x, edge.target.y);
-  await page.mouse.down();
-  // End above the map's 24px safe inset; visibility must not depend on gesture velocity.
-  await page.mouse.move(map.x + 120, map.y + 8, { steps: 12 });
-  await page.mouse.up();
-  await expect(overlay.locator('.focus-caption')).toContainText('视野外');
-  await expect(overlay.locator('.focus-guide')).toHaveAttribute('d', '');
-  await page.screenshot({ path: test.info().outputPath('focus-flung-offscreen.png') });
-  await overlay.getByRole('button', { name: '重新聚焦', exact: true }).click();
-  await expect(overlay.locator('.focus-caption')).not.toContainText('视野外');
-  await expectConnectedReply(page);
-
-  await page.setViewportSize({ width: 600, height: 800 });
-  for (const name of ['折叠操作面板', '关闭协同面板']) {
-    const close = page.getByRole('button', { name, exact: true });
-    if (await close.isVisible()) await close.click();
-  }
-  const refocus = overlay.getByRole('button', { name: '重新聚焦', exact: true });
-  await expect(overlay.getByRole('button', { name: '展开回复', exact: true })).toBeVisible();
-  if (await refocus.isVisible()) await refocus.click();
-  await expectConnectedReply(page);
-  await page.screenshot({ path: test.info().outputPath('focus-compact-connected.png') });
+  await expect.poll(async () => (await replyPlacement(page)).path).not.toBe(before.path);
+  await expect(overlay.locator('.focus-guide, .focus-frame')).toHaveCount(0);
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+  await page.screenshot({ path: test.info().outputPath('focus-object-highlight.png') });
 });
 
-test('减少动态效果时关注框静态显示并保留对象连线', async ({ page }) => {
+test('减少动态效果时对象高亮静态显示且没有连接线和整组框', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const fixture = await focusCommandFixture(page);
   await openAgent(page);
@@ -2044,11 +1712,11 @@ test('减少动态效果时关注框静态显示并保留对象连线', async ({
   await expect.poll(fixture.reads).toBeGreaterThanOrEqual(2);
   fixture.release();
   await expect.poll(() => fixture.receipts.some((r) => r.status === 'succeeded')).toBe(true);
-  await expectConnectedReply(page);
+  await expectPositionedReply(page);
   expect(
     await page
       .getByTestId('chart-focus-overlay')
-      .locator('.focus-frame')
+      .locator('.focus-shapes')
       .evaluate((element) => element.getAnimations().length),
   ).toBe(0);
 });

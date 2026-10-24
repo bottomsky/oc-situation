@@ -1,108 +1,169 @@
 import { expect, it } from 'vitest';
-import { focusReplyGuide, placeFocusReply } from './focusLayout';
-it('短图区返回独立于当前卡高度的真实最大高度，保留正文与操作空间', () => {
-  const view = { left: 24, right: 354, top: 8, bottom: 156 };
-  const compact = placeFocusReply(view, null, 360, 90);
-  const expanded = placeFocusReply(view, null, 360, 320);
-  expect(expanded.top).toBe(8);
-  expect(expanded.maxHeight).toBe(140);
-  expect(compact.maxHeight).toBe(expanded.maxHeight);
-});
-it('places a reply 24px from the attention frame with no overlap', () => {
-  const r = placeFocusReply(
-    { left: 0, top: 0, right: 1200, bottom: 800 },
-    { left: 400, top: 300, right: 450, bottom: 350 },
-    360,
-    240,
-  );
-  expect(r.left - (450 + 16)).toBe(24);
-  expect(r.left).toBeGreaterThan(450);
-  expect(r.compact).toBe(false);
-});
-it('uses a compact summary in a narrow viewport', () =>
-  expect(
-    placeFocusReply({ left: 0, top: 0, right: 600, bottom: 800 }, null, 360, 240).compact,
-  ).toBe(true));
-it('holds the previous side while it remains valid', () => {
-  const r = placeFocusReply(
-    { left: 0, top: 0, right: 1600, bottom: 800 },
-    { left: 800, top: 300, right: 850, bottom: 350 },
-    360,
-    240,
-    'left',
-  );
-  expect(r.side).toBe('left');
-});
+import { placeFocusReply } from './focusLayout';
+import * as focusLayout from './focusLayout';
 
-it('对象靠近上边缘时沿边缘平移回复卡，仍贴近对象并保留明确侧向', () => {
+it('单对象卡片位于右上，距离逐对象光环24px并保留12px安全边界', () => {
   const result = placeFocusReply(
     { left: 0, top: 0, right: 1200, bottom: 800 },
-    { left: 400, right: 450, top: 20, bottom: 30 },
-    360,
+    { left: 400, top: 400, right: 400, bottom: 400 },
+    420,
     240,
   );
   expect(result.side).toBe('right');
-  expect(result.left - (450 + 16)).toBe(24);
-  expect(result.left).toBeGreaterThan(450);
+  expect(result.left - (400 + 12)).toBe(24);
+  expect(result.top).toBeLessThan(400);
+  expect(result.top + 240).toBeLessThanOrEqual(400);
+});
+
+it('多对象卡片在目标组右侧并与组上缘对齐', () => {
+  const result = placeFocusReply(
+    { left: 0, top: 0, right: 1400, bottom: 800 },
+    { left: 200, top: 180, right: 620, bottom: 560 },
+    420,
+    300,
+    'right',
+    2,
+  );
+  expect(result.side).toBe('right');
+  expect(result.left).toBe(656);
+  expect(result.top).toBe(180);
+});
+
+it('右侧容纳不下时转顶部居中，不在左右上下间跳动', () => {
+  const view = { left: 24, top: 24, right: 1000, bottom: 700 };
+  const result = placeFocusReply(view, { left: 600, right: 850, top: 300, bottom: 400 });
+  expect(result.side).toBe('top');
+  expect(result.left).toBe(302);
+  expect(result.top).toBe(36);
+  const next = placeFocusReply(
+    view,
+    { left: 100, right: 200, top: 400, bottom: 450 },
+    420,
+    250,
+    'top',
+  );
+  expect(next.side).toBe('top');
+});
+
+it('无定位对象及分散组使用顶部布局，真实高度上限独立于正文当前高度', () => {
+  const view = { left: 24, right: 354, top: 8, bottom: 180 };
+  const compact = placeFocusReply(view, null, 420, 90);
+  const expanded = placeFocusReply(view, null, 420, 360);
+  expect(expanded.side).toBe('top');
+  expect(expanded.top).toBe(20);
+  expect(expanded.maxHeight).toBe(148);
+  expect(compact.maxHeight).toBe(expanded.maxHeight);
+  expect(expanded.compact).toBe(true);
+  expect(expanded.width).toBe(306);
+});
+
+it('窗口顶部附近的对象仍可右侧显示，卡片上下边界受真实空间约束', () => {
+  const result = placeFocusReply(
+    { left: 0, top: 0, right: 1200, bottom: 800 },
+    { left: 400, right: 400, top: 20, bottom: 20 },
+    420,
+    300,
+  );
+  expect(result.side).toBe('right');
   expect(result.top).toBe(12);
 });
 
-it('有引导线时连接四角框和卡片的真实边界，紧凑布局仍关联可见对象', () => {
-  const target = { left: 200, right: 200, top: 400, bottom: 400 };
-  const layout = placeFocusReply({ left: 0, top: 0, right: 600, bottom: 800 }, target, 360, 180);
-  const guide = focusReplyGuide(target, layout, 180);
-  expect(guide).not.toBe('');
-  expect(guide).toContain('M200,384');
-  expect(guide).toContain(`L200,${layout.top + 180}`);
-  expect(focusReplyGuide(null, layout, 180)).toBe('');
-});
-
-it('卡片遮住目标时不伪造一条穿过正文的连接线', () => {
-  expect(
-    focusReplyGuide(
-      { left: 200, right: 200, top: 80, bottom: 80 },
-      { left: 100, top: 16, width: 360, side: undefined },
-      180,
-    ),
-  ).toBe('');
-});
-
-it('紧凑卡也优先避开可见对象，在对象下方有空间时保持关联', () => {
-  const target = { left: 200, top: 80, right: 200, bottom: 80 };
-  const layout = placeFocusReply({ left: 0, top: 0, right: 600, bottom: 800 }, target, 360, 180);
-  expect(layout.compact).toBe(true);
-  expect(layout.side).toBe('bottom');
-  expect(layout.top - (target.bottom + 16)).toBe(24);
-  expect(layout.top + 180).toBeLessThanOrEqual(788);
-  expect(focusReplyGuide(target, layout, 180)).not.toBe('');
-});
-
-it('可用图区较短时按真实DOM高度评估，不截短高度伪报侧向可容纳', () => {
-  const layout = placeFocusReply(
-    { left: 0, top: 0, right: 1200, bottom: 200 },
-    { left: 400, top: 100, right: 400, bottom: 100 },
-    360,
-    500,
-  );
-  expect(layout.side).toBeUndefined();
-});
-
-it('紧凑摘要使用实测小尺寸，可在输入框上方较短图区绕开居中的对象', () => {
-  const view = { left: 24, top: 24, right: 576, bottom: 306 };
-  const target = { left: 300, top: 166, right: 300, bottom: 166 };
-  const fullHeader = placeFocusReply(view, target, 360, 142);
-  expect(fullHeader.side).toBeUndefined();
-  const compactHeader = placeFocusReply(view, target, 360, 88);
-  expect(compactHeader.side).toBe('top');
-  expect(target.top - 16 - (compactHeader.top + 88)).toBe(24);
-  expect(focusReplyGuide(target, compactHeader, 88)).not.toBe('');
-});
-
-it('可用图区小于卡片宽度时收缩，高遮挡不强占侧栏', () => {
-  const small = placeFocusReply({ left: 24, right: 226, top: 24, bottom: 500 }, null);
-  expect(small.width).toBe(178);
-  expect(small.left + small.width).toBeLessThanOrEqual(226);
+it('高遮挡不虚构可用空间，超高卡片回退顶部以便正文滚动', () => {
   const blocked = placeFocusReply({ left: 24, right: 80, top: 24, bottom: 500 }, null);
   expect(blocked.width).toBe(32);
   expect(blocked.left + blocked.width).toBeLessThanOrEqual(80);
+  const tall = placeFocusReply(
+    { left: 0, top: 0, right: 1200, bottom: 200 },
+    { left: 400, top: 100, right: 400, bottom: 100 },
+    420,
+    500,
+  );
+  expect(tall.side).toBe('top');
+  expect(tall.maxHeight).toBe(102);
+});
+
+it('窄图区单对象被顶部卡片覆盖时需要一次构图，进入预留对象区后停止调整', () => {
+  expect(typeof focusLayout.focusObjectViewport).toBe('function');
+  expect(typeof focusLayout.needsFocusComposition).toBe('function');
+  const view = { left: 0, top: 0, right: 600, bottom: 800 };
+  const target = { left: 300, top: 30, right: 300, bottom: 30 };
+  const card = placeFocusReply(view, target, 420, 160, 'top');
+  expect(card.side).toBe('top');
+  expect(card.left).toBe(90);
+  expect(card.top).toBe(12);
+  expect(typeof focusLayout.focusReplyOccludes).toBe('function');
+  expect(focusLayout.focusReplyOccludes(target, card, 160)).toBe(true);
+  const objectView = focusLayout.focusObjectViewport(view, 'top', 420, 160);
+  expect(focusLayout.needsFocusComposition(target, objectView, 'top', 'top', 1)).toBe(true);
+  const fitted = { left: 300, right: 300, top: 500, bottom: 500 };
+  expect(focusLayout.needsFocusComposition(fitted, objectView, 'top', 'top', 1)).toBe(false);
+  expect(focusLayout.focusReplyOccludes(fitted, card, 160)).toBe(false);
+});
+
+it('420px卡片有274px净空时默认显示正文，真正窄卡及低净空才进入紧凑模式', () => {
+  const readable = placeFocusReply({ left: 0, top: 0, right: 1002, bottom: 274 }, null, 420, 260);
+  expect(readable.width).toBe(420);
+  expect(readable.maxHeight).toBe(250);
+  expect(readable.compact).toBe(false);
+  expect(
+    placeFocusReply({ left: 0, top: 0, right: 350, bottom: 500 }, null, 420, 260).compact,
+  ).toBe(true);
+  expect(
+    placeFocusReply({ left: 0, top: 0, right: 1002, bottom: 160 }, null, 420, 160).compact,
+  ).toBe(true);
+});
+
+it('宽卡实际可读高206px时保持正文默认展开', () => {
+  const layout = placeFocusReply({ left: 0, top: 0, right: 1002, bottom: 230 }, null, 420, 206);
+  expect(layout.maxHeight).toBe(206);
+  expect(layout.compact).toBe(false);
+});
+
+it('顶部一次构图与卡片共享239px/227px净空间预算，物理不足保留控制并明确标记', () => {
+  expect(typeof focusLayout.focusTopSpace).toBe('function');
+  expect(focusLayout.focusTopSpace(239)).toEqual({
+    maxHeight: 111,
+    objectMinHeight: 80,
+    shortHeader: true,
+    feasible: true,
+  });
+  expect(focusLayout.focusTopSpace(227)).toEqual({
+    maxHeight: 102,
+    objectMinHeight: 77,
+    shortHeader: true,
+    feasible: true,
+  });
+  expect(focusLayout.focusTopSpace(132)).toEqual({
+    maxHeight: 102,
+    objectMinHeight: 0,
+    shortHeader: true,
+    feasible: false,
+  });
+  const layout = placeFocusReply(
+    { left: 24, top: 24, right: 564, bottom: 263 },
+    { left: 294, right: 294, top: 223, bottom: 223 },
+    420,
+    213,
+    'top',
+  );
+  expect(layout.maxHeight).toBe(111);
+  expect(223 - 12 - (layout.top + layout.maxHeight)).toBeGreaterThanOrEqual(24);
+  expect(focusLayout.focusTopSpace(282, 111)).toEqual({
+    maxHeight: 111,
+    objectMinHeight: 123,
+    shortHeader: true,
+    feasible: true,
+  });
+  const relaxed = placeFocusReply(
+    { left: 24, top: 24, right: 564, bottom: 306 },
+    { left: 294, right: 294, top: 223, bottom: 223 },
+    420,
+    213,
+    'top',
+    1,
+    true,
+    111,
+  );
+  expect(relaxed.maxHeight).toBe(111);
+  expect(223 - 12 - (relaxed.top + relaxed.maxHeight)).toBeGreaterThanOrEqual(24);
 });

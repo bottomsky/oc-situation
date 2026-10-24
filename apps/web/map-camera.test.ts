@@ -1,5 +1,68 @@
 import { expect, it, vi } from 'vitest';
 import { cameraBounds, cameraPadding, createMapCamera } from './app/utils/mapCamera';
+import * as mapCamera from './app/utils/mapCamera';
+import { placeFocusReply } from './app/utils/focusLayout';
+
+function overlayNode(
+  side: 'left' | 'right' | undefined,
+  rect: { left: number; right: number; top: number; bottom: number },
+  dock = false,
+) {
+  return {
+    getClientRects: () => ({ length: 1 }),
+    getBoundingClientRect: () => rect,
+    closest: (selector: string) =>
+      selector === '[data-side]' && side ? { getAttribute: () => side } : null,
+    classList: { contains: (name: string) => dock && name === 'chart-agent-dock' },
+  };
+}
+
+it('全屏外面板即使仍有可见布局rect也不压缩图区，全屏内输入条仍参与遮挡', () => {
+  expect(typeof mapCamera.cameraOverlayRects).toBe('function');
+  const view = { left: 0, right: 600, top: 0, bottom: 800 };
+  const outside = overlayNode('right', view);
+  const dock = overlayNode(undefined, { left: 40, right: 560, top: 700, bottom: 760 }, true);
+  const nodes = [outside, dock];
+  const visible = () => true;
+  const normal = cameraPadding(view, mapCamera.cameraOverlayRects(nodes, { visible }));
+  expect(view.right - normal.left - normal.right).toBeCloseTo(1);
+  const fullscreen = { contains: (node: typeof outside) => node === dock };
+  const overlays = mapCamera.cameraOverlayRects(nodes, { fullscreen, visible });
+  expect(overlays).toEqual([{ ...dock.getBoundingClientRect(), side: 'bottom', gap: 8 }]);
+  const padding = cameraPadding(view, overlays);
+  expect(padding.left).toBe(24);
+  expect(padding.right).toBe(24);
+  expect(padding.bottom).toBe(108);
+  const card = placeFocusReply(
+    {
+      left: padding.left,
+      right: view.right - padding.right,
+      top: padding.top,
+      bottom: view.bottom - padding.bottom,
+    },
+    null,
+    420,
+    160,
+  );
+  expect(card.width).toBe(420);
+});
+
+it('正常模式保留左右面板，全屏内明确右抽屉与隐藏状态按原规则计算', () => {
+  expect(typeof mapCamera.cameraOverlayRects).toBe('function');
+  const left = overlayNode('left', { left: 0, right: 250, top: 0, bottom: 800 });
+  const right = overlayNode('right', { left: 800, right: 1200, top: 0, bottom: 800 });
+  expect(
+    mapCamera.cameraOverlayRects([left, right], { visible: () => true }).map((rect) => rect.side),
+  ).toEqual(['left', 'right']);
+  expect(
+    mapCamera
+      .cameraOverlayRects([left, right], {
+        fullscreen: { contains: () => true },
+        visible: (node) => node !== right,
+      })
+      .map((rect) => rect.side),
+  ).toEqual(['left']);
+});
 it('短图区为输入胶囊保留真实底部空间，减少上下装饰留白', () => {
   const padding = cameraPadding({ left: 0, right: 378, top: 280, bottom: 568 }, [
     { left: 20, right: 358, top: 444, bottom: 504, gap: 8 },
@@ -7,6 +70,37 @@ it('短图区为输入胶囊保留真实底部空间，减少上下装饰留白'
   expect(padding.top).toBe(8);
   expect(padding.bottom).toBe(132);
   expect(288 - padding.top - padding.bottom).toBe(148);
+});
+
+it('抬升至地图中部的输入条仍是底部障碍，回复始终保留输入条上方空间', () => {
+  const view = { left: 0, right: 1000, top: 0, bottom: 600 };
+  const originalDock = overlayNode(
+    undefined,
+    { left: 300, right: 700, top: 440, bottom: 510 },
+    true,
+  );
+  const originalPadding = cameraPadding(
+    view,
+    mapCamera.cameraOverlayRects([originalDock], { visible: () => true }),
+  );
+  expect(view.bottom - originalPadding.bottom).toBe(440 - 8);
+  const dock = overlayNode(undefined, { left: 300, right: 700, top: 280, bottom: 350 }, true);
+  const overlays = mapCamera.cameraOverlayRects([dock], { visible: () => true });
+  const padding = cameraPadding(view, overlays);
+  expect(padding.bottom).toBe(328);
+  expect(view.bottom - padding.bottom).toBe(280 - 8);
+  const reply = placeFocusReply(
+    {
+      left: padding.left,
+      right: view.right - padding.right,
+      top: padding.top,
+      bottom: view.bottom - padding.bottom,
+    },
+    null,
+    420,
+    360,
+  );
+  expect(reply.top + reply.maxHeight).toBeLessThan(dock.getBoundingClientRect().top);
 });
 it('600px右侧drawer按身份保留真实左侧空间，高遮挡不虚增可用宽度', () => {
   const view = { left: 5, right: 595, top: 200, bottom: 800 };

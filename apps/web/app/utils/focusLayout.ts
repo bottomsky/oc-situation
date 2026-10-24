@@ -4,109 +4,145 @@ export interface FocusRect {
   right: number;
   bottom: number;
 }
-export type FocusSide = 'right' | 'left' | 'top' | 'bottom';
-const framePadding = 16;
-const replyGap = framePadding + 24;
+export type FocusSide = 'right' | 'top';
+export const FOCUS_CARD_WIDTH = 420;
+export const FOCUS_CARD_HEIGHT = 360;
+export const FOCUS_HIGHLIGHT_RADIUS = 12;
+export const FOCUS_REPLY_GAP = 24;
+export const FOCUS_SAFE_GAP = 12;
+export const FOCUS_RESERVATION_GAP = FOCUS_HIGHLIGHT_RADIUS + FOCUS_REPLY_GAP + FOCUS_SAFE_GAP;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
 
-/** Connect exposed frame and card edges; never draw through the reply itself. */
-export function focusReplyGuide(
-  target: FocusRect | null,
-  card: { left: number; top: number; width: number; side?: FocusSide },
-  height: number,
-) {
-  if (!target) return '';
-  const frame = {
-    left: target.left - framePadding,
-    right: target.right + framePadding,
-    top: target.top - framePadding,
-    bottom: target.bottom + framePadding,
+/** One physical budget for the top card, its separation, and the visible object area. */
+export function focusTopSpace(height: number, adoptedLimit = Infinity) {
+  const maxHeight = Math.max(
+    0,
+    Math.min(
+      adoptedLimit,
+      height - 2 * FOCUS_SAFE_GAP,
+      Math.max(102, Math.min(FOCUS_CARD_HEIGHT, height - FOCUS_RESERVATION_GAP - 80)),
+    ),
+  );
+  const objectMinHeight = Math.max(0, height - maxHeight - FOCUS_RESERVATION_GAP);
+  return {
+    maxHeight,
+    objectMinHeight,
+    shortHeader: height < 360 || maxHeight < 160,
+    feasible: maxHeight >= 102 && objectMinHeight >= 24,
   };
-  const right = card.left + card.width,
-    bottom = card.top + height;
-  const side =
-    card.left > frame.right
-      ? 'right'
-      : right < frame.left
-        ? 'left'
-        : bottom < frame.top
-          ? 'top'
-          : card.top > frame.bottom
-            ? 'bottom'
-            : undefined;
-  if (!side) return '';
-  if (side === 'right' || side === 'left') {
-    const x = side === 'right' ? frame.right : frame.left,
-      y = (frame.top + frame.bottom) / 2,
-      cx = side === 'right' ? card.left : right,
-      cy = clamp(y, card.top + 12, bottom - 12),
-      elbow = (x + cx) / 2;
-    return `M${x},${y}L${elbow},${y}L${elbow},${cy}L${cx},${cy}`;
-  }
-  const x = (frame.left + frame.right) / 2,
-    y = side === 'top' ? frame.top : frame.bottom,
-    cx = clamp(x, card.left + 12, right - 12),
-    cy = side === 'top' ? bottom : card.top,
-    elbow = (y + cy) / 2;
-  return `M${x},${y}L${x},${elbow}L${cx},${elbow}L${cx},${cy}`;
 }
 
+/** Object viewport after reserving one card, in the same coordinates as the highlights. */
+export function focusObjectViewport(
+  view: FocusRect,
+  placement: FocusSide,
+  width: number,
+  height: number,
+  objectMinHeight = 80,
+): FocusRect {
+  return {
+    ...view,
+    right: view.right - (placement === 'right' ? width + FOCUS_RESERVATION_GAP : 0),
+    top:
+      view.top +
+      (placement === 'top'
+        ? Math.min(
+            height + FOCUS_RESERVATION_GAP,
+            Math.max(0, view.bottom - view.top - objectMinHeight),
+          )
+        : 0),
+  };
+}
+
+/** A top card needs object space for one object just as it does for a whole group. */
+export function needsFocusComposition(
+  target: FocusRect | null,
+  objectView: FocusRect,
+  placement: FocusSide,
+  cardSide: FocusSide,
+  targetCount: number,
+) {
+  if (!target) return false;
+  const inside =
+    target.left >= objectView.left &&
+    target.right <= objectView.right &&
+    target.top >= objectView.top &&
+    target.bottom <= objectView.bottom;
+  const centered =
+    Math.abs((target.left + target.right - objectView.left - objectView.right) / 2) <=
+      Math.max(24, (objectView.right - objectView.left) * 0.12) &&
+    Math.abs((target.top + target.bottom - objectView.top - objectView.bottom) / 2) <=
+      Math.max(24, (objectView.bottom - objectView.top) * 0.12);
+  return (
+    !inside || (placement === 'right' && cardSide !== 'right') || (targetCount > 1 && !centered)
+  );
+}
+
+export function focusReplyOccludes(
+  target: FocusRect | null,
+  card: { left: number; top: number; width: number },
+  height: number,
+) {
+  return (
+    !!target &&
+    target.left - FOCUS_HIGHLIGHT_RADIUS < card.left + card.width &&
+    target.right + FOCUS_HIGHLIGHT_RADIUS > card.left &&
+    target.top - FOCUS_HIGHLIGHT_RADIUS < card.top + height &&
+    target.bottom + FOCUS_HIGHLIGHT_RADIUS > card.top
+  );
+}
+
+/** Keep the card beside its objects or in one stable top slot; never join them with a guide. */
 export function placeFocusReply(
   view: FocusRect,
   target: FocusRect | null,
-  width = 360,
-  height = 320,
+  width = FOCUS_CARD_WIDTH,
+  height = FOCUS_CARD_HEIGHT,
   previous?: FocusSide,
+  targetCount = 1,
+  reserveObjects = !!target,
+  topCardLimit?: number,
 ) {
-  const vw = view.right - view.left,
-    vh = view.bottom - view.top;
-  const compact = vw < 640 || vh < 360;
-  width = Math.min(width, Math.max(0, vw - 24));
+  const vw = Math.max(0, view.right - view.left),
+    vh = Math.max(0, view.bottom - view.top);
+  width = Math.min(width, Math.max(0, vw - 2 * FOCUS_SAFE_GAP));
+  const top = view.top + FOCUS_SAFE_GAP;
+  const budget = reserveObjects ? focusTopSpace(vh, topCardLimit) : null;
+  const maxHeight = budget?.maxHeight ?? Math.max(0, view.bottom - top - FOCUS_SAFE_GAP);
   const fallback = {
     left: view.left + (vw - width) / 2,
-    top: view.top + (vh < 360 ? 0 : 16),
-    maxHeight: Math.max(0, vh - (vh < 360 ? 0 : 16) - 8),
+    top,
+    maxHeight,
     width,
-    compact,
-    side: undefined as FocusSide | undefined,
+    compact: width < 360 || maxHeight < 160,
+    shortHeader: budget?.shortHeader ?? false,
+    objectMinHeight: budget?.objectMinHeight ?? 80,
+    compositionFits: budget?.feasible ?? true,
+    side: 'top' as FocusSide,
   };
-  if (!target) return fallback;
-  const cx = (target.left + target.right) / 2,
-    cy = (target.top + target.bottom) / 2;
-  const candidates: Record<FocusSide, { left: number; top: number }> = {
-    right: { left: target.right + replyGap, top: cy - height / 2 },
-    left: { left: target.left - replyGap - width, top: cy - height / 2 },
-    top: { left: cx - width / 2, top: target.top - replyGap - height },
-    bottom: { left: cx - width / 2, top: target.bottom + replyGap },
-  };
-  // Slide parallel to the target's edge before discarding an otherwise useful side.
-  for (const side of ['right', 'left'] as const)
-    candidates[side].top = clamp(candidates[side].top, view.top + 12, view.bottom - height - 12);
-  for (const side of ['top', 'bottom'] as const)
-    candidates[side].left = clamp(candidates[side].left, view.left + 12, view.right - width - 12);
-  const valid = (side: FocusSide) => {
-    const p = candidates[side];
-    return (
-      p.left >= view.left + 12 &&
-      p.left + width <= view.right - 12 &&
-      p.top >= view.top + 12 &&
-      p.top + height <= view.bottom - 12
-    );
-  };
-  const order: FocusSide[] = previous
-    ? [
-        previous,
-        ...(['right', 'left', 'top', 'bottom'] as FocusSide[]).filter((s) => s !== previous),
-      ]
-    : ['right', 'left', 'top', 'bottom'];
-  const side = order.find(valid);
-  return side
+  if (!target || previous === 'top') return fallback;
+  const left = target.right + FOCUS_HIGHLIGHT_RADIUS + FOCUS_REPLY_GAP;
+  const preferredTop = targetCount > 1 ? target.top : target.top - height - FOCUS_REPLY_GAP;
+  const cardTop = clamp(preferredTop, top, view.bottom - height - FOCUS_SAFE_GAP);
+  const fits =
+    left >= view.left + FOCUS_SAFE_GAP &&
+    left + width <= view.right - FOCUS_SAFE_GAP &&
+    cardTop + height <= view.bottom - FOCUS_SAFE_GAP &&
+    target.right >= view.left &&
+    target.left <= view.right &&
+    target.bottom >= view.top &&
+    target.top <= view.bottom;
+  return fits
     ? {
-        ...candidates[side],
+        left,
+        top: cardTop,
         width,
-        compact,
-        side,
-        maxHeight: Math.max(0, view.bottom - candidates[side].top - 8),
+        compact: width < 360 || view.bottom - cardTop - FOCUS_SAFE_GAP < 160,
+        side: 'right' as FocusSide,
+        maxHeight: Math.max(0, view.bottom - cardTop - FOCUS_SAFE_GAP),
+        shortHeader: false,
+        objectMinHeight: 80,
+        compositionFits: true,
       }
     : fallback;
 }

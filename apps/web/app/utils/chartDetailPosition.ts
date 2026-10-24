@@ -5,6 +5,31 @@ interface ChartDetailBounds {
   bottom: number;
 }
 
+/** Solve from the CSS baseline; new collisions never add offsets from a previous measurement. */
+export function replyDockClearance(
+  stageBottom: number,
+  dock: Pick<ChartDetailBounds, 'left' | 'right'> & { height: number },
+  notes: ChartDetailBounds[],
+  baseline = 40,
+) {
+  let bottom = baseline;
+  for (let pass = 0; pass <= notes.length; pass++) {
+    const previous = bottom;
+    for (const note of notes) {
+      const dockBottom = stageBottom - bottom;
+      if (
+        note.left < dock.right &&
+        note.right > dock.left &&
+        note.top < dockBottom &&
+        note.bottom > dockBottom - dock.height
+      )
+        bottom = Math.max(bottom, stageBottom - note.top + 8);
+    }
+    if (bottom === previous) break;
+  }
+  return bottom > baseline ? bottom : 0;
+}
+
 export function chartDetailPosition(
   side: 'left' | 'right',
   workspace: ChartDetailBounds,

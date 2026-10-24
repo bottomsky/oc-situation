@@ -7,7 +7,7 @@ interface Rect {
   top: number;
   right: number;
   bottom: number;
-  side?: 'left' | 'right';
+  side?: 'left' | 'right' | 'bottom';
   gap?: number;
 }
 export interface CameraPadding {
@@ -15,6 +15,49 @@ export interface CameraPadding {
   right: number;
   bottom: number;
   left: number;
+}
+interface CameraOverlayNode {
+  getClientRects(): { length: number };
+  getBoundingClientRect(): Rect;
+  closest(selector: string): { getAttribute(name: string): string | null } | null;
+  classList: { contains(name: string): boolean };
+}
+
+/** Fullscreen keeps outside layout boxes alive; only its descendants obstruct its map. */
+export function cameraOverlayRects<T extends CameraOverlayNode>(
+  elements: Iterable<T>,
+  options: { fullscreen?: { contains(element: T): boolean } | null; visible(element: T): boolean },
+): Rect[] {
+  return [...elements]
+    .filter(
+      (element) =>
+        (!options.fullscreen || options.fullscreen.contains(element)) &&
+        !!element.getClientRects().length &&
+        options.visible(element) &&
+        !element.closest('[inert]'),
+    )
+    .map((element) => {
+      const rect = element.getBoundingClientRect();
+      const explicit = element.closest('[data-side]')?.getAttribute('data-side');
+      const dock = element.classList.contains('chart-agent-dock');
+      const side = dock
+        ? 'bottom'
+        : explicit === 'left' || explicit === 'right'
+          ? explicit
+          : element.closest('#chart-left-slot')
+            ? 'left'
+            : element.closest('#chart-right-slot')
+              ? 'right'
+              : undefined;
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        side,
+        gap: dock ? 8 : undefined,
+      };
+    });
 }
 type CameraErrorCode =
   'STATE_CONFLICT' | 'UNAVAILABLE' | 'EXECUTION_FAILED' | 'POSTCONDITION_FAILED';
@@ -39,7 +82,10 @@ export function cameraPadding(view: Rect, overlays: Rect[]): CameraPadding {
     const h = Math.min(rect.bottom, view.bottom) - Math.max(rect.top, view.top);
     const gap = rect.gap ?? verticalGap;
     if (w <= 0 || h <= 0) continue;
-    if (rect.side === 'left') padding.left = Math.max(padding.left, rect.right - view.left + 24);
+    if (rect.side === 'bottom')
+      padding.bottom = Math.max(padding.bottom, view.bottom - rect.top + gap);
+    else if (rect.side === 'left')
+      padding.left = Math.max(padding.left, rect.right - view.left + 24);
     else if (rect.side === 'right')
       padding.right = Math.max(padding.right, view.right - rect.left + 24);
     else if (h >= height * 0.45 && rect.left <= view.left + width * 0.45)

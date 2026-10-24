@@ -467,6 +467,16 @@ function replyHarness() {
 }
 
 describe('海图当前回复生命周期', () => {
+  it('当前回复业务类型使用当前task的真实intent，不受右侧历史任务选择影响', async () => {
+    const fixture = replyHarness();
+    await fixture.state.initialize();
+    fixture.state.draft.value = '查看目标';
+    await fixture.state.send();
+    fixture.tasks[0]!.intent = 'vessel_detail';
+    await fixture.state.poll();
+    expect(fixture.state.currentReply.value?.intent).toBe('vessel_detail');
+    fixture.stop();
+  });
   it('仅关联本轮会话与任务的持久助手消息，选择旧任务保持本轮回复', async () => {
     const fixture = replyHarness();
     const { state } = fixture;

@@ -5,6 +5,11 @@ import type {
   MapCameraRequest,
   MapCameraResult,
 } from '@ais/contracts';
+import type {
+  FocusCameraEstimate,
+  FocusCameraReservation,
+  FocusCardSize,
+} from '../utils/focusCamera';
 export interface ChartVesselHighlight extends HighlightVessel {
   effectId: string;
   headingDegrees?: number | null;
@@ -19,6 +24,7 @@ export interface ChartLayerVisibility {
 export interface ChartMapControls {
   projectFocus(point: [number, number], anchorLongitude?: number): { x: number; y: number } | null;
   focusViewport(): { left: number; top: number; right: number; bottom: number } | null;
+  estimateFocusCamera(bbox: Bbox, card: FocusCardSize): FocusCameraEstimate | null;
   onFocusRender(listener: () => void): () => void;
   requestFocusRender(): void;
 
@@ -28,7 +34,9 @@ export interface ChartMapControls {
   ): Promise<MapCameraResult>;
   currentCamera(): MapCameraResult | null;
   cameraState(): Omit<MapCameraResult, 'commandId'> | null;
-  cameraIntent(options?: { reserveReply?: boolean }): (request: MapCameraRequest) => void;
+  cameraIntent(
+    options?: FocusCameraReservation & { reserveReply?: boolean },
+  ): (request: MapCameraRequest) => void;
   interactionState(): { ready: boolean; moving: boolean; drawing: boolean };
   currentBounds(): Bbox | null;
   editGeometry(geometry: IntelligenceGeometry): void;

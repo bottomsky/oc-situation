@@ -243,6 +243,11 @@ export function useChartWorkspace() {
       if (detailRequests.isCurrent(current)) detailError.value = (e as Error).message;
     }
   }
+  function resetDetail() {
+    detailRequests.next();
+    detail.value = null;
+    detailError.value = '';
+  }
   async function loadTrack() {
     const current = trackRequests.next();
     if (!detail.value) return;
@@ -378,6 +383,7 @@ export function useChartWorkspace() {
     viewport,
     find,
     select,
+    resetDetail,
     loadTrack,
   };
 }

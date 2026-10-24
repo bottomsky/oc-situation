@@ -1,0 +1,30 @@
+import { expect, it, vi } from 'vitest';
+import * as chartFooter from './app/utils/chartFooter';
+
+it('实际地图高度跨360边界才切换公开控件，短模式保留完整署名和真实80px比例尺', () => {
+  expect(typeof chartFooter.createChartFooterControls).toBe('function');
+  const map = { addControl: vi.fn(), removeControl: vi.fn() };
+  const attribution = vi.fn((compact: boolean) => ({ kind: 'attribution', compact }));
+  const scale = vi.fn((maxWidth: number) => ({ kind: 'scale', maxWidth }));
+  const mode = vi.fn();
+  const footer = chartFooter.createChartFooterControls(map, { attribution, scale }, mode);
+  footer.update(280);
+  expect(attribution).toHaveBeenLastCalledWith(false);
+  expect(scale).toHaveBeenLastCalledWith(80);
+  expect(map.addControl.mock.calls.map((call) => call[0].kind)).toEqual(['scale', 'attribution']);
+  expect(mode.mock.calls).toEqual([[true]]);
+  footer.update(300);
+  expect(attribution).toHaveBeenCalledTimes(1);
+  expect(mode).toHaveBeenCalledTimes(1);
+  footer.update(360);
+  expect(attribution).toHaveBeenLastCalledWith(true);
+  expect(scale).toHaveBeenLastCalledWith(140);
+  expect(mode.mock.calls).toEqual([[true], [false]]);
+  expect(map.removeControl).toHaveBeenCalledTimes(2);
+  footer.dispose();
+  expect(map.removeControl).toHaveBeenCalledTimes(4);
+  footer.dispose();
+  footer.update(200);
+  expect(attribution).toHaveBeenCalledTimes(2);
+  expect(map.removeControl).toHaveBeenCalledTimes(4);
+});

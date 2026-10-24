@@ -82,6 +82,7 @@ export interface CurrentAgentReply {
   focusCommandDriven?: boolean;
   focus?: AgentFocusResult | null;
   inputRevision?: number;
+  intent?: AgentTask['intent'];
 }
 export const agentStatusLabel: Record<AgentTask['status'], string> = {
   awaiting_input: '等待补充',
@@ -272,6 +273,7 @@ export function useAgentConversation(
       readable: replyReadable.value,
       focusCommandDriven: config.value?.uiEnabled === true && !!task?.uiBinding,
       inputRevision: task?.inputRevision ?? 0,
+      intent: task?.intent,
       focus:
         currentFocus.value?.taskId === request.taskId &&
         currentFocus.value?.sessionId === request.sessionId &&

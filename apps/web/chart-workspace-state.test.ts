@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { computed, effectScope, ref, watch } from 'vue';
 import { useChartWorkspace } from './app/composables/useChartWorkspace';
+import { createReplyObjectState } from './app/composables/useChartDetail';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -26,6 +27,49 @@ function harness(api: (path: string) => Promise<unknown>) {
   return { workspace, subscribeViewport, stop: () => scope.stop() };
 }
 describe('海图实际搜索状态', () => {
+  it('新回复scope在清空选中对象之前使其真实在途详情失效', async () => {
+    let resolve: (value: unknown) => void = () => {};
+    const fixture = harness(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const state = createReplyObjectState(() => {
+      if (state.selected.value) fixture.workspace.resetDetail();
+    });
+    state.setScope('task-one');
+    state.select({
+      key: 'ship',
+      ref: { kind: 'vessel', id: '123456789' },
+      label: '船甲',
+      geometries: [],
+      located: false,
+    });
+    const reading = fixture.workspace.select('123456789');
+    state.setScope('task-two');
+    resolve({ mmsi: '123456789', staticFields: {} });
+    await reading;
+    expect(fixture.workspace.detail.value).toBeNull();
+    expect(state.selected.value).toBeNull();
+    fixture.stop();
+  });
+  it('回复轮次重置使迟到船舶详情失效并清除局部错误', async () => {
+    let resolve: (value: unknown) => void = () => {};
+    const fixture = harness(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const reading = fixture.workspace.select('123456789');
+    fixture.workspace.resetDetail();
+    resolve({ mmsi: '123456789', staticFields: {} });
+    await reading;
+    expect(fixture.workspace.detail.value).toBeNull();
+    expect(fixture.workspace.detailError.value).toBe('');
+    fixture.stop();
+  });
   it('连续三次视窗中断释放HTTP快照，旧完整结果保持到最新快照提交', async () => {
     const releases: string[] = [];
     const cursors: { id: string; resolve: (value: unknown) => void }[] = [];

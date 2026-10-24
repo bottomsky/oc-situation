@@ -68,6 +68,13 @@ import {
 } from '../utils/onlineChartStyle';
 import { createOnlineChartCoverage, type OnlineChartState } from '../utils/onlineChartState';
 import { createOnlineChartRequests } from '../utils/onlineChartRequests';
+import { createChartFooterControls } from '../utils/chartFooter';
+import { isChartElementVisible } from '../utils/chartVisibility';
+import {
+  estimateFocusCamera,
+  focusReplyPadding,
+  type FocusCameraReservation,
+} from '../utils/focusCamera';
 import {
   heatmapGeoJson,
   registerHeatmapLayers,
@@ -79,7 +86,12 @@ import { registerVesselTracksLayers, vesselTracksGeoJson } from '../utils/vessel
 import type { VesselTracksResult, HeatmapResult } from '@ais/contracts';
 import type { ChartLayerVisibility, ChartMapControls, ChartVesselHighlight } from '../types/chart';
 import type { MapCameraRequest, MapCameraResult } from '@ais/contracts';
-import { cameraError, cameraPadding, createMapCamera } from '../utils/mapCamera';
+import {
+  cameraError,
+  cameraPadding,
+  cameraOverlayRects,
+  createMapCamera,
+} from '../utils/mapCamera';
 import { createSourceRenderAcknowledgements } from '../utils/mapSourceRender';
 import {
   createHighlightAnimation,
@@ -115,6 +127,7 @@ const props = defineProps<{
   predictionLevels?: number[];
   vesselNames?: Record<string, string>;
   queryBounds?: Bbox | null;
+  compactToolsTarget?: HTMLElement | null;
   predictionImpacts?: {
     warningId: string;
     probability: number;
@@ -133,11 +146,14 @@ const emit = defineEmits<{
   heatmapDisplayed: [result: HeatmapResult];
   vesselTracksDisplayed: [result: VesselTracksResult];
   vesselHighlightsDisplayed: [targets: ChartVesselHighlight[]];
+  compactFooter: [value: boolean];
 }>();
 const host = useTemplateRef<HTMLElement>('mapHost');
 const mapError = ref('');
 const ready = ref(false);
 const moving = ref(false);
+const compactFooter = ref(false);
+const footerMapHeight = ref(0);
 const renderedVessels = ref(0);
 const renderedOnlineLabels = ref(0);
 const onlineLabelSample = ref('');
@@ -434,6 +450,12 @@ function notifyFocusRender() {
   for (const listener of focusRenderListeners) listener();
 }
 let camera: ReturnType<typeof createMapCamera> | undefined;
+let footerControls: ReturnType<typeof createChartFooterControls<maplibregl.IControl>> | undefined;
+function updateFooterControls() {
+  if (!host.value || disposed) return;
+  footerMapHeight.value = host.value.clientHeight;
+  footerControls?.update(footerMapHeight.value);
+}
 let sourceAcknowledgements: ReturnType<typeof createSourceRenderAcknowledgements> | undefined;
 let regionalChartCoverage: ReturnType<typeof createRegionalChartCoverage> | undefined;
 let onlineChartCoverage: ReturnType<typeof createOnlineChartCoverage> | undefined;
@@ -444,40 +466,23 @@ let highlightSourceSignature = '';
 let reducedMotion: MediaQueryList | undefined;
 let automaticCameraAllowed = true;
 let reserveFocusReply = false;
+let focusReservation: FocusCameraReservation | undefined;
 let cameraRevision = 0;
 function visibleCameraPadding() {
   const view = host.value!.getBoundingClientRect();
-  const overlays = [
-    ...document.querySelectorAll<HTMLElement>(
-      '.chart-panel, .chart-agent-input, .chart-input-bar, .chart-agent-dock',
+  const overlays = cameraOverlayRects<HTMLElement>(
+    document.querySelectorAll<HTMLElement>(
+      '.chart-panel, .chart-agent-input, .chart-input-bar, .chart-agent-dock, [data-chart-overlay]',
     ),
-  ]
-    .filter(
-      (element) =>
-        element.getClientRects().length &&
-        getComputedStyle(element).visibility !== 'hidden' &&
-        !element.closest('[inert]'),
-    )
-    .map((element) => {
-      const rect = element.getBoundingClientRect();
-      const side = element.closest('#chart-left-slot')
-        ? ('left' as const)
-        : element.closest('#chart-right-slot')
-          ? ('right' as const)
-          : undefined;
-      return {
-        left: rect.left,
-        right: rect.right,
-        top: rect.top,
-        bottom: rect.bottom,
-        side,
-        gap: element.classList.contains('chart-agent-dock') ? 8 : undefined,
-      };
-    });
+    {
+      fullscreen: document.fullscreenElement,
+      visible: (element) => isChartElementVisible(element),
+    },
+  );
   const padding = cameraPadding(view, overlays);
-  if (reserveFocusReply && view.width - padding.left - padding.right >= 640)
-    padding.right = Math.min(padding.right + 384, view.width - padding.left - 160);
-  return padding;
+  return reserveFocusReply
+    ? focusReplyPadding(padding, view, focusReservation ?? { replyPlacement: 'right' })
+    : padding;
 }
 function applyCamera(
   request: MapCameraRequest & { commandId?: string },
@@ -499,7 +504,9 @@ function interruptCamera() {
   cameraRevision++;
   camera?.interrupt();
 }
-function cameraIntent(options?: { reserveReply?: boolean }): (request: MapCameraRequest) => void {
+function cameraIntent(
+  options?: FocusCameraReservation & { reserveReply?: boolean },
+): (request: MapCameraRequest) => void {
   automaticCameraAllowed = false;
   const revision = ++cameraRevision;
   camera?.interrupt();
@@ -512,10 +519,12 @@ function cameraIntent(options?: { reserveReply?: boolean }): (request: MapCamera
     )
       return;
     reserveFocusReply = options?.reserveReply ?? false;
+    focusReservation = options;
     try {
       localCamera(request);
     } finally {
       reserveFocusReply = false;
+      focusReservation = undefined;
     }
   };
 }
@@ -1182,12 +1191,27 @@ onMounted(async () => {
       minZoom: 0,
       maxZoom: 22,
       fitBoundsOptions: { padding: 30, maxZoom: 8 },
-      attributionControl: { compact: true },
+      attributionControl: false,
     });
-    map.addControl(
-      new maplibregl.ScaleControl({ maxWidth: 140, unit: 'nautical' }),
-      'bottom-right',
+    footerControls = createChartFooterControls<maplibregl.IControl>(
+      map,
+      {
+        attribution: (compact) => new maplibregl.AttributionControl({ compact }),
+        scale: (maxWidth) => new maplibregl.ScaleControl({ maxWidth, unit: 'nautical' }),
+      },
+      (value) => {
+        compactFooter.value = value;
+        emit('compactFooter', value);
+        void nextTick(() => {
+          const attribution = host.value?.querySelector<HTMLElement>('.maplibregl-ctrl-attrib');
+          if (value && attribution) {
+            attribution.tabIndex = 0;
+            attribution.setAttribute('aria-label', '地图数据署名，可滚动查看全部许可');
+          }
+        });
+      },
     );
+    updateFooterControls();
     map.on('idle', () => {
       vesselSourceLoaded.value = !!map?.getSource('vessels') && map.isSourceLoaded('vessels');
       if (!diagnosticsEnabled) return;
@@ -1377,7 +1401,10 @@ onMounted(async () => {
       ready.value = Boolean(map?.getSource('vessels'));
       scheduling?.resize();
     });
-    resizeObserver = new ResizeObserver(() => scheduling?.resize());
+    resizeObserver = new ResizeObserver(() => {
+      updateFooterControls();
+      scheduling?.resize();
+    });
     resizeObserver.observe(host.value);
     map.on('movestart', () => {
       moving.value = true;
@@ -1579,6 +1606,16 @@ defineExpose<ChartMapControls>({
       bottom: host.value.clientHeight - padding.bottom,
     };
   },
+  estimateFocusCamera: (bbox, card) => {
+    if (!map || !host.value || !ready.value) return null;
+    return estimateFocusCamera(
+      map,
+      bbox,
+      host.value.getBoundingClientRect(),
+      visibleCameraPadding(),
+      card,
+    );
+  },
   onFocusRender: (listener) => {
     focusRenderListeners.add(listener);
     return () => focusRenderListeners.delete(listener);
@@ -1705,6 +1742,7 @@ onBeforeUnmount(() => {
   directionPopup?.remove();
   predictionOriginLabel?.remove();
   heatmapPopup?.remove();
+  footerControls?.dispose();
   map?.remove();
   map = undefined;
 });
@@ -1713,6 +1751,7 @@ onBeforeUnmount(() => {
   <div
     ref="mapHost"
     class="sea-map"
+    :class="{ 'compact-footer': compactFooter }"
     aria-label="AIS 船位地图"
     data-testid="sea-map"
     :data-ready="ready"
@@ -1723,6 +1762,7 @@ onBeforeUnmount(() => {
     :data-vessel-source-loaded="vesselSourceLoaded"
     :data-rendered-prediction="renderedPrediction"
     :data-moving="moving"
+    :data-compact-footer="compactFooter"
     :data-prediction-displayed="predictionDisplayedMinutes"
     :data-online-chart-state="onlineState.base"
     :data-online-seamarks-state="onlineState.seamarks"
@@ -1786,44 +1826,50 @@ onBeforeUnmount(() => {
       取消绘制
     </button>
   </div>
-  <div class="direction-legend" data-testid="direction-legend">
+  <div v-if="!compactFooter" class="direction-legend" data-testid="direction-legend">
     <span>● 远距单船 · ▲ 艏向 / 对地航向 · ○ 方向未知</span>
     <span>青绿 实测 · 琥珀 合成 · 淡色 超过30分钟</span>
     <span v-if="prediction">青蓝 平滑密度 · 虚线 原始 50 / 80 / 95% 累计覆盖区</span>
   </div>
-  <div class="chart-gis-tools" aria-label="海图工具">
-    <button
-      :aria-pressed="queryingRegion || !!queryBounds"
-      @click="
-        queryingRegion = true;
-        measure = false;
-      "
+  <Teleport :to="compactToolsTarget ?? 'body'" :disabled="!compactFooter || !compactToolsTarget">
+    <div
+      class="chart-gis-tools"
+      :class="{ 'chart-gis-tools-docked': compactFooter && compactToolsTarget }"
+      aria-label="海图工具"
     >
-      区域查询
-    </button>
-    <button v-if="queryBounds" @click="emit('areaQuery', null)">清除区域</button>
-    <button
-      :aria-pressed="chartTheme === 'light'"
-      @click="chartTheme = chartTheme === 'dark' ? 'light' : 'dark'"
-    >
-      {{ chartTheme === 'dark' ? '浅色海图' : '深色海图' }}
-    </button>
-    <button :aria-pressed="showGraticule" @click="showGraticule = !showGraticule">经纬网</button>
-    <button :aria-pressed="showNames" @click="showNames = !showNames">船舶标识</button>
-    <button
-      :aria-pressed="measure"
-      @click="
-        measure = !measure;
-        measurePoints = [];
-        updateMeasure();
-      "
-    >
-      {{ measure ? '结束测距' : '测距' }}
-    </button>
-    <button @click="trackColorMode = trackColorMode === 'time' ? 'speed' : 'time'">
-      轨迹 · {{ trackColorMode === 'time' ? '时间' : '航速' }}
-    </button>
-  </div>
+      <button
+        :aria-pressed="queryingRegion || !!queryBounds"
+        @click="
+          queryingRegion = true;
+          measure = false;
+        "
+      >
+        区域查询
+      </button>
+      <button v-if="queryBounds" @click="emit('areaQuery', null)">清除区域</button>
+      <button
+        :aria-pressed="chartTheme === 'light'"
+        @click="chartTheme = chartTheme === 'dark' ? 'light' : 'dark'"
+      >
+        {{ chartTheme === 'dark' ? '浅色海图' : '深色海图' }}
+      </button>
+      <button :aria-pressed="showGraticule" @click="showGraticule = !showGraticule">经纬网</button>
+      <button :aria-pressed="showNames" @click="showNames = !showNames">船舶标识</button>
+      <button
+        :aria-pressed="measure"
+        @click="
+          measure = !measure;
+          measurePoints = [];
+          updateMeasure();
+        "
+      >
+        {{ measure ? '结束测距' : '测距' }}
+      </button>
+      <button @click="trackColorMode = trackColorMode === 'time' ? 'speed' : 'time'">
+        轨迹 · {{ trackColorMode === 'time' ? '时间' : '航速' }}
+      </button>
+    </div>
+  </Teleport>
   <div v-if="measure" class="chart-measure-note" role="status">
     点选连续测距 · {{ measureDistance.toFixed(2) }} 海里
     <button
@@ -1835,21 +1881,34 @@ onBeforeUnmount(() => {
       清空
     </button>
   </div>
-  <div class="map-note" data-testid="chart-source-note">
-    {{ sourceState }} · {{ coordinates
-    }}<span v-if="manifest"
-      >区域资源覆盖 {{ manifest.coverage.join(' / ') }} ·
-      {{ manifest.official?.status === 'available' ? '官方图源已接入' : '官方海图待配置' }}</span
-    ><span v-else>Natural Earth · 地理参考</span>
+  <div
+    class="map-note"
+    :class="{ 'map-note-compact': compactFooter }"
+    :style="
+      compactFooter
+        ? {
+            '--chart-source-popup-height': `${Math.max(48, Math.min(180, footerMapHeight - 72))}px`,
+          }
+        : undefined
+    "
+    data-testid="chart-source-note"
+  >
+    <template v-if="!compactFooter"
+      >{{ sourceState }} · {{ coordinates
+      }}<span v-if="manifest"
+        >区域资源覆盖 {{ manifest.coverage.join(' / ') }} ·
+        {{ manifest.official?.status === 'available' ? '官方图源已接入' : '官方海图待配置' }}</span
+      ><span v-else>Natural Earth · 地理参考</span></template
+    >
     <span class="chart-online-attribution">
       ©
-      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer"
-        >OpenStreetMap contributors</a
-      >
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">{{
+        compactFooter ? 'OpenStreetMap' : 'OpenStreetMap contributors'
+      }}</a>
       · ©
-      <a href="https://www.openseamap.org/" target="_blank" rel="noopener noreferrer"
-        >OpenSeaMap contributors</a
-      >
+      <a href="https://www.openseamap.org/" target="_blank" rel="noopener noreferrer">{{
+        compactFooter ? 'OpenSeaMap' : 'OpenSeaMap contributors'
+      }}</a>
       ·
       <a
         href="https://creativecommons.org/licenses/by-sa/2.0/"
@@ -1859,7 +1918,9 @@ onBeforeUnmount(() => {
       >
     </span>
     <span
-      v-if="onlineState.base === 'fallback' || onlineState.seamarks === 'fallback'"
+      v-if="
+        !compactFooter && (onlineState.base === 'fallback' || onlineState.seamarks === 'fallback')
+      "
       class="chart-online-retry"
       role="status"
     >
@@ -1883,18 +1944,75 @@ onBeforeUnmount(() => {
         >暂未恢复，可稍后刷新页面</span
       >
     </span>
-    <details v-if="manifest">
+    <details
+      v-if="manifest || compactFooter"
+      class="chart-source-details"
+      @pointerdown.stop
+      @click.stop
+      @wheel.stop
+      @keydown.stop
+    >
       <summary>
-        图源与精度 · 港口 {{ manifest.ports?.records ?? 0 }} · 海标
-        {{ manifest.seamarks?.status === 'available' ? '已接入' : '待配置' }}
+        <template v-if="compactFooter"
+          >图源/图例<span
+            v-if="onlineState.base === 'fallback' || onlineState.seamarks === 'fallback'"
+            class="chart-source-failure"
+          >
+            · 图源异常 / 重试</span
+          ></template
+        >
+        <template v-else
+          >图源与精度 · 港口 {{ manifest?.ports?.records ?? 0 }} · 海标
+          {{ manifest?.seamarks?.status === 'available' ? '已接入' : '待配置' }}</template
+        >
       </summary>
-      <p>
-        Natural Earth · 全球概略背景<br />{{ manifest.land.attribution }}<br />区域陆地适用缩放
-        {{ manifest.land.zoom?.min ?? 0 }}–{{ manifest.land.zoom?.max ?? 9 }} · 更高缩放沿用当前精度
-        · 来源时间 {{ manifest.land.sourceDataTime ?? '待确认'
-        }}<br />港口为OSM贡献记录的中心标注，支撑地理参考。<br />{{ manifest.land.license }} · WGS84
-        · 官方海图 {{ manifest.official?.status ?? 'unconfigured' }}
-      </p>
+      <div class="chart-source-content">
+        <template v-if="compactFooter">
+          <p>{{ sourceState }} · {{ coordinates }}</p>
+          <p v-if="manifest">
+            区域资源覆盖 {{ manifest.coverage.join(' / ') }} ·
+            {{ manifest.official?.status === 'available' ? '官方图源已接入' : '官方海图待配置' }}
+          </p>
+          <div class="compact-direction-legend" data-testid="direction-legend">
+            <span>● 远距单船 · ▲ 艏向 / 对地航向 · ○ 方向未知</span
+            ><span>青绿 实测 · 琥珀 合成 · 淡色 超过30分钟</span
+            ><span v-if="prediction">青蓝 平滑密度 · 虚线 原始 50 / 80 / 95% 累计覆盖区</span>
+          </div>
+          <div
+            v-if="onlineState.base === 'fallback' || onlineState.seamarks === 'fallback'"
+            class="chart-online-retry"
+            role="status"
+          >
+            <button
+              v-if="onlineState.base === 'fallback' && onlineState.baseRetriesRemaining"
+              @click="onlineChartCoverage?.retry('base')"
+            >
+              重试在线底图
+            </button>
+            <button
+              v-if="onlineState.seamarks === 'fallback' && onlineState.seamarkRetriesRemaining"
+              @click="onlineChartCoverage?.retry('seamarks')"
+            >
+              重试在线海标
+            </button>
+            <span
+              v-if="
+                (onlineState.base === 'fallback' && !onlineState.baseRetriesRemaining) ||
+                (onlineState.seamarks === 'fallback' && !onlineState.seamarkRetriesRemaining)
+              "
+              >暂未恢复，可稍后刷新页面</span
+            >
+          </div>
+        </template>
+        <p v-if="manifest">
+          Natural Earth · 全球概略背景<br />{{ manifest.land.attribution }}<br />区域陆地适用缩放
+          {{ manifest.land.zoom?.min ?? 0 }}–{{ manifest.land.zoom?.max ?? 9 }} ·
+          更高缩放沿用当前精度 · 来源时间 {{ manifest.land.sourceDataTime ?? '待确认'
+          }}<br />港口为OSM贡献记录的中心标注，支撑地理参考。<br />{{ manifest.land.license }} ·
+          WGS84 · 官方海图 {{ manifest.official?.status ?? 'unconfigured' }}
+        </p>
+        <p v-else>Natural Earth · 地理参考 · Public domain</p>
+      </div>
     </details>
   </div>
 </template>
@@ -1915,6 +2033,12 @@ onBeforeUnmount(() => {
   z-index: 2;
   flex-wrap: wrap;
   max-width: calc(100% - 24px);
+}
+.chart-gis-tools.chart-gis-tools-docked {
+  position: static;
+  max-width: none;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 }
 .chart-gis-tools button {
   padding: 6px 9px;
@@ -2049,6 +2173,102 @@ onBeforeUnmount(() => {
   max-height: 180px;
   overflow: auto;
   overflow-wrap: anywhere;
+}
+.map-note.map-note-compact,
+.chart-map-stage .map-note.map-note-compact {
+  left: 12px;
+  right: 12px;
+  bottom: 28px;
+  width: auto;
+  max-width: none;
+  height: 30px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 16px 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0 4px;
+  pointer-events: auto;
+  z-index: 7;
+  line-height: 12px;
+}
+.map-note-compact .chart-online-attribution {
+  grid-row: 2;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 12px;
+}
+.map-note-compact .chart-source-details {
+  grid-row: 1;
+  min-width: 0;
+  max-width: calc(100% - 92px);
+}
+.map-note-compact .chart-source-details > summary {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 16px;
+}
+.map-note-compact .chart-source-content {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: -1px;
+  right: -1px;
+  box-sizing: border-box;
+  max-height: var(--chart-source-popup-height, 180px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 9px 10px;
+  border: 1px solid #34748b;
+  border-radius: 4px;
+  background: #071f32;
+  box-shadow: 0 6px 20px #0007;
+  font-size: 11px;
+  line-height: 1.5;
+  scrollbar-width: thin;
+}
+.map-note-compact .chart-source-content p {
+  margin: 0 0 8px;
+}
+.compact-direction-legend {
+  display: grid;
+  margin-block: 8px;
+}
+.chart-source-failure {
+  color: #ffc48b;
+}
+.sea-map.compact-footer :deep(.maplibregl-ctrl-bottom-right) {
+  left: 0;
+  width: 100%;
+}
+.sea-map.compact-footer :deep(.maplibregl-ctrl-attrib) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-height: 14px;
+  max-height: 28px;
+  margin: 0;
+  padding: 0 6px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  line-height: 14px;
+  scrollbar-width: thin;
+}
+.sea-map.compact-footer :deep(.maplibregl-ctrl-attrib:focus-visible) {
+  outline: 1px solid #57d6ed;
+  outline-offset: -1px;
+}
+.sea-map.compact-footer :deep(.maplibregl-ctrl-scale) {
+  position: absolute;
+  right: 12px;
+  bottom: 42px;
+  margin: 0;
+  font-size: 9px;
+  line-height: 12px;
 }
 </style>
 

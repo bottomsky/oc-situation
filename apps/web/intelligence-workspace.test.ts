@@ -2,6 +2,27 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { computed, ref, reactive } from 'vue';
 import { useIntelligenceWorkspace } from './app/composables/useIntelligenceWorkspace';
 afterEach(() => vi.unstubAllGlobals());
+it('纯读取新对象立即清除旧详情，轮次重置后迟到响应不回填且不写标绘集合', async () => {
+  const { state, writes } = setup();
+  let resolve: (value: unknown) => void = () => {};
+  vi.stubGlobal('usePlatform', () => ({
+    api: () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  }));
+  const late = useIntelligenceWorkspace();
+  late.detail.value = { event: { id: 'old' }, relations: [], history: [] } as never;
+  const reading = late.select('new', false);
+  expect(late.detail.value).toBeNull();
+  late.resetDetail();
+  resolve({ event: { id: 'new' }, relations: [], history: [] });
+  await reading;
+  expect(late.detail.value).toBeNull();
+  expect(late.activeId.value).toBe('');
+  expect(writes).toEqual([]);
+  expect(state.plottedIds.value).toEqual([]);
+});
 function setup() {
   let page = 0;
   const writes: unknown[] = [];

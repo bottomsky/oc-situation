@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { chartDetailPosition } from './app/utils/chartDetailPosition';
+import { chartDetailPosition, replyDockClearance } from './app/utils/chartDetailPosition';
 
 describe('海图详情浮层定位', () => {
+  it('来源说明实际重叠时测量dock净空，重复测量不累加；无重叠保留原基准', () => {
+    const dock = { left: 480, right: 1120, height: 68 };
+    const note = { left: 920, right: 1375, top: 915, bottom: 980 };
+    expect(replyDockClearance(990, dock, [note])).toBe(83);
+    expect(replyDockClearance(990, dock, [note])).toBe(83);
+    expect(replyDockClearance(990, dock, [{ ...note, left: 1200 }])).toBe(0);
+    expect(Math.max(132, replyDockClearance(990, dock, [note]))).toBe(132);
+    expect(replyDockClearance(990, dock, [note], 132)).toBe(0);
+    expect(
+      replyDockClearance(990, dock, [note, { left: 500, right: 700, top: 200, bottom: 250 }]),
+    ).toBe(83);
+    expect(
+      replyDockClearance(990, dock, [note, { left: 500, right: 700, top: 825, bottom: 855 }]),
+    ).toBe(173);
+  });
   const workspace = { left: 8, right: 1912, top: 124, bottom: 992 };
   it('人工详情紧随左面板，协同详情位于右面板左侧', () => {
     expect(chartDetailPosition('left', workspace, { left: 8, right: 308 }, 1920)).toEqual({

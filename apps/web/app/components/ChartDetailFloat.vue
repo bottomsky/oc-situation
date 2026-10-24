@@ -12,15 +12,17 @@ const props = defineProps<{
   width?: number;
   motion?: 'slide-left';
   closeLabel?: string;
+  layer?: number;
 }>();
 const emit = defineEmits<{ close: [] }>();
 const panel = useTemplateRef<HTMLElement>('panel');
 const teleportTarget = ref<HTMLElement | null>(null);
 const position = ref({ left: 12, top: 80, width: 420, height: 500 });
 const positioned = ref(false);
-const style = computed(() =>
-  Object.fromEntries(Object.entries(position.value).map(([key, value]) => [key, `${value}px`])),
-);
+const style = computed(() => ({
+  ...Object.fromEntries(Object.entries(position.value).map(([key, value]) => [key, `${value}px`])),
+  ...(props.layer ? { zIndex: props.layer } : {}),
+}));
 let observer: ResizeObserver | undefined;
 let returnFocus: HTMLElement | null = null;
 let frame: number | undefined;
@@ -51,7 +53,13 @@ function close() {
   emit('close');
 }
 function keydown(event: KeyboardEvent) {
-  if (!props.open || event.key !== 'Escape' || document.querySelector('dialog:modal')) return;
+  if (
+    !props.open ||
+    event.defaultPrevented ||
+    event.key !== 'Escape' ||
+    document.querySelector('dialog:modal')
+  )
+    return;
   event.preventDefault();
   event.stopPropagation();
   close();
