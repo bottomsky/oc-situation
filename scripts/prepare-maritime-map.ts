@@ -19,6 +19,12 @@ type Feature = {
   properties: Record<string, unknown>;
 };
 export type MaritimeGeoJson = { type: 'FeatureCollection'; features: Feature[] };
+export type MaritimeCoastlineGeoJson = {
+  type: 'FeatureCollection';
+  features: (Omit<Feature, 'geometry'> & {
+    geometry: { type: 'MultiLineString'; coordinates: PredictionCoordinate[][] };
+  })[];
+};
 type LayerInput = {
   data: MaritimeGeoJson;
   source: string;
@@ -105,6 +111,46 @@ export function normalizeMaritimeGeoJson(raw: unknown, kind: Kind): MaritimeGeoJ
   }
   return { type: 'FeatureCollection', features };
 }
+/** Omit clipping-box segments while keeping each original coastal run continuous. */
+export function deriveMaritimeCoastline(land: MaritimeGeoJson): MaritimeCoastlineGeoJson {
+  const features: MaritimeCoastlineGeoJson['features'] = [];
+  const onClipEdge = (a: PredictionCoordinate, b: PredictionCoordinate) =>
+    MARITIME_COVERAGE.some((boundary, index) => {
+      const axis = index % 2;
+      return Math.abs(a[axis]! - boundary) <= 1e-7 && Math.abs(b[axis]! - boundary) <= 1e-7;
+    });
+  for (const feature of normalizeMaritimeGeoJson(land, 'land').features) {
+    const geometry = feature.geometry;
+    if (geometry.type === 'Point') continue;
+    const rings = geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat();
+    const lines: PredictionCoordinate[][] = [];
+    for (const points of rings) {
+      const edgeCount = points.length - 1;
+      const firstClip = points.slice(0, -1).findIndex((a, i) => onClipEdge(a, points[i + 1]!));
+      if (firstClip === -1) {
+        lines.push(points);
+        continue;
+      }
+      // Starting after a clipped edge naturally merges runs that cross the ring's closing vertex.
+      let line: PredictionCoordinate[] = [];
+      for (let offset = 1; offset <= edgeCount; offset++) {
+        const index = (firstClip + offset) % edgeCount;
+        const a = points[index]!,
+          b = points[index + 1]!;
+        if (onClipEdge(a, b)) {
+          if (line.length > 1) lines.push(line);
+          line = [];
+        } else {
+          if (!line.length) line.push(a);
+          line.push(b);
+        }
+      }
+    }
+    if (lines.length)
+      features.push({ ...feature, geometry: { type: 'MultiLineString', coordinates: lines } });
+  }
+  return { type: 'FeatureCollection', features };
+}
 export function overpassToGeoJson(raw: unknown, kind: 'ports' | 'seamarks'): MaritimeGeoJson {
   if (!isRecord(raw) || !Array.isArray(raw.elements) || raw.remark)
     throw new Error('Incomplete Overpass result');
@@ -154,22 +200,30 @@ export async function publishMaritimeMap(input: {
     throw new Error('Dataset version already exists');
   const staging = join(root, `.staging-${randomUUID()}`);
   await mkdir(staging);
-  const layer = async (kind: Kind) => {
-    const source = input.layers[kind];
-    if (!source || !source.data.features.length)
+  const layer = async (kind: Kind | 'coastline') => {
+    const source = input.layers[kind === 'coastline' ? 'land' : kind];
+    const data = source
+      ? kind === 'coastline'
+        ? deriveMaritimeCoastline(source.data)
+        : normalizeMaritimeGeoJson(source.data, kind)
+      : undefined;
+    if (!source || !data?.features.length)
       return {
         status: 'unavailable' as const,
         url: null,
         source: source?.source ?? null,
         license: LICENSE,
         attribution: ATTRIBUTION,
-        reason: input.failures?.[kind] ?? 'No source records supplied',
+        reason:
+          kind === 'coastline'
+            ? 'No coastal segments remain after removing coverage clipping edges'
+            : (input.failures?.[kind] ?? 'No source records supplied'),
         records: 0,
       };
-    const data = normalizeMaritimeGeoJson(source.data, kind),
-      body = JSON.stringify(data);
+    const body = JSON.stringify(data);
     await writeFile(join(staging, `${kind}.geojson`), body + '\n', 'utf8');
-    if (source.raw) await writeFile(join(staging, `${kind}.source.json`), source.raw, 'utf8');
+    if (source.raw !== undefined && kind !== 'coastline')
+      await writeFile(join(staging, `${kind}.source.json`), source.raw, 'utf8');
     return {
       status: 'available' as const,
       url: `/maps/maritime/${input.version}/${kind}.geojson`,
@@ -184,14 +238,20 @@ export async function publishMaritimeMap(input: {
       sourceDataTime: source.sourceDataTime ?? null,
       retrievedAt: source.retrievedAt ?? updatedAt,
       displayOnly: true,
-      zoom: kind === 'land' ? { min: 0, max: 9 } : { min: 5, max: 18 },
+      zoom: kind === 'land' || kind === 'coastline' ? { min: 0, max: 9 } : { min: 5, max: 18 },
       coverageNote:
-        kind === 'land'
-          ? 'OSM simplified land, intended for zoom 0–9; small islands and local shoreline detail may be omitted'
-          : 'OSM contributed records within query bbox; incomplete coverage, geometry-center points are labels rather than harbour entrances',
+        kind === 'coastline'
+          ? 'Derived from OSM simplified land, zoom 0–9; coverage clip edges removed, source shoreline detail unchanged'
+          : kind === 'land'
+            ? 'OSM simplified land, intended for zoom 0–9; small islands and local shoreline detail may be omitted'
+            : 'OSM contributed records within query bbox; incomplete coverage, geometry-center points are labels rather than harbour entrances',
     };
   };
   const land = await layer('land'),
+    coastline = {
+      ...(await layer('coastline')),
+      derivedFrom: { url: land.url, sha256: land.sha256 ?? null },
+    },
     ports = await layer('ports'),
     seamarks = await layer('seamarks');
   const manifest = {
@@ -199,6 +259,7 @@ export async function publishMaritimeMap(input: {
     coverage: MARITIME_COVERAGE,
     updatedAt,
     land,
+    coastline,
     ports,
     seamarks,
     official: {
@@ -305,6 +366,63 @@ export async function prepareMaritimeMap(args: string[]) {
   await mkdir(cache, { recursive: true });
   const layers: Partial<Record<Kind, LayerInput>> = {},
     failures: Partial<Record<Kind, string>> = {};
+  if (opts['reuse-version']) {
+    const previousVersion = opts['reuse-version'];
+    if (
+      !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,80}$/.test(previousVersion) ||
+      previousVersion.includes('..')
+    )
+      throw new Error('Unsafe dataset version');
+    const previousRoot = join(outputRoot, previousVersion);
+    const metadata = z
+      .object({
+        coverage: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+        land: z.unknown(),
+        ports: z.unknown(),
+        seamarks: z.unknown(),
+      })
+      .parse(JSON.parse(await readFile(join(previousRoot, 'metadata.json'), 'utf8')));
+    if (metadata.coverage.some((value, index) => value !== MARITIME_COVERAGE[index]))
+      throw new Error('Reused dataset coverage differs from publication coverage');
+    for (const kind of ['land', 'ports', 'seamarks'] as const) {
+      const entry = z
+        .object({ status: z.enum(['available', 'unavailable']), reason: z.string().optional() })
+        .passthrough()
+        .parse(metadata[kind]);
+      if (entry.status === 'unavailable') {
+        failures[kind] = entry.reason ?? 'No source records supplied';
+        continue;
+      }
+      const source = z
+        .object({
+          source: z.string(),
+          sha256: z.string().regex(/^[a-f0-9]{64}$/),
+          rawSha256: z.string().regex(/^[a-f0-9]{64}$/),
+          sourceDataTime: z.string().nullable(),
+          retrievedAt: z.string(),
+        })
+        .parse(entry);
+      const bytes = await readFile(join(previousRoot, `${kind}.geojson`));
+      if (createHash('sha256').update(bytes).digest('hex') !== source.sha256)
+        throw new Error(`Reused ${kind} checksum mismatch`);
+      const raw = await readFile(join(previousRoot, `${kind}.source.json`), 'utf8').catch(
+        (error: NodeJS.ErrnoException) => {
+          if (error.code === 'ENOENT') return undefined;
+          throw error;
+        },
+      );
+      if (raw !== undefined && createHash('sha256').update(raw).digest('hex') !== source.rawSha256)
+        throw new Error(`Reused ${kind} source checksum mismatch`);
+      layers[kind] = {
+        data: normalizeMaritimeGeoJson(JSON.parse(bytes.toString('utf8')), kind),
+        source: source.source,
+        rawSha256: source.rawSha256,
+        sourceDataTime: source.sourceDataTime,
+        retrievedAt: source.retrievedAt,
+        raw,
+      };
+    }
+  }
   for (const kind of ['land', 'ports', 'seamarks'] as const) {
     const path = opts[kind],
       url = opts[`${kind}-url`];

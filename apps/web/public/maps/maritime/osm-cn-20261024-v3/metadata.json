@@ -1,0 +1,89 @@
+{
+  "version": "osm-cn-20261024-v3",
+  "coverage": [
+    105,
+    3,
+    135,
+    42
+  ],
+  "updatedAt": "2026-10-24T03:49:38.514Z",
+  "land": {
+    "status": "available",
+    "url": "/maps/maritime/osm-cn-20261024-v3/land.geojson",
+    "source": "https://osmdata.openstreetmap.de/download/simplified-land-polygons-complete-3857.zip",
+    "license": "ODbL-1.0",
+    "attribution": "© OpenStreetMap contributors · https://www.openstreetmap.org/copyright",
+    "records": 3230,
+    "sha256": "c192e0e5296ec7d53e6fbabf4aca5095c2b94380cd67e1c65b74d2b0bd224e3d",
+    "rawSha256": "fbfa2f10c85f5c7a44ab1c64a745ded406945f699ef29e5e2cb8291a43ae3096",
+    "sourceDataTime": "2026-10-23T03:43:11Z",
+    "retrievedAt": "2026-10-24T01:44:24.184Z",
+    "displayOnly": true,
+    "zoom": {
+      "min": 0,
+      "max": 9
+    },
+    "coverageNote": "OSM simplified land, intended for zoom 0–9; small islands and local shoreline detail may be omitted"
+  },
+  "coastline": {
+    "status": "available",
+    "url": "/maps/maritime/osm-cn-20261024-v3/coastline.geojson",
+    "source": "https://osmdata.openstreetmap.de/download/simplified-land-polygons-complete-3857.zip",
+    "license": "ODbL-1.0",
+    "attribution": "© OpenStreetMap contributors · https://www.openstreetmap.org/copyright",
+    "records": 3230,
+    "sha256": "8c691c2a3ab3cc935b4721a200fa6cc0eebe1bec83edca119caa42aa3da90882",
+    "rawSha256": "fbfa2f10c85f5c7a44ab1c64a745ded406945f699ef29e5e2cb8291a43ae3096",
+    "sourceDataTime": "2026-10-23T03:43:11Z",
+    "retrievedAt": "2026-10-24T01:44:24.184Z",
+    "displayOnly": true,
+    "zoom": {
+      "min": 0,
+      "max": 9
+    },
+    "coverageNote": "Derived from OSM simplified land, zoom 0–9; coverage clip edges removed, source shoreline detail unchanged",
+    "derivedFrom": {
+      "url": "/maps/maritime/osm-cn-20261024-v3/land.geojson",
+      "sha256": "c192e0e5296ec7d53e6fbabf4aca5095c2b94380cd67e1c65b74d2b0bd224e3d"
+    }
+  },
+  "ports": {
+    "status": "available",
+    "url": "/maps/maritime/osm-cn-20261024-v3/ports.geojson",
+    "source": "https://overpass-api.de/api/interpreter",
+    "license": "ODbL-1.0",
+    "attribution": "© OpenStreetMap contributors · https://www.openstreetmap.org/copyright",
+    "records": 2693,
+    "sha256": "f8900993f714d40c0ab7ef34959547c231070dbdc89f91d8fe8d2e45097c698d",
+    "rawSha256": "1748ae05564161bdcf81e943ff8d8a80d9199b583da1b4fa289340fb124c3dcd",
+    "sourceDataTime": "2026-10-24T01:37:06Z",
+    "retrievedAt": "2026-10-24T01:44:24.184Z",
+    "displayOnly": true,
+    "zoom": {
+      "min": 5,
+      "max": 18
+    },
+    "coverageNote": "OSM contributed records within query bbox; incomplete coverage, geometry-center points are labels rather than harbour entrances"
+  },
+  "seamarks": {
+    "status": "unavailable",
+    "url": null,
+    "source": null,
+    "license": "ODbL-1.0",
+    "attribution": "© OpenStreetMap contributors · https://www.openstreetmap.org/copyright",
+    "reason": "The operation timed out.",
+    "records": 0
+  },
+  "official": {
+    "status": "unconfigured",
+    "reason": "Licensed official ENC provider required"
+  },
+  "bathymetry": {
+    "status": "unavailable",
+    "url": null,
+    "source": null,
+    "license": null,
+    "attribution": null,
+    "reason": "GEBCO or licensed bathymetry has not been installed"
+  }
+}

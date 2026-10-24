@@ -24,6 +24,7 @@ export interface ChartManifest {
   coverage: number[];
   updatedAt?: string;
   land: Resource;
+  coastline?: Resource;
   ports?: Resource;
   seamarks?: Resource;
   bathymetry?: Resource;
@@ -35,12 +36,77 @@ export function createManifestStyle(
 ): StyleSpecification {
   const style = createOfflineChartStyle();
   const palette = chartPalette[theme];
-  if (manifest?.land.status === 'available' && manifest.land.url?.startsWith('/'))
-    style.sources['local-land'] = {
+  if (
+    isLocalResource(manifest?.land) &&
+    isLocalResource(manifest?.coastline) &&
+    validCoverage(manifest?.coverage)
+  ) {
+    const [west, south, east, north] = manifest.coverage as [number, number, number, number];
+    style.sources['regional-sea-mask'] = {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [west, south],
+              [east, south],
+              [east, north],
+              [west, north],
+              [west, south],
+            ],
+          ],
+        },
+      },
+    };
+    style.sources['regional-land'] = {
       type: 'geojson',
       data: manifest.land.url,
       attribution: manifest.land.attribution,
     };
+    style.sources['regional-coastline'] = {
+      type: 'geojson',
+      data: manifest.coastline.url,
+      attribution: manifest.coastline.attribution,
+    };
+    style.layers.push(
+      {
+        id: 'regional-sea-mask',
+        type: 'fill',
+        source: 'regional-sea-mask',
+        paint: {
+          'fill-color': palette.sea,
+          'fill-antialias': false,
+          'fill-opacity': 0,
+          'fill-opacity-transition': { duration: 0 },
+        },
+      },
+      {
+        id: 'regional-land',
+        type: 'fill',
+        source: 'regional-land',
+        paint: {
+          'fill-color': palette.land,
+          'fill-antialias': false,
+          'fill-opacity': 0,
+          'fill-opacity-transition': { duration: 0 },
+        },
+      },
+      {
+        id: 'regional-coastline',
+        type: 'line',
+        source: 'regional-coastline',
+        paint: {
+          'line-color': palette.coast,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.55, 9, 1.2],
+          'line-opacity': 0,
+          'line-opacity-transition': { duration: 0 },
+        },
+      },
+    );
+  }
   style.layers[0]!.paint = { 'background-color': palette.sea };
   style.layers[1]!.paint = { 'fill-color': palette.land };
   style.layers[2]!.paint = {
@@ -52,7 +118,7 @@ export function createManifestStyle(
     ['seamarks', '#6aabb7'],
   ] as const) {
     const resource = manifest?.[key];
-    if (resource?.status !== 'available' || !resource.url?.startsWith('/')) continue;
+    if (!isLocalResource(resource)) continue;
     style.sources[key] = { type: 'geojson', data: resource.url, attribution: resource.attribution };
     style.layers.push({
       id: `base-${key}`,
@@ -68,6 +134,123 @@ export function createManifestStyle(
     });
   }
   return style;
+}
+
+function isLocalResource(resource?: Resource): resource is Resource & { url: string } {
+  return resource?.status === 'available' && /^\/(?!\/)/.test(resource.url ?? '');
+}
+
+function validCoverage(coverage?: number[]): coverage is [number, number, number, number] {
+  if (!coverage || coverage.length !== 4 || !coverage.every(Number.isFinite)) return false;
+  const [west, south, east, north] = coverage as [number, number, number, number];
+  return west >= -180 && west < east && east <= 180 && south >= -85 && south < north && north <= 85;
+}
+
+interface ChartThemeMap {
+  getLayer(id: string): unknown;
+  setPaintProperty(id: string, name: string, value: unknown): unknown;
+}
+
+export function applyChartTheme(map: ChartThemeMap, theme: 'dark' | 'light') {
+  const palette = chartPalette[theme];
+  const properties = [
+    ['local-sea', 'background-color', palette.sea],
+    ['local-land', 'fill-color', palette.land],
+    ['local-coastline', 'line-color', palette.coast],
+    ['regional-sea-mask', 'fill-color', palette.sea],
+    ['regional-land', 'fill-color', palette.land],
+    ['regional-coastline', 'line-color', palette.coast],
+    ['base-ports', 'circle-stroke-color', palette.sea],
+    ['base-seamarks', 'circle-stroke-color', palette.sea],
+    ['grid', 'line-color', palette.grid],
+  ];
+  for (const [id, name, color] of properties)
+    if (map.getLayer(id!)) map.setPaintProperty(id!, name!, color);
+}
+
+type RegionalSourceEvent = { sourceId?: string };
+interface RegionalChartMap {
+  getLayer(id: string): unknown;
+  getSource(id: string): unknown;
+  isSourceLoaded(id: string): boolean;
+  setPaintProperty(id: string, name: string, value: unknown): unknown;
+  on(type: RegionalChartEvent, listener: (event: RegionalSourceEvent) => void): unknown;
+  off(type: RegionalChartEvent, listener: (event: RegionalSourceEvent) => void): unknown;
+}
+type RegionalChartEvent =
+  'sourcedata' | 'sourcedataloading' | 'error' | 'render' | 'movestart' | 'moveend';
+export type RegionalChartState = 'loading' | 'ready' | 'fallback';
+const regionalLayers = ['regional-sea-mask', 'regional-land', 'regional-coastline'];
+
+/** Enable the regional replacement as one frame; failed sources always retain the global base. */
+export function createRegionalChartCoverage(
+  map: RegionalChartMap,
+  onState: (state: RegionalChartState) => void,
+) {
+  let state: RegionalChartState = 'loading';
+  let disposed = false;
+  let pending = true;
+  let moving = false;
+  const available = regionalLayers.every((id) => map.getSource(id) && map.getLayer(id));
+  function change(next: RegionalChartState) {
+    if (disposed || state === next) return;
+    state = next;
+    // MapLibre batches synchronous style mutations before rendering the next frame.
+    for (const id of regionalLayers)
+      if (map.getLayer(id))
+        map.setPaintProperty(
+          id,
+          id === 'regional-coastline' ? 'line-opacity' : 'fill-opacity',
+          next === 'ready' ? 1 : 0,
+        );
+    onState(next);
+  }
+  function check() {
+    if (disposed || state !== 'loading' || moving || !pending) return;
+    pending = false;
+    if (regionalLayers.every((id) => map.getSource(id) && map.isSourceLoaded(id))) change('ready');
+  }
+  function sourceChanged(event: RegionalSourceEvent) {
+    if (event.sourceId && regionalLayers.includes(event.sourceId)) pending = true;
+  }
+  function sourceLoading(event: RegionalSourceEvent) {
+    if (state === 'fallback' || !event.sourceId || !regionalLayers.includes(event.sourceId)) return;
+    pending = true;
+    change('loading');
+  }
+  function moveStart() {
+    moving = true;
+    if (state !== 'fallback') change('loading');
+  }
+  function moveEnd() {
+    moving = false;
+    pending = true;
+  }
+  function fail(event: RegionalSourceEvent) {
+    if (event.sourceId && regionalLayers.includes(event.sourceId)) change('fallback');
+  }
+  if (available) {
+    onState('loading');
+    // Opacity-zero layers still load viewport tiles. Checking after render avoids treating
+    // source metadata as ready before MapLibre has requested the first viewport's tiles.
+    map.on('sourcedata', sourceChanged);
+    map.on('sourcedataloading', sourceLoading);
+    map.on('render', check);
+    map.on('error', fail);
+    map.on('movestart', moveStart);
+    map.on('moveend', moveEnd);
+  } else change('fallback');
+  return {
+    dispose() {
+      disposed = true;
+      map.off('sourcedata', sourceChanged);
+      map.off('sourcedataloading', sourceLoading);
+      map.off('render', check);
+      map.off('error', fail);
+      map.off('movestart', moveStart);
+      map.off('moveend', moveEnd);
+    },
+  };
 }
 interface ProbabilityCell {
   id: string;

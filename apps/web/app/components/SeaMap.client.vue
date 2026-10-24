@@ -51,7 +51,8 @@ import {
 } from '../utils/chartGeometry';
 import {
   createManifestStyle,
-  chartPalette,
+  createRegionalChartCoverage,
+  applyChartTheme,
   predictionGeoJson,
   predictionDensityGeoJson,
   predictionDensityPaint,
@@ -323,11 +324,7 @@ function updateQueryBounds() {
 }
 function applyTheme() {
   if (!map) return;
-  const palette = chartPalette[chartTheme.value];
-  map.setPaintProperty('local-sea', 'background-color', palette.sea);
-  map.setPaintProperty('local-land', 'fill-color', palette.land);
-  map.setPaintProperty('local-coastline', 'line-color', palette.coast);
-  if (map.getLayer('grid')) map.setPaintProperty('grid', 'line-color', palette.grid);
+  applyChartTheme(map, chartTheme.value);
 }
 const regionStart = ref<{ x: number; y: number } | null>(null);
 const regionEnd = ref<{ x: number; y: number } | null>(null);
@@ -390,6 +387,7 @@ function notifyFocusRender() {
 }
 let camera: ReturnType<typeof createMapCamera> | undefined;
 let sourceAcknowledgements: ReturnType<typeof createSourceRenderAcknowledgements> | undefined;
+let regionalChartCoverage: ReturnType<typeof createRegionalChartCoverage> | undefined;
 let highlightAnimation: ReturnType<typeof createHighlightAnimation> | undefined;
 const highlightTimeline = createHighlightTimeline();
 let highlightSourceSignature = '';
@@ -1104,7 +1102,7 @@ onMounted(async () => {
           .catch(() => {
             sourceState.value += ' · 港口标注读取失败';
           });
-      sourceState.value = `资源 ${manifest.value.version} · ${manifest.value.land.status === 'available' ? '陆地已接入' : '陆地资源缺失'}`;
+      sourceState.value = `资源 ${manifest.value.version} · 全球概略背景 · 区域细节载入中`;
     } catch {
       sourceState.value = '基础地理参考 · 图源清单未接入';
     }
@@ -1207,7 +1205,17 @@ onMounted(async () => {
       },
     );
     map.on('style.load', () => {
+      regionalChartCoverage?.dispose();
+      regionalChartCoverage = createRegionalChartCoverage(map!, (state) => {
+        const detail = {
+          loading: '区域细节载入中',
+          ready: '区域陆地与海岸线已就绪',
+          fallback: '区域细节暂不可用，使用全球概略背景',
+        }[state];
+        sourceState.value = `${manifest.value ? `资源 ${manifest.value.version} · ` : ''}全球概略背景 · ${detail}`;
+      });
       registerBusinessLayers();
+      applyTheme();
       drawing = new TerraDraw({
         adapter: new TerraDrawMapLibreGLAdapter({ map: map! }),
         modes: [
@@ -1590,6 +1598,7 @@ onBeforeUnmount(() => {
   disposed = true;
   camera?.dispose();
   sourceAcknowledgements?.dispose();
+  regionalChartCoverage?.dispose();
   highlightAnimation?.dispose();
   highlightTimeline.clear();
   document.removeEventListener('visibilitychange', updateAnimationState);
@@ -1743,7 +1752,7 @@ onBeforeUnmount(() => {
   <div class="map-note" data-testid="chart-source-note">
     {{ sourceState }} · {{ coordinates
     }}<span v-if="manifest"
-      >覆盖 {{ manifest.coverage.join(' / ') }} ·
+      >区域资源覆盖 {{ manifest.coverage.join(' / ') }} ·
       {{ manifest.official?.status === 'available' ? '官方图源已接入' : '官方海图待配置' }}</span
     ><span v-else>Natural Earth · 地理参考</span>
     <details v-if="manifest">
@@ -1752,9 +1761,8 @@ onBeforeUnmount(() => {
         {{ manifest.seamarks?.status === 'available' ? '已接入' : '待配置' }}
       </summary>
       <p>
-        {{ manifest.land.attribution }}<br />陆地适用缩放 {{ manifest.land.zoom?.min ?? 0 }}–{{
-          manifest.land.zoom?.max ?? 9
-        }}
+        Natural Earth · 全球概略背景<br />{{ manifest.land.attribution }}<br />区域陆地适用缩放
+        {{ manifest.land.zoom?.min ?? 0 }}–{{ manifest.land.zoom?.max ?? 9 }} · 更高缩放沿用当前精度
         · 来源时间 {{ manifest.land.sourceDataTime ?? '待确认'
         }}<br />港口为OSM贡献记录的中心标注，支撑地理参考。<br />{{ manifest.land.license }} · WGS84
         · 官方海图 {{ manifest.official?.status ?? 'unconfigured' }}

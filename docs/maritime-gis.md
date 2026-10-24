@@ -1,6 +1,8 @@
 # 海事底图与态势预测数据
 
-系统以离线版本化 GeoJSON 提供陆地、港口和海标展示，以独立海岸约束支撑船舶预测。地图发布入口为 `/maps/maritime/manifest.json`，覆盖范围为东经 105°—135°、北纬 3°—42°。每次发布先完成版本目录，再原子更新 manifest，前端据此读取同一批资源。
+系统以离线版本化 GeoJSON 提供区域陆地、独立海岸线、港口和海标展示，以独立海岸约束支撑船舶预测。地图发布入口为 `/maps/maritime/manifest.json`，区域资源覆盖东经 105°—135°、北纬 3°—42°。每次发布先完成版本目录，再原子更新 manifest，前端据此读取同一批资源。
+
+全球视图始终保留 Natural Earth 概略陆地。区域海水遮罩、陆地和独立海岸线在当前视口的三份资源都完成载入后同时显示，遮罩负责清除全球概略岸线在区域海面中的偏差。区域资源出错、旧清单缺少独立海岸线，或移动中尚未就绪时，地图使用全球概略背景，AIS、航迹和证据继续绘制。区域海岸线从陆地轮廓派生，剔除资源范围裁切产生的直线，真实岸线坐标保持原样。
 
 ## 工作台操作
 
@@ -15,6 +17,7 @@
 | 图层     | 来源与处理                                                                                                                                                 | 展示用途与精度                                                         |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | 陆地     | [OSM land polygons](https://osmdata.openstreetmap.de/data/land-polygons.html) 的 simplified complete 3857 ZIP，转换为 WGS84，并用 Shapely 精确裁切覆盖范围 | 官方建议缩放级别 0—9；保留源数据中的岛屿，小岛与局部岸线可能受简化影响 |
+| 海岸线   | 从同版本陆地派生连续线，剔除两端均位于同一资源裁切边上的人工段，记录派生陆地 URL 与 SHA-256                                                                | 与区域陆地共用原始精度与来源时间，供海岸描边使用                       |
 | 港口     | Overpass 查询 `harbour=yes/port`、`landuse=port`、`industrial=port`、`seamark:type=harbour`，保留 OSM 标签与标识                                           | node 使用原始位置，way/relation 使用几何中心；中心点用于港口标注       |
 | 海标     | Overpass 查询 `seamark:type`；资源状态、实际条数及失败原因由 manifest 给出                                                                                 | 覆盖程度取决于 OSM 贡献；节点采集模式会记录在执行参数中                |
 | 水深     | 接入经过准备的 GEBCO 或有许可的水深资源后发布                                                                                                              | 当前 manifest 如实记录安装状态                                         |
@@ -43,23 +46,26 @@ bun scripts/prepare-maritime-map.ts `
 
 覆盖 bbox 固定为 `[105,3,135,42]`。陆地标准 GeoJSON 输入应已完成裁切；工具会校验坐标范围、闭合环和图层几何类型。点资源按覆盖范围过滤。版本名称仅允许字母、数字、点、横线和下划线，并校验路径穿越。已存在的版本目录保持不可变。
 
-| 参数                                                      | 用途                                             |
-| --------------------------------------------------------- | ------------------------------------------------ |
-| `--version=<name>`                                        | 必填，新版本名称                                 |
-| `--output=<directory>`                                    | 发布根目录，默认 `apps/web/public/maps/maritime` |
-| `--cache=<directory>`                                     | 原始文件缓存，默认 `.data/maritime`              |
-| `--land=<file>`、`--ports=<file>`、`--seamarks=<file>`    | 读取已准备的标准 GeoJSON                         |
-| `--land-url=<https-url>` 等                               | 下载相应标准 GeoJSON，支持同样校验               |
-| `--land-zip=<file>`                                       | 使用已缓存的官方简化 3857 ZIP                    |
-| `--land-source=<https-url>`、`--land-modified=<ISO-time>` | 指定缓存 ZIP 的来源和服务器修改时间              |
-| `--python=<executable>`                                   | 选择已安装 pyshp、Shapely 的 Python              |
-| `--overpass=true`                                         | 获取尚未指定的港口、海标层                       |
-| `--overpass-url=<https-url>`                              | 指定单个 Overpass 服务                           |
-| `--ports-overpass=<file>`、`--seamarks-overpass=<file>`   | 重放原始 Overpass JSON，重新计算原文校验值       |
-| `--ports-source=<url>`、`--seamarks-source=<url>`         | 为重放原文记录实际来源                           |
-| `--seamarks-nodes=true`                                   | 仅采集海标节点，减少公共服务的查询负担           |
+| 参数                                                      | 用途                                                                           |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `--version=<name>`                                        | 必填，新版本名称                                                               |
+| `--reuse-version=<name>`                                  | 从输出目录中复用已发布版本，验证资源和原文校验值，保留来源时间，离线派生新版本 |
+| `--output=<directory>`                                    | 发布根目录，默认 `apps/web/public/maps/maritime`                               |
+| `--cache=<directory>`                                     | 原始文件缓存，默认 `.data/maritime`                                            |
+| `--land=<file>`、`--ports=<file>`、`--seamarks=<file>`    | 读取已准备的标准 GeoJSON                                                       |
+| `--land-url=<https-url>` 等                               | 下载相应标准 GeoJSON，支持同样校验                                             |
+| `--land-zip=<file>`                                       | 使用已缓存的官方简化 3857 ZIP                                                  |
+| `--land-source=<https-url>`、`--land-modified=<ISO-time>` | 指定缓存 ZIP 的来源和服务器修改时间                                            |
+| `--python=<executable>`                                   | 选择已安装 pyshp、Shapely 的 Python                                            |
+| `--overpass=true`                                         | 获取尚未指定的港口、海标层                                                     |
+| `--overpass-url=<https-url>`                              | 指定单个 Overpass 服务                                                         |
+| `--ports-overpass=<file>`、`--seamarks-overpass=<file>`   | 重放原始 Overpass JSON，重新计算原文校验值                                     |
+| `--ports-source=<url>`、`--seamarks-source=<url>`         | 为重放原文记录实际来源                                                         |
+| `--seamarks-nodes=true`                                   | 仅采集海标节点，减少公共服务的查询负担                                         |
 
 常规更新选择一个新版本名称。前端从 manifest 读取 `status`、`url`、`license`、`attribution`、`sourceDataTime` 和 `coverageNote`；缺少图层时按状态展示说明。公共 Overpass 的使用约束见 [官方服务清单](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances)。
+
+当前修复版本为 `osm-cn-20261024-v3`，新增独立海岸线并保留 v2 的原始陆地、港口与来源信息。海岸线去除 15 段人工裁切边，原有 80,743 段海岸轮廓保留。全球概略背景与区域资源均用于地理参考；近景放大继续沿用当前数据精度，多级精细瓦片与专业 ENC 接入按后续数据建设推进。
 
 ## 预测模型与概率口径
 
