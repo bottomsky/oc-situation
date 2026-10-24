@@ -36,9 +36,10 @@ test('面板拖动、键盘调整、持久化与窗口缩放保留同一海图',
   await expect(right).toHaveAttribute('aria-valuenow', '420');
   const initialZoom = Number(calls.mapQueries.at(-1)?.searchParams.get('zoom'));
   await page.getByRole('button', { name: '放大海图', exact: true }).click();
+  await expect(map).toHaveAttribute('data-moving', 'false');
   await expect
     .poll(() => Number(calls.mapQueries.at(-1)?.searchParams.get('zoom')))
-    .toBeGreaterThan(initialZoom);
+    .toBeCloseTo(initialZoom + 1, 5);
   const zoom = calls.mapQueries.at(-1)!.searchParams.get('zoom');
   await left.press('Home');
   await expect(left).toHaveAttribute('aria-valuenow', '300');
@@ -356,7 +357,7 @@ test('本地深色底图忽略旧图层偏好和外部样式配置，业务图�
       const response = await route.fetch();
       const body = (await response.text()).replace(
         '</body>',
-        '<script>window.__NUXT__.config.public.mapStyleUrl="https://legacy-chart.example/style.json";window.__NUXT__.config.public.mapTilerKey="legacy-test-key";</script></body>',
+        '<script>window.__NUXT__.config.public.chartOnlineEnabled=false;window.__NUXT__.config.public.chartSeamarksEnabled=false;window.__NUXT__.config.public.mapStyleUrl="https://legacy-chart.example/style.json";window.__NUXT__.config.public.mapTilerKey="legacy-test-key";</script></body>',
       );
       await route.fulfill({ response, body });
     },

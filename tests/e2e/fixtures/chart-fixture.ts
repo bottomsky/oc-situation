@@ -1,9 +1,11 @@
 import type { Page } from '@playwright/test';
 import { chartPoint, chartResult, chartTopic, chartRun } from './chart-data';
+import { configureOnlineChart } from './online-chart-fixture';
 export async function chartFixture(
   page: Page,
-  options: { role?: string; clusters?: boolean } = {},
+  options: { role?: string; clusters?: boolean; onlineChart?: Record<string, unknown> } = {},
 ) {
+  await configureOnlineChart(page, options.onlineChart);
   const calls = {
     liveConnections: 0,
     resultList: 0,

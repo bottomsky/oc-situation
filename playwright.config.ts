@@ -3,6 +3,10 @@ import { resolve } from 'node:path';
 
 const root = import.meta.dirname;
 const compiledWeb = process.env.E2E_COMPILED_WEB === '1';
+const offlineChartEnv = {
+  NUXT_PUBLIC_CHART_ONLINE_ENABLED: 'false',
+  NUXT_PUBLIC_CHART_SEAMARKS_ENABLED: 'false',
+};
 process.env.PLAYWRIGHT_BROWSERS_PATH ??= resolve(root, '.data/playwright');
 export default defineConfig({
   testDir: './tests/e2e',
@@ -38,7 +42,7 @@ export default defineConfig({
             url: 'http://127.0.0.1:13003',
             reuseExistingServer: false,
             timeout: 120_000,
-            env: { NITRO_HOST: '127.0.0.1', NITRO_PORT: '13003' },
+            env: { ...offlineChartEnv, NITRO_HOST: '127.0.0.1', NITRO_PORT: '13003' },
           },
           {
             command: 'node --import tsx scripts/e2e-web-gateway.ts',
@@ -52,8 +56,9 @@ export default defineConfig({
             command:
               'node node_modules/nuxt/bin/nuxt.mjs dev apps/web --host 127.0.0.1 --port 13001',
             url: 'http://127.0.0.1:13001',
-            reuseExistingServer: !process.env.CI,
+            reuseExistingServer: false,
             timeout: 120_000,
+            env: offlineChartEnv,
           },
         ]),
   ],

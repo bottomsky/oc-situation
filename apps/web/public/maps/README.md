@@ -1,6 +1,6 @@
 # 海事地图资源
 
-海图优先读取 `maritime/manifest.json` 指向的版本化自托管资源。当前安装的陆地、港口、航海要素状态及校验值以该 manifest 为准，准备入口为 `bun run maps:prepare`。图源、显示精度和更新方式见[海事 GIS 与概率预测](../../../../docs/maritime-gis.md)。
+海图默认接入 OSM 在线矢量和 OpenSeaMap 海标；`maritime/manifest.json` 指向版本化自托管回退资源。当前安装的陆地、港口、航海要素状态及校验值以该 manifest 为准，准备入口为 `bun run maps:prepare`。在线开关与图源 URL、显示精度和更新方式见[海事 GIS 与概率预测](../../../../docs/maritime-gis.md)。
 
 `ne_110m_land.geojson` 为 Natural Earth 110m 陆地矢量，仅绘制陆地和海岸线。
 

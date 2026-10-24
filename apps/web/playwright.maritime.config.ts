@@ -24,9 +24,14 @@ export default defineConfig({
         ? 'bun run --filter @ais/web start'
         : 'bun run --filter @ais/web dev',
     url: 'http://127.0.0.1:13001',
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 120000,
     cwd: resolve(import.meta.dirname, '../..'),
-    env: { NITRO_HOST: '127.0.0.1', NITRO_PORT: '13001' },
+    env: {
+      NITRO_HOST: '127.0.0.1',
+      NITRO_PORT: '13001',
+      NUXT_PUBLIC_CHART_ONLINE_ENABLED: 'false',
+      NUXT_PUBLIC_CHART_SEAMARKS_ENABLED: 'false',
+    },
   },
 });

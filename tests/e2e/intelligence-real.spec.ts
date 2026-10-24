@@ -1,3 +1,4 @@
+import { configureOnlineChart } from './fixtures/online-chart-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { openLeftPanel, selectLeftTab } from './chart-helpers';
 async function login(page: Page, username: string, password: string) {
@@ -7,6 +8,10 @@ async function login(page: Page, username: string, password: string) {
   await page.getByRole('button', { name: '进入工作空间' }).click();
   await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true');
 }
+test.beforeEach(async ({ page }) => {
+  await configureOnlineChart(page);
+});
+
 test('真实 API 情报、对象关联、单海图绘制和按用户恢复标绘', async ({ page }) => {
   test.skip(
     !process.env.E2E_USERNAME ||

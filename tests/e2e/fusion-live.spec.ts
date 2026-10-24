@@ -1,5 +1,10 @@
+import { configureOnlineChart } from './fixtures/online-chart-fixture';
 import { test, expect } from '@playwright/test';
 import type { AnalysisResult } from '@ais/contracts';
+
+test.beforeEach(async ({ page }) => {
+  await configureOnlineChart(page);
+});
 
 test('真实融合流水线：两个专题产出可追溯结论并定位海图证据', async ({ page }) => {
   test.setTimeout(150000);

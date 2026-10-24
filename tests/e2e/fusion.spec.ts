@@ -1,3 +1,4 @@
+import { configureOnlineChart } from './fixtures/online-chart-fixture';
 import { openConsolePage } from './chart-helpers';
 import { test, expect, type Page } from '@playwright/test';
 
@@ -120,6 +121,10 @@ async function fixture(page: Page, role = 'admin') {
     await route.fulfill({ json });
   });
 }
+test.beforeEach(async ({ page }) => {
+  await configureOnlineChart(page);
+});
+
 test('专题结论打开可追溯证据并在海图标出关联位置', async ({ page }) => {
   await fixture(page);
   await page.goto('/');

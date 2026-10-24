@@ -5,6 +5,14 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', './integrations/liveProxyModule'],
   css: ['~/assets/main.css', 'maplibre-gl/dist/maplibre-gl.css', '~/assets/workbench.css'],
   ui: { fonts: false },
+  runtimeConfig: {
+    public: {
+      chartOnlineEnabled: true,
+      chartVectorTileJsonUrl: 'https://vector.openstreetmap.org/shortbread_v1/tilejson.json',
+      chartSeamarksEnabled: true,
+      chartSeamarkTilesUrl: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+    },
+  },
   nitro: {
     devProxy: { '/api': { target: 'http://127.0.0.1:13000/api', changeOrigin: false } },
   },

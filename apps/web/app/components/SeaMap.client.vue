@@ -61,6 +61,13 @@ import {
   type PredictionMapResult,
 } from '../utils/chartPresentation';
 import { registerChartBusinessLayers } from '../utils/chartBusinessLayers';
+import {
+  addOnlineChartStyle,
+  applyOnlineChartTheme,
+  readOnlineChartConfig,
+} from '../utils/onlineChartStyle';
+import { createOnlineChartCoverage, type OnlineChartState } from '../utils/onlineChartState';
+import { createOnlineChartRequests } from '../utils/onlineChartRequests';
 import { heatmapGeoJson, registerHeatmapLayers, heatmapViewportBounds } from '../utils/heatmapMap';
 import { registerVesselTracksLayers, vesselTracksGeoJson } from '../utils/vesselTracksMap';
 import type { VesselTracksResult, HeatmapResult } from '@ais/contracts';
@@ -125,6 +132,9 @@ const mapError = ref('');
 const ready = ref(false);
 const moving = ref(false);
 const renderedVessels = ref(0);
+const renderedOnlineLabels = ref(0);
+const onlineLabelSample = ref('');
+const onlineLabelAnchor = ref('');
 const renderedPrediction = ref(0);
 const predictionDisplayedMinutes = ref(0);
 const predictionOrigin = ref<MapPoint | null>(null);
@@ -140,7 +150,31 @@ let countingSource = false;
 const vesselRenderer = createVesselPointRenderer();
 const chartTheme = ref<'dark' | 'light'>('dark');
 const manifest = ref<ChartManifest | null>(null);
-const sourceState = ref('正在读取图源清单');
+const localSourceState = ref('正在读取图源清单');
+const onlineConfig = readOnlineChartConfig(useRuntimeConfig().public, (message) =>
+  console.warn(message),
+);
+const onlineState = ref<OnlineChartState>({
+  base: onlineConfig.enabled ? 'loading' : 'disabled',
+  seamarks: onlineConfig.seamarksEnabled ? 'loading' : 'disabled',
+  baseRetriesRemaining: 2,
+  seamarkRetriesRemaining: 2,
+});
+const sourceState = computed(() => {
+  const base = {
+    loading: '在线底图载入中',
+    ready: '在线底图已就绪',
+    fallback: '在线底图暂不可用，使用本地背景',
+    disabled: '',
+  }[onlineState.value.base];
+  const seamarks = {
+    loading: '在线海标载入中',
+    ready: '在线海标已就绪',
+    fallback: '在线海标暂无或加载失败',
+    disabled: '',
+  }[onlineState.value.seamarks];
+  return [base, seamarks, localSourceState.value].filter(Boolean).join(' · ');
+});
 const coordinates = ref('WGS84 · 移动光标查看经纬度');
 const measure = ref(false);
 const measurePoints = ref<number[][]>([]);
@@ -160,7 +194,7 @@ let portLabels: maplibregl.Marker[] = [];
 function updatePortLabels() {
   portLabels.forEach((label) => label.remove());
   portLabels = [];
-  if (!map || map.getZoom() < 5) return;
+  if (!map || map.getZoom() < 5 || onlineState.value.base === 'ready') return;
   const occupied = new Set<string>();
   for (const port of ports) {
     const name = port.properties?.['name:zh'] || port.properties?.name;
@@ -325,6 +359,7 @@ function updateQueryBounds() {
 function applyTheme() {
   if (!map) return;
   applyChartTheme(map, chartTheme.value);
+  applyOnlineChartTheme(map, chartTheme.value);
 }
 const regionStart = ref<{ x: number; y: number } | null>(null);
 const regionEnd = ref<{ x: number; y: number } | null>(null);
@@ -388,6 +423,8 @@ function notifyFocusRender() {
 let camera: ReturnType<typeof createMapCamera> | undefined;
 let sourceAcknowledgements: ReturnType<typeof createSourceRenderAcknowledgements> | undefined;
 let regionalChartCoverage: ReturnType<typeof createRegionalChartCoverage> | undefined;
+let onlineChartCoverage: ReturnType<typeof createOnlineChartCoverage> | undefined;
+let onlineChartRequests: ReturnType<typeof createOnlineChartRequests> | undefined;
 let highlightAnimation: ReturnType<typeof createHighlightAnimation> | undefined;
 const highlightTimeline = createHighlightTimeline();
 let highlightSourceSignature = '';
@@ -1100,17 +1137,24 @@ onMounted(async () => {
             updatePortLabels();
           })
           .catch(() => {
-            sourceState.value += ' · 港口标注读取失败';
+            localSourceState.value += ' · 港口标注读取失败';
           });
-      sourceState.value = `资源 ${manifest.value.version} · 全球概略背景 · 区域细节载入中`;
+      localSourceState.value = `资源 ${manifest.value.version} · 全球概略背景 · 区域细节载入中`;
     } catch {
-      sourceState.value = '基础地理参考 · 图源清单未接入';
+      localSourceState.value = '基础地理参考 · 图源清单未接入';
     }
     if (disposed || !host.value) return;
     configureMapLibreWorker();
+    onlineChartRequests = createOnlineChartRequests(maplibregl);
     map = new maplibregl.Map({
       container: host.value,
-      style: createManifestStyle(chartTheme.value, manifest.value),
+      style: onlineChartRequests.wrapStyle(
+        addOnlineChartStyle(
+          createManifestStyle(chartTheme.value, manifest.value),
+          chartTheme.value,
+          onlineConfig,
+        ),
+      ),
       bounds: chartHomeBounds,
       minZoom: 0,
       maxZoom: 22,
@@ -1124,6 +1168,16 @@ onMounted(async () => {
     map.on('idle', () => {
       vesselSourceLoaded.value = !!map?.getSource('vessels') && map.isSourceLoaded('vessels');
       if (!diagnosticsEnabled) return;
+      const onlineLabels = map?.getLayer('online-place-labels')
+        ? map.queryRenderedFeatures({ layers: ['online-place-labels'] })
+        : [];
+      renderedOnlineLabels.value = onlineLabels.length;
+      onlineLabelSample.value = String(onlineLabels[0]?.properties?.name ?? '');
+      const labelGeometry = onlineLabels[0]?.geometry;
+      if (labelGeometry?.type === 'Point') {
+        const point = map!.project(labelGeometry.coordinates as [number, number]);
+        onlineLabelAnchor.value = `${point.x},${point.y}`;
+      } else onlineLabelAnchor.value = '';
       const layers = ['vessels', 'vessels-distant'].filter((id) => map?.getLayer(id));
       const canvas = map!.getCanvas();
       const sample = (ids: string[]) =>
@@ -1212,7 +1266,13 @@ onMounted(async () => {
           ready: '区域陆地与海岸线已就绪',
           fallback: '区域细节暂不可用，使用全球概略背景',
         }[state];
-        sourceState.value = `${manifest.value ? `资源 ${manifest.value.version} · ` : ''}全球概略背景 · ${detail}`;
+        localSourceState.value = `${manifest.value ? `资源 ${manifest.value.version} · ` : ''}全球概略背景 · ${detail}`;
+      });
+      onlineChartCoverage?.dispose();
+      onlineChartCoverage = createOnlineChartCoverage(map!, onlineConfig, (state) => {
+        const changed = onlineState.value.base !== state.base;
+        onlineState.value = state;
+        if (changed) updatePortLabels();
       });
       registerBusinessLayers();
       applyTheme();
@@ -1599,6 +1659,8 @@ onBeforeUnmount(() => {
   camera?.dispose();
   sourceAcknowledgements?.dispose();
   regionalChartCoverage?.dispose();
+  onlineChartCoverage?.dispose();
+  onlineChartRequests?.dispose();
   highlightAnimation?.dispose();
   highlightTimeline.clear();
   document.removeEventListener('visibilitychange', updateAnimationState);
@@ -1643,6 +1705,11 @@ onBeforeUnmount(() => {
     :data-rendered-prediction="renderedPrediction"
     :data-moving="moving"
     :data-prediction-displayed="predictionDisplayedMinutes"
+    :data-online-chart-state="onlineState.base"
+    :data-online-seamarks-state="onlineState.seamarks"
+    :data-rendered-online-labels="diagnosticsEnabled ? renderedOnlineLabels : undefined"
+    :data-online-label-sample="diagnosticsEnabled ? onlineLabelSample : undefined"
+    :data-online-label-anchor="diagnosticsEnabled ? onlineLabelAnchor : undefined"
     :data-prediction-origin-basis="predictionObservation ? 'fixed-input' : 'fleet-fallback'"
     :data-prediction-origin="
       predictionOrigin ? `${predictionOrigin.lon},${predictionOrigin.lat}` : ''
@@ -1755,6 +1822,48 @@ onBeforeUnmount(() => {
       >区域资源覆盖 {{ manifest.coverage.join(' / ') }} ·
       {{ manifest.official?.status === 'available' ? '官方图源已接入' : '官方海图待配置' }}</span
     ><span v-else>Natural Earth · 地理参考</span>
+    <span class="chart-online-attribution">
+      ©
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer"
+        >OpenStreetMap contributors</a
+      >
+      · ©
+      <a href="https://www.openseamap.org/" target="_blank" rel="noopener noreferrer"
+        >OpenSeaMap contributors</a
+      >
+      ·
+      <a
+        href="https://creativecommons.org/licenses/by-sa/2.0/"
+        target="_blank"
+        rel="noopener noreferrer"
+        >CC BY-SA 2.0</a
+      >
+    </span>
+    <span
+      v-if="onlineState.base === 'fallback' || onlineState.seamarks === 'fallback'"
+      class="chart-online-retry"
+      role="status"
+    >
+      <button
+        v-if="onlineState.base === 'fallback' && onlineState.baseRetriesRemaining"
+        @click="onlineChartCoverage?.retry('base')"
+      >
+        重试在线底图
+      </button>
+      <button
+        v-if="onlineState.seamarks === 'fallback' && onlineState.seamarkRetriesRemaining"
+        @click="onlineChartCoverage?.retry('seamarks')"
+      >
+        重试在线海标
+      </button>
+      <span
+        v-if="
+          (onlineState.base === 'fallback' && !onlineState.baseRetriesRemaining) ||
+          (onlineState.seamarks === 'fallback' && !onlineState.seamarkRetriesRemaining)
+        "
+        >暂未恢复，可稍后刷新页面</span
+      >
+    </span>
     <details v-if="manifest">
       <summary>
         图源与精度 · 港口 {{ manifest.ports?.records ?? 0 }} · 海标
@@ -1869,6 +1978,22 @@ onBeforeUnmount(() => {
 .map-note details {
   pointer-events: auto;
 }
+.chart-online-attribution,
+.chart-online-retry {
+  pointer-events: auto;
+}
+.chart-online-attribution a {
+  color: #8fcdde;
+}
+.chart-online-retry button {
+  margin-right: 8px;
+  padding: 3px 6px;
+  color: #b8d7e3;
+  background: #0a2539;
+  border: 1px solid #23536b;
+  border-radius: 3px;
+  cursor: pointer;
+}
 .map-warning {
   z-index: 2;
   color: #f9d198;
@@ -1897,6 +2022,14 @@ onBeforeUnmount(() => {
 }
 .sea-map :deep(.maplibregl-ctrl-attrib a) {
   color: #8fcdde;
+}
+.sea-map :deep(.maplibregl-ctrl-attrib.maplibregl-compact) {
+  /* Keep the expandable native attribution inside the footer's reserved control column. */
+  box-sizing: border-box;
+  max-width: 180px;
+  max-height: 180px;
+  overflow: auto;
+  overflow-wrap: anywhere;
 }
 </style>
 

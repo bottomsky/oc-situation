@@ -1,8 +1,25 @@
 # 海事底图与态势预测数据
 
-系统以离线版本化 GeoJSON 提供区域陆地、独立海岸线、港口和海标展示，以独立海岸约束支撑船舶预测。地图发布入口为 `/maps/maritime/manifest.json`，区域资源覆盖东经 105°—135°、北纬 3°—42°。每次发布先完成版本目录，再原子更新 manifest，前端据此读取同一批资源。
+海图默认通过 OSM Shortbread v1 在线矢量瓦片提供地理细节，并叠加 OpenSeaMap 海标。离线版本化 GeoJSON 提供全球概略与中国近海回退背景，以独立精细海岸约束支撑船舶预测。本地地图发布入口为 `/maps/maritime/manifest.json`，区域资源覆盖东经 105°—135°、北纬 3°—42°。每次本地发布先完成版本目录，再原子更新 manifest，前端据此读取同一批资源。
 
 全球视图始终保留 Natural Earth 概略陆地。区域海水遮罩、陆地和独立海岸线在当前视口的三份资源都完成载入后同时显示，遮罩负责清除全球概略岸线在区域海面中的偏差。区域资源出错、旧清单缺少独立海岸线，或移动中尚未就绪时，地图使用全球概略背景，AIS、航迹和证据继续绘制。区域海岸线从陆地轮廓派生，剔除资源范围裁切产生的直线，真实岸线坐标保持原样。
+
+## 在线图源与配置
+
+OSM 使用 `https://vector.openstreetmap.org/shortbread_v1/tilejson.json`，原生级别为 0—14；更高缩放继续放大该级别几何。在线样式包含海洋、水系、土地覆盖、道路、建筑、行政边界、地名和码头，依照当前 Shortbread v1 图层命名。文字使用浏览器本地字体，首期无需远程 glyph 或 sprite 服务。
+
+OpenSeaMap 使用 `https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png` 透明 XYZ 图层。客户端最大级别保守配置为 18，该值属于客户端选项，实际海标覆盖由社区数据决定，透明瓦片表示当前请求没有可见海标内容。
+
+| 部署环境变量                             | 默认值与用途                                           |
+| ---------------------------------------- | ------------------------------------------------------ |
+| `NUXT_PUBLIC_CHART_ONLINE_ENABLED`       | `true`，控制 OSM 在线矢量底图                          |
+| `NUXT_PUBLIC_CHART_VECTOR_TILE_JSON_URL` | 上述官方 TileJSON；替换来源需兼容 Shortbread v1 schema |
+| `NUXT_PUBLIC_CHART_SEAMARKS_ENABLED`     | `true`，独立控制在线海标                               |
+| `NUXT_PUBLIC_CHART_SEAMARK_TILES_URL`    | 上述 HTTPS XYZ 模板，需保留 `{z}`、`{x}`、`{y}`        |
+
+完全关闭公共网络图源时，将两个 enabled 变量同时设为 `false`。无效 URL 或开关值只关闭对应来源，并提供脱敏诊断。保留原有本地数据与业务图层；在线失败时可以人工重试，每个来源每次挂载最多重试两轮。来源状态独立显示，海标暂无或加载失败时，OSM 底图仍可使用。
+
+图源按实际视口请求，使用浏览器默认缓存、正常 Referer 和 User-Agent，保持来源署名可见。公共瓦片用于交互显示，离线包和批量区域建设使用允许下载的数据集另行准备。OSM 的使用条件见[官方矢量政策](https://operations.osmfoundation.org/policies/vector/)，OpenSeaMap 瓦片许可为 [CC BY-SA 2.0](https://www.openseamap.org/index.php?L=1&id=faq)。免费公共服务的可用性由提供方运营情况决定。
 
 ## 工作台操作
 
@@ -12,7 +29,7 @@
 
 输入不足、末报陈旧、海岸约束不可用和有效路径过少均显示明确状态。历史结果按固定修订查看，自动更新保留用户正在阅读的历史版本。首次真实使用前，应确认 AIS 采集已恢复、精细计算陆地已激活，并按既有启动方式启动新增预测 worker。
 
-## 已安装资源与来源
+## 本地回退资源与来源
 
 | 图层     | 来源与处理                                                                                                                                                 | 展示用途与精度                                                         |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -65,7 +82,7 @@ bun scripts/prepare-maritime-map.ts `
 
 常规更新选择一个新版本名称。前端从 manifest 读取 `status`、`url`、`license`、`attribution`、`sourceDataTime` 和 `coverageNote`；缺少图层时按状态展示说明。公共 Overpass 的使用约束见 [官方服务清单](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances)。
 
-当前修复版本为 `osm-cn-20261024-v3`，新增独立海岸线并保留 v2 的原始陆地、港口与来源信息。海岸线去除 15 段人工裁切边，原有 80,743 段海岸轮廓保留。全球概略背景与区域资源均用于地理参考；近景放大继续沿用当前数据精度，多级精细瓦片与专业 ENC 接入按后续数据建设推进。
+当前修复版本为 `osm-cn-20261024-v3`，新增独立海岸线并保留 v2 的原始陆地、港口与来源信息。海岸线去除 15 段人工裁切边，原有 80,743 段海岸轮廓保留。全球概略背景与区域资源均用于回退地理参考，沿用其原始精度；正常联网时由在线矢量瓦片承担近景细节，专业 ENC 接入按后续数据建设推进。
 
 ## 预测模型与概率口径
 
@@ -119,6 +136,8 @@ bun scripts/reachability-backtest.ts `
 ## 验证入口
 
 工程检查沿用 `bun run test`、`bun run typecheck`、`bun run lint`、`bun run build` 与 `bun run deployment:check`。预测数据库和计算执行链可通过 `bun run test:integration:isolated packages/infrastructure/predictions.integration.test.ts` 独立验证。
+
+运行开发实例时，在独立源码副本中构建，保持构建目录和缓存隔离。常规 Playwright 入口默认关闭公共在线来源，Web 服务禁止自动复用用户实例；专属在线场景使用本地合成瓦片，真实公共图源采用单独受控视口验收。
 
 五万合成船位与双概率视图的浏览器验收入口如下。硬件模式使用 Windows D3D11；其他环境可使用软件模式验证功能，并分别记录性能结果。
 

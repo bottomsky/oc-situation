@@ -1,3 +1,4 @@
+import { configureOnlineChart } from './fixtures/online-chart-fixture';
 import { openConsolePage, openLeftPanel, selectLeftTab } from './chart-helpers';
 import { test, expect } from '@playwright/test';
 import type { Page as BrowserPage } from '@playwright/test';
@@ -10,6 +11,10 @@ async function loginAs(page: BrowserPage, name: string, secret: string) {
   await page.getByRole('button', { name: '进入工作空间' }).click();
   await expect(page.getByRole('heading', { name: '全球船位观测' })).toBeVisible();
 }
+test.beforeEach(async ({ page }) => {
+  await configureOnlineChart(page);
+});
+
 test('登录、真实样例船位、轨迹和治理页面', async ({ page }) => {
   test.skip(!username || !password, '设置 E2E_USERNAME / E2E_PASSWORD 并先运行真实样例流水线');
   await page.goto('/');

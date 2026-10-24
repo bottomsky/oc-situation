@@ -1,5 +1,10 @@
+import { configureOnlineChart } from './fixtures/online-chart-fixture';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+
+test.beforeEach(async ({ page }) => {
+  await configureOnlineChart(page);
+});
 
 test('真实地图渲染四向三角、COG回退与未知圆环，并保持单船选择', async ({ page }) => {
   page.on('pageerror', (error) => console.error(error.message));

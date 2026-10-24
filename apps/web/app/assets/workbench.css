@@ -1461,7 +1461,9 @@
 .chart-workspace .map-note {
   bottom: 40px;
   left: 8px;
-  max-width: calc(100% - 16px);
+  right: 205px;
+  max-width: calc(100% - 221px);
+  white-space: normal;
   background: #052239e8;
   border: 1px solid #1c5670;
   color: #94b9ce;
@@ -1530,7 +1532,7 @@
     left: auto;
     max-width: calc(100% - 340px);
     padding: 4px 8px;
-    white-space: nowrap;
+    white-space: normal;
     line-height: 12px;
   }
   .chart-workspace .chart-map-stage .map-note span {
