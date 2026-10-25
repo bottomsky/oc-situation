@@ -173,6 +173,7 @@ watch(
     <ChartDetailFloat
       :open="!!evidence && evidenceVisible"
       side="right"
+      fade-to="left"
       title="结论证据"
       subtitle="ANALYSIS EVIDENCE"
       @close="closeEvidence"

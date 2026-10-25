@@ -172,11 +172,22 @@ async function visibleInViewport(page: Page, locator: Locator) {
     .toBe(true);
 }
 
-async function detailPresentation(page: Page, detail: Locator, title: string) {
+async function detailPresentation(
+  page: Page,
+  detail: Locator,
+  title: string,
+  fadeTo: 'left' | 'right' = 'right',
+) {
   const heading = detail.getByRole('heading', { name: title, exact: true });
   await expect(heading).toHaveCount(1);
   await visibleInViewport(page, heading);
-  await visibleInViewport(page, detail.getByRole('button', { name: '关闭详情', exact: true }));
+  const close = detail.getByRole('button', { name: '关闭详情', exact: true });
+  await visibleInViewport(page, close);
+  await expect(detail).toHaveAttribute('data-fade-to', fadeTo);
+  await expect(close).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await close.hover();
+  await expect(close).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(close).toHaveCSS('border-width', '0px');
   const surface = await detail.evaluate((element) => {
     const style = getComputedStyle(element);
     const colors = [...style.backgroundImage.matchAll(/rgba?\(([^)]+)\)/g)].map((match) =>
@@ -193,17 +204,26 @@ async function detailPresentation(page: Page, detail: Locator, title: string) {
         style.borderBottomRightRadius,
       ].map(parseFloat),
       shadow: style.boxShadow,
+      leftBorder: parseFloat(style.borderLeftWidth),
       rightBorder: parseFloat(style.borderRightWidth),
       opacity: Number(style.opacity),
-      rightGradient: /^linear-gradient\((90deg|to right),/.test(style.backgroundImage),
+      angle: style.backgroundImage.match(/^linear-gradient\((90deg|270deg|to right|to left),/)?.[1],
+      insetLeft: parseFloat(
+        getComputedStyle(element.querySelector('.chart-detail-scroll')!).paddingLeft,
+      ),
+      insetRight: parseFloat(
+        getComputedStyle(element.querySelector('.chart-detail-scroll')!).paddingRight,
+      ),
       alphas: colors.map((color) => (color.length === 4 ? color[3]! : 1)),
     };
   });
   expect(surface.radii).toEqual([0, 0, 0, 0]);
   expect(surface.shadow).toBe('none');
-  expect(surface.rightBorder).toBe(0);
+  expect(surface.leftBorder).toBe(fadeTo === 'left' ? 0 : 1);
+  expect(surface.rightBorder).toBe(fadeTo === 'left' ? 1 : 0);
   expect(surface.opacity).toBe(1);
-  expect(surface.rightGradient).toBe(true);
+  expect(surface.angle).toMatch(fadeTo === 'left' ? /^(270deg|to left)$/ : /^(90deg|to right)$/);
+  expect(fadeTo === 'left' ? surface.insetLeft : surface.insetRight).toBeGreaterThanOrEqual(60);
   expect(surface.alphas.length).toBeGreaterThanOrEqual(2);
   expect(surface.alphas[0]).toBeGreaterThan(surface.alphas.at(-1)!);
   expect(surface.alphas.at(-1)).toBeLessThanOrEqual(0.05);
@@ -317,7 +337,7 @@ for (const width of [1920, 1280, 390]) {
     const instance = await map.getAttribute('data-map-instance');
     const { panel, card, detail } = await openPushDetail(page);
     await visibleInViewport(page, detail);
-    await detailPresentation(page, detail, '结论证据');
+    await detailPresentation(page, detail, '结论证据', 'left');
     await expect(panel).toBeVisible();
     await expect(card).toBeVisible();
     await expect(card).toHaveAttribute('aria-pressed', 'true');

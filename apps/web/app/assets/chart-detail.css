@@ -18,6 +18,12 @@
 }
 .chart-detail-float {
   --detail-fade-width: 48px;
+  --detail-spacing: 18px;
+  --detail-fade-angle: 90deg;
+  --detail-left-border: 1px;
+  --detail-right-border: 0px;
+  --detail-inset-left: var(--detail-spacing);
+  --detail-inset-right: calc(var(--detail-fade-width) + 12px);
   position: fixed;
   z-index: 50;
   display: flex;
@@ -25,15 +31,23 @@
   min-width: 0;
   overflow: hidden;
   border: 0;
-  border-left: 1px solid #36869b;
+  border-left: var(--detail-left-border) solid #36869b;
+  border-right: var(--detail-right-border) solid #36869b;
   border-radius: 0;
   background: linear-gradient(
-    90deg,
+    var(--detail-fade-angle),
     rgb(6 27 40 / 98%) 0%,
     rgb(6 27 40 / 94%) calc(100% - var(--detail-fade-width)),
     rgb(6 27 40 / 0%) 100%
   );
   box-shadow: none;
+}
+.chart-detail-float[data-fade-to='left'] {
+  --detail-fade-angle: 270deg;
+  --detail-left-border: 0px;
+  --detail-right-border: 1px;
+  --detail-inset-left: calc(var(--detail-fade-width) + 12px);
+  --detail-inset-right: var(--detail-spacing);
 }
 .chart-detail-float::before,
 .chart-detail-float::after {
@@ -41,7 +55,7 @@
   right: 0;
   left: 0;
   height: 1px;
-  background: linear-gradient(90deg, #36869b, #36869b50 65%, transparent);
+  background: linear-gradient(var(--detail-fade-angle), #36869b, #36869b50 65%, transparent);
   content: '';
   pointer-events: none;
 }
@@ -59,7 +73,7 @@
   justify-content: space-between;
   gap: 16px;
   min-height: 72px;
-  padding: 18px calc(var(--detail-fade-width) + 12px) 16px 18px;
+  padding: 18px max(var(--detail-inset-right), 60px) 16px var(--detail-inset-left);
   border-bottom: 1px solid #2c596550;
 }
 .chart-detail-heading-copy {
@@ -94,14 +108,13 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 0;
-  background: #092635c9;
+  background: transparent;
   color: #9bc3cf;
 }
-.chart-detail-float .chart-detail-close:hover {
-  border-color: #34768a;
-  background: #103546;
+.chart-detail-float .chart-detail-close:is(:hover, :active, :focus-visible) {
+  background: transparent;
   color: #d8f7fc;
 }
 .chart-detail-scroll {
@@ -110,7 +123,7 @@
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 18px calc(var(--detail-fade-width) + 12px) 24px 18px;
+  padding: 18px var(--detail-inset-right) 24px var(--detail-inset-left);
   scrollbar-width: thin;
   scrollbar-color: #3a6879 transparent;
   overflow-wrap: anywhere;
@@ -394,11 +407,8 @@
   }
 }
 @media (max-width: 480px) {
-  .chart-detail-heading {
-    padding-left: 15px;
-  }
-  .chart-detail-scroll {
-    padding-left: 15px;
+  .chart-detail-float {
+    --detail-spacing: 15px;
   }
   .detail-fields {
     gap: 13px 12px;

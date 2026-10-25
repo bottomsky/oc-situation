@@ -5,6 +5,7 @@ defineOptions({ inheritAttrs: false });
 const props = defineProps<{
   open: boolean;
   side: 'left' | 'right';
+  fadeTo?: 'left' | 'right';
   title: string;
   subtitle?: string;
   ariaLabel?: string;
@@ -160,6 +161,7 @@ onBeforeUnmount(() => {
         :inert="!open"
         :aria-hidden="!open ? 'true' : undefined"
         :data-side="side"
+        :data-fade-to="fadeTo ?? 'right'"
         data-testid="chart-detail-float"
         role="dialog"
         aria-modal="false"
