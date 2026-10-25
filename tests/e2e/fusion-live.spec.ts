@@ -44,12 +44,21 @@ test('真实融合流水线：两个专题产出可追溯结论并定位海图�
       .first()
       .click();
     const panel = page.getByRole('region', { name: '结论证据' });
-    await expect(panel.getByRole('heading', { name: '结论证据', exact: true })).toBeVisible();
+    const detail = page.getByTestId('chart-detail-float').filter({ visible: true });
+    await expect(detail.getByRole('heading', { name: '结论证据', exact: true })).toBeVisible();
     await expect(panel.getByText('样例数据 · 合成观测')).toBeVisible();
     await expect(
       panel.getByText('演示港区通行限制公告（合成数据）', { exact: true }).first(),
     ).toBeVisible();
-    await expect(panel.locator('.rule-steps li').first()).toBeVisible();
+    await expect(
+      panel
+        .locator('section')
+        .filter({
+          has: page.getByRole('heading', { name: '算法规则与中间事实', exact: true }),
+        })
+        .getByRole('listitem')
+        .first(),
+    ).toBeVisible();
     await expect(panel.locator('tbody tr').first()).toBeVisible();
     await panel.getByRole('button', { name: '定位海图' }).click();
     await expect(page.getByTestId('evidence-map-legend')).toBeVisible();
@@ -85,6 +94,6 @@ test('真实融合流水线：两个专题产出可追溯结论并定位海图�
       )
       .toEqual({ evidence: true, region: true });
     await page.screenshot({ path: `test-results/fusion-live-${definition}.png`, fullPage: true });
-    await panel.getByRole('button', { name: '关闭证据' }).click();
+    await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
   }
 });

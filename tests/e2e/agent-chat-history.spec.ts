@@ -55,6 +55,21 @@ async function fixture(page: Page, options: { empty?: boolean; saved?: boolean }
       };
     else if (path.endsWith('/sessions')) json = { items: options.empty ? [] : sessions };
     else if (path.endsWith('/events')) json = { items: [], nextCursor: '0' };
+    else if (/^\/api\/v1\/agent\/sessions\/[^/]+\/memory$/.test(path))
+      json = {
+        sessionId: path.split('/').at(-2)!,
+        revision: 0,
+        turnSeq: 0,
+        generation: 0,
+        summary: '',
+        conditions: {},
+        objectSets: [],
+        references: [],
+        updatedAt: messageTimes[1]!,
+        appliedAccountMemories: [],
+        appliedTaskId: null,
+        features: { session: true, account: true, proposals: true },
+      };
     else if (path.includes('/tasks/'))
       json = {
         task,
@@ -184,10 +199,25 @@ for (const width of [1920, 1280, 390]) {
     const history = await openHistory(page);
     await insideViewport(page, history);
     await expect(history).toHaveCSS('opacity', '1');
-    await expect(history).toHaveCSS(
-      'background-image',
-      'linear-gradient(145deg, rgb(10, 42, 64), rgb(6, 23, 37) 72%)',
-    );
+    const surface = await history.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        radii: [
+          style.borderTopLeftRadius,
+          style.borderTopRightRadius,
+          style.borderBottomLeftRadius,
+          style.borderBottomRightRadius,
+        ].map(parseFloat),
+        shadow: style.boxShadow,
+        rightBorder: parseFloat(style.borderRightWidth),
+        background: style.backgroundImage,
+      };
+    });
+    expect(surface.radii).toEqual([0, 0, 0, 0]);
+    expect(surface.shadow).toBe('none');
+    expect(surface.rightBorder).toBe(0);
+    expect(surface.background).toMatch(/^linear-gradient\((90deg|to right),/);
+    expect(surface.background).toMatch(/(?:rgba\([^)]*,\s*0\)|transparent)\s*(?:100%)?\)$/);
     const search = (await history.getByPlaceholder('搜索会话...').boundingBox())!;
     const searchIcon = (await history.locator('.agent-history-search svg').boundingBox())!;
     expect(

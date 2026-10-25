@@ -79,7 +79,7 @@ onBeforeUnmount(() => document.removeEventListener('fullscreenchange', destinati
     <aside
       v-show="open"
       ref="panel"
-      class="chart-detail-float chart-agent-objects-panel"
+      class="chart-agent-objects-panel"
       data-testid="reply-objects-panel"
       data-chart-overlay
       data-side="right"
@@ -256,6 +256,13 @@ onBeforeUnmount(() => document.removeEventListener('fullscreenchange', destinati
 
 <style scoped>
 .chart-agent-objects-panel {
+  --control-bg: #081f32;
+  --control-line: #24516b;
+  --panel-bg: #092237;
+  --quote-bg: #082739;
+  --code-bg: #041421;
+  --hover-bg: #0d314b;
+  --selection-bg: #10394f;
   position: absolute;
   inset: 8px 8px 8px auto;
   z-index: 60;
@@ -263,6 +270,7 @@ onBeforeUnmount(() => document.removeEventListener('fullscreenchange', destinati
   flex-direction: column;
   width: 360px;
   max-width: calc(100% - 16px);
+  min-width: 0;
   min-height: 0;
   padding: 0;
   overflow: hidden;
@@ -273,6 +281,7 @@ onBeforeUnmount(() => document.removeEventListener('fullscreenchange', destinati
   color: #d7edf6;
   box-shadow: -12px 0 30px rgb(0 8 20 / 25%);
   pointer-events: auto;
+  color-scheme: dark;
 }
 .reply-objects-heading {
   display: flex;

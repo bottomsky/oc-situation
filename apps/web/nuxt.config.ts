@@ -3,7 +3,12 @@ export default defineNuxtConfig({
   ssr: false,
   devtools: { enabled: false },
   modules: ['@nuxt/ui', './integrations/liveProxyModule'],
-  css: ['~/assets/main.css', 'maplibre-gl/dist/maplibre-gl.css', '~/assets/workbench.css'],
+  css: [
+    '~/assets/main.css',
+    'maplibre-gl/dist/maplibre-gl.css',
+    '~/assets/workbench.css',
+    '~/assets/chart-detail.css',
+  ],
   ui: { fonts: false },
   runtimeConfig: {
     public: {

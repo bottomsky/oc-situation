@@ -32,13 +32,15 @@ const event = {
 
 async function fixture(page: Page) {
   const calls = await chartFixture(page);
+  const detailReads: string[] = [];
   await page.route('**/api/v1/intelligence/events*', (route) =>
     route.fulfill({ json: { items: [event], nextCursor: null } }),
   );
-  await page.route('**/api/v1/intelligence/events/popover-event', (route) =>
-    route.fulfill({ json: { event, relations: [], history: [] } }),
-  );
-  return calls;
+  await page.route('**/api/v1/intelligence/events/popover-event', (route) => {
+    detailReads.push(event.id);
+    return route.fulfill({ json: { event, relations: [], history: [] } });
+  });
+  return { calls, detailReads };
 }
 
 async function agentFixture(page: Page) {
@@ -170,6 +172,50 @@ async function visibleInViewport(page: Page, locator: Locator) {
     .toBe(true);
 }
 
+async function detailPresentation(page: Page, detail: Locator, title: string) {
+  const heading = detail.getByRole('heading', { name: title, exact: true });
+  await expect(heading).toHaveCount(1);
+  await visibleInViewport(page, heading);
+  await visibleInViewport(page, detail.getByRole('button', { name: '关闭详情', exact: true }));
+  const surface = await detail.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const colors = [...style.backgroundImage.matchAll(/rgba?\(([^)]+)\)/g)].map((match) =>
+      match[1]!
+        .split(/[\s,/]+/)
+        .filter(Boolean)
+        .map(Number),
+    );
+    return {
+      radii: [
+        style.borderTopLeftRadius,
+        style.borderTopRightRadius,
+        style.borderBottomLeftRadius,
+        style.borderBottomRightRadius,
+      ].map(parseFloat),
+      shadow: style.boxShadow,
+      rightBorder: parseFloat(style.borderRightWidth),
+      opacity: Number(style.opacity),
+      rightGradient: /^linear-gradient\((90deg|to right),/.test(style.backgroundImage),
+      alphas: colors.map((color) => (color.length === 4 ? color[3]! : 1)),
+    };
+  });
+  expect(surface.radii).toEqual([0, 0, 0, 0]);
+  expect(surface.shadow).toBe('none');
+  expect(surface.rightBorder).toBe(0);
+  expect(surface.opacity).toBe(1);
+  expect(surface.rightGradient).toBe(true);
+  expect(surface.alphas.length).toBeGreaterThanOrEqual(2);
+  expect(surface.alphas[0]).toBeGreaterThan(surface.alphas.at(-1)!);
+  expect(surface.alphas.at(-1)).toBeLessThanOrEqual(0.05);
+  await expect
+    .poll(() =>
+      detail
+        .locator('.chart-detail-scroll')
+        .evaluate((element) => element.scrollWidth - element.clientWidth),
+    )
+    .toBeLessThanOrEqual(1);
+}
+
 async function openManualDetail(page: Page) {
   await openLeftPanel(page);
   await selectLeftTab(page, '情报标绘');
@@ -206,7 +252,7 @@ async function openPushDetail(page: Page) {
 for (const width of [1920, 1280, 390]) {
   test(`${width}px 人工情报详情独立悬浮、源列表保留且关闭后地图不重建`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await fixture(page);
+    const requests = await fixture(page);
     await page.goto('/');
     const map = page.getByTestId('sea-map');
     await expect(map).toHaveAttribute('data-ready', 'true');
@@ -220,6 +266,7 @@ for (const width of [1920, 1280, 390]) {
     expect(channels).toHaveLength(3);
     expect(Math.max(...channels)).toBeLessThan(100);
     await visibleInViewport(page, detail);
+    await detailPresentation(page, detail, '情报证据');
     await expect(page.getByTestId('chart-left-panel')).toBeVisible();
     await expect(card).toBeVisible();
     expect(
@@ -227,20 +274,35 @@ for (const width of [1920, 1280, 390]) {
     ).toBe(0);
     await expect(map).toHaveAttribute('data-map-instance', instance!);
     await page.screenshot({ path: test.info().outputPath(`manual-detail-${width}.png`) });
-    if (width === 1920)
+    if (width === 1920) {
+      await page.getByRole('button', { name: '浅色海图', exact: true }).click();
+      await expect(page.getByRole('button', { name: '深色海图', exact: true })).toBeVisible();
+      await detailPresentation(page, detail, '情报证据');
+      await expect(map).toHaveAttribute('data-map-instance', instance!);
+      await page.screenshot({ path: test.info().outputPath('manual-detail-1920-light.png') });
+      await page.getByRole('button', { name: '深色海图', exact: true }).click();
+      await expect(page.getByRole('button', { name: '浅色海图', exact: true })).toBeVisible();
       await detail
         .getByRole('textbox', { name: '认定依据', exact: true })
         .fill('尚未保存的港口关联认定草稿');
+    }
     await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
     await expect(detail).toHaveCount(0);
     await expect(page.getByTestId('chart-left-panel')).toBeVisible();
     await expect(card).toBeVisible();
     await expect(map).toHaveAttribute('data-map-instance', instance!);
     if (width === 1920) {
+      await page
+        .getByTestId('chart-left-panel')
+        .getByRole('button', { name: '清空标绘', exact: true })
+        .click();
+      await expect(card).toContainText('未标绘');
       await openManualDetail(page);
+      await expect(card).toContainText('已标绘');
       await expect(detail.getByRole('textbox', { name: '认定依据', exact: true })).toHaveValue(
         '尚未保存的港口关联认定草稿',
       );
+      expect(requests.detailReads).toEqual([event.id]);
       await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
       await expect(map).toHaveAttribute('data-map-instance', instance!);
     }
@@ -255,6 +317,7 @@ for (const width of [1920, 1280, 390]) {
     const instance = await map.getAttribute('data-map-instance');
     const { panel, card, detail } = await openPushDetail(page);
     await visibleInViewport(page, detail);
+    await detailPresentation(page, detail, '结论证据');
     await expect(panel).toBeVisible();
     await expect(card).toBeVisible();
     await expect(card).toHaveAttribute('aria-pressed', 'true');
@@ -283,8 +346,10 @@ test('船舶搜索详情在左侧独立浮层，切换情报仅保留一个浮�
   const detail = page.getByTestId('chart-detail-float').filter({ visible: true });
   await expect(detail).toHaveAttribute('data-side', 'left');
   await expect(detail.locator('.vessel-detail')).toContainText('413000001');
+  await detailPresentation(page, detail, '船舶详情');
   await expect(source).toBeVisible();
   await expect(page.getByTestId('chart-left-panel').locator('.vessel-detail')).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('vessel-detail.png') });
   await openManualDetail(page);
   await expect(detail).toHaveCount(1);
   await expect(detail.locator('.vessel-detail')).toHaveCount(0);
@@ -308,10 +373,12 @@ for (const width of [1920, 390]) {
     const detail = page.getByTestId('chart-detail-float').filter({ visible: true });
     await expect(detail).toHaveAttribute('data-side', 'right');
     await visibleInViewport(page, detail);
+    await detailPresentation(page, detail, '智能体任务详情');
     await expect(detail.getByRole('region', { name: '智能体任务详情' })).toBeVisible();
     await expect(panel.getByRole('region', { name: '智能体任务详情' })).toHaveCount(0);
     await detail.getByRole('button', { name: /\[I1\].*右侧来源引用/ }).click();
     await expect(detail).toHaveAttribute('data-detail-kind', 'sources');
+    await detailPresentation(page, detail, '情报引用');
     await expect(detail).toContainText('右侧来源引用：港口公告原文');
     await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
     await expect(taskTrigger).toBeFocused();
@@ -363,4 +430,32 @@ test('浮层随面板调整宽度跟随，Escape 关闭并恢复来源按钮焦�
     .poll(async () => Math.round((await push.detail.boundingBox())!.x))
     .not.toBe(Math.round(rightBefore.x));
   await visibleInViewport(page, push.detail);
+});
+
+test('已打开详情进入和退出海图全屏后保留草稿、可见层级及地图实例', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/');
+  const map = page.getByTestId('sea-map');
+  await expect(map).toHaveAttribute('data-ready', 'true');
+  const instance = await map.getAttribute('data-map-instance');
+  const { detail } = await openManualDetail(page);
+  const draft = detail.getByRole('textbox', { name: '认定依据', exact: true });
+  await draft.fill('全屏切换期间保留的关系草稿');
+  await page.getByRole('button', { name: '海图全屏', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
+  await expect
+    .poll(() => detail.evaluate((element) => !!document.fullscreenElement?.contains(element)))
+    .toBe(true);
+  await visibleInViewport(page, detail);
+  await detailPresentation(page, detail, '情报证据');
+  await expect(draft).toHaveValue('全屏切换期间保留的关系草稿');
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+  await page.screenshot({ path: test.info().outputPath('manual-detail-fullscreen.png') });
+  await page.getByRole('button', { name: '退出海图全屏', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false);
+  await visibleInViewport(page, detail);
+  await expect(draft).toHaveValue('全屏切换期间保留的关系草稿');
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+  await detail.getByRole('button', { name: '关闭详情', exact: true }).click();
+  await expect(detail).toHaveCount(0);
 });

@@ -154,7 +154,7 @@ onBeforeUnmount(() => {
         v-show="open && positioned"
         ref="panel"
         v-bind="$attrs"
-        class="chart-detail-float chart-panel"
+        class="chart-detail-float"
         :style="style"
         :aria-label="ariaLabel ?? title"
         :inert="!open"
@@ -166,8 +166,8 @@ onBeforeUnmount(() => {
         @keydown="keydown"
         @wheel.stop
       >
-        <header class="chart-panel-heading">
-          <div>
+        <header class="chart-detail-heading">
+          <div class="chart-detail-heading-copy">
             <h2>{{ title }}</h2>
             <small v-if="subtitle">{{ subtitle }}</small>
           </div>
@@ -177,10 +177,10 @@ onBeforeUnmount(() => {
             :aria-label="closeLabel ?? '关闭详情'"
             @click="close"
           >
-            ×
+            <ChartIcon name="X" :size="16" />
           </button>
         </header>
-        <div class="chart-detail-scroll chart-panel-scroll"><slot /></div>
+        <div class="chart-detail-scroll"><slot /></div>
       </aside>
     </Transition>
   </Teleport>

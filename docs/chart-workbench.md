@@ -32,6 +32,10 @@ AIS 监控、智能研判、任务管理、数据分析和系统设置共用工�
 
 右侧主动推送提供最近 30 条专题结论和选中状态。有效、修订和撤回状态保持可见。打开结论后可查看原始 AIS、公告段落、规则步骤、参数和历史版本；定位操作高亮对应版本的地图证据。查看历史版本时保持该证据快照，实时推送继续更新列表。
 
+船舶详情、情报证据、结论证据、情报引用、任务详情和历史会话共用详情浮层。浮层采用直角、左侧细线与从左向右逐渐透明的深蓝背景，上下边线随背景淡出，右侧融入海图。文字与控件保持完整不透明度，原文与代码使用局部深色底承载。浮层沿来源面板定位，保留各业务宽度、独立滚动、关闭按钮与键盘焦点恢复；全屏时迁入全屏工作区。
+
+船舶资料按标识、航行信息、观测来源和静态字段溯源分区；情报证据按状态摘要、来源时效、原文、对象关系、关系编辑和版本历史组织。结论证据依次呈现结论与置信度、判读限制、原始 AIS、公告原文和推导过程。审核、归档读取、绘制及关系保存沿用现有业务接口与权限，关闭再打开详情保留当前编辑草稿。关联对象抽屉使用独立布局，与详情浮层分别管理。
+
 证据支持放大阅读。放大窗口使用原生模态对话框，Tab 与 Shift+Tab 在窗口内循环；Escape 关闭后恢复触发按钮焦点。地图快捷键在模态窗口打开期间暂停响应。
 
 任务中心展示专题实例，选中实例后读取其运行记录。管理员和操作员按专题启停及运行条件发起人工计算。采集任务和完整运行日志通过已有管理页面查看。
@@ -90,21 +94,24 @@ Remove-Item Env:E2E_COMPILED_WEB
 
 ## 前端组件边界
 
-| 模块                                                   | 职责                                                                               |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `ConsoleHeader`                                        | 系统导航、跨页搜索、时钟与账号操作                                                 |
-| `useChartWorkspace`                                    | 海图查询、船舶搜索分页、详情、轨迹回放与来源状态                                   |
-| `useTopicResults`                                      | 最近结论列表、选中证据快照、历史修订与地图定位                                     |
-| `ChartLeftPanel`                                       | 六项人工操作功能的视图组织、图层与船舶查询入口，以及已访问业务视图和草稿保留       |
-| `ChartOverflowTabs`、`chartOverflowTabs`               | 标签自然宽度测量与分配、当前功能保留、Portal 更多菜单和键盘焦点管理                |
-| `IntelligenceList`                                     | 情报筛选与图层设置、卡片展示、批量勾选及标绘操作，并分别发出详情与定位事件         |
-| `ChartAgentComposer`                                   | 悬浮问题输入、发送入口、键盘与组合输入及状态提示                                   |
-| `ChartAgentReplyCard`、`ChartAgentObjectsPanel`        | 当前回复、关联名称、完整对话入口，以及独立的对象筛选、分页和操作                   |
-| `ChartAgentFocusOverlay`、`focusCamera`、`focusLayout` | 逐对象高亮、构图预估、相机预算及卡片布局                                           |
-| `index.vue`、`useAgentConversation`                    | 页面持有唯一会话，统一初始化、账号切换与轮询销毁，并向输入框和右侧面板传递共享状态 |
-| `ChartRightPanel`、`ChartTaskCenter`、`useChartTasks`  | 主动推送、证据模态与所选专题的运行查询和提交                                       |
-| `SeaMap`、`chartLayers`、`chartBusinessLayers`         | 地图实例、图源加载与回退、业务图形更新和尺寸调度                                   |
-| `ChartResizeHandle`、`useChartLayout`、`chartLayout`   | 拖动与键盘输入、响应式尺寸约束和账号尺寸偏好                                       |
+| 模块                                                          | 职责                                                                               |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `ConsoleHeader`                                               | 系统导航、跨页搜索、时钟与账号操作                                                 |
+| `useChartWorkspace`                                           | 海图查询、船舶搜索分页、详情、轨迹回放与来源状态                                   |
+| `useTopicResults`                                             | 最近结论列表、选中证据快照、历史修订与地图定位                                     |
+| `ChartLeftPanel`                                              | 六项人工操作功能的视图组织、图层与船舶查询入口，以及已访问业务视图和草稿保留       |
+| `ChartOverflowTabs`、`chartOverflowTabs`                      | 标签自然宽度测量与分配、当前功能保留、Portal 更多菜单和键盘焦点管理                |
+| `IntelligenceList`                                            | 情报筛选与图层设置、卡片展示、批量勾选及标绘操作，并分别发出详情与定位事件         |
+| `ChartAgentComposer`                                          | 悬浮问题输入、发送入口、键盘与组合输入及状态提示                                   |
+| `ChartAgentReplyCard`、`ChartAgentObjectsPanel`               | 当前回复、关联名称、完整对话入口，以及独立的对象筛选、分页和操作                   |
+| `ChartAgentFocusOverlay`、`focusCamera`、`focusLayout`        | 逐对象高亮、构图预估、相机预算及卡片布局                                           |
+| `index.vue`、`useAgentConversation`                           | 页面持有唯一会话，统一初始化、账号切换与轮询销毁，并向输入框和右侧面板传递共享状态 |
+| `ChartRightPanel`、`ChartTaskCenter`、`useChartTasks`         | 主动推送、证据模态与所选专题的运行查询和提交                                       |
+| `ChartDetailFloat`、`useChartDetail`                          | 详情定位、显示互斥、层级、全屏挂载、关闭与焦点恢复                                 |
+| `ChartDetailSection`、`chart-detail.css`                      | 详情分区、标题、字段、状态、引用与操作区的共用展示                                 |
+| `ChartVesselDetail`、`IntelligenceDetail`、`AnalysisEvidence` | 船舶资料、情报审核与关系、结论证据和版本的业务内容                                 |
+| `SeaMap`、`chartLayers`、`chartBusinessLayers`                | 地图实例、图源加载与回退、业务图形更新和尺寸调度                                   |
+| `ChartResizeHandle`、`useChartLayout`、`chartLayout`          | 拖动与键盘输入、响应式尺寸约束和账号尺寸偏好                                       |
 
 页面保存面板与图层偏好，并通过参数和事件组合上述组件。地图控制接口提供视野重置与缩放；折叠面板复用地图实例及实时连接。专题任务面板关闭或切换后清理轮询，运行状态查询失败时先刷新确认状态再提交。
 

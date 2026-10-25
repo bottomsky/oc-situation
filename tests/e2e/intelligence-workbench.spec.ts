@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { openLeftPanel, selectLeftTab } from './chart-helpers';
 import { chartFixture } from './fixtures/chart-fixture';
+import { captureChartMap } from './fixtures/chart-map';
 const event = {
   id: 'event-a',
   sourceId: 'manual',
@@ -272,7 +273,8 @@ test('情报跨页勾选与标绘持久化，筛选保留集合，单海图绘�
     .last()
     .click();
   await expect(page.getByRole('heading', { name: '港口临时管制' })).toBeVisible();
-  await page.getByRole('button', { name: '绘制点', exact: true }).click();
+  const detail = page.getByRole('region', { name: '情报详情', exact: true });
+  await detail.getByRole('button', { name: '绘制点', exact: true }).click();
   const documentBounds = await page.evaluate(() => ({
     scrollHeight: document.documentElement.scrollHeight,
     height: window.innerHeight,
@@ -284,9 +286,9 @@ test('情报跨页勾选与标绘持久化，筛选保留集合，单海图绘�
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y + box.height).toBeLessThanOrEqual(documentBounds.height);
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await expect(page.getByRole('textbox', { name: 'GeoJSON 几何' })).toHaveValue(/Point/);
-  await page.getByRole('button', { name: '取消绘制', exact: true }).first().click();
-  await expect(page.getByRole('textbox', { name: 'GeoJSON 几何' })).toHaveValue('');
+  await expect(detail.getByRole('textbox', { name: 'GeoJSON 几何' })).toHaveValue(/Point/);
+  await detail.getByRole('button', { name: '取消绘制', exact: true }).click();
+  await expect(detail.getByRole('textbox', { name: 'GeoJSON 几何' })).toHaveValue('');
   await expect(map).toHaveAttribute('data-map-instance', instance!);
   expect(errors).toEqual([]);
 });
@@ -476,9 +478,10 @@ test('已存点几何加载海图后可拖动并提交候选修订，保留同�
   const map = page.getByTestId('sea-map');
   await expect(map).toHaveAttribute('data-ready', 'true');
   const instance = await map.getAttribute('data-map-instance');
+  await captureChartMap(page, '__intelligenceGeometryMap');
   const viewport = page.waitForRequest(
     (request) =>
-      request.url().includes('/api/v1/map?') &&
+      new URL(request.url()).pathname === '/api/v1/map/points' &&
       Number(new URL(request.url()).searchParams.get('zoom')) > 10,
   );
   await page.getByRole('button', { name: '修订关系', exact: true }).click();
@@ -486,10 +489,40 @@ test('已存点几何加载海图后可拖动并提交候选修订，保留同�
   const geometry = page.getByRole('textbox', { name: 'GeoJSON 几何', exact: true });
   await expect(geometry).toHaveValue(/Point/);
   const before = await geometry.inputValue();
-  const bounds = (await map.boundingBox())!;
-  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const map = (
+          globalThis as typeof globalThis & {
+            __intelligenceGeometryMap: import('maplibre-gl').Map;
+          }
+        ).__intelligenceGeometryMap;
+        return (
+          !map.isMoving() &&
+          map.getZoom() > 10 &&
+          !!map.getLayer('td-point') &&
+          map
+            .queryRenderedFeatures(map.project([123, 34]), { layers: ['td-point'] })
+            .some(
+              (feature) => feature.geometry.type === 'Point' && feature.properties.mode === 'point',
+            )
+        );
+      }),
+    )
+    .toBe(true);
+  const vertex = await page.evaluate(() => {
+    const map = (
+      globalThis as typeof globalThis & {
+        __intelligenceGeometryMap: import('maplibre-gl').Map;
+      }
+    ).__intelligenceGeometryMap;
+    const point = map.project([123, 34]);
+    const canvas = map.getCanvas().getBoundingClientRect();
+    return { x: canvas.x + point.x, y: canvas.y + point.y };
+  });
+  await page.mouse.move(vertex.x, vertex.y);
   await page.mouse.down();
-  await page.mouse.move(bounds.x + bounds.width / 2 + 60, bounds.y + bounds.height / 2 + 30, {
+  await page.mouse.move(vertex.x + 60, vertex.y + 30, {
     steps: 8,
   });
   await page.mouse.up();
@@ -509,7 +542,8 @@ for (const mode of ['LineString', 'Polygon'] as const)
     const map = page.getByTestId('sea-map');
     await expect(map).toHaveAttribute('data-ready', 'true');
     const instance = await map.getAttribute('data-map-instance');
-    await page
+    const detail = page.getByRole('region', { name: '情报详情', exact: true });
+    await detail
       .getByRole('button', { name: mode === 'LineString' ? '绘制线' : '绘制面', exact: true })
       .click();
     const box = (await map.boundingBox())!;
@@ -523,17 +557,17 @@ for (const mode of ['LineString', 'Polygon'] as const)
       await page.mouse.click(p3.x, p3.y);
       await page.mouse.click(p1.x, p1.y);
     }
-    const geometry = page.getByRole('textbox', { name: 'GeoJSON 几何', exact: true });
+    const geometry = detail.getByRole('textbox', { name: 'GeoJSON 几何', exact: true });
     await expect(geometry).toHaveValue(new RegExp(mode));
     const before = await geometry.inputValue();
-    await page.getByRole('button', { name: '编辑绘制', exact: true }).click();
+    await detail.getByRole('button', { name: '编辑绘制', exact: true }).click();
     await page.mouse.move(p1.x, p1.y);
     await page.mouse.down();
     await page.mouse.move(p1.x - 30, p1.y - 20, { steps: 8 });
     await page.mouse.up();
     await expect.poll(() => geometry.inputValue()).not.toBe(before);
     expect(JSON.parse(await geometry.inputValue()).type).toBe(mode);
-    await page.getByRole('button', { name: '取消绘制', exact: true }).last().click();
+    await detail.getByRole('button', { name: '取消绘制', exact: true }).click();
     await expect(geometry).toHaveValue('');
     await expect(map).toHaveAttribute('data-map-instance', instance!);
   });

@@ -280,7 +280,9 @@ async function selectIntelligence(id: string) {
   leftOpen.value = true;
   detailHost.open('intelligence', 'left');
   workspace.leftTab = 'intelligence';
-  await intelligence.select(id);
+  if (intelligence.activeId === id && intelligence.detail?.event.id === id)
+    await intelligence.add([id]);
+  else await intelligence.select(id);
 }
 async function locateIntelligence(id?: string) {
   if (id) await intelligence.add([id]);

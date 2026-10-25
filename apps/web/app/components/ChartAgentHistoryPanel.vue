@@ -38,7 +38,6 @@ function selectSession(id: string) {
     :width="288"
     motion="slide-left"
     data-detail-kind="history"
-    class="agent-history-float"
     @close="emit('close')"
   >
     <div class="agent-history-panel">
@@ -99,9 +98,6 @@ function selectSession(id: string) {
 </template>
 
 <style scoped>
-:global(.chart-detail-float.agent-history-float) {
-  background: linear-gradient(145deg, #0a2a40, #061725 72%);
-}
 .agent-history-panel {
   display: grid;
   gap: 18px;
@@ -115,11 +111,8 @@ function selectSession(id: string) {
   gap: 8px;
   min-height: 42px;
   border: 1px solid #28d3f0;
-  border-radius: 9px;
-  background: linear-gradient(130deg, #065477, #0870a4a8);
-  box-shadow:
-    inset 0 -2px 0 #17c7ed66,
-    0 0 16px #009bc41a;
+  border-radius: 0;
+  background: #103e50;
   color: #ecfaff;
   font-weight: 600;
 }
@@ -131,7 +124,7 @@ function selectSession(id: string) {
   min-width: 0;
   padding: 0 12px;
   border: 1px solid #234b60;
-  border-radius: 8px;
+  border-radius: 0;
   background: #041522b3;
   color: #739eb6;
 }
@@ -147,7 +140,6 @@ function selectSession(id: string) {
 }
 .agent-history-search:focus-within {
   border-color: #30cbe9;
-  box-shadow: 0 0 0 2px #30cbe926;
 }
 .agent-history-search input:focus-visible {
   outline: none;
@@ -174,7 +166,7 @@ function selectSession(id: string) {
   border: 1px solid transparent;
   border-left: 2px solid transparent;
   border-bottom-color: #173343b3;
-  border-radius: 0 9px 9px 0;
+  border-radius: 0;
   background: transparent;
   text-align: left;
   color: #c8e3f0;
@@ -182,7 +174,6 @@ function selectSession(id: string) {
 .agent-history-item[aria-current='true'] {
   border-left-color: #1ed7ff;
   background: linear-gradient(90deg, #07567b80, #092f4652);
-  box-shadow: inset 0 0 20px #19bce00d;
 }
 .agent-history-item:not(:disabled):hover {
   border-color: #23556c;

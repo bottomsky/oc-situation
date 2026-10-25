@@ -188,6 +188,7 @@ watch(
         ><AnalysisEvidence
           v-if="!expanded"
           :result="evidence"
+          presentation="embedded"
           @close="closeEvidence()"
           @locate="emit('locate', $event)"
           @revision="emit('revision', $event)"

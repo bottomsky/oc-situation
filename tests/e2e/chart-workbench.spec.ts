@@ -697,8 +697,9 @@ test('主动推送选择与证据历史修订保持同一结果标识', async ({
     .click();
   await expect(card).toHaveAttribute('aria-pressed', 'true');
   await page
-    .getByRole('region', { name: '结论证据' })
-    .getByRole('button', { name: '关闭证据' })
+    .getByTestId('chart-detail-float')
+    .filter({ visible: true })
+    .getByRole('button', { name: '关闭详情', exact: true })
     .click();
   await expect(card).toHaveAttribute('aria-pressed', 'false');
   await card.click();

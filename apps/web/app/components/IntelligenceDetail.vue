@@ -219,107 +219,177 @@ onMounted(async () => {
 });
 </script>
 <template>
-  <section class="document-evidence intelligence-detail" aria-label="情报详情">
-    <div class="eyebrow">INTELLIGENCE / 证据与关系</div>
-    <h2>{{ detail.event.title }}</h2>
-    <span v-if="sampleLabel" class="badge sample">{{ sampleLabel }}</span>
-    <p>{{ detail.event.summary }}</p>
-    <p class="detail-time">
-      {{ detail.event.sourceId }} · {{ detail.event.externalId }} · 版本
-      {{ detail.event.version }} · {{ statusLabels[detail.event.status] }} ·
-      {{ reviewLabels[detail.event.reviewStatus || 'candidate'] }}
-    </p>
+  <section class="intelligence-detail detail-content" aria-label="情报详情">
+    <header class="detail-hero">
+      <p class="detail-eyebrow">INTELLIGENCE / 证据与关系</p>
+      <h2 class="detail-title">{{ detail.event.title }}</h2>
+      <div class="detail-meta">
+        <span class="detail-status">{{ statusLabels[detail.event.status] }}</span>
+        <span
+          class="detail-status"
+          :data-tone="
+            detail.event.reviewStatus === 'confirmed'
+              ? 'success'
+              : detail.event.reviewStatus === 'rejected'
+                ? 'danger'
+                : 'warning'
+          "
+          >{{ reviewLabels[detail.event.reviewStatus || 'candidate'] }}</span
+        >
+        <span>版本 {{ detail.event.version }}</span>
+        <span v-if="sampleLabel" class="detail-status" data-tone="warning">{{ sampleLabel }}</span>
+      </div>
+      <p class="detail-summary">{{ detail.event.summary }}</p>
+      <div class="detail-actions">
+        <button type="button" class="detail-action-primary" @click="emit('locate')">
+          定位情报 <span aria-hidden="true">⌖</span>
+        </button>
+        <a
+          v-if="safeOriginalUrl(detail.event.originalUrl)"
+          :href="safeOriginalUrl(detail.event.originalUrl)"
+          target="_blank"
+          rel="noopener noreferrer"
+          >查看来源原文 <span aria-hidden="true">↗</span></a
+        >
+      </div>
+    </header>
     <p
       v-if="
         detail.event.status !== 'active' ||
         (detail.event.effectiveTo && Date.parse(detail.event.effectiveTo) < Date.now())
       "
-      class="chart-caution"
+      class="intelligence-notice"
     >
       历史或失效情报：{{
         detail.event.status === 'withdrawn' ? '已撤回' : '请核对有效期与后续版本'
       }}
     </p>
-    <p v-if="timePending" class="chart-caution">
+    <p v-if="timePending" class="intelligence-notice">
       实际有效 / 发生时间待确认；当前时间为来源观测时间。完成修订并填写实际有效期后审核。
     </p>
-    <p class="detail-time">
-      {{ intelligencePublishedTimeLabel(detail.event.raw) }} {{ dateLabel(detail.event.publishedAt)
-      }}<br />发生 / 适用 {{ dateLabel(detail.event.effectiveFrom) }} →
-      {{
-        timePending
-          ? '有效期待确认'
-          : detail.event.effectiveTo
-            ? dateLabel(detail.event.effectiveTo)
-            : '持续有效'
-      }}
-    </p>
-    <a
-      v-if="safeOriginalUrl(detail.event.originalUrl)"
-      :href="safeOriginalUrl(detail.event.originalUrl)"
-      target="_blank"
-      rel="noopener noreferrer"
-      >查看来源原文 ↗</a
-    >
-    <p
-      v-if="
-        (detail.event.raw as { applicabilityConfirmed?: unknown } | null)
-          ?.applicabilityConfirmed === true
-      "
-      class="detail-time"
-    >
-      适用条件：操作员已核验原文适用于全部船舶。
-    </p>
-    <button @click="emit('locate')">定位情报</button>
-    <div v-if="canManage" class="actions">
-      <button :disabled="busy || timePending" @click="review(detail.event.id, 'confirmed')">
-        确认公告</button
-      ><button :disabled="busy" @click="review(detail.event.id, 'rejected')">驳回公告</button
-      ><button @click="emit('revise', detail.event, 'revised')">修订公告</button
-      ><button @click="emit('revise', detail.event, 'withdrawn')">撤回公告</button>
-    </div>
     <FetchState :error="error" :busy="busy" />
-    <h3>原文段落</h3>
-    <blockquote v-for="p in detail.event.paragraphs" :key="p.id">
-      <small class="mono">{{ p.id }}</small
-      >{{ p.text }}
-    </blockquote>
-    <details>
-      <summary>完整原始数据与归档校验</summary>
-      <p class="mono">归档 {{ detail.event.archiveKey }}</p>
-      <p class="mono">校验 {{ detail.event.checksum }}</p>
-      <button
-        v-if="detail.event.originalArchiveId"
-        :disabled="archiveLoading"
-        @click="readOriginal"
+
+    <ChartDetailSection title="来源与时效" eyebrow="SOURCE & VALIDITY">
+      <dl class="detail-fields intelligence-source-fields">
+        <div>
+          <dt>情报来源</dt>
+          <dd>{{ detail.event.sourceId }}</dd>
+        </div>
+        <div>
+          <dt>来源标识</dt>
+          <dd class="mono">{{ detail.event.externalId }}</dd>
+        </div>
+        <div>
+          <dt>{{ intelligencePublishedTimeLabel(detail.event.raw) }} · UTC</dt>
+          <dd class="mono">{{ dateLabel(detail.event.publishedAt) }}</dd>
+        </div>
+        <div>
+          <dt>发生 / 适用 · UTC</dt>
+          <dd class="mono">{{ dateLabel(detail.event.effectiveFrom) }}</dd>
+          <dd class="detail-meta">
+            至
+            {{
+              timePending
+                ? '有效期待确认'
+                : detail.event.effectiveTo
+                  ? dateLabel(detail.event.effectiveTo)
+                  : '持续有效'
+            }}
+          </dd>
+        </div>
+      </dl>
+      <p
+        v-if="
+          (detail.event.raw as { applicabilityConfirmed?: unknown } | null)
+            ?.applicabilityConfirmed === true
+        "
+        class="detail-meta"
       >
-        读取采集归档原文
-      </button>
-      <FetchState :busy="archiveLoading" :error="archiveError" />
-      <pre v-if="archivedOriginal" class="code-view">{{ archivedOriginal }}</pre>
-      <pre class="code-view">{{ JSON.stringify(detail.event.raw, null, 2) }}</pre>
-    </details>
-    <h3>地理与对象关系</h3>
-    <article v-for="r in detail.relations" :key="r.id" class="topic-instance">
-      <strong>{{ relationLabels[r.kind] }} · {{ reviewLabels[r.reviewStatus] }}</strong>
-      <p>{{ r.basis }}</p>
-      <small class="detail-time"
-        >{{ r.objectId || r.geometry?.type }} · {{ originLabels[r.origin] }} · 修订
-        {{ r.revision }} · 原文 {{ r.paragraphIds.join('、') || '未关联段落' }}</small
-      >
-      <p v-if="r.kind === 'impacts'">
-        影响：{{ r.impactType }} · {{ dateLabel(r.effectiveFrom) }} →
-        {{ r.effectiveTo ? dateLabel(r.effectiveTo) : '持续有效' }}
+        适用条件：操作员已核验原文适用于全部船舶。
       </p>
-      <div v-if="canManage" class="actions">
-        <button @click="edit(r)">修订关系</button
-        ><button @click="review(r.id, 'confirmed', true)">确认关系</button
-        ><button @click="review(r.id, 'rejected', true)">驳回关系</button>
+      <div v-if="canManage" class="detail-actions intelligence-review-actions">
+        <button :disabled="busy || timePending" @click="review(detail.event.id, 'confirmed')">
+          确认公告
+        </button>
+        <button :disabled="busy" @click="review(detail.event.id, 'rejected')">驳回公告</button>
+        <button @click="emit('revise', detail.event, 'revised')">修订公告</button>
+        <button @click="emit('revise', detail.event, 'withdrawn')">撤回公告</button>
       </div>
-    </article>
-    <details v-if="canManage" open>
+    </ChartDetailSection>
+
+    <ChartDetailSection
+      title="原文段落"
+      eyebrow="SOURCE EVIDENCE"
+      :meta="`${detail.event.paragraphs.length} 段`"
+    >
+      <blockquote v-for="p in detail.event.paragraphs" :key="p.id" class="detail-quote">
+        <small class="mono">{{ p.id }}</small>
+        <p>{{ p.text }}</p>
+      </blockquote>
+      <p v-if="!detail.event.paragraphs.length" class="detail-empty">当前情报暂无原文段落。</p>
+      <details class="detail-disclosure">
+        <summary>完整原始数据与归档校验</summary>
+        <dl class="detail-fields intelligence-archive-fields">
+          <div>
+            <dt>归档</dt>
+            <dd class="mono">{{ detail.event.archiveKey }}</dd>
+          </div>
+          <div>
+            <dt>校验</dt>
+            <dd class="mono">{{ detail.event.checksum }}</dd>
+          </div>
+        </dl>
+        <div v-if="detail.event.originalArchiveId" class="detail-actions">
+          <button :disabled="archiveLoading" @click="readOriginal">读取采集归档原文</button>
+        </div>
+        <FetchState :busy="archiveLoading" :error="archiveError" />
+        <pre v-if="archivedOriginal" class="detail-code">{{ archivedOriginal }}</pre>
+        <pre class="detail-code">{{ JSON.stringify(detail.event.raw, null, 2) }}</pre>
+      </details>
+    </ChartDetailSection>
+
+    <ChartDetailSection
+      title="地理与对象关系"
+      eyebrow="RELATIONS"
+      :meta="`${detail.relations.length} 项`"
+    >
+      <p v-if="!detail.relations.length" class="detail-empty">当前情报暂无地理与对象关系。</p>
+      <article v-for="r in detail.relations" :key="r.id" class="intelligence-relation">
+        <header class="intelligence-relation-heading">
+          <strong>{{ relationLabels[r.kind] }}</strong>
+          <span
+            class="detail-status"
+            :data-tone="
+              r.reviewStatus === 'confirmed'
+                ? 'success'
+                : r.reviewStatus === 'rejected'
+                  ? 'danger'
+                  : 'warning'
+            "
+            >{{ reviewLabels[r.reviewStatus] }}</span
+          >
+        </header>
+        <p>{{ r.basis }}</p>
+        <p class="detail-meta">
+          {{ r.objectId || r.geometry?.type || '对象待补充' }} · {{ originLabels[r.origin] }} · 修订
+          {{ r.revision }}
+        </p>
+        <p class="detail-meta">原文 {{ r.paragraphIds.join('、') || '未关联段落' }}</p>
+        <p v-if="r.kind === 'impacts'" class="detail-meta">
+          影响：{{ r.impactType }} · {{ dateLabel(r.effectiveFrom) }} →
+          {{ r.effectiveTo ? dateLabel(r.effectiveTo) : '持续有效' }}
+        </p>
+        <div v-if="canManage" class="detail-actions">
+          <button @click="edit(r)">修订关系</button>
+          <button @click="review(r.id, 'confirmed', true)">确认关系</button>
+          <button @click="review(r.id, 'rejected', true)">驳回关系</button>
+        </div>
+      </article>
+    </ChartDetailSection>
+
+    <details v-if="canManage" class="detail-disclosure intelligence-editor" open>
       <summary>{{ editing ? '修订关系' : '新增关联 / 影响认定' }}</summary>
-      <form class="track-form" @submit.prevent="save">
+      <form class="intelligence-relation-form" @submit.prevent="save">
         <label
           >关系类型<select v-model="draft.kind">
             <option value="occurs-at">发生位置</option>
@@ -338,11 +408,11 @@ onMounted(async () => {
           </select></label
         >
         <label>认定依据<textarea v-model="draft.basis" required rows="3" /></label>
-        <label v-for="p in detail.event.paragraphs" :key="p.id" class="chart-layer-check"
+        <label v-for="p in detail.event.paragraphs" :key="p.id" class="intelligence-reference"
           ><input v-model="draft.paragraphIds" type="checkbox" :value="p.id" />引用原文
           {{ p.id }}</label
         >
-        <div v-if="canDraw" class="actions">
+        <div v-if="canDraw" class="detail-actions">
           <button type="button" @click="emit('draw', 'point')">绘制点</button
           ><button type="button" @click="emit('draw', 'linestring')">绘制线</button
           ><button type="button" @click="emit('draw', 'polygon')">绘制面</button
@@ -379,14 +449,17 @@ onMounted(async () => {
             <option value="confirmed">已确认</option>
             <option value="rejected">已驳回</option>
           </select></label
-        ><button :disabled="busy">{{ editing ? '保存关系修订' : '保存关联' }}</button>
+        ><button class="detail-action-primary" :disabled="busy">
+          {{ editing ? '保存关系修订' : '保存关联' }}
+        </button>
       </form>
     </details>
-    <details open>
+    <details class="detail-disclosure" open>
       <summary>版本与审核历史（{{ detail.history.length }}）</summary>
-      <article v-for="(entry, index) in detail.history" :key="index" class="topic-instance">
+      <p v-if="!detail.history.length" class="detail-empty">当前情报暂无版本与审核记录。</p>
+      <article v-for="(entry, index) in detail.history" :key="index" class="intelligence-history">
         <strong>{{ historyLabel(entry) }}</strong>
-        <p class="detail-time">{{ historyTime(entry) }}</p>
+        <p class="detail-meta">{{ historyTime(entry) }}</p>
         <button
           v-if="(entry as Record<string, unknown>).kind === 'event-version'"
           @click="emit('history', String((entry as Record<string, unknown>).eventId))"
@@ -394,32 +467,62 @@ onMounted(async () => {
           查看版本证据
         </button>
       </article>
-      <details>
+      <details class="detail-disclosure">
         <summary>完整历史数据</summary>
-        <pre class="code-view">{{ JSON.stringify(detail.history, null, 2) }}</pre>
+        <pre class="detail-code">{{ JSON.stringify(detail.history, null, 2) }}</pre>
       </details>
     </details>
   </section>
 </template>
 <style scoped>
-.intelligence-detail {
-  padding: 16px;
+.intelligence-source-fields,
+.intelligence-archive-fields {
+  grid-template-columns: minmax(0, 1fr);
 }
-.intelligence-detail h2 {
-  margin: 12px 0;
-}
-.actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.actions button {
-  padding: 6px 8px;
+.intelligence-notice {
+  padding: 10px 12px;
+  border-left: 2px solid #ceaa65;
+  background: #5e482329;
+  color: #e7cd91;
   font-size: 12px;
 }
-.intelligence-detail a {
-  display: block;
-  margin: 10px 0;
-  color: #70d9e6;
+.intelligence-review-actions {
+  margin-top: 14px;
+}
+.intelligence-relation,
+.intelligence-history {
+  display: grid;
+  gap: 8px;
+  padding-block: 14px;
+}
+.intelligence-relation + .intelligence-relation,
+.intelligence-history + .intelligence-history {
+  border-top: 1px solid #28607855;
+}
+.intelligence-relation-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.intelligence-relation-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+.intelligence-reference {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.intelligence-reference input {
+  flex: 0 0 auto;
+}
+.intelligence-relation-form > button {
+  justify-self: start;
+}
+.intelligence-history > button {
+  justify-self: start;
 }
 </style>
