@@ -424,11 +424,22 @@ export async function queryFusionDataset(
   const staticResponse = mmsis.length
     ? await infra.clickhouse.query({
         abort_signal: input.signal,
+        // mmsi/time can change across cleaning revisions. Narrow FINAL by its stable
+        // replacement keys, then apply those mutable filters to the surviving rows.
         query:
-          'SELECT mmsi,observation FROM static_history_v2 FINAL WHERE mmsi IN {mmsis:Array(String)} AND coalesce(observedAt,receivedAt)<=parseDateTime64BestEffort({to:String}) ORDER BY coalesce(observedAt,receivedAt) DESC,sourcePriority DESC,eventId DESC LIMIT {limit:UInt32}',
+          'SELECT mmsi,observation FROM static_history_v2 FINAL PREWHERE (sourceId,eventId) IN (SELECT sourceId,eventId FROM static_history_v2 WHERE mmsi IN {mmsis:Array(String)}) WHERE mmsi IN {mmsis:Array(String)} AND coalesce(observedAt,receivedAt)<=parseDateTime64BestEffort({to:String}) ORDER BY coalesce(observedAt,receivedAt) DESC,sourcePriority DESC,eventId DESC LIMIT {limit:UInt32}',
         query_params: { mmsis, to, limit: maxRecords + 1 },
         format: 'JSONEachRow',
-        clickhouse_settings: { max_result_bytes: '33554432', result_overflow_mode: 'throw' },
+        clickhouse_settings: {
+          max_result_bytes: '33554432',
+          result_overflow_mode: 'throw',
+          max_threads: 1,
+          max_final_threads: 1,
+          max_execution_time: 15,
+          max_memory_usage: '268435456',
+          max_bytes_in_set: '16777216',
+          set_overflow_mode: 'throw',
+        },
       })
     : null;
   const statics = staticResponse

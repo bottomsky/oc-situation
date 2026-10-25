@@ -56,7 +56,7 @@ export async function activePredictionLandDataset(
   ).rows[0];
   return row ? String(row.version) : null;
 }
-/** A single PostGIS batch checks the full observed-to-asOf-to-120min line for each path. */
+/** Check every original edge; continuous chunks share endpoints and preserve geodesic segments. */
 export async function checkPredictionPaths(
   infra: Infrastructure,
   version: string,
@@ -73,13 +73,21 @@ export async function checkPredictionPaths(
     )
   )
     throw new Error('Prediction land validation requires all 2048 complete paths');
-  const lines = paths.map((path, index) => ({
-    id: index,
-    geometry: { type: 'LineString', coordinates: path.points.map((point) => point.coordinate) },
-  }));
+  const lines = paths.map((path, index) => {
+    const coordinates = path.points.map((point) => point.coordinate);
+    return {
+      id: index,
+      segments: Array.from({ length: Math.ceil((coordinates.length - 1) / 16) }, (_, part) => ({
+        type: 'LineString',
+        coordinates: coordinates.slice(part * 16, part * 16 + 17),
+      })),
+    };
+  });
+  // A crossing in any continuous block rejects its complete path. OFFSET 0 keeps
+  // each small geography conversion outside the per-land-candidate intersection.
   const result = await predictionQuery(
     infra,
-    `WITH paths AS (SELECT id,ST_SetSRID(ST_GeomFromGeoJSON(geometry::text),4326)::geography line FROM jsonb_to_recordset($2::jsonb) AS x(id integer,geometry jsonb)) SELECT p.id,NOT EXISTS(SELECT 1 FROM route_land l WHERE l.dataset_version=$1 AND ST_Intersects(l.geog,p.line)) navigable FROM paths p ORDER BY p.id`,
+    `WITH paths AS MATERIALIZED (SELECT id,segments FROM jsonb_to_recordset($2::jsonb) AS x(id integer,segments jsonb)) SELECT p.id,NOT EXISTS(SELECT 1 FROM jsonb_array_elements(p.segments) segment CROSS JOIN LATERAL (SELECT ST_SetSRID(ST_GeomFromGeoJSON(segment::text),4326)::geography line OFFSET 0) c JOIN route_land l ON l.dataset_version=$1 AND ST_Intersects(l.geog,c.line)) navigable FROM paths p ORDER BY p.id`,
     [version, JSON.stringify(lines)],
     signal,
     deadline,
