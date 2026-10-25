@@ -807,6 +807,59 @@ function selectSituationVessel(mmsi: string) {
   selectVessel(mmsi);
   workspace.leftTab = 'situation';
 }
+const vesselActionError = ref('');
+watch(
+  () => workspace.detail?.mmsi,
+  () => {
+    vesselActionError.value = '';
+  },
+);
+function locateDetailVessel() {
+  const position = workspace.detail?.latestPosition;
+  if (
+    !position ||
+    !Number.isFinite(position.lon) ||
+    !Number.isFinite(position.lat) ||
+    position.lon < -180 ||
+    position.lon > 180 ||
+    position.lat < -90 ||
+    position.lat > 90
+  )
+    return;
+  seaMap.value?.cameraIntent()({ mode: 'point', center: [position.lon, position.lat], zoom: 10 });
+}
+function predictDetailVessel() {
+  const mmsi = workspace.detail?.mmsi;
+  if (prediction.busy || !mmsi || !/^[1-9]\d{8}$/.test(mmsi)) return;
+  leftOpen.value = true;
+  workspace.leftTab = 'prediction';
+  prediction.setMmsi(mmsi);
+  void prediction.run();
+}
+function toggleDetailVesselHighlight() {
+  const detail = workspace.detail;
+  if (!detail) return;
+  vesselActionError.value = '';
+  if (vesselHighlights.manualMmsis.includes(detail.mmsi)) {
+    vesselHighlights.clearManual(detail.mmsi);
+    return;
+  }
+  const position = detail.latestPosition;
+  if (!position) return;
+  try {
+    vesselHighlights.addManual({
+      mmsi: detail.mmsi,
+      name: detail.staticFields.name || null,
+      lon: position.lon,
+      lat: position.lat,
+      observedAt: position.observedAt,
+      headingDegrees: position.headingDegrees,
+      cogDegrees: position.cogDegrees,
+    });
+  } catch (error) {
+    vesselActionError.value = error instanceof Error ? error.message : '船舶高亮失败';
+  }
+}
 async function selectResult(result: AnalysisResult) {
   clearReplySelection();
   const focus = seaMap.value?.cameraIntent();
@@ -1182,12 +1235,14 @@ watch(
         <div class="chart-map-notices">
           <ChartVesselHighlights
             :groups="vesselHighlights.groups"
+            :manual-mmsis="vesselHighlights.manualMmsis"
             :count="vesselHighlights.targets.length"
             :missing="vesselHighlights.missing"
             :updated-at="vesselHighlights.updatedAt"
             :error="vesselHighlights.error"
             :paused="workspace.paused"
             @clear-group="vesselHighlights.clearGroup"
+            @clear-manual="vesselHighlights.clearManual"
             @clear-all="vesselHighlights.clearAll"
           />
           <section
@@ -1509,6 +1564,12 @@ watch(
       <ChartVesselDetail
         v-if="workspace.detail"
         :detail="workspace.detail"
+        :prediction-busy="prediction.busy"
+        :highlighted="vesselHighlights.manualMmsis.includes(workspace.detail.mmsi)"
+        :action-error="vesselActionError"
+        @locate="locateDetailVessel"
+        @predict="predictDetailVessel"
+        @highlight="toggleDetailVesselHighlight"
         @playback="
           workspace.leftTab = 'playback';
           detailHost.close('vessel');

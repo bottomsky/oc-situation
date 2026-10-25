@@ -2,21 +2,22 @@
 import type { HighlightGroup } from '@ais/contracts';
 defineProps<{
   groups: HighlightGroup[];
+  manualMmsis?: string[];
   count: number;
   missing: string[];
   updatedAt?: string;
   error: string;
   paused: boolean;
 }>();
-defineEmits<{ clearGroup: [groupId: string]; clearAll: [] }>();
+defineEmits<{ clearGroup: [groupId: string]; clearManual: [mmsi: string]; clearAll: [] }>();
 function time(value?: string) {
-  return value ? `${new Date(value).toISOString().slice(11, 19)} UTC` : '使用任务查询船位';
+  return value ? `${new Date(value).toISOString().slice(11, 19)} UTC` : '使用当前已知船位';
 }
 </script>
 
 <template>
   <details
-    v-if="groups.length"
+    v-if="groups.length || manualMmsis?.length"
     class="vessel-highlight-control"
     data-testid="vessel-highlights-control"
   >
@@ -28,6 +29,16 @@ function time(value?: string) {
         缺少有效船位：{{ missing.join('、') }}；保留已有位置。
       </p>
       <ul>
+        <li v-for="mmsi in manualMmsis" :key="`manual:${mmsi}`">
+          <span>人工高亮 · {{ mmsi }}</span>
+          <button
+            type="button"
+            :aria-label="`清除人工高亮 ${mmsi}`"
+            @click="$emit('clearManual', mmsi)"
+          >
+            清除
+          </button>
+        </li>
         <li v-for="(group, index) in groups" :key="group.groupId" :data-group-id="group.groupId">
           <span :title="group.taskId">任务 {{ index + 1 }} · {{ group.mmsis.length }} 艘</span>
           <button

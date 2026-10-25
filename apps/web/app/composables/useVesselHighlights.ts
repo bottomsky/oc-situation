@@ -8,10 +8,11 @@ import {
 } from '@ais/contracts';
 import type { ChartVesselHighlight } from '../types/chart';
 
-/** Page-local task groups. Position ticks do not alter command concurrency versions. */
+/** Page-local manual references and task groups share one renderer and position refresh. */
 export function useVesselHighlights(paused: Ref<boolean>) {
   const { api, session } = usePlatform();
   const groups = ref<HighlightGroup[]>([]);
+  const manualMmsis = ref<string[]>([]);
   const targets = ref<ChartVesselHighlight[]>([]);
   const revision = ref(0);
   const evidence = ref<HighlightEvidence>();
@@ -29,7 +30,9 @@ export function useVesselHighlights(paused: Ref<boolean>) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
   const visible = ref(typeof document === 'undefined' || document.visibilityState !== 'hidden');
-  const mmsis = computed(() => [...new Set(groups.value.flatMap((g) => g.mmsis))]);
+  const mmsis = computed(() => [
+    ...new Set([...manualMmsis.value, ...groups.value.flatMap((g) => g.mmsis)]),
+  ]);
   function invalidate() {
     controller?.abort();
     controller = undefined;
@@ -64,6 +67,43 @@ export function useVesselHighlights(paused: Ref<boolean>) {
     missing.value = [...new Set([...groupMissing.values()].flat().concat(refreshMissing))];
     error.value = '';
   }
+  function addManual(vessel: Omit<ChartVesselHighlight, 'effectId'>) {
+    if (manualMmsis.value.includes(vessel.mmsi)) return;
+    if (
+      !/^[1-9]\d{8}$/.test(vessel.mmsi) ||
+      !Number.isFinite(vessel.lon) ||
+      !Number.isFinite(vessel.lat) ||
+      vessel.lon < -180 ||
+      vessel.lon > 180 ||
+      vessel.lat < -90 ||
+      vessel.lat > 90 ||
+      !Number.isFinite(Date.parse(vessel.observedAt))
+    )
+      throw new Error('当前船舶缺少有效船位');
+    if (!mmsis.value.includes(vessel.mmsi) && mmsis.value.length >= MAP_HIGHLIGHT_LIMIT)
+      throw new Error('当前页高亮超过100艘，请先清除部分高亮或缩小范围');
+    const before = targets.value.find((target) => target.mmsi === vessel.mmsi);
+    semanticChange(pendingArtifact);
+    manualMmsis.value = [...manualMmsis.value, vessel.mmsi];
+    const target = {
+      ...(before && Date.parse(before.observedAt) > Date.parse(vessel.observedAt)
+        ? before
+        : vessel),
+      effectId: before?.effectId ?? `manual:${vessel.mmsi}:${revision.value}`,
+    };
+    targets.value = [...targets.value.filter((item) => item.mmsi !== vessel.mmsi), target];
+    error.value = '';
+  }
+  function clearManual(mmsi: string) {
+    if (!manualMmsis.value.includes(mmsi)) return;
+    semanticChange(pendingArtifact);
+    manualMmsis.value = manualMmsis.value.filter((id) => id !== mmsi);
+    const retained = new Set(mmsis.value);
+    targets.value = targets.value.filter((target) => retained.has(target.mmsi));
+    refreshMissing = refreshMissing.filter((id) => retained.has(id));
+    missing.value = [...new Set([...groupMissing.values()].flat().concat(refreshMissing))];
+    error.value = '';
+  }
   function apply(
     input: AgentVesselHighlightsResult,
     artifactRef: string,
@@ -87,7 +127,8 @@ export function useVesselHighlights(paused: Ref<boolean>) {
       { groupId: artifactRef, taskId, mmsis: incoming },
     ];
     if (
-      new Set(nextGroups.flatMap((g) => g.mmsis)).size > MAP_HIGHLIGHT_LIMIT ||
+      new Set([...manualMmsis.value, ...nextGroups.flatMap((g) => g.mmsis)]).size >
+        MAP_HIGHLIGHT_LIMIT ||
       nextGroups.length > 100
     )
       throw Object.assign(new Error('当前页高亮超过100艘，请先清除部分高亮或缩小范围'), {
@@ -168,6 +209,7 @@ export function useVesselHighlights(paused: Ref<boolean>) {
     remove([groupId]);
   }
   function clearAll() {
+    manualMmsis.value = [];
     remove(groups.value.map((g) => g.groupId));
   }
   function reset() {
@@ -202,6 +244,7 @@ export function useVesselHighlights(paused: Ref<boolean>) {
   });
   return {
     groups,
+    manualMmsis,
     targets,
     revision,
     evidence,
@@ -213,6 +256,8 @@ export function useVesselHighlights(paused: Ref<boolean>) {
     refresh,
     markDisplayed,
     clearGroup,
+    addManual,
+    clearManual,
     clearAll,
   };
 }

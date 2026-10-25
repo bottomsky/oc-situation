@@ -2,9 +2,27 @@
 import type { VesselDetail } from '@ais/contracts';
 import { dateLabel } from '../utils/display';
 import { resolveVesselDirection } from '../utils/vesselMarkers';
-const props = defineProps<{ detail: VesselDetail }>();
-const emit = defineEmits<{ playback: [] }>();
+const props = defineProps<{
+  detail: VesselDetail;
+  predictionBusy?: boolean;
+  highlighted?: boolean;
+  actionError?: string;
+}>();
+const emit = defineEmits<{ playback: []; locate: []; predict: []; highlight: [] }>();
 const detailDirection = computed(() => resolveVesselDirection(props.detail.latestPosition ?? {}));
+const positionAvailable = computed(() => {
+  const position = props.detail.latestPosition;
+  return (
+    !!position &&
+    Number.isFinite(position.lon) &&
+    Number.isFinite(position.lat) &&
+    position.lon >= -180 &&
+    position.lon <= 180 &&
+    position.lat >= -90 &&
+    position.lat <= 90
+  );
+});
+const validMmsi = computed(() => /^[1-9]\d{8}$/.test(props.detail.mmsi));
 </script>
 <template>
   <div class="vessel-detail detail-content">
@@ -24,10 +42,23 @@ const detailDirection = computed(() => resolveVesselDirection(props.detail.lates
         >
       </div>
       <div class="detail-actions">
+        <button type="button" :disabled="!positionAvailable" @click="emit('locate')">定位</button>
+        <button type="button" :disabled="predictionBusy || !validMmsi" @click="emit('predict')">
+          航迹预测
+        </button>
+        <button
+          type="button"
+          :aria-pressed="!!highlighted"
+          :disabled="!highlighted && (!positionAvailable || !validMmsi)"
+          @click="emit('highlight')"
+        >
+          {{ highlighted ? '取消高亮' : '高亮' }}
+        </button>
         <button type="button" class="detail-action-primary" @click="emit('playback')">
           查询历史轨迹 <span aria-hidden="true">→</span>
         </button>
       </div>
+      <p v-if="actionError" role="status" class="detail-action-error">{{ actionError }}</p>
     </header>
 
     <ChartDetailSection title="船舶标识" eyebrow="IDENTIFICATION">
@@ -116,6 +147,16 @@ const detailDirection = computed(() => resolveVesselDirection(props.detail.lates
   </div>
 </template>
 <style scoped>
+.detail-actions button[aria-pressed='true'] {
+  border-color: #57d8ef;
+  color: #e1fbff;
+  background: #17617b66;
+}
+.detail-action-error {
+  margin: 10px 0 0;
+  color: #f3c98c;
+  font-size: 12px;
+}
 .vessel-observation,
 .vessel-provenance .detail-fields {
   grid-template-columns: minmax(0, 1fr);
