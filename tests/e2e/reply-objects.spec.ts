@@ -95,6 +95,25 @@ async function fixture(page: Page, many = false, focus = focusObjects(many), sub
 const panel = (page: Page) => page.getByTestId('reply-objects-panel');
 const more = (page: Page) => page.getByRole('button', { name: /查看更多关联对象，已关联/ });
 const detail = (page: Page) => page.getByTestId('chart-detail-float').filter({ visible: true });
+async function focusCardGap(page: Page, coordinate: [number, number]) {
+  return page.evaluate((position) => {
+    const map = (globalThis as unknown as { __replyObjectMap: import('maplibre-gl').Map })
+      .__replyObjectMap;
+    const projected = map.project(position);
+    const canvas = map.getCanvas().getBoundingClientRect();
+    const card = document.querySelector('.focus-reply-position')!.getBoundingClientRect();
+    // The common attention glyph settles at 24 CSS pixels; compare its map projection
+    // with the actual reply card now that Focus delegates shapes to ChartMapEffects.
+    const x = canvas.x + projected.x;
+    const y = canvas.y + projected.y;
+    return {
+      right: card.left - x - 12,
+      left: x - 12 - card.right,
+      below: card.top - y - 12,
+      above: y - 12 - card.bottom,
+    };
+  }, coordinate);
+}
 
 test('单船右侧构图与内容更新保持一次相机预算，定位采用新AIS呈现', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -116,13 +135,7 @@ test('单船右侧构图与内容更新保持一次相机预算，定位采用�
   const overlay = page.getByTestId('chart-focus-overlay');
   await expect(overlay.locator('.focus-reply-position')).toHaveAttribute('data-placement', 'right');
   await expect
-    .poll(() =>
-      overlay.evaluate((element) => {
-        const shape = element.querySelector('.focus-shapes')!.getBoundingClientRect();
-        const card = element.querySelector('.focus-reply-position')!.getBoundingClientRect();
-        return card.left - shape.right;
-      }),
-    )
+    .poll(async () => (await focusCardGap(page, [122, 32])).right)
     .toBeGreaterThanOrEqual(23);
   const before = await camera();
   await page.screenshot({ path: test.info().outputPath('reply-single-right-initial.png') });
@@ -148,6 +161,23 @@ test('单船右侧构图与内容更新保持一次相机预算，定位采用�
   await panel(page).getByRole('button', { name: '定位船甲', exact: true }).click();
   await expect.poll(async () => (await camera()).center).not.toEqual(before.center);
   await expect(panel(page)).toContainText('2026');
+  await panel(page).getByRole('button', { name: '查看船舶详情：船甲', exact: true }).click();
+  await expect(page.getByTestId('chart-map-selection')).toHaveAttribute(
+    'data-object-key',
+    `vessel:${chartPoint.mmsi}`,
+  );
+  await detail(page).getByRole('button', { name: '高亮', exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(async (mmsi) => {
+        const map = (globalThis as unknown as { __replyObjectMap: import('maplibre-gl').Map })
+          .__replyObjectMap;
+        const source = map.getSource('vessel-highlights') as import('maplibre-gl').GeoJSONSource;
+        const data = (await source.getData()) as import('geojson').FeatureCollection;
+        return data.features.filter((feature) => feature.properties?.mmsi === mmsi).length;
+      }, chartPoint.mmsi),
+    )
+    .toBe(1);
   await page.screenshot({ path: test.info().outputPath('reply-single-right.png') });
 });
 
@@ -234,6 +264,10 @@ test('回复名称读取详情不写标绘不移动镜头；左右共存并逐�
   await more(page).click();
   const name = panel(page).getByRole('button', { name: '查看情报详情：航警甲', exact: true });
   await name.click();
+  await expect(page.getByTestId('chart-map-selection')).toHaveAttribute(
+    'data-object-key',
+    'intelligence:fixture-intelligence:2',
+  );
   await expect(detail(page)).toContainText('航警甲当前详情');
   await expect(detail(page).getByTestId('reply-object-snapshot')).toContainText('版本 2');
   await expect(detail(page).getByTestId('reply-object-snapshot')).toContainText('3 版');
@@ -437,19 +471,11 @@ test('单对象靠近顶部时窄屏卡片预留后自动适配，目标与顶�
   const overlay = page.getByTestId('chart-focus-overlay');
   await expect(overlay.locator('.focus-reply-position')).toHaveAttribute('data-placement', 'top');
   await expect
-    .poll(() =>
-      overlay.evaluate((element) => {
-        const shape = element.querySelector('.focus-shapes')!.getBoundingClientRect();
-        const card = element.querySelector('.focus-reply-position')!.getBoundingClientRect();
-        return (
-          shape.top >= card.bottom + 23 ||
-          shape.bottom <= card.top - 23 ||
-          shape.left >= card.right + 23 ||
-          shape.right <= card.left - 23
-        );
-      }),
-    )
-    .toBe(true);
+    .poll(async () => {
+      const gap = await focusCardGap(page, coordinate as [number, number]);
+      return Math.max(gap.right, gap.left, gap.above, gap.below);
+    })
+    .toBeGreaterThanOrEqual(23);
   await page.screenshot({ path: test.info().outputPath('reply-single-narrow-top.png') });
 });
 

@@ -9,20 +9,75 @@ import { UiCommandSchema, UiStateSchema, UiReceiptSchema } from '@ais/contracts'
 import type { UiState, UiCommand, UiReceipt } from '@ais/contracts';
 
 async function replyPlacement(page: Page) {
-  return page.getByTestId('chart-focus-overlay').evaluate((overlay) => {
-    const shapes = overlay.querySelector<SVGGElement>('.focus-shapes')!;
+  return page.evaluate(async () => {
+    const map = (globalThis as unknown as { __agentEffectsMap: import('maplibre-gl').Map })
+      .__agentEffectsMap;
+    const overlay = document.querySelector('[data-testid="chart-focus-overlay"]')!;
     const card = overlay.querySelector<HTMLElement>('.focus-reply-position')!;
-    const target = shapes.getBoundingClientRect();
+    const source = map.getSource('vessel-highlights') as import('maplibre-gl').GeoJSONSource;
+    const data = (await source.getData()) as import('geojson').FeatureCollection;
+    const canvas = map.getCanvas().getBoundingClientRect();
+    const points = data.features.flatMap((feature) =>
+      feature.geometry.type === 'Point'
+        ? [map.project(feature.geometry.coordinates as [number, number])]
+        : [],
+    );
+    const outlines = [
+      ...document.querySelectorAll<SVGPathElement>(
+        '[data-testid="chart-map-highlight"] path:not([filter])',
+      ),
+    ].map((path) => ({
+      path: path.getAttribute('d'),
+      box: path.getBoundingClientRect().toJSON(),
+    }));
+    const bounds = points.map((point) => ({
+      left: point.x + canvas.x - 12,
+      right: point.x + canvas.x + 12,
+      top: point.y + canvas.y - 12,
+      bottom: point.y + canvas.y + 12,
+    }));
+    for (const outline of outlines)
+      bounds.push({
+        left: outline.box.x,
+        right: outline.box.x + outline.box.width,
+        top: outline.box.y,
+        bottom: outline.box.y + outline.box.height,
+      });
+    const left = Math.min(...bounds.map((box) => box.left));
+    const right = Math.max(...bounds.map((box) => box.right));
+    const top = Math.min(...bounds.map((box) => box.top));
+    const bottom = Math.max(...bounds.map((box) => box.bottom));
     const reply = card.getBoundingClientRect();
     return {
-      path: shapes.innerHTML,
-      target: { x: target.x + target.width / 2, y: target.y + target.height / 2 },
-      frame: target.toJSON(),
+      path: JSON.stringify({ points, outlines: outlines.map((outline) => outline.path) }),
+      target: { x: (left + right) / 2, y: (top + bottom) / 2 },
+      frame: { x: left, y: top, width: right - left, height: bottom - top },
       card: reply.toJSON(),
-      highlighted: !!shapes.firstElementChild?.getAttribute('d'),
+      highlighted:
+        !!map.getLayer('vessel-highlight-marker') &&
+        points.length > 0 &&
+        map.queryRenderedFeatures({ layers: ['vessel-highlight-marker'] }).length > 0,
+      pointKeys: data.features.map((feature) => feature.properties?.key),
+      outlinePaths: outlines.map((outline) => outline.path),
       noGuide: overlay.querySelectorAll('.focus-guide, .focus-frame').length === 0,
       visible: reply.width > 0 && reply.height > 0 && reply.left >= 0 && reply.top >= 0,
     };
+  });
+}
+async function observeAttention(page: Page) {
+  return page.getByTestId('chart-map-effects').evaluateHandle((root) => {
+    const phases = new Set<string>();
+    const observer = new MutationObserver(() => {
+      for (const glyph of root.querySelectorAll<SVGGElement>('[data-testid="chart-map-emphasis"]'))
+        if (glyph.dataset.phase) phases.add(glyph.dataset.phase);
+    });
+    observer.observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-phase'],
+    });
+    return { phases, stop: () => observer.disconnect() };
   });
 }
 async function expectPositionedReply(page: Page) {
@@ -1378,12 +1433,15 @@ test('空间回复逐对象高亮并在窄屏展开摘要', async ({ page }) => 
   });
   await page.goto('/');
   await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true');
+  await captureChartMap(page, '__agentEffectsMap');
   const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
   await input.fill('关注这两个对象');
   await input.press('Enter');
   const overlay = page.getByTestId('chart-focus-overlay');
   await expect(overlay).toContainText('2 个关注对象');
-  await expect(overlay.locator('.focus-shapes path')).toHaveAttribute('d', /.+/);
+  await expect(
+    page.getByTestId('chart-map-highlight').locator('path:not([filter])'),
+  ).toHaveAttribute('d', /.+/);
   await expect(overlay.locator('.focus-guide, .focus-frame')).toHaveCount(0);
   await expectPositionedReply(page);
   await expect(page.locator('.chart-agent-dock .chart-agent-reply-card')).toHaveCount(0);
@@ -1634,6 +1692,7 @@ for (const manualClose of [false, true])
   test(`空间关注命令等待任务轮询后真实回执，人工关闭=${manualClose}`, async ({ page }) => {
     const fixture = await focusCommandFixture(page);
     await openAgent(page);
+    await captureChartMap(page, '__agentEffectsMap');
     await expect.poll(fixture.ready).toBe(true);
     const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
     await input.fill('关注目标');
@@ -1656,14 +1715,17 @@ for (const manualClose of [false, true])
         visible: true,
         focusEvidence: { taskId: expect.any(String), displayStatus: 'complete' },
       });
-      await expect(overlay.locator('.focus-shapes path')).toHaveAttribute('d', /.+/);
+      await expectPositionedReply(page);
+      expect((await replyPlacement(page)).pointKeys).toContain('vessel:413123456');
     }
   });
 
 test('逐对象关注保留本轮动效，拖动仅更新投影且不出现组框或引导线', async ({ page }) => {
   const fixture = await focusCommandFixture(page);
   await openAgent(page);
+  await captureChartMap(page, '__agentEffectsMap');
   await expect.poll(fixture.ready).toBe(true);
+  const attention = await observeAttention(page);
   const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
   await input.fill('关注目标');
   await input.press('Enter');
@@ -1672,8 +1734,11 @@ test('逐对象关注保留本轮动效，拖动仅更新投影且不出现组�
   await expect.poll(() => fixture.receipts.some((r) => r.status === 'succeeded')).toBe(true);
   await expectPositionedReply(page);
   const overlay = page.getByTestId('chart-focus-overlay');
-  const shapes = overlay.locator('.focus-shapes');
-  await expect(shapes).toHaveClass(/focus-attention/);
+  await expect
+    .poll(() => attention.evaluate(({ phases }) => [...phases]))
+    .toEqual(expect.arrayContaining(['contract', 'blink']));
+  await attention.evaluate(({ stop }) => stop());
+  await attention.dispose();
   const before = await replyPlacement(page);
   const map = page.getByTestId('sea-map');
   const instance = await map.getAttribute('data-map-instance');
@@ -1705,7 +1770,9 @@ test('减少动态效果时对象高亮静态显示且没有连接线和整组�
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const fixture = await focusCommandFixture(page);
   await openAgent(page);
+  await captureChartMap(page, '__agentEffectsMap');
   await expect.poll(fixture.ready).toBe(true);
+  const attention = await observeAttention(page);
   const input = page.getByRole('textbox', { name: '分析问题或继续追问' });
   await input.fill('关注目标');
   await input.press('Enter');
@@ -1715,8 +1782,14 @@ test('减少动态效果时对象高亮静态显示且没有连接线和整组�
   await expectPositionedReply(page);
   expect(
     await page
-      .getByTestId('chart-focus-overlay')
-      .locator('.focus-shapes')
-      .evaluate((element) => element.getAnimations().length),
+      .getByTestId('chart-map-effects')
+      .evaluate((element) => element.getAnimations({ subtree: true }).length),
   ).toBe(0);
+  expect(
+    await attention.evaluate(({ phases }) =>
+      [...phases].some((phase) => phase === 'contract' || phase === 'blink'),
+    ),
+  ).toBe(false);
+  await attention.evaluate(({ stop }) => stop());
+  await attention.dispose();
 });

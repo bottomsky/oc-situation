@@ -1,175 +1,85 @@
 import { expect, it, vi } from 'vitest';
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import type { LayerSpecification, SourceSpecification } from 'maplibre-gl';
-import {
-  createHighlightTimeline,
-  createHighlightAnimation,
-  highlightGeoJson,
-  registerVesselHighlightLayers,
-} from './app/utils/vesselHighlightsMap';
+import * as highlights from './app/utils/vesselHighlightsMap';
+import type { MapEffectTarget } from './app/types/mapEffects';
 
-it('同一effect跨更新和样式恢复不重播，新目标独立开始；源不包含模型样式参数', () => {
-  const timeline = createHighlightTimeline();
-  const target = {
-    mmsi: '123456789',
-    name: null,
-    lon: 120,
-    lat: 30,
-    observedAt: '2026-10-17T00:00:00Z',
-    effectId: 'effect',
-  };
-  const first = highlightGeoJson([target], timeline, 50);
-  const updated = highlightGeoJson([{ ...target, lon: 121 }], timeline, 1200);
-  expect(first.features[0]?.properties.startedAt).toBe(50);
-  expect(first.features[0]?.properties.markerIcon).toBe('highlight-vessel-unknown');
-  expect(updated.features[0]?.properties.startedAt).toBe(50);
-  expect(updated.features[0]?.geometry.coordinates).toEqual([121, 30]);
-  expect(highlightGeoJson([], timeline, 1300).features).toEqual([]);
-  expect(highlightGeoJson([target], timeline, 1400).features[0]?.properties.startedAt).toBe(50);
+it('共享点源以稳定key标识、保留方向，线面由屏幕层显示', () => {
+  const targets: MapEffectTarget[] = [
+    {
+      key: 'vessel:123456789',
+      effectId: 'locate',
+      icon: 'vessel',
+      bearing: 42,
+      geometries: [{ type: 'Point', coordinates: [120, 30] }],
+    },
+    {
+      key: 'line',
+      geometries: [
+        {
+          type: 'LineString',
+          coordinates: [
+            [120, 30],
+            [121, 31],
+          ],
+        },
+      ],
+    },
+  ];
+  const first = highlights.highlightGeoJson(targets);
+  expect(first.features).toHaveLength(1);
+  expect(first.features[0]).toMatchObject({
+    id: 'vessel:123456789',
+    properties: { mmsi: '123456789', bearing: 42, markerIcon: 'map-effect-vessel-FFD84D' },
+  });
+  expect(highlights.highlightGeoJson([], '#FFD84D').features).toEqual([]);
 });
 
-it('动态图层表达式通过当前MapLibre样式校验', () => {
+it('只有共享glyph标记层，feature-state控制透明度，MapLibre样式合法', () => {
   const sources: Record<string, SourceSpecification> = {};
   const layers: LayerSpecification[] = [];
-  registerVesselHighlightLayers({
-    getSource: (id) => sources[id],
-    getLayer: (id) => layers.find((layer) => layer.id === id),
-    hasImage: () => false,
-    addSource: (id, source) => {
+  const images = new Set<string>();
+  const addImage = vi.fn((id: string) => images.add(id));
+  const map = {
+    getSource: (id: string) => sources[id],
+    getLayer: (id: string) => layers.find((layer) => layer.id === id),
+    hasImage: (id: string) => images.has(id),
+    addSource: (id: string, source: SourceSpecification) => {
       sources[id] = source;
     },
-    addLayer: (layer) => {
+    addLayer: (layer: LayerSpecification) => {
       layers.push(layer);
     },
-    addImage: () => {},
+    addImage,
+  };
+  highlights.registerVesselHighlightLayers(map);
+  highlights.registerVesselHighlightLayers(map);
+  expect(layers).toHaveLength(1);
+  expect(layers[0]).toMatchObject({
+    id: 'vessel-highlight-marker',
+    type: 'symbol',
+    paint: { 'icon-opacity': ['coalesce', ['feature-state', 'opacity'], 1] },
+  });
+  expect(layers[0]).toMatchObject({
+    paint: { 'icon-opacity-transition': { duration: 0, delay: 0 } },
   });
   expect(validateStyleMin({ version: 8, sources, layers }).map((issue) => issue.message)).toEqual(
     [],
   );
-  expect(JSON.stringify(layers)).not.toContain('global-state');
+  expect(addImage).toHaveBeenCalledTimes(5);
+  expect(JSON.stringify(layers)).not.toMatch(/circle|halo|glow|alertOpacity/);
+  expect(highlights).not.toHaveProperty('createHighlightAnimation');
 });
 
-it('共享时钟最多30fps，后台暂停且恢复不计隐藏时长，静态模式无动画帧', () => {
-  let callback: FrameRequestCallback | undefined;
-  const frames = {
-    request: vi.fn((cb: FrameRequestCallback) => {
-      callback = cb;
-      return 1;
-    }),
-    cancel: vi.fn(),
-  };
+it('透明度只写feature-state，结束还原常驻图形', () => {
+  expect(highlights).toHaveProperty('updateMapEffectOpacity');
   const map = { setFeatureState: vi.fn() };
-  const animation = createHighlightAnimation(map, frames);
-  animation.targets([{ mmsi: '413793000', startedAt: 0 }]);
-  animation.update({ active: true, hidden: false, reduced: false });
-  callback!(0);
-  callback!(16);
-  callback!(34);
-  expect(map.setFeatureState).toHaveBeenCalledTimes(2);
-  expect(map.setFeatureState).toHaveBeenLastCalledWith(
-    { source: 'vessel-highlights', id: '413793000' },
-    expect.objectContaining({ radius: expect.any(Number), alertOpacity: 1 }),
-  );
-  animation.update({ active: true, hidden: true, reduced: false });
-  const clock = animation.now();
-  animation.update({ active: true, hidden: false, reduced: false });
-  callback!(10000);
-  expect(animation.now()).toBe(clock);
-  animation.update({ active: true, hidden: false, reduced: true });
-  expect(frames.cancel).toHaveBeenCalled();
-  animation.dispose();
-});
-
-it('先400ms由大收拢，再连续闪烁三次，完成后保留静态环且停止动画帧', () => {
-  let callback!: FrameRequestCallback;
-  const map = { setFeatureState: vi.fn() };
-  const frames = {
-    request: vi.fn((cb: FrameRequestCallback) => {
-      callback = cb;
-      return 1;
-    }),
-    cancel: vi.fn(),
-  };
-  const animation = createHighlightAnimation(map, frames);
-  animation.targets(
-    Array.from({ length: 100 }, (_, i) => ({ mmsi: String(413000001 + i), startedAt: 0 })),
-  );
-  animation.update({ active: true, hidden: false, reduced: false });
-  callback(0);
-  expect(map.setFeatureState).toHaveBeenCalledTimes(100);
-  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ radius: 42 });
-  callback(200);
-  const midway = map.setFeatureState.mock.calls.at(-1)?.[1].radius;
-  expect(midway).toBeGreaterThan(16);
-  expect(midway).toBeLessThan(42);
-  for (const time of [400, 1000, 1600]) {
-    callback(time);
-    expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({
-      radius: 16,
-      strokeOpacity: 0.95,
-      alertOpacity: 1,
-    });
-    callback(time + 300);
-    expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ strokeOpacity: 0.18 });
-  }
-  const scheduled = frames.request.mock.calls.length;
-  callback(2200);
-  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({
-    radius: 16,
-    strokeOpacity: 0.65,
-    alertOpacity: 0,
-  });
-  expect(frames.request).toHaveBeenCalledTimes(scheduled);
-  animation.dispose();
-});
-
-it('专用未聚合源可重复恢复，持续波纹通过共享时钟更新而非每帧setData', () => {
-  const sources = new Set();
-  const layers = new Set();
-  const images = new Set();
-  const map = {
-    getSource: (id: string) => sources.has(id),
-    getLayer: (id: string) => layers.has(id),
-    hasImage: (id: string) => images.has(id),
-    addSource: vi.fn((id: string) => sources.add(id)),
-    addLayer: vi.fn((layer: { id: string }) => layers.add(layer.id)),
-    addImage: vi.fn((id: string) => images.add(id)),
-  };
-  registerVesselHighlightLayers(map);
-  registerVesselHighlightLayers(map);
-  expect(map.addSource).toHaveBeenCalledTimes(1);
-  expect(map.addSource.mock.calls[0]?.[0]).toBe('vessel-highlights');
-  expect(map.addLayer).toHaveBeenCalledTimes(4);
-});
-
-it('结束时不足一帧节流间隔也绘制静态状态，旧船位更新不重播，新effect继续播放', () => {
-  let callback!: FrameRequestCallback;
-  const frames = {
-    request: vi.fn((cb: FrameRequestCallback) => {
-      callback = cb;
-      return 1;
-    }),
-    cancel: vi.fn(),
-  };
-  const map = { setFeatureState: vi.fn() };
-  const animation = createHighlightAnimation(map, frames);
-  const existing = { mmsi: '413000001', startedAt: 0 };
-  animation.targets([existing]);
-  animation.update({ active: true, hidden: false, reduced: false });
-  callback(0);
-  callback(2190);
-  callback(2200);
-  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({
-    radius: 16,
-    strokeOpacity: 0.65,
-    alertOpacity: 0,
-  });
-  const count = frames.request.mock.calls.length;
-  animation.targets([{ ...existing }]);
-  animation.update({ active: true, hidden: false, reduced: false });
-  expect(frames.request).toHaveBeenCalledTimes(count);
-  animation.targets([{ mmsi: existing.mmsi, startedAt: animation.now() }]);
-  callback(10000);
-  expect(map.setFeatureState.mock.calls.at(-1)?.[1]).toMatchObject({ radius: 42 });
-  animation.dispose();
+  highlights.updateMapEffectOpacity(map, ['a', 'b'], 0);
+  highlights.updateMapEffectOpacity(map, ['a', 'b'], 1);
+  expect(map.setFeatureState.mock.calls).toEqual([
+    [{ source: 'vessel-highlights', id: 'a' }, { opacity: 0 }],
+    [{ source: 'vessel-highlights', id: 'b' }, { opacity: 0 }],
+    [{ source: 'vessel-highlights', id: 'a' }, { opacity: 1 }],
+    [{ source: 'vessel-highlights', id: 'b' }, { opacity: 1 }],
+  ]);
 });

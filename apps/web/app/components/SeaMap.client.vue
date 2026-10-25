@@ -85,6 +85,7 @@ import {
 import { registerVesselTracksLayers, vesselTracksGeoJson } from '../utils/vesselTracksMap';
 import type { VesselTracksResult, HeatmapResult } from '@ais/contracts';
 import type { ChartLayerVisibility, ChartMapControls, ChartVesselHighlight } from '../types/chart';
+import type { MapEffectTarget } from '../types/mapEffects';
 import type { MapCameraRequest, MapCameraResult } from '@ais/contracts';
 import {
   cameraError,
@@ -94,10 +95,9 @@ import {
 } from '../utils/mapCamera';
 import { createSourceRenderAcknowledgements } from '../utils/mapSourceRender';
 import {
-  createHighlightAnimation,
-  createHighlightTimeline,
   highlightGeoJson,
   registerVesselHighlightLayers,
+  updateMapEffectOpacity,
 } from '../utils/vesselHighlightsMap';
 import {
   applyChartBusinessVisibility,
@@ -120,6 +120,9 @@ const props = defineProps<{
   currentDensity?: boolean;
   vesselTracks?: VesselTracksResult | null;
   vesselHighlights?: ChartVesselHighlight[];
+  mapEffects?: MapEffectTarget[];
+  effectHiddenKeys?: string[];
+  effectMutedKeys?: string[];
   prediction?: PredictionMapResult | null;
   predictionMinutes?: number;
   predictionObservation?: MapPoint | null;
@@ -139,6 +142,15 @@ const emit = defineEmits<{
   select: [mmsi: string];
   intelligence: [eventIds: string[]];
   object: [objectId: string];
+  blank: [];
+  effectSelect: [
+    target: {
+      kind: string;
+      id: string;
+      revision?: string | number;
+      geometries: IntelligenceGeometry[];
+    },
+  ];
   geometry: [geometry: unknown];
   regionSelected: [bbox: Bbox];
   regionCancelled: [];
@@ -146,6 +158,7 @@ const emit = defineEmits<{
   heatmapDisplayed: [result: HeatmapResult];
   vesselTracksDisplayed: [result: VesselTracksResult];
   vesselHighlightsDisplayed: [targets: ChartVesselHighlight[]];
+  mapEffectsDisplayed: [targets: MapEffectTarget[]];
   compactFooter: [value: boolean];
 }>();
 const host = useTemplateRef<HTMLElement>('mapHost');
@@ -447,6 +460,7 @@ watch(
 let map: GLMap | undefined;
 const focusRenderListeners = new Set<() => void>();
 function notifyFocusRender() {
+  flushVesselHighlightsDisplay();
   for (const listener of focusRenderListeners) listener();
 }
 let camera: ReturnType<typeof createMapCamera> | undefined;
@@ -460,9 +474,9 @@ let sourceAcknowledgements: ReturnType<typeof createSourceRenderAcknowledgements
 let regionalChartCoverage: ReturnType<typeof createRegionalChartCoverage> | undefined;
 let onlineChartCoverage: ReturnType<typeof createOnlineChartCoverage> | undefined;
 let onlineChartRequests: ReturnType<typeof createOnlineChartRequests> | undefined;
-let highlightAnimation: ReturnType<typeof createHighlightAnimation> | undefined;
-const highlightTimeline = createHighlightTimeline();
 let highlightSourceSignature = '';
+let hiddenEffectKeys = new Set<string>();
+let pendingVesselHighlightsDisplay: ChartVesselHighlight[] | undefined;
 let reducedMotion: MediaQueryList | undefined;
 let automaticCameraAllowed = true;
 let reserveFocusReply = false;
@@ -527,13 +541,6 @@ function cameraIntent(
       focusReservation = undefined;
     }
   };
-}
-function updateAnimationState() {
-  highlightAnimation?.update({
-    active: !!props.vesselHighlights?.length,
-    hidden: document.hidden,
-    reduced: reducedMotion?.matches ?? false,
-  });
 }
 let heatmapPopup: maplibregl.Popup | undefined;
 const heatmapPopupOpen = ref(false);
@@ -1048,7 +1055,9 @@ function registerBusinessLayers() {
   registerIntelligenceLayers(map);
   registerVesselHighlightLayers(map);
   highlightSourceSignature = '';
+  hiddenEffectKeys.clear();
   updateVesselHighlights();
+  updateMapEffectVisibility();
   updateIntelligence();
   update();
   ready.value = true;
@@ -1107,47 +1116,59 @@ function updateCurrentDensity() {
 function updateVesselHighlights() {
   const source = map?.getSource('vessel-highlights') as GeoJSONSource | undefined;
   if (!source) return;
-  const targets = props.vesselHighlights ?? [];
-  const signature = JSON.stringify(
-    targets.map((target) => [
-      target.mmsi,
-      target.lon,
-      target.lat,
-      target.effectId,
-      target.headingDegrees,
-      target.cogDegrees,
-    ]),
+  const snapshot = props.vesselHighlights;
+  const effectsSnapshot = props.mapEffects;
+  pendingVesselHighlightsDisplay = undefined;
+  const data = highlightGeoJson(effectsSnapshot ?? []);
+  const signature = JSON.stringify(data);
+  const changed = signature !== highlightSourceSignature;
+  highlightSourceSignature = signature;
+  sourceAcknowledgements?.update(
+    'vessel-highlights',
+    () => (changed ? source.setData(data) : Promise.resolve()),
+    () => {
+      if (snapshot && props.vesselHighlights === snapshot) {
+        pendingVesselHighlightsDisplay = snapshot;
+        flushVesselHighlightsDisplay();
+      }
+      if (effectsSnapshot && props.mapEffects === effectsSnapshot)
+        emit('mapEffectsDisplayed', effectsSnapshot);
+    },
   );
-  if (signature === highlightSourceSignature) {
-    // Position metadata may refresh without a coordinate change. Confirm the
-    // current snapshot only after another actual frame; never rewrite its data.
-    sourceAcknowledgements?.update(
-      'vessel-highlights',
-      () => Promise.resolve(),
-      () => {
-        if ((props.vesselHighlights ?? targets) === targets)
-          emit('vesselHighlightsDisplayed', targets);
-      },
-    );
-  } else {
-    highlightSourceSignature = signature;
-    const data = highlightGeoJson(targets, highlightTimeline, highlightAnimation?.now() ?? 0);
-    highlightAnimation?.targets(
-      data.features.map((feature) => ({
-        mmsi: feature.properties.mmsi,
-        startedAt: feature.properties.startedAt,
-      })),
-    );
-    sourceAcknowledgements?.update(
-      'vessel-highlights',
-      () => source.setData(data),
-      () => {
-        if ((props.vesselHighlights ?? targets) === targets)
-          emit('vesselHighlightsDisplayed', targets);
-      },
-    );
+}
+function updateMapEffectVisibility() {
+  if (!map?.getSource('vessel-highlights')) return;
+  const next = new Set(props.effectHiddenKeys ?? []);
+  const removed = [...hiddenEffectKeys].filter((key) => !next.has(key));
+  const added = [...next].filter((key) => !hiddenEffectKeys.has(key));
+  if (!removed.length && !added.length) return;
+  updateMapEffectOpacity(map, removed, 1);
+  updateMapEffectOpacity(map, added, 0);
+  hiddenEffectKeys = next;
+  map.triggerRepaint();
+}
+function flushVesselHighlightsDisplay() {
+  const snapshot = pendingVesselHighlightsDisplay;
+  if (!snapshot || !map || disposed) return;
+  if (props.vesselHighlights !== snapshot) {
+    pendingVesselHighlightsDisplay = undefined;
+    return;
   }
-  updateAnimationState();
+  const muted = new Set(props.effectMutedKeys ?? []);
+  const canvas = map.getCanvas();
+  const visibleTargets = snapshot.filter((target) => {
+    const longitude = target.lon + 360 * Math.round((map!.getCenter().lng - target.lon) / 360);
+    const point = map!.project([longitude, target.lat]);
+    return (
+      point.x >= 0 &&
+      point.y >= 0 &&
+      point.x <= canvas.clientWidth &&
+      point.y <= canvas.clientHeight
+    );
+  });
+  if (visibleTargets.some((target) => muted.has(`vessel:${target.mmsi}`))) return;
+  pendingVesselHighlightsDisplay = undefined;
+  emit('vesselHighlightsDisplayed', snapshot);
 }
 onMounted(async () => {
   await nextTick();
@@ -1285,12 +1306,6 @@ onMounted(async () => {
     reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     camera = createMapCamera(map, visibleCameraPadding, () => reducedMotion?.matches ?? false);
     sourceAcknowledgements = createSourceRenderAcknowledgements(map);
-    highlightAnimation = createHighlightAnimation(map, {
-      request: (callback) => requestAnimationFrame(callback),
-      cancel: (id) => cancelAnimationFrame(id),
-    });
-    document.addEventListener('visibilitychange', updateAnimationState);
-    reducedMotion.addEventListener('change', updateAnimationState);
     const canvas = map.getCanvas();
     canvas.addEventListener('pointerdown', interruptCamera);
     canvas.addEventListener('wheel', interruptCamera, { passive: true });
@@ -1354,6 +1369,7 @@ onMounted(async () => {
       drawing.on('change', publishDrawing);
     });
     map.on('click', (e) => {
+      if (e.originalEvent.button !== 0 || props.selectingRegion || queryingRegion.value) return;
       if (measure.value) {
         measurePoints.value.push([e.lngLat.wrap().lng, e.lngLat.lat]);
         updateMeasure();
@@ -1373,14 +1389,38 @@ onMounted(async () => {
         .find(
           (f) => f.layer.id.startsWith('intelligence-object-directory') && f.properties?.objectId,
         );
-      if (reference) emit('object', String(reference.properties.objectId));
-      else if (
-        props.heatmap &&
-        !map!.queryRenderedFeatures(e.point, { layers: ['vessels', 'vessels-distant', 'clusters'] })
-          .length
-      ) {
+      if (reference) {
+        emit('object', String(reference.properties.objectId));
+        return;
+      }
+      // Delegated vessel handlers retain overlap choice and cluster navigation.
+      // Reserve the hit before considering a cell or publishing a blank click.
+      const occupied = map!.queryRenderedFeatures(
+        [
+          [e.point.x - 6, e.point.y - 6],
+          [e.point.x + 6, e.point.y + 6],
+        ],
+        {
+          layers: ['vessels', 'vessels-distant', 'clusters', 'vessel-highlight-marker'].filter(
+            (id) => map!.getLayer(id),
+          ),
+        },
+      );
+      if (occupied.length) return;
+      if (props.heatmap) {
         const cell = heatmapCellAt(props.heatmap, e.lngLat.lng, e.lngLat.lat);
         if (cell) {
+          const geometry = heatmapGeoJson(props.heatmap).features.find(
+            (feature) => feature.id === cell.id,
+          )?.geometry;
+          const selection = GeometrySchema.safeParse(geometry);
+          if (selection.success)
+            emit('effectSelect', {
+              kind: 'heatmap-cell',
+              id: cell.id,
+              revision: props.heatmap.generatedAt,
+              geometries: [selection.data],
+            });
           const content = document.createElement('div');
           content.textContent = `网格 ${cell.id}：${cell.vesselCount} 艘去重船舶`;
           heatmapPopup ??= new maplibregl.Popup({ closeButton: false, closeOnClick: true });
@@ -1389,8 +1429,10 @@ onMounted(async () => {
           });
           heatmapPopup.setLngLat(e.lngLat).setDOMContent(content).addTo(map!);
           heatmapPopupOpen.value = true;
+          return;
         }
       }
+      emit('blank');
     });
     map.on('webglcontextlost', () => {
       ready.value = false;
@@ -1435,11 +1477,22 @@ onMounted(async () => {
       directionPopup?.remove();
     });
     const selectVessels = (e: maplibregl.MapLayerMouseEvent) => {
-      if (measure.value) return;
+      if (
+        measure.value ||
+        e.originalEvent.button !== 0 ||
+        props.selectingRegion ||
+        queryingRegion.value
+      )
+        return;
       if (drawMode.value !== 'cancel') return;
       if (
         map!.queryRenderedFeatures(e.point, {
-          layers: intelligenceLayerIds.filter((id) => map!.getLayer(id)),
+          layers: [
+            ...intelligenceLayerIds,
+            'intelligence-object-directory-fill',
+            'intelligence-object-directory-line',
+            'intelligence-object-directory-point',
+          ].filter((id) => map!.getLayer(id)),
         }).length
       )
         return;
@@ -1517,6 +1570,14 @@ onMounted(async () => {
       map.on('mouseleave', id, () => directionPopup?.remove());
     }
     map.on('click', 'clusters', (e) => {
+      if (
+        measure.value ||
+        drawMode.value !== 'cancel' ||
+        e.originalEvent.button !== 0 ||
+        props.selectingRegion ||
+        queryingRegion.value
+      )
+        return;
       localCamera({
         mode: 'point',
         center: [e.lngLat.lng, e.lngLat.lat],
@@ -1524,8 +1585,43 @@ onMounted(async () => {
       });
     });
     map.on('click', 'vessel-highlight-marker', (e) => {
-      if (drawMode.value === 'cancel' && e.features?.[0]?.properties.mmsi)
-        emit('select', String(e.features[0].properties.mmsi));
+      if (
+        measure.value ||
+        drawMode.value !== 'cancel' ||
+        e.originalEvent.button !== 0 ||
+        props.selectingRegion ||
+        queryingRegion.value
+      )
+        return;
+      const higherPriority = map!.queryRenderedFeatures(e.point, {
+        layers: [
+          ...intelligenceLayerIds,
+          'intelligence-object-directory-fill',
+          'intelligence-object-directory-line',
+          'intelligence-object-directory-point',
+          'vessels',
+          'vessels-distant',
+          'clusters',
+        ].filter((id) => map!.getLayer(id)),
+      });
+      if (higherPriority.length) return;
+      const key = String(e.features?.[0]?.properties.key ?? '');
+      const target = props.mapEffects?.find((item) => item.key === key);
+      if (!target) return;
+      if (key.startsWith('vessel:')) emit('select', key.slice('vessel:'.length));
+      else {
+        const identity = target as MapEffectTarget & {
+          kind?: string;
+          id?: string;
+          revision?: number | string;
+        };
+        emit('effectSelect', {
+          kind: identity.kind ?? 'map-effect',
+          id: identity.id ?? key,
+          revision: identity.revision,
+          geometries: target.geometries,
+        });
+      }
     });
   } catch {
     mapError.value = map
@@ -1570,7 +1666,17 @@ watch(trackColorMode, () => {
   update();
   updateVesselTracks();
 });
-watch(() => props.vesselHighlights, updateVesselHighlights, { deep: true });
+watch(() => [props.vesselHighlights, props.mapEffects], updateVesselHighlights, { deep: true });
+watch(() => props.effectHiddenKeys, updateMapEffectVisibility, { deep: true });
+watch(
+  () => props.effectMutedKeys,
+  (keys, previous) => {
+    const next = new Set(keys ?? []);
+    const old = new Set(previous ?? []);
+    if (next.size !== old.size || [...next].some((key) => !old.has(key))) map?.triggerRepaint();
+  },
+  { deep: true },
+);
 watch(
   () => [props.intelligence, props.activeEventId, props.objects, props.intelligenceLayers],
   updateIntelligence,
@@ -1717,10 +1823,8 @@ onBeforeUnmount(() => {
   regionalChartCoverage?.dispose();
   onlineChartCoverage?.dispose();
   onlineChartRequests?.dispose();
-  highlightAnimation?.dispose();
-  highlightTimeline.clear();
-  document.removeEventListener('visibilitychange', updateAnimationState);
-  reducedMotion?.removeEventListener('change', updateAnimationState);
+  pendingVesselHighlightsDisplay = undefined;
+  hiddenEffectKeys.clear();
   const canvas = map?.getCanvas();
   canvas?.removeEventListener('pointerdown', interruptCamera);
   canvas?.removeEventListener('wheel', interruptCamera);

@@ -31,6 +31,30 @@ import { buildReplyObjects } from '../utils/replyObjects';
 import type { ReplyObjectViewModel } from '../types/agentReply';
 import { replyDockClearance } from '../utils/chartDetailPosition';
 import { isChartElementVisible } from '../utils/chartVisibility';
+import {
+  chartEffectKey,
+  createChartEffectProjection,
+  mergeChartEffectTargets,
+  useChartEffects,
+  resultSelectionGeometries,
+  chartEffectVisualViewport,
+  chartFocusEffectsReady,
+} from '../composables/useChartEffects';
+import { cameraOverlayRects } from '../utils/mapCamera';
+import { createLiveFocusPresentation } from '../utils/liveFocus';
+import { resolveVesselDirection } from '../utils/vesselMarkers';
+import type {
+  MapAttentionRequest,
+  MapEffectBounds,
+  MapEffectFrame,
+  MapEffectTarget,
+} from '../types/mapEffects';
+const chartEffects = useChartEffects();
+const effectHiddenKeys = ref<string[]>([]);
+const effectMutedKeys = ref<string[]>([]);
+const effectViewport = shallowRef<MapEffectBounds | null>(null);
+const acknowledgedMapEffects = shallowRef<MapEffectTarget[] | null>(null);
+const effectFrame = shallowRef<MapEffectFrame | null>(null);
 const detailHost = provideChartDetailHost();
 let workspace = reactive(useChartWorkspace());
 const topics = reactive(useTopicResults());
@@ -277,12 +301,27 @@ const drawnGeometry = ref<unknown>();
 const mapChoices = ref<string[]>([]);
 async function selectIntelligence(id: string) {
   clearReplySelection();
+  const current = chartEffects.select({
+    kind: 'intelligence',
+    id,
+    geometries: intelligence.visiblePlot.features
+      .filter((feature) => feature.properties.eventId === id)
+      .map((feature) => feature.geometry),
+  });
   leftOpen.value = true;
   detailHost.open('intelligence', 'left');
   workspace.leftTab = 'intelligence';
   if (intelligence.activeId === id && intelligence.detail?.event.id === id)
     await intelligence.add([id]);
   else await intelligence.select(id);
+  if (current())
+    chartEffects.updateSelected(
+      current,
+      intelligence.visiblePlot.features
+        .filter((feature) => feature.properties.eventId === id)
+        .map((feature) => feature.geometry),
+      intelligence.detail?.event.id === id ? intelligence.detail.event.version : undefined,
+    );
 }
 async function locateIntelligence(id?: string) {
   if (id) await intelligence.add([id]);
@@ -408,6 +447,14 @@ async function selectReplyObject(object: ReplyObjectViewModel) {
   if (trigger?.closest('.reply-object-name, .reply-object-detail') || !objectTrigger?.isConnected)
     objectTrigger = trigger;
   replyObjectsState.select(object);
+  chartEffects.select({
+    kind: object.ref.kind,
+    id: object.ref.id,
+    revision: object.ref.revision,
+    geometries: object.geometries,
+    observedAt: object.observedAt,
+    icon: object.ref.kind === 'vessel' ? 'vessel' : 'alert',
+  });
   replyDetail.reset();
   if (object.ref.kind === 'vessel') {
     const reading = replyDetail.read(object.ref.id, async (id) => {
@@ -461,11 +508,128 @@ function clearReplySelection() {
 }
 const route = useRoute();
 const seaMap = useTemplateRef<ChartMapControls>('seaMap');
+const effectsMap = computed(() =>
+  seaMap.value ? createChartEffectProjection(seaMap.value, readEffectViewport) : null,
+);
+function readEffectViewport(view: MapEffectBounds | null) {
+  const canvas = workspaceElement.value?.querySelector<HTMLCanvasElement>('.maplibregl-canvas');
+  if (!canvas) return view;
+  const overlays = cameraOverlayRects<HTMLElement>(
+    document.querySelectorAll<HTMLElement>('.chart-detail-float'),
+    {
+      fullscreen: document.fullscreenElement,
+      visible: (element) => isChartElementVisible(element),
+    },
+  );
+  return chartEffectVisualViewport(view, canvas.getBoundingClientRect(), overlays);
+}
+watch(effectsMap, (_value, previous) => previous?.disposeEffectProjection());
+onBeforeUnmount(() => effectsMap.value?.disposeEffectProjection());
+const liveEffectFocus = createLiveFocusPresentation();
+const effectFocusPresentation = computed(() =>
+  liveEffectFocus(
+    agent.currentReply && agent.config?.spatialFocusEnabled !== false ? focus.result : null,
+    workspace.data?.items ?? [],
+  ),
+);
+const focusEffectTargets = computed<MapEffectTarget[]>(() =>
+  (effectFocusPresentation.value?.targets ?? []).map((target) => {
+    const point = (workspace.data?.items ?? []).find(
+      (point) => point.kind === 'point' && point.mmsi === target.ref.id,
+    );
+    const direction = resolveVesselDirection(point?.kind === 'point' ? point : {});
+    return {
+      key: chartEffectKey(target.ref.kind, target.ref.id, target.ref.revision),
+      kind: target.ref.kind,
+      id: target.ref.id,
+      revision: target.ref.revision,
+      geometries: [target.geometry],
+      icon:
+        target.ref.kind === 'vessel'
+          ? direction.directionSource === 'unknown'
+            ? 'unknown'
+            : 'vessel'
+          : 'alert',
+      observedAt: target.observedAt,
+      bearing: direction.bearing,
+    };
+  }),
+);
+const effectAnchor = computed(() => {
+  const bounds = effectFocusPresentation.value?.bbox;
+  return bounds ? (bounds[0] + bounds[2] + (bounds[0] > bounds[2] ? 360 : 0)) / 2 : undefined;
+});
+const manualEffectTargets = computed<MapEffectTarget[]>(() =>
+  vesselHighlights.targets.map((target) => ({
+    key: chartEffectKey('vessel', target.mmsi),
+    kind: 'vessel',
+    id: target.mmsi,
+    geometries: [{ type: 'Point', coordinates: [target.lon, target.lat] }],
+    observedAt: target.observedAt,
+    bearing: resolveVesselDirection(target).bearing,
+    icon: resolveVesselDirection(target).directionSource === 'unknown' ? 'unknown' : 'vessel',
+    effectId: target.effectId,
+  })),
+);
+const mapEffectTargets = computed(() =>
+  mergeChartEffectTargets([...manualEffectTargets.value, ...focusEffectTargets.value]),
+);
+const focusEffectsReady = computed(() =>
+  chartFocusEffectsReady(
+    focusEffectTargets.value,
+    mapEffectTargets.value,
+    acknowledgedMapEffects.value,
+  ),
+);
+const effectRequests = computed<MapAttentionRequest[]>(() => {
+  const batches = new Map<string, MapEffectTarget[]>();
+  for (const target of manualEffectTargets.value) {
+    const id = target.effectId!;
+    batches.set(id, [...(batches.get(id) ?? []), target]);
+  }
+  const requests: MapAttentionRequest[] = [...batches].map(([id, targets]) => ({
+    id,
+    targets,
+    icon: 'vessel',
+  }));
+  const value = focus.result;
+  if (value && focus.displayed && agent.currentReply)
+    requests.push({
+      id: `focus:${value.sessionId}:${value.taskId}:${value.inputRevision}:${value.version}`,
+      targets: focusEffectTargets.value,
+      icon: focusEffectTargets.value.every((target) => target.key.startsWith('vessel:'))
+        ? 'vessel'
+        : 'alert',
+    });
+  return [...requests, ...chartEffects.attentionRequests.value];
+});
+function refreshSelectedVesselPosition() {
+  chartEffects.updateVessels([
+    ...(workspace.data?.items ?? []).filter((point) => point.kind === 'point'),
+    ...vesselHighlights.targets,
+    ...(workspace.detail?.latestPosition
+      ? [{ ...workspace.detail.latestPosition, mmsi: workspace.detail.mmsi }]
+      : []),
+  ]);
+}
+watch(
+  () => [workspace.data, workspace.detail?.latestPosition, vesselHighlights.targets] as const,
+  refreshSelectedVesselPosition,
+  { immediate: true, flush: 'sync' },
+);
+watch(() => chartEffects.selected.value?.key, refreshSelectedVesselPosition, { flush: 'sync' });
+watch(
+  () => agent.currentReply?.createdAt ?? null,
+  () => {
+    effectViewport.value = null;
+  },
+);
 watch(seaMap, scheduleReplyDock, { flush: 'post' });
 const handoffGeneration = createHandoffGeneration();
 watch(
   () => session.value?.user.id ?? null,
   (id) => {
+    chartEffects.reset();
     clearManualFocus();
     businessChoices.value = [];
     detailHost.close();
@@ -476,6 +640,15 @@ watch(
 async function businessHandoff(kind: 'route' | 'event', id: string, ask = false) {
   const current = handoffGeneration.begin(),
     camera = seaMap.value?.cameraIntent();
+  const existing = selectedBusiness.value.find(
+    (object) => object.kind === kind && object.id === id,
+  );
+  const selectionCurrent = chartEffects.select({
+    kind,
+    id,
+    revision: existing?.revision,
+    geometries: existing?.geometry ? [existing.geometry] : [],
+  });
   businessLoading.value = false;
   handoffError.value = '';
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
@@ -495,6 +668,11 @@ async function businessHandoff(kind: 'route' | 'event', id: string, ask = false)
       label: 'name' in value ? value.name : value.title,
       geometry: value.geometry,
     };
+    chartEffects.updateSelected(
+      selectionCurrent,
+      object.geometry ? [object.geometry] : [],
+      object.revision,
+    );
     const index = selectedBusiness.value.findIndex((v) => v.id === value.id && v.kind === kind);
     if (index >= 0) selectedBusiness.value[index] = object;
     else if (selectedBusiness.value.length + selectedShips.value.length < 100)
@@ -537,7 +715,30 @@ const loadTrack = workspace.loadTrack;
 workspace.loadTrack = async () => {
   const focus = seaMap.value?.cameraIntent();
   const previous = workspace.track;
+  const id = workspace.detail?.mmsi;
+  const selectionCurrent = id
+    ? chartEffects.select({
+        kind: 'track',
+        id,
+        revision: `${workspace.from}:${workspace.to}`,
+        geometries: [],
+      })
+    : null;
   await loadTrack();
+  if (
+    selectionCurrent &&
+    workspace.track &&
+    workspace.track !== previous &&
+    workspace.track.mmsi === id
+  ) {
+    const coordinates = workspace.track.segments
+      .map((segment) => segment.points.map((point): [number, number] => [point.lon, point.lat]))
+      .filter((line) => line.length >= 2);
+    chartEffects.updateSelected(
+      selectionCurrent,
+      coordinates.length ? [{ type: 'MultiLineString', coordinates }] : [],
+    );
+  }
   const point =
     workspace.track !== previous
       ? workspace.track?.segments.flatMap((s) => s.points)[0]
@@ -579,6 +780,21 @@ const {
 });
 const layers = reactive<ChartLayerVisibility>({ ...defaultChartVisibility });
 const fullscreen = ref(false);
+watch(
+  () => [
+    detailHost.active.value,
+    leftOpen.value,
+    rightOpen.value,
+    replyObjectsState.panelOpen,
+    replySourceClearance.value,
+    compactFooter.value,
+    layout.value.sizes.left,
+    layout.value.sizes.right,
+    fullscreen.value,
+  ],
+  () => seaMap.value?.requestFocusRender(),
+  { flush: 'post' },
+);
 useUiComponent('workspace.left', {
   read: () => uiProjection(leftOpen.value, ['open', 'close', 'tab'], { tab: workspace.leftTab }),
   execute: (op) => {
@@ -799,6 +1015,7 @@ function layer(key: keyof ChartLayerVisibility, enabled: boolean) {
 }
 function selectVessel(mmsi: string) {
   clearReplySelection();
+  chartEffects.select({ kind: 'vessel', id: mmsi, geometries: [], icon: 'vessel' });
   leftOpen.value = true;
   detailHost.open('vessel', 'left');
   void workspace.select(mmsi);
@@ -862,13 +1079,35 @@ function toggleDetailVesselHighlight() {
 }
 async function selectResult(result: AnalysisResult) {
   clearReplySelection();
+  const current = chartEffects.select({
+    kind: 'result',
+    id: result.id,
+    revision: result.revision,
+    geometries: resultSelectionGeometries(result),
+    icon: 'alert',
+  });
   const focus = seaMap.value?.cameraIntent();
   rightOpen.value = true;
   detailHost.open('evidence', 'right');
   rightTab.value = 'push';
   await topics.select(result);
   if (topics.evidence?.id === result.id)
+    chartEffects.updateSelected(
+      current,
+      resultSelectionGeometries(topics.evidence),
+      topics.evidence.revision,
+    );
+  if (topics.evidence?.id === result.id)
     focus?.({ mode: 'bounds', bbox: topics.evidence.bbox, maxZoom: 11 });
+}
+function selectMapEffect(target: {
+  kind: string;
+  id: string;
+  revision?: number | string;
+  geometries: IntelligenceGeometry[];
+}) {
+  clearReplySelection();
+  chartEffects.select(target);
 }
 function locateResult(result: AnalysisResult) {
   topics.locate(result);
@@ -939,6 +1178,13 @@ function keydown(event: KeyboardEvent) {
     event.metaKey
   )
     return;
+  if (
+    event.key === 'Escape' &&
+    event.eventPhase !== Event.CAPTURING_PHASE &&
+    !event.defaultPrevented &&
+    !seaMap.value?.interactionState().drawing
+  )
+    chartEffects.clearSelection();
   if (event.key === 'Home') {
     event.preventDefault();
     seaMap.value?.resetView();
@@ -950,7 +1196,7 @@ function captureEscape(event: KeyboardEvent) {
   if (event.key === 'Escape') keydown(event);
 }
 function bubbleKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Escape') keydown(event);
+  keydown(event);
 }
 function restorePrefs() {
   if (!session.value) return;
@@ -1189,7 +1435,13 @@ watch(
             "
             :vessel-tracks="vesselTracks.result"
             :vessel-highlights="vesselHighlights.targets"
+            :map-effects="mapEffectTargets"
+            :effect-hidden-keys="effectHiddenKeys"
+            :effect-muted-keys="effectMutedKeys"
+            @blank="chartEffects.clearSelection"
+            @effect-select="selectMapEffect"
             @vessel-highlights-displayed="vesselHighlights.markDisplayed"
+            @map-effects-displayed="acknowledgedMapEffects = $event"
             @vessel-tracks-displayed="
               if (vesselTracks.result === $event) vesselTracks.displayed = true;
             "
@@ -1208,6 +1460,13 @@ watch(
             @intelligence="selectMapIntelligence"
             @geometry="drawnGeometry = $event"
             @object="
+              chartEffects.select({
+                kind: 'object',
+                id: $event,
+                geometries: intelligence.objects
+                  .filter((object) => object.id === $event)
+                  .flatMap((object) => (object.geometry ? [object.geometry] : [])),
+              });
               intelligence.filters.objectId = $event;
               workspace.leftTab = 'intelligence';
               leftOpen = true;
@@ -1222,9 +1481,22 @@ watch(
             @select="selectVessel"
         /></ClientOnly>
         <ChartBusinessObjects
-          :map="seaMap"
+          :map="effectsMap"
           :objects="selectedBusiness"
           @select="(kind, id) => businessHandoff(kind, id)"
+        />
+        <ChartMapEffects
+          :key="session?.user.id ?? 'anonymous'"
+          :map="effectsMap"
+          :selected="chartEffects.selected.value"
+          :targets="mapEffectTargets"
+          :requests="effectRequests"
+          :viewport="effectViewport"
+          :anchor-longitude="effectAnchor"
+          @hidden="effectHiddenKeys = $event"
+          @muted="effectMutedKeys = $event"
+          @frame="effectFrame = $event"
+          @settled="chartEffects.cancelAttention($event)"
         />
         <div v-if="mapChoices.length > 1" class="intelligence-map-choices">
           <strong>重叠情报 {{ mapChoices.length }} 条</strong
@@ -1349,12 +1621,15 @@ watch(
         <ChartAgentFocusOverlay
           v-if="agent.currentReply"
           :key="agent.currentReply.createdAt"
-          :map="seaMap"
+          :map="effectsMap"
           :reply="agent.currentReply"
           :objects="replyObjects"
           :omitted-count="replyFocusMetadata?.omittedCount"
           :focus="agent.config?.spatialFocusEnabled === false ? null : focus.result"
           :fleet="workspace.data"
+          :effect-frame="effectFrame"
+          :effects-ready="focusEffectsReady"
+          @viewport="effectViewport = $event"
           :layout-key="
             [
               leftOpen,

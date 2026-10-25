@@ -54,9 +54,9 @@ test('低缩放聚合下独立高亮，任务引用隔离，热图与航线仍�
     second.artifactRef,
   ]);
 
-  const heatmap = fixture.issue('ais_heatmap', 'with_ripples');
+  const heatmap = fixture.issue('ais_heatmap', 'with_highlights');
   await finished(heatmap.id);
-  const tracks = fixture.issue('vessel_tracks', 'with_ripples');
+  const tracks = fixture.issue('vessel_tracks', 'with_highlights');
   await finished(tracks.id);
 
   const clearOne = fixture.issueMap({
@@ -174,7 +174,7 @@ test('百船高亮持续刷新，人工清除与刷新页面释放本页效果',
   await expect.poll(() => refreshes, { timeout: 15000 }).toBeGreaterThanOrEqual(2);
   await page
     .getByTestId('sea-map')
-    .screenshot({ path: testInfo.outputPath('hundred-vessel-ripples.png') });
+    .screenshot({ path: testInfo.outputPath('hundred-vessel-highlights.png') });
   await control.locator('summary').click();
   await page.getByTestId('vessel-highlights-clear-all').click();
   await expect(control).toHaveCount(0);
@@ -201,6 +201,21 @@ test('手工拖动中断镜头，迟到结束事件不会报告成功', async ({
   await page.goto('/');
   await expect(page.getByTestId('sea-map')).toHaveAttribute('data-ready', 'true');
   await expect.poll(fixture.ready).toBe(true);
+  const canvas = await page.locator('.maplibregl-canvas').boundingBox();
+  const x = canvas!.x + canvas!.width * 0.35;
+  const y = canvas!.y + canvas!.height * 0.5;
+  await page.mouse.move(x, y);
+  const gesture = await page.locator('.maplibregl-canvas').evaluateHandle((canvas) => {
+    let moving: string | null = null;
+    canvas.addEventListener(
+      'pointerdown',
+      () => {
+        moving = canvas.closest<HTMLElement>('[data-testid="sea-map"]')?.dataset.moving ?? null;
+      },
+      { capture: true, once: true },
+    );
+    return { startedMoving: () => moving };
+  });
   const command = fixture.issueMap({
     kind: 'map_camera',
     version: 1,
@@ -213,13 +228,11 @@ test('手工拖动中断镜头，迟到结束事件不会报告成功', async ({
       { intervals: [10, 20, 50] },
     )
     .toBe(true);
-  const canvas = await page.locator('.maplibregl-canvas').boundingBox();
-  const x = canvas!.x + canvas!.width * 0.35;
-  const y = canvas!.y + canvas!.height * 0.5;
-  await page.mouse.move(x, y);
   await page.mouse.down();
   await page.mouse.move(x + 80, y + 40, { steps: 8 });
   await page.mouse.up();
+  expect(await gesture.evaluate(({ startedMoving }) => startedMoving())).toBe('true');
+  await gesture.dispose();
   await expect
     .poll(
       () =>

@@ -16,7 +16,8 @@ import type { MapResponse } from '@ais/contracts';
 import { createLiveFocusPresentation, createFocusCameraBudget } from '../utils/liveFocus';
 import type { ReplyObjectViewModel } from '../types/agentReply';
 import { replyObjectKey } from '../utils/replyObjects';
-import { resolveVesselDirection } from '../utils/vesselMarkers';
+import type { MapEffectBounds, MapEffectFrame } from '../types/mapEffects';
+import { chartEffectReplyViewport } from '../composables/useChartEffects';
 const props = defineProps<{
   map: ChartMapControls | null;
   reply: CurrentAgentReply;
@@ -25,6 +26,8 @@ const props = defineProps<{
   layoutKey?: string;
   objects?: ReplyObjectViewModel[];
   omittedCount?: number;
+  effectFrame?: MapEffectFrame | null;
+  effectsReady?: boolean;
 }>();
 const presentFocus = createLiveFocusPresentation();
 const presentation = computed(() => presentFocus(props.focus, props.fleet?.items ?? []));
@@ -37,43 +40,24 @@ const emit = defineEmits<{
   crowded: [value: boolean];
   object: [value: ReplyObjectViewModel];
   objects: [];
+  viewport: [value: MapEffectBounds | null];
 }>();
 const targetCount = computed(
   () => new Set(props.focus?.targets.map((target) => replyObjectKey(target.ref))).size,
 );
-const vesselDirections = computed(() => {
-  const selected = new Set(
-    props.focus?.targets
-      .filter((target) => target.ref.kind === 'vessel')
-      .map((target) => target.ref.id),
-  );
-  return new Map(
-    (props.fleet?.items ?? []).flatMap((point) =>
-      point.kind === 'point' && selected.has(point.mmsi)
-        ? [[point.mmsi, resolveVesselDirection(point)] as const]
-        : [],
-    ),
-  );
-});
-const areaPaths = shallowRef<{ key: string; path: string }[]>([]);
 const root = ref<HTMLElement | null>(null),
   card = ref<HTMLElement | null>(null),
-  shapes = ref<SVGGElement | null>(null),
   labels = ref<SVGGElement | null>(null);
 const compact = ref(false),
   shortViewport = ref(false),
   offscreen = ref(false),
-  crowded = ref(false),
-  pageHidden = ref(false),
-  attentionArmed = ref(false);
-const attentionKey = computed(() => `${props.reply.createdAt}:${props.reply.inputRevision ?? 0}`);
+  crowded = ref(false);
 const replyScope = computed(() => ({
   createdAt: props.reply.createdAt,
   sessionId: props.reply.sessionId,
   taskId: props.reply.taskId,
   revision: props.reply.inputRevision ?? 0,
 }));
-watch(attentionKey, () => (attentionArmed.value = false), { flush: 'sync' });
 const reservation = {
   reserveReply: true,
   replyPlacement: 'right' as FocusSide,
@@ -82,10 +66,9 @@ const reservation = {
   objectMinHeight: 80,
 };
 const detached = ref(false);
-function updateVisibility() {
-  pageHidden.value = document.hidden;
-}
+
 let projectionStamp = '';
+let viewportStamp = '';
 let topCardLimit: number | undefined;
 let side: FocusSide | undefined,
   raf = 0,
@@ -133,6 +116,7 @@ function draw() {
     view,
     card.value.offsetHeight,
     hasMapFrame,
+    props.effectsReady,
   ]);
   if (stamp === projectionStamp) return;
   projectionStamp = stamp;
@@ -141,16 +125,12 @@ function draw() {
     ? (bounds[0] + bounds[2] + (bounds[0] > bounds[2] ? 360 : 0)) / 2
     : undefined;
   let box: { left: number; right: number; top: number; bottom: number } | null = null;
-  const commands: string[] = [];
-  const areas: { key: string; path: string }[] = [];
   const circleLabels: SVGTextElement[] = [];
   if (focus && props.map)
     for (const target of presentation.value?.targets ?? []) {
-      const targetAreas: string[] = [];
       if (target.region?.kind === 'circle') {
         const point = props.map.projectFocus(target.region.center, anchor);
         if (point) {
-          commands.push(`M${point.x - 10},${point.y}h20 M${point.x},${point.y - 10}v20`);
           const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
           label.setAttribute('x', String(point.x + 14));
           label.setAttribute('y', String(point.y - 14));
@@ -186,52 +166,9 @@ function draw() {
             box.bottom = Math.max(box.bottom, p.y);
           }
         }
-        if (points.length === 1) {
-          const p = points[0]!;
-          commands.push(`M${p.x + 12},${p.y}a12,12 0 1,0 -24,0 a12,12 0 1,0 24,0`);
-          const direction =
-            target.ref.kind === 'vessel' ? vesselDirections.value.get(target.ref.id) : undefined;
-          if (direction && direction.directionSource !== 'unknown' && line[0]) {
-            const [lon, lat] = line[0];
-            const radians = (direction.bearing * Math.PI) / 180;
-            const forward = props.map.projectFocus(
-              [
-                lon + (Math.sin(radians) * 0.01) / Math.max(0.01, Math.cos((lat * Math.PI) / 180)),
-                Math.max(-90, Math.min(90, lat + Math.cos(radians) * 0.01)),
-              ],
-              anchor,
-            );
-            if (forward) {
-              const length = Math.hypot(forward.x - p.x, forward.y - p.y);
-              if (Number.isFinite(length) && length > 0) {
-                const ux = (forward.x - p.x) / length,
-                  uy = (forward.y - p.y) / length;
-                const vertex = (along: number, across: number) =>
-                  `${p.x + ux * along - uy * across},${p.y + uy * along + ux * across}`;
-                commands.push(
-                  `M${vertex(9, 0)}L${vertex(-6, 5)}L${vertex(-3, 0)}L${vertex(-6, -5)}Z`,
-                );
-              }
-            }
-          }
-        } else if (points.length) {
-          const path = points.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
-          commands.push(path);
-          if (target.geometry.type === 'Polygon' || target.geometry.type === 'MultiPolygon')
-            targetAreas.push(`${path} Z`);
-        }
       }
-      if (targetAreas.length)
-        areas.push({
-          key: `${replyObjectKey(target.ref)}:${areas.length}`,
-          path: targetAreas.join(' '),
-        });
     }
   labels.value?.replaceChildren(...circleLabels);
-  if (shapes.value) {
-    shapes.value.firstElementChild?.setAttribute('d', commands.join(' '));
-  }
-  areaPaths.value = areas;
   const outside =
     !!box &&
     (box.left < view.left ||
@@ -272,6 +209,12 @@ function draw() {
   card.value.style.visibility = blocked ? 'hidden' : 'visible';
   card.value.dataset.placement = layout.side;
   const covered = focusReplyOccludes(visibleBox, layout, height);
+  const visualObjectViewport = blocked ? view : chartEffectReplyViewport(view, layout, height);
+  const nextViewportStamp = JSON.stringify(visualObjectViewport);
+  if (nextViewportStamp !== viewportStamp) {
+    viewportStamp = nextViewportStamp;
+    emit('viewport', visualObjectViewport);
+  }
   const captionHeight = shortViewport.value
     ? 0
     : (card.value.querySelector<HTMLElement>('.focus-caption')?.offsetHeight ?? 0);
@@ -340,12 +283,38 @@ function draw() {
       : outside || blocked || covered || !layout.compositionFits
         ? 'partial'
         : focus.displayStatus;
-    if (!blocked && visibleBox && !props.map.interactionState().moving) attentionArmed.value = true;
     const receiptKey = `${k}:${actualStatus}`;
-    if (!props.map.interactionState().moving && acknowledged !== receiptKey) {
-      acknowledged = receiptKey;
+    const animatingHere =
+      props.effectFrame?.phase === 'blink' &&
+      !props.effectFrame.visible &&
+      props.effectFrame.request?.targets.some((target) =>
+        focus.targets.some(
+          (item) =>
+            target.key ===
+            (item.ref.kind === 'vessel'
+              ? `vessel:${item.ref.id}`
+              : `${item.ref.kind}:${item.ref.id}:${item.ref.revision ?? 'current'}`),
+        ),
+      );
+    if (
+      props.effectsReady !== false &&
+      !animatingHere &&
+      !props.map.interactionState().moving &&
+      acknowledged !== receiptKey
+    ) {
       requestAnimationFrame(() => {
-        if (!disposed && key() === k) emit('displayed', focus, actualStatus);
+        if (
+          !disposed &&
+          key() === k &&
+          props.focus === focus &&
+          props.effectsReady !== false &&
+          props.map?.interactionState().ready &&
+          !props.map?.interactionState().moving &&
+          acknowledged !== receiptKey
+        ) {
+          acknowledged = receiptKey;
+          emit('displayed', focus, actualStatus);
+        }
       });
     }
   }
@@ -372,7 +341,15 @@ watch(
   { flush: 'post' },
 );
 watch(
-  () => props.layoutKey,
+  () => props.effectFrame,
+  () => {
+    projectionStamp = '';
+    schedule();
+  },
+  { flush: 'post' },
+);
+watch(
+  () => [props.layoutKey, props.effectsReady],
   () => {
     projectionStamp = '';
     props.map?.requestFocusRender();
@@ -405,14 +382,11 @@ watch(replyScope, (next, previous) => {
   side = undefined;
   cameraBudget.reset();
   topCardLimit = undefined;
-  attentionArmed.value = false;
   focusIntent = props.map?.cameraIntent(reservation);
   projectionStamp = '';
   schedule();
 });
 onMounted(() => {
-  updateVisibility();
-  document.addEventListener('visibilitychange', updateVisibility);
   unsubscribe = props.map?.onFocusRender(mapRendered);
   focusIntent = props.map?.cameraIntent(reservation);
   observer = new ResizeObserver(schedule);
@@ -426,29 +400,13 @@ onBeforeUnmount(() => {
   emit('crowded', false);
   unsubscribe?.();
   observer?.disconnect();
-  document.removeEventListener('visibilitychange', updateVisibility);
+  emit('viewport', null);
   cancelAnimationFrame(raf);
 });
 </script>
 <template>
   <div ref="root" class="chart-focus-overlay" data-testid="chart-focus-overlay">
     <svg class="focus-svg" aria-hidden="true">
-      <g
-        :key="`shapes:${attentionKey}`"
-        ref="shapes"
-        class="focus-shapes"
-        :class="{ 'focus-attention': attentionArmed }"
-        :style="{ animationPlayState: pageHidden ? 'paused' : 'running' }"
-      >
-        <path />
-      </g>
-      <path
-        v-for="area in areaPaths"
-        :key="area.key"
-        :d="area.path"
-        class="focus-area"
-        fill-rule="evenodd"
-      />
       <g ref="labels" class="focus-labels" />
     </svg>
     <div ref="card" class="focus-reply-position">
@@ -525,32 +483,6 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-}
-.focus-shapes {
-  stroke: #67e8fb;
-  stroke-width: 2;
-  fill: none;
-  filter: drop-shadow(0 0 3px #27bbdd88);
-}
-.focus-area {
-  fill: rgb(70 213 237 / 9%);
-  stroke: none;
-}
-.focus-attention {
-  animation: focus-acquire 600ms ease-out both;
-}
-@keyframes focus-acquire {
-  0% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .focus-attention {
-    animation: none;
-  }
 }
 .focus-reply-position {
   position: absolute;

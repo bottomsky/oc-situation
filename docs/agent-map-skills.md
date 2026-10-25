@@ -16,9 +16,11 @@
 
 船舶目标支持 MMSI、船名、IMO、呼号、AIS 船型和档案中已登记的型号。查询复用现有船舶筛选器；名称匹配多艘时补充选择，具体型号来自对象元数据。区域船型查询使用明确的区域范围。每页最多高亮 100 艘不同船舶，超限需缩小范围；缺少有效位置的船舶会在结果中说明。
 
-高亮首次显示感叹号及三次约 600ms 的光圈，然后持续约 2 秒一轮的水波。高亮层独立于普通 AIS 聚合层；缩小海图后，关注船舶仍有独立标识。未知航向使用圆环标记。系统减少动态效果设置下采用静态光圈。
+高亮使用明黄 `#FFD84D` 图标及沿图形轮廓扩散的柔光。船舶随有效航向旋转，未知航向使用对称菱形。高亮层独立于普通 AIS 层；缩小海图后，关注船舶仍有独立标识。人工高亮、任务高亮与 AI Focus 对同一实体合并绘制，分别保留各自引用。
 
-地图内部由共享 RAF 驱动 `feature-state` 更新光圈半径和透明度，坐标变化才更新 GeoJSON。动画与数据源加载相互独立，持续水波期间仍可完成图层绘制确认。
+首次强调采用统一的 1360ms 时序：在面板和回复卡避让后的可见区内，以短边三分之一为初始尺寸，600ms 收缩至 24px；随后熄灭 120ms，再执行两次“亮 200ms、灭 120ms”。批量目标先展示一个整体大图标，再由各目标分别闪烁两次。结束后保留静态高亮并停止动画帧。系统减少动态效果设置直接展示静态结果，页面隐藏时暂停动画计时，恢复前台后继续剩余阶段。
+
+点高亮由 MapLibre 的单个 `vessel-highlight-marker` symbol 图层绘制，柔光预先写入缓存 glyph 图像。线面高亮与统一选择框、临时强调由 `ChartMapEffects` 绘制。所有强调请求共用一个 RAF 时钟和队列，闪烁阶段按目标切换点图标可见性。坐标刷新和样式恢复复用原请求身份，更新投影与图源；首次强调的生命周期由请求标识管理。
 
 高亮属于本页任务组：同船被多个任务使用时显示一份标记，清除一个组保留其他组的引用。海图“船舶高亮”管理入口支持分组清除及全部清除。任务结束后继续显示，刷新、离开海图或注销时释放。切换 Agent 会话保留本页高亮，后续指令可清除已验证的旧组。
 
@@ -58,7 +60,15 @@
 
 人工拖动、滚轮或触屏接管会中断镜头命令；绘图、框选和未保存几何遵循交互锁。旧轨迹与情报查询返回时，仅仍有效的镜头意图可以定位。失败和中断通过回执报告，Agent 依据实际结果回复。
 
-高亮展示确认对应产物的目标集合及保留组；镜头确认对应命令的实际中心、缩放和范围。热力图、航线和高亮均按对应数据源处理完成后的绘制帧确认，持续动画期间也可完成展示回执。
+高亮展示确认对应产物的目标集合及保留组；镜头确认对应命令的实际中心、缩放和范围。热力图、航线和高亮均按对应数据源处理完成后的绘制帧确认，强调动画期间也可完成展示回执。
+
+## 统一效果接口与生命周期
+
+`app/types/mapEffects.ts` 定义效果目标、图标、强调请求、投影范围及动画帧。预设图标覆盖 `vessel`、`alert`、`danger`、`opportunity`，并提供表示未知航向的 `unknown`。目标携带稳定 `key`、几何集合以及可选方向和观测时间；船舶使用 `vessel:<MMSI>` 合并身份，其他对象使用类型、标识和修订版组成的键。
+
+`useChartEffects` 管理唯一选中对象。`select` 接受 `MapEffectTarget | null`，也接受 `{ kind, id, revision?, geometries, ... }` 业务便利输入；直接目标保留原 `key` 和已有业务元数据，无元数据时作为 opaque 对象处理，标准 `vessel:MMSI` 键继续跟随最新合法船位。`select(null)` 与 `clearSelection` 均取消选择并使旧代次失效；`updateSelected` 补齐仍有效的几何，直接目标的键保持稳定，业务便利输入随所选版本更新键。`playAttention` 接受带唯一 `id` 的 `MapAttentionRequest`，`cancelAttention` 取消指定请求或全部请求。`ChartMapEffects` 负责队列播放、可见几何投影和完成通知；页面销毁时释放 RAF、地图监听、媒体查询和尺寸观察器。
+
+搜索、地图点选、业务 SVG 的 Enter、AI 关联对象名称及结论证据入口共用单选状态。船舶和单点使用 44px 四角框，线面使用可见几何边界外 8px 的四角框；描边为 2px 明黄并带深色衬影。关闭详情保留选中，点击地图空白或普通交互下按 Escape 取消选中。模态、详情层级和绘图优先处理 Escape。独立高亮继续按人工和任务引用管理。
 
 ## 动态技能与后续事件接入
 
@@ -73,8 +83,8 @@
 定向验证入口：
 
 ```powershell
-bunx vitest run packages/domain/agent-map.test.ts apps/agent/map-runtime.test.ts apps/api/src/vessels/positions.test.ts apps/web/map-camera.test.ts apps/web/map-source-render.test.ts apps/web/vessel-highlights-map.test.ts apps/web/vessel-highlights-state.test.ts
-bunx playwright test tests/e2e/agent-map-skills.spec.ts tests/e2e/heatmap-ui-feedback.spec.ts
+bunx vitest run packages/domain/agent-map.test.ts apps/agent/map-runtime.test.ts apps/api/src/vessels/positions.test.ts apps/web/map-camera.test.ts apps/web/map-source-render.test.ts apps/web/vessel-highlights-map.test.ts apps/web/vessel-highlights-state.test.ts apps/web/map-effects.test.ts apps/web/chart-effects-state.test.ts apps/web/map-effects-seamap.test.ts
+bunx playwright test tests/e2e/map-effects.spec.ts tests/e2e/agent-map-skills.spec.ts tests/e2e/vessel-detail-actions.spec.ts tests/e2e/reply-objects.spec.ts tests/e2e/heatmap-ui-feedback.spec.ts
 ```
 
 数据库集成测试为 `packages/infrastructure/agent-map.integration.test.ts`，与旧 UI、动态 Skill 集成测试一并运行。实际执行结果及环境故障应记入交付报告，测试入口存在本身不等于验证通过。
