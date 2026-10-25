@@ -3,6 +3,7 @@ import type { UnwrapNestedRefs } from 'vue';
 import type { ChartLayerVisibility } from '../types/chart';
 import ChartOverflowTabs from './ChartOverflowTabs.vue';
 import { dateLabel } from '../utils/display';
+import { situationAgeLabel } from '../utils/maritimeSituation';
 const workspace = defineModel<UnwrapNestedRefs<ReturnType<typeof useChartWorkspace>>>('workspace', {
   required: true,
 });
@@ -45,7 +46,7 @@ const filterItems = computed(() => [
     : []),
   {
     key: 'hours',
-    label: `最近报告：${reportOptions.find((p) => p.hours === workspace.value.hours)?.label ?? workspace.value.hours + '小时'}`,
+    label: `最近报告：${reportOptions.find((p) => p.hours === workspace.value.hours)?.label ?? situationAgeLabel(workspace.value.hours)}`,
     removable: false,
   },
   ...(workspace.value.shipType
@@ -95,6 +96,9 @@ function applyLayers() {
     </header>
     <ChartOverflowTabs v-model="workspace.leftTab" />
     <div class="chart-panel-scroll">
+      <div v-if="visitedTabs.has('situation')" v-show="workspace.leftTab === 'situation'">
+        <slot name="situation" />
+      </div>
       <div v-if="visitedTabs.has('prediction')" v-show="workspace.leftTab === 'prediction'">
         <slot name="prediction" />
       </div>

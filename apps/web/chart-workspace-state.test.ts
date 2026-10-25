@@ -16,17 +16,80 @@ function harness(api: (path: string) => Promise<unknown>) {
   vi.stubGlobal('useRoute', () => ({ query: {} }));
   vi.stubGlobal('usePlatform', () => ({ api }));
   const subscribeViewport = vi.fn();
+  const mapData = ref(null);
   vi.stubGlobal('useFusionEvents', () => ({
     status: ref('live'),
     error: ref(''),
     feedError: ref(''),
-    mapData: ref(null),
+    mapData,
     subscribeViewport,
   }));
   const workspace = scope.run(() => useChartWorkspace())!;
-  return { workspace, subscribeViewport, stop: () => scope.stop() };
+  return { workspace, subscribeViewport, mapData, stop: () => scope.stop() };
 }
 describe('海图实际搜索状态', () => {
+  it('退出账号后忽略排队实时帧和筛选刷新，重新启用账号才恢复请求', async () => {
+    const api = vi.fn().mockResolvedValue({ items: [], total: 0 });
+    const { workspace, mapData, subscribeViewport, stop } = harness(api);
+    workspace.resetAccount(false);
+    mapData.value = { items: [{ kind: 'point', mmsi: 'old-owner' }], total: 1 } as never;
+    workspace.hours.value = 0.5;
+    await Promise.resolve();
+    expect(workspace.data.value).toBeNull();
+    expect(api).not.toHaveBeenCalled();
+    expect(subscribeViewport).not.toHaveBeenCalled();
+    workspace.resetAccount(true);
+    await vi.waitFor(() => expect(api).toHaveBeenCalledOnce());
+    expect(subscribeViewport).toHaveBeenLastCalledWith(expect.objectContaining({ hours: 0.5 }));
+    stop();
+  });
+  it('切换分钟窗口时HTTP和WS共享小数小时，迟到旧快照保留上一完整结果', async () => {
+    let finishOld: (value: unknown) => void = () => {};
+    const point = (mmsi: string) => ({ kind: 'point', mmsi, lon: 120, lat: 30, quality: [] });
+    const api = vi.fn(async (path: string) => {
+      if (!path.includes('/map/points')) return { items: [] };
+      if (api.mock.calls.length === 1)
+        return new Promise((resolve) => {
+          finishOld = resolve;
+        });
+      return { items: [point('new')], total: 1 };
+    });
+    const { workspace, subscribeViewport, stop } = harness(api);
+    workspace.data.value = { items: [point('complete')], total: 1 } as never;
+    workspace.viewport([120, 30, 124, 34], 6);
+    workspace.hours.value = 0.25;
+    await Promise.resolve();
+    expect(subscribeViewport).toHaveBeenLastCalledWith(expect.objectContaining({ hours: 0.25 }));
+    finishOld({ items: [point('stale')], total: 1 });
+    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    expect(new URL(api.mock.calls[1]![0], 'http://test').searchParams.get('hours')).toBe('0.25');
+    expect(
+      workspace.data.value?.items[0]?.kind === 'point' && workspace.data.value.items[0].mmsi,
+    ).toBe('new');
+    stop();
+  });
+  it('账号切换清除旧船位并隔离前账号迟到HTTP结果', async () => {
+    let finishOld: (value: unknown) => void = () => {};
+    const api = vi.fn(async () =>
+      api.mock.calls.length === 1
+        ? new Promise((resolve) => {
+            finishOld = resolve;
+          })
+        : { items: [], total: 0 },
+    );
+    const { workspace, subscribeViewport, stop } = harness(api);
+    expect(typeof workspace.resetAccount).toBe('function');
+    workspace.data.value = { items: [{ kind: 'point', mmsi: 'old' }], total: 1 } as never;
+    const reading = workspace.refresh();
+    workspace.resetAccount();
+    expect(workspace.data.value).toBeNull();
+    finishOld({ items: [{ kind: 'point', mmsi: 'late' }], total: 1 });
+    await reading;
+    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2));
+    expect(workspace.data.value?.items).toEqual([]);
+    expect(subscribeViewport).toHaveBeenCalled();
+    stop();
+  });
   it('新回复scope在清空选中对象之前使其真实在途详情失效', async () => {
     let resolve: (value: unknown) => void = () => {};
     const fixture = harness(

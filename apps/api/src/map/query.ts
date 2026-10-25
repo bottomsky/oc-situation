@@ -4,7 +4,11 @@ import { parse } from '../common';
 export const MapQuerySchema = z.strictObject({
   bbox: z.string().max(150),
   zoom: z.coerce.number().min(0).max(22).default(3),
-  hours: z.coerce.number().int().min(1).max(720).default(24),
+  hours: z.coerce
+    .number()
+    .min(1 / 60)
+    .max(720)
+    .default(24),
   sourceId: z.string().max(200).optional(),
   shipType: z.coerce.number().int().min(1).max(99).optional(),
 });

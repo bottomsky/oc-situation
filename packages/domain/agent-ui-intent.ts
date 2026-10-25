@@ -1,6 +1,7 @@
 import type { UiOperation, UiState } from '../contracts/agent-ui';
 
 export function isUiIntent(text: string) {
+  if (/(?:打开|展开|切换).*海洋态势/.test(text)) return !/不要|别|勿|不必|不用/.test(text);
   if (
     /热力图|热度图/.test(text) &&
     /打开|展开|切换|显示|恢复|展示/.test(text) &&
@@ -38,6 +39,8 @@ export function resolveUiOperation(text: string, state: UiState): UiOperation | 
     return null;
   if (/不要|别|勿|不必|不用/.test(text)) return null;
   const close = /关闭|隐藏|收起/.test(text);
+  if (!close && /(?:打开|展开|切换).*海洋态势/.test(text))
+    return { componentId: 'workspace.left', action: 'tab', tab: 'situation' };
   if (/航线|历史轨迹|批量轨迹/.test(text)) {
     if (/面板/.test(text) || (!close && /打开|展开|切换/.test(text)))
       return {

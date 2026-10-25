@@ -2,6 +2,7 @@
 import { partitionChartTabs } from '../utils/chartOverflowTabs';
 
 const tabs = [
+  { id: 'situation', name: '海洋态势' },
   { id: 'search', name: '船舶搜索' },
   { id: 'prediction', name: '航行预测' },
   { id: 'intelligence', name: '情报标绘' },

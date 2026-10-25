@@ -6959,6 +6959,7 @@ export interface operations {
                   actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
                   /** @enum {string} */
                   tab?:
+                    | 'situation'
                     | 'search'
                     | 'intelligence'
                     | 'layers'
@@ -7867,6 +7868,7 @@ export interface operations {
                   actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
                   /** @enum {string} */
                   tab?:
+                    | 'situation'
                     | 'search'
                     | 'intelligence'
                     | 'layers'
@@ -8787,6 +8789,7 @@ export interface operations {
                   actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
                   /** @enum {string} */
                   tab?:
+                    | 'situation'
                     | 'search'
                     | 'intelligence'
                     | 'layers'
@@ -10101,6 +10104,7 @@ export interface operations {
                       action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
                       /** @enum {string} */
                       tab?:
+                        | 'situation'
                         | 'search'
                         | 'intelligence'
                         | 'layers'
@@ -10267,6 +10271,7 @@ export interface operations {
                       action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
                       /** @enum {string} */
                       tab?:
+                        | 'situation'
                         | 'search'
                         | 'intelligence'
                         | 'layers'
@@ -10644,6 +10649,7 @@ export interface operations {
                   actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
                   /** @enum {string} */
                   tab?:
+                    | 'situation'
                     | 'search'
                     | 'intelligence'
                     | 'layers'
@@ -11466,6 +11472,7 @@ export interface operations {
                   actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
                   /** @enum {string} */
                   tab?:
+                    | 'situation'
                     | 'search'
                     | 'intelligence'
                     | 'layers'
@@ -11890,6 +11897,7 @@ export interface operations {
                 actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
                 /** @enum {string} */
                 tab?:
+                  | 'situation'
                   | 'search'
                   | 'intelligence'
                   | 'layers'
@@ -12413,6 +12421,7 @@ export interface operations {
               actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
               /** @enum {string} */
               tab?:
+                | 'situation'
                 | 'search'
                 | 'intelligence'
                 | 'layers'
@@ -12823,6 +12832,7 @@ export interface operations {
                 action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
                 /** @enum {string} */
                 tab?:
+                  | 'situation'
                   | 'search'
                   | 'intelligence'
                   | 'layers'
@@ -13200,6 +13210,7 @@ export interface operations {
               action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
               /** @enum {string} */
               tab?:
+                | 'situation'
                 | 'search'
                 | 'intelligence'
                 | 'layers'
@@ -13340,6 +13351,7 @@ export interface operations {
               actions: ('open' | 'close' | 'show' | 'hide' | 'focus' | 'tab')[];
               /** @enum {string} */
               tab?:
+                | 'situation'
                 | 'search'
                 | 'intelligence'
                 | 'layers'
@@ -14443,6 +14455,7 @@ export interface operations {
                     action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
                     /** @enum {string} */
                     tab?:
+                      | 'situation'
                       | 'search'
                       | 'intelligence'
                       | 'layers'
@@ -14599,6 +14612,7 @@ export interface operations {
                   action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
                   /** @enum {string} */
                   tab?:
+                    | 'situation'
                     | 'search'
                     | 'intelligence'
                     | 'layers'
@@ -14745,6 +14759,7 @@ export interface operations {
                 action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
                 /** @enum {string} */
                 tab?:
+                  | 'situation'
                   | 'search'
                   | 'intelligence'
                   | 'layers'
@@ -14879,6 +14894,7 @@ export interface operations {
                     action: 'open' | 'close' | 'show' | 'hide' | 'focus' | 'tab';
                     /** @enum {string} */
                     tab?:
+                      | 'situation'
                       | 'search'
                       | 'intelligence'
                       | 'layers'

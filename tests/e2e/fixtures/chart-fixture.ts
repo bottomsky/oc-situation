@@ -15,10 +15,17 @@ export async function chartFixture(
     runs: [] as string[],
     manual: 0,
     mapQueries: [] as URL[],
+    viewportMessages: [] as { version: number; query: { hours: number; mode?: string } }[],
+    sendLive: (message: unknown) => sendLive?.(JSON.stringify(message)),
   };
+  let sendLive: ((message: string) => void) | undefined;
   await page.routeWebSocket('**/api/v1/live*', (ws) => {
     calls.liveConnections++;
-    ws.onMessage(() => {});
+    sendLive = (message) => ws.send(message);
+    ws.onMessage((raw) => {
+      const message = JSON.parse(String(raw));
+      if (message.type === 'viewport') calls.viewportMessages.push(message);
+    });
   });
   await page.route('**/api/v1/**', async (route) => {
     const url = new URL(route.request().url());

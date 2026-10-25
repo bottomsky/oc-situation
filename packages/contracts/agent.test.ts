@@ -5,10 +5,31 @@ import {
   AgentMapContextSchema,
   AgentMessageInputSchema,
   AgentQueryResultSchema,
+  AgentSelectionSchema,
   AgentTaskStatusSchema,
 } from './agent';
 
 describe('agent input boundary', () => {
+  it.each([1 / 60, 0.25, 0.5, 24, 720])(
+    '海图观测范围%s小时可原样进入AI上下文和船舶选择条件',
+    (hours) => {
+      const mapContext = {
+        bbox: [120, 20, 130, 30],
+        capturedAt: '2026-10-25T00:00:00Z',
+        hours,
+      };
+      expect(
+        AgentMessageInputSchema.parse({ content: '当前视野有哪些船', mapContext }),
+      ).toMatchObject({
+        historyHours: 24,
+        mapContext: { hours },
+      });
+      expect(AgentSelectionSchema.parse({ filters: { hours } }).filters?.hours).toBe(hours);
+    },
+  );
+  it.each([0, 1 / 120, 721])('AI观测范围仍拒绝%s小时的越界值', (hours) => {
+    expect(AgentSelectionSchema.safeParse({ filters: { hours } }).success).toBe(false);
+  });
   it('defaults to 24 hours and accepts missing area for clarification', () => {
     expect(AgentMessageInputSchema.parse({ content: '分析区域低速活动' })).toEqual({
       content: '分析区域低速活动',

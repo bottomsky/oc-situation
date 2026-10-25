@@ -25,7 +25,11 @@ export const MapPointSchema = z.strictObject({
 export const MapPointQuerySchema = z.strictObject({
   bbox: BboxSchema,
   zoom: z.number().min(0).max(22).default(3),
-  hours: z.number().int().min(1).max(720).default(24),
+  hours: z
+    .number()
+    .min(1 / 60)
+    .max(720)
+    .default(24),
   sourceId: z.string().max(200).optional(),
   shipType: z.number().int().min(1).max(99).optional(),
 });

@@ -155,7 +155,7 @@ export class MapController {
         return `ST_Intersects(p.location::geometry,ST_MakeEnvelope($${offset + 1},$${offset + 2},$${offset + 3},$${offset + 4},4326))`;
       })
       .join(' OR ');
-    const where = `p.observed_at>=now()-make_interval(hours=>$1) AND ($2::text IS NULL OR p.source_id=$2) AND ($3::integer IS NULL OR v.ship_type=$3) AND (${spatial})`;
+    const where = `p.observed_at>=now()-make_interval(secs=>$1::double precision*3600) AND ($2::text IS NULL OR p.source_id=$2) AND ($3::integer IS NULL OR v.ship_type=$3) AND (${spatial})`;
     if (q.zoom < 7) {
       const grid = 360 / 2 ** (Math.floor(q.zoom) + 5);
       values.push(grid);

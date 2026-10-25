@@ -1,5 +1,91 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createFeedSync, parseBbox } from './app/utils/fusion';
+import { effectScope, nextTick, ref, watch } from 'vue';
+import { startFusionEvents, useFusionEvents } from './app/composables/useFusionEvents';
+
+it('切换账号先清旧实时会话，再恢复同小时窗口，新连接仍取得订阅且旧帧失效', async () => {
+  vi.useFakeTimers();
+  const sessions = ref({ user: { id: 'owner-a' } });
+  const states = new Map<string, ReturnType<typeof ref>>();
+  const mounted: (() => void)[] = [],
+    unmounted: (() => void)[] = [];
+  const connections: FakeSocket[] = [];
+  class FakeSocket {
+    static OPEN = 1;
+    readyState = 0;
+    onopen: (() => void) | null = null;
+    onclose: (() => void) | null = null;
+    onmessage: ((event: { data: string }) => void) | null = null;
+    onerror: (() => void) | null = null;
+    messages: unknown[] = [];
+    constructor() {
+      connections.push(this);
+    }
+    send(message: string) {
+      this.messages.push(JSON.parse(message));
+    }
+    close() {
+      this.readyState = 3;
+      this.onclose?.();
+    }
+    open() {
+      this.readyState = 1;
+      this.onopen?.();
+    }
+  }
+  vi.stubGlobal('WebSocket', FakeSocket);
+  vi.stubGlobal('location', { protocol: 'http:', host: 'fixture' });
+  vi.stubGlobal('watch', watch);
+  vi.stubGlobal('onMounted', (callback: () => void) => mounted.push(callback));
+  vi.stubGlobal('onBeforeUnmount', (callback: () => void) => unmounted.push(callback));
+  vi.stubGlobal('useState', (key: string, initial: () => unknown) => {
+    if (!states.has(key)) states.set(key, ref(initial()));
+    return states.get(key);
+  });
+  vi.stubGlobal('usePlatform', () => ({
+    session: sessions,
+    api: async () => ({ items: [], nextCursor: '0' }),
+  }));
+  const scope = effectScope();
+  try {
+    scope.run(() => {
+      startFusionEvents();
+      watch(
+        () => sessions.value.user.id,
+        () => {
+          useFusionEvents().subscribeViewport({ bbox: '120,30,124,34', zoom: 6, hours: 0.25 });
+        },
+        { flush: 'sync' },
+      );
+    });
+    mounted.forEach((callback) => callback());
+    useFusionEvents().subscribeViewport({ bbox: '120,30,124,34', zoom: 6, hours: 0.25 });
+    connections[0]!.open();
+    sessions.value = { user: { id: 'owner-b' } };
+    await nextTick();
+    expect(connections).toHaveLength(2);
+    connections[1]!.open();
+    expect(connections[1]!.messages).toContainEqual(
+      expect.objectContaining({
+        type: 'viewport',
+        query: expect.objectContaining({ hours: 0.25, mode: 'points' }),
+      }),
+    );
+    connections[0]!.onmessage?.({
+      data: JSON.stringify({
+        type: 'ais.snapshot',
+        version: 0,
+        data: { items: [{ mmsi: 'old' }] },
+      }),
+    });
+    expect(states.get('fusion-map-data')!.value).toBeNull();
+  } finally {
+    unmounted.forEach((callback) => callback());
+    scope.stop();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  }
+});
 
 describe('融合事件可靠补取', () => {
   it('切换会话重置游标，旧请求返回时不能覆盖新会话进度', async () => {

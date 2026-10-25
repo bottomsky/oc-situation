@@ -3,6 +3,28 @@ import { queryAgentVessels, resolveAgentAnalysisMmsis } from './agent-query';
 import type { Infrastructure } from './clients';
 
 describe('read-only agent vessel query', () => {
+  it.each([0.25, 0.5])('AI船舶查询保留%s小时范围，避免分钟筛选引发校验失败', async (hours) => {
+    let statement = '';
+    let parameters: unknown[] = [];
+    const infra = {
+      pool: {
+        query: async (sql: string, values: unknown[]) => {
+          statement = sql;
+          parameters = values;
+          return { rows: [{ total: '0', items: [], as_of: new Date() }] };
+        },
+      },
+    } as unknown as Infrastructure;
+    const result = await queryAgentVessels(infra, {
+      kind: 'vessel_list',
+      inputRevision: 0,
+      selection: { bbox: [120, 30, 122, 32], filters: { hours } },
+    });
+    expect(result.selection.filters?.hours).toBe(hours);
+    expect(parameters[0]).toBe(hours);
+    expect(statement).toContain('make_interval(secs=>');
+    expect(statement).not.toContain('make_interval(hours=>');
+  });
   it('resolves model and name constraints through the existing local selector and preserves an empty set', async () => {
     let resolverValues: unknown[] = [];
     let queryValues: unknown[] = [];

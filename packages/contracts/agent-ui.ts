@@ -44,6 +44,7 @@ export type UiComponentId = z.infer<typeof UiComponentIdSchema>;
 export const UiActionSchema = z.enum(['open', 'close', 'show', 'hide', 'focus', 'tab']);
 export type UiAction = z.infer<typeof UiActionSchema>;
 export const UiTabSchema = z.enum([
+  'situation',
   'search',
   'intelligence',
   'layers',
@@ -190,6 +191,7 @@ export function uiOperationAllowed(op: UiOperation): boolean {
       ['open', 'close'].includes(op.action) ||
       (op.action === 'tab' &&
         [
+          'situation',
           'search',
           'intelligence',
           'layers',

@@ -26,6 +26,19 @@ function fixture(count = 5001, options = {}) {
   return { service, sql };
 }
 describe('complete bounded map point snapshots', () => {
+  it.each([1 / 60, 0.25, 0.5, 24])(
+    '单船快照保留%s小时范围，并按秒传递相对观测截止条件',
+    async (hours) => {
+      const { service, sql } = fixture(1);
+      await expect(service.page('alice', { ...query, hours })).resolves.toMatchObject({
+        complete: true,
+        total: 1,
+      });
+      expect(sql.mock.calls[0]![1][0]).toBe(hours);
+      expect(sql.mock.calls[0]![0]).toContain('make_interval(secs=>');
+      expect(sql.mock.calls[0]![0]).not.toContain('make_interval(hours=>');
+    },
+  );
   it('freezes and pages every vessel above the legacy 5000 limit at low zoom', async () => {
     const { service, sql } = fixture();
     let page = await service.page('alice', query);

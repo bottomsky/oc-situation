@@ -82,6 +82,42 @@ const subscribe = (socket: WebSocket, version: number, mode = 'points') =>
     }),
   );
 describe('points viewport streaming', () => {
+  it('分钟范围订阅随时间推移移除刚过期船位，并保留边界内单船身份', async () => {
+    let now = Date.parse('2026-10-25T00:00:00.000Z');
+    const initial = [
+      { ...point(0), observedAt: new Date(now - 15 * 60_000).toISOString() },
+      { ...point(1), observedAt: new Date(now).toISOString() },
+    ];
+    const readMapPoints = vi.fn(async (query: Record<string, unknown>) => {
+      const items = initial.filter(
+        (item) => Date.parse(item.observedAt) >= now - Number(query.hours) * 3600_000,
+      );
+      return { items, total: items.length, generatedAt: new Date(now).toISOString() };
+    });
+    const { socket, frames } = await setup({ readMapPoints });
+    socket.send(
+      JSON.stringify({
+        type: 'viewport',
+        version: 1,
+        query: { mode: 'points', bbox: '-180,-90,180,90', zoom: 2, hours: 0.25 },
+      }),
+    );
+    await vi.waitFor(() =>
+      expect(frames.find((frame) => frame.type === 'ais.points.snapshot')?.data.items).toHaveLength(
+        2,
+      ),
+    );
+    expect(readMapPoints).toHaveBeenCalledWith(expect.objectContaining({ hours: 0.25 }), 'alice');
+    now++;
+    await vi.waitFor(() =>
+      expect(
+        frames.some(
+          (frame) => frame.type === 'ais.points.delta' && frame.remove.includes(point(0).mmsi),
+        ),
+      ).toBe(true),
+    );
+    expect(frames.some((frame) => frame.type === 'error')).toBe(false);
+  });
   it('explicitly rejects an incomplete or oversized reader result', async () => {
     const { socket, frames } = await setup({
       readMapPoints: async () => ({

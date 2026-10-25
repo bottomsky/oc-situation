@@ -10,7 +10,12 @@ import { RouteSchema, OperationalEventSchema } from '@ais/contracts';
 import { createHandoffGeneration } from '../utils/operationalEvents';
 import { focusBounds } from '../../../../packages/domain/agent-focus';
 import type { ChartLayerVisibility, ChartMapControls } from '../types/chart';
-import { readChartPreference, writeChartPreference } from '../utils/chartWorkspace';
+import {
+  readChartPreference,
+  writeChartPreference,
+  createChartReportPreference,
+  removeManualFocusObject,
+} from '../utils/chartWorkspace';
 import { chartLayoutDefaults } from '../utils/chartLayout';
 import { defaultChartVisibility } from '../utils/chartLayers';
 import { heatmapDateLabel } from '../utils/display';
@@ -48,9 +53,11 @@ const selectedBusiness = ref<
 const selectedShips = ref<string[]>([]);
 const handoffError = ref('');
 const businessChoices = ref<{ kind: 'route' | 'event'; id: string; label: string }[]>([]);
-const businessChoice = ref('');
+const businessLoading = ref(false);
 async function loadBusinessChoices() {
   const current = handoffGeneration.begin();
+  businessLoading.value = true;
+  handoffError.value = '';
   try {
     const [routes, events] = await Promise.all([
       api<{ items: unknown[] }>('/routes?limit=100&offset=0'),
@@ -69,20 +76,39 @@ async function loadBusinessChoices() {
     ];
   } catch {
     if (current()) handoffError.value = '业务对象列表读取失败，请重试。';
+  } finally {
+    if (current()) businessLoading.value = false;
   }
 }
-function addBusinessChoice() {
-  const value = businessChoices.value.find((v) => `${v.kind}:${v.id}` === businessChoice.value);
+function addBusinessChoice(choice: string) {
+  const value = businessChoices.value.find((v) => `${v.kind}:${v.id}` === choice);
   if (value) void businessHandoff(value.kind, value.id);
 }
 function addShip() {
   const id = workspace.detail?.mmsi;
-  if (
-    id &&
-    !selectedShips.value.includes(id) &&
-    selectedBusiness.value.length + selectedShips.value.length < 100
-  )
-    selectedShips.value.push(id);
+  if (!id || selectedShips.value.includes(id)) return;
+  if (selectedBusiness.value.length + selectedShips.value.length >= 100) {
+    handoffError.value = '关注集合最多100个对象，请移除部分对象后添加。';
+    return;
+  }
+  handoffError.value = '';
+  selectedShips.value.push(id);
+}
+function removeBusiness(object: { kind: 'route' | 'event'; id: string }) {
+  selectedBusiness.value = removeManualFocusObject(
+    selectedBusiness.value,
+    object,
+    handoffGeneration.invalidate,
+  );
+  businessLoading.value = false;
+  handoffError.value = '';
+}
+function clearManualFocus() {
+  handoffGeneration.invalidate();
+  selectedBusiness.value = [];
+  selectedShips.value = [];
+  businessLoading.value = false;
+  handoffError.value = '';
 }
 function mapContext(): AgentMapContext {
   const shipType = Number(workspace.shipType);
@@ -267,6 +293,29 @@ function selectMapIntelligence(ids: string[]) {
   if (ids[0]) void selectIntelligence(ids[0]);
 }
 const { session, api } = usePlatform();
+const reportPreference = createChartReportPreference(
+  {
+    getItem: (key) => localStorage.getItem(key),
+    setItem: (key, value) => localStorage.setItem(key, value),
+  },
+  (hours) => {
+    workspace.hours = hours;
+  },
+);
+watch(
+  () => session.value?.user.id ?? null,
+  (id) => {
+    if (import.meta.client) reportPreference.restore(id);
+  },
+  { immediate: true, flush: 'sync' },
+);
+watch(
+  () => workspace.hours,
+  (hours) => {
+    if (import.meta.client) reportPreference.persist(hours);
+  },
+  { flush: 'sync' },
+);
 const replyFocusMetadata = computed(() => replyObjectFocus(agent.currentReply, focus.result));
 const replyObjects = computed(() => buildReplyObjects(replyFocusMetadata.value));
 const replyObjectLocation = createReplyObjectLocation();
@@ -412,9 +461,20 @@ const route = useRoute();
 const seaMap = useTemplateRef<ChartMapControls>('seaMap');
 watch(seaMap, scheduleReplyDock, { flush: 'post' });
 const handoffGeneration = createHandoffGeneration();
+watch(
+  () => session.value?.user.id ?? null,
+  (id) => {
+    clearManualFocus();
+    businessChoices.value = [];
+    detailHost.close();
+    workspace.resetAccount(Boolean(id));
+  },
+  { flush: 'sync' },
+);
 async function businessHandoff(kind: 'route' | 'event', id: string, ask = false) {
   const current = handoffGeneration.begin(),
     camera = seaMap.value?.cameraIntent();
+  businessLoading.value = false;
   handoffError.value = '';
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     handoffError.value = '业务对象标识无效。';
@@ -741,6 +801,10 @@ function selectVessel(mmsi: string) {
   detailHost.open('vessel', 'left');
   void workspace.select(mmsi);
 }
+function selectSituationVessel(mmsi: string) {
+  selectVessel(mmsi);
+  workspace.leftTab = 'situation';
+}
 async function selectResult(result: AnalysisResult) {
   clearReplySelection();
   const focus = seaMap.value?.cameraIntent();
@@ -937,7 +1001,29 @@ watch(
         @close="leftOpen = false"
         @select-vessel="selectVessel"
         @layer="layer"
-        ><template #intelligence
+        ><template #situation
+          ><ChartMaritimeSituationPanel
+            :hours="workspace.hours"
+            :loaded-count="workspace.data?.items.length ?? 0"
+            :loading="workspace.busy"
+            :paused="workspace.paused"
+            :selected-ships="selectedShips"
+            :vessel-names="workspace.vesselNames"
+            :selected-business="selectedBusiness"
+            :current-mmsi="workspace.detail?.mmsi"
+            :business-choices="businessChoices"
+            :business-loading="businessLoading"
+            :error="handoffError"
+            @apply-hours="workspace.hours = $event"
+            @add-current-ship="addShip"
+            @remove-ship="selectedShips = selectedShips.filter((id) => id !== $event)"
+            @select-ship="selectSituationVessel"
+            @load-business="loadBusinessChoices"
+            @add-business="addBusinessChoice"
+            @remove-business="removeBusiness"
+            @clear="clearManualFocus"
+        /></template>
+        <template #intelligence
           ><IntelligenceList
             v-model:state="intelligence"
             @select="selectIntelligence"
@@ -1085,52 +1171,6 @@ watch(
           :objects="selectedBusiness"
           @select="(kind, id) => businessHandoff(kind, id)"
         />
-        <section class="business-selection" aria-label="人工关注集合">
-          <strong>人工关注集合 · {{ selectedBusiness.length + selectedShips.length }} / 100</strong>
-          <button @click="loadBusinessChoices">＋ 添加业务对象</button>
-          <select
-            v-if="businessChoices.length"
-            v-model="businessChoice"
-            aria-label="添加关注业务对象"
-            @change="addBusinessChoice"
-          >
-            <option value="">选择航线或事件加入集合</option>
-            <option
-              v-for="item in businessChoices"
-              :key="`${item.kind}:${item.id}`"
-              :value="`${item.kind}:${item.id}`"
-            >
-              {{ item.kind === 'route' ? '航线' : '事件' }} · {{ item.label }}
-            </option>
-          </select>
-          <button v-if="workspace.detail" @click="addShip">
-            ＋ 当前船舶 {{ workspace.detail.mmsi }}
-          </button>
-          <button
-            v-for="id in selectedShips"
-            :key="id"
-            @click="selectedShips = selectedShips.filter((v) => v !== id)"
-          >
-            船舶 {{ id }} ×
-          </button>
-          <button
-            v-for="item in selectedBusiness"
-            :key="`${item.kind}:${item.id}`"
-            @click="selectedBusiness = selectedBusiness.filter((v) => v !== item)"
-          >
-            {{ item.kind === 'route' ? '航线' : '事件' }} {{ item.label }} · r{{ item.revision
-            }}{{ item.geometry ? '' : ' · 未定位' }} ×
-          </button>
-          <button
-            @click="
-              selectedBusiness = [];
-              selectedShips = [];
-            "
-          >
-            清空关注
-          </button>
-          <p v-if="handoffError" role="alert">{{ handoffError }}</p>
-        </section>
         <div v-if="mapChoices.length > 1" class="intelligence-map-choices">
           <strong>重叠情报 {{ mapChoices.length }} 条</strong
           ><button v-for="id in mapChoices" :key="id" @click="selectIntelligence(id)">
@@ -1508,36 +1548,6 @@ watch(
   color: #b5edf6;
   background: #123c4b;
   cursor: pointer;
-}
-.business-selection {
-  position: absolute;
-  left: 16px;
-  top: 54px;
-  z-index: 5;
-  display: flex;
-  max-width: 65%;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 10px;
-  background: #092c38e8;
-  border: 1px solid #3c7d85;
-  border-radius: 8px;
-  color: #c9e6e4;
-  font-size: 12px;
-}
-.business-selection strong {
-  width: 100%;
-  letter-spacing: 1px;
-}
-.business-selection button {
-  padding: 4px 8px;
-  border: 1px solid #336370;
-  border-radius: 4px;
-  background: #164653;
-  color: #c9ede8;
-}
-.business-selection p {
-  color: #ffc7ae;
 }
 </style>
 

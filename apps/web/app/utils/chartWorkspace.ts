@@ -1,4 +1,5 @@
 import type { MapResponse, MapPoint } from '@ais/contracts';
+import { situationAgeMinutes } from './maritimeSituation';
 interface PreferenceStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -30,9 +31,55 @@ export function writeChartPreference(
     /* Storage restrictions retain the current session preference. */
   }
 }
+/** The owner is unset during restoration so synchronous watchers cannot write the old value back. */
+export function createChartReportPreference(
+  storage: PreferenceStorage,
+  apply: (hours: number) => void,
+) {
+  let owner: string | null = null;
+  const valid = (value: unknown): value is number =>
+    typeof value === 'number' && situationAgeMinutes(value, 'hours') !== null;
+  return {
+    restore(user: string | null) {
+      owner = null;
+      let hours = 24;
+      if (user) {
+        try {
+          const stored: unknown = JSON.parse(
+            storage.getItem(preferenceKey(user, 'situation-hours')) ?? 'null',
+          );
+          if (valid(stored)) hours = stored;
+        } catch {
+          /* Invalid or unavailable storage keeps the default time range. */
+        }
+      }
+      apply(hours);
+      owner = user;
+    },
+    persist(hours: number) {
+      if (!owner) return;
+      try {
+        storage.setItem(
+          preferenceKey(owner, 'situation-hours'),
+          JSON.stringify(valid(hours) ? hours : 24),
+        );
+      } catch {
+        /* Storage restrictions retain the selected range for this session. */
+      }
+    },
+  };
+}
 export function createRequestGeneration() {
   let generation = 0;
   return { next: () => ++generation, isCurrent: (request: number) => request === generation };
+}
+export function removeManualFocusObject<T extends { kind: string; id: string }>(
+  objects: T[],
+  removed: { kind: string; id: string },
+  invalidate: () => void,
+) {
+  invalidate();
+  return objects.filter((item) => item.kind !== removed.kind || item.id !== removed.id);
 }
 export function visibleVesselRows(items: MapResponse['items'], names: Map<string, string>) {
   return items

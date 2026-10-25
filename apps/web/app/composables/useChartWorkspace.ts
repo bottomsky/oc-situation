@@ -20,7 +20,14 @@ export function useChartWorkspace() {
   const { api } = usePlatform();
   const route = useRoute();
   const leftTab = ref<
-    'search' | 'layers' | 'playback' | 'history-tracks' | 'intelligence' | 'heatmap' | 'prediction'
+    | 'search'
+    | 'layers'
+    | 'playback'
+    | 'history-tracks'
+    | 'intelligence'
+    | 'heatmap'
+    | 'prediction'
+    | 'situation'
   >('search');
   const nameCache = ref(new Map<string, string>());
   const vesselNames = computed(() => Object.fromEntries(nameCache.value));
@@ -91,7 +98,9 @@ export function useChartWorkspace() {
   let viewportGeneration = 0;
   let liveCommitGeneration = 0;
   let disposed = false;
+  let accountEnabled = true;
   async function refresh() {
+    if (disposed || !accountEnabled) return;
     if (busy.value) {
       refreshQueued = true;
       return;
@@ -184,6 +193,7 @@ export function useChartWorkspace() {
   }
   function subscribe() {
     viewportGeneration++;
+    if (!accountEnabled) return;
     subscribeViewport({
       bbox: (queryBounds.value ?? bbox.value).join(','),
       zoom: zoom.value,
@@ -191,6 +201,35 @@ export function useChartWorkspace() {
       sourceId: sourceId.value || undefined,
       shipType: shipType.value || undefined,
     });
+  }
+  function resetAccount(enabled = true) {
+    accountEnabled = enabled;
+    viewportGeneration++;
+    liveCommitGeneration++;
+    refreshQueued = false;
+    data.value = null;
+    lastSuccess.value = 0;
+    error.value = '';
+    resetDetail();
+    trackRequests.next();
+    track.value = null;
+    trackBusy.value = false;
+    trackError.value = '';
+    frameIndex.value = 0;
+    playing.value = false;
+    searchRequests.next();
+    results.value = [];
+    cursor.value = null;
+    search.value = '';
+    appliedSearch.value = '';
+    searchCompleted.value = false;
+    searchBusy.value = false;
+    searchError.value = '';
+    nameCache.value = new Map();
+    if (enabled) {
+      subscribe();
+      void refresh();
+    }
   }
   async function find(more = false) {
     if (more && (searchBusy.value || !cursor.value)) return;
@@ -305,7 +344,7 @@ export function useChartWorkspace() {
     void refresh();
   });
   watch(mapData, (next) => {
-    if (!paused.value && next) {
+    if (accountEnabled && !paused.value && next) {
       liveCommitGeneration++;
       data.value = next;
       lastSuccess.value = Date.now();
@@ -384,6 +423,7 @@ export function useChartWorkspace() {
     find,
     select,
     resetDetail,
+    resetAccount,
     loadTrack,
   };
 }

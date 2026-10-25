@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deriveAgentIntent } from './agent-intents';
-import { resolveUiOperation } from './agent-ui-intent';
+import { isUiIntent, resolveUiOperation } from './agent-ui-intent';
 import {
   UiStateSchema,
   UiOperationSchema,
@@ -119,6 +119,52 @@ describe('semantic UI intent and postconditions', () => {
       action: 'close',
     });
   });
+  it('允许海洋态势页签状态与切换，同时保持左右面板和动作白名单独立', () => {
+    const operation = UiOperationSchema.parse({
+      componentId: 'workspace.left',
+      action: 'tab',
+      tab: 'situation',
+    });
+    const current = UiStateSchema.parse({
+      sequence: 1,
+      route: '/',
+      components: [
+        {
+          id: 'workspace.left',
+          version: 1,
+          mounted: true,
+          open: true,
+          visible: true,
+          actions: ['open', 'close', 'tab'],
+          tab: 'situation',
+        },
+      ],
+    });
+    expect(uiOperationAllowed(operation)).toBe(true);
+    expect(uiPostcondition(operation, current)).toBe(true);
+    expect(uiOperationAllowed({ ...operation, componentId: 'workspace.right' })).toBe(false);
+    expect(uiOperationAllowed({ ...operation, action: 'show' })).toBe(false);
+  });
+  it.each(['打开海洋态势', '展开海洋态势', '切换到海洋态势'])(
+    '显式指令%s切换已有人工页签',
+    (text) => {
+      expect(isUiIntent(text)).toBe(true);
+      expect(deriveAgentIntent(text).intent).toBe('ui_control');
+      expect(resolveUiOperation(text, state)).toEqual({
+        componentId: 'workspace.left',
+        action: 'tab',
+        tab: 'situation',
+      });
+    },
+  );
+  it.each(['当前海洋态势怎么样', '不要打开海洋态势', '别切换到海洋态势'])(
+    '%s保持地图和面板状态',
+    (text) => {
+      expect(resolveUiOperation(text, state)).toBeNull();
+      expect(deriveAgentIntent(text).intent).not.toBe('ui_control');
+      if (text === '当前海洋态势怎么样') expect(isUiIntent(text)).toBe(false);
+    },
+  );
   it('rejects arbitrary properties and unsupported action combinations', () => {
     expect(
       UiOperationSchema.safeParse({ componentId: 'app.page', action: 'close', script: 'alert(1)' })

@@ -116,7 +116,7 @@ export async function queryAgentVessels(
     const n = values.length;
     anchorCte = `anchor AS MATERIALIZED (
       SELECT p.longitude,p.latitude,p.observed_at,p.source_id FROM positions_latest p
-      WHERE p.mmsi=$${n - 1} AND p.observed_at>=now()-make_interval(hours=>$1)
+      WHERE p.mmsi=$${n - 1} AND p.observed_at>=now()-make_interval(secs=>$1::double precision*3600)
         AND p.observed_at<=now()
     ), `;
     anchorProjection = `(SELECT jsonb_build_object('longitude',longitude,'latitude',latitude,
@@ -165,7 +165,7 @@ export async function queryAgentVessels(
           'lat',p.latitude,'lon',p.longitude,'observedAt',p.observed_at,
           'sogKnots',p.sog,'sourceId',p.source_id) END AS "latestPosition"
       FROM vessels v LEFT JOIN positions_latest p ON p.mmsi=v.mmsi
-        AND p.observed_at>=now()-make_interval(hours=>$1) AND p.observed_at<=now()
+        AND p.observed_at>=now()-make_interval(secs=>$1::double precision*3600) AND p.observed_at<=now()
       WHERE ${filters.join(' AND ')}
     ), selected AS (SELECT * FROM eligible ORDER BY mmsi LIMIT 100)
     SELECT ${anchorProjection} (SELECT count(*) FROM eligible)::text AS total,

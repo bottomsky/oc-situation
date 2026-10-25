@@ -1485,8 +1485,8 @@
             "in": "query",
             "schema": {
               "default": 24,
-              "type": "integer",
-              "minimum": 1,
+              "type": "number",
+              "minimum": 0.016666666666666666,
               "maximum": 720
             }
           },
@@ -1964,8 +1964,8 @@
             "in": "query",
             "schema": {
               "default": 24,
-              "type": "integer",
-              "minimum": 1,
+              "type": "number",
+              "minimum": 0.016666666666666666,
               "maximum": 720
             }
           },
@@ -11425,6 +11425,7 @@
                                     "tab": {
                                       "type": "string",
                                       "enum": [
+                                        "situation",
                                         "search",
                                         "intelligence",
                                         "layers",
@@ -12311,8 +12312,8 @@
                                     "maximum": 99
                                   },
                                   "hours": {
-                                    "type": "integer",
-                                    "minimum": 1,
+                                    "type": "number",
+                                    "minimum": 0.016666666666666666,
                                     "maximum": 720
                                   }
                                 },
@@ -13305,8 +13306,8 @@
                                     "maximum": 99
                                   },
                                   "hours": {
-                                    "type": "integer",
-                                    "minimum": 1,
+                                    "type": "number",
+                                    "minimum": 0.016666666666666666,
                                     "maximum": 720
                                   }
                                 },
@@ -14183,8 +14184,8 @@
                                     "maximum": 99
                                   },
                                   "hours": {
-                                    "type": "integer",
-                                    "minimum": 1,
+                                    "type": "number",
+                                    "minimum": 0.016666666666666666,
                                     "maximum": 720
                                   }
                                 },
@@ -14702,8 +14703,8 @@
                         "maximum": 99
                       },
                       "hours": {
-                        "type": "integer",
-                        "minimum": 1,
+                        "type": "number",
+                        "minimum": 0.016666666666666666,
                         "maximum": 720
                       },
                       "selectedTargets": {
@@ -15412,6 +15413,7 @@
                                   "tab": {
                                     "type": "string",
                                     "enum": [
+                                      "situation",
                                       "search",
                                       "intelligence",
                                       "layers",
@@ -16298,8 +16300,8 @@
                                   "maximum": 99
                                 },
                                 "hours": {
-                                  "type": "integer",
-                                  "minimum": 1,
+                                  "type": "number",
+                                  "minimum": 0.016666666666666666,
                                   "maximum": 720
                                 }
                               },
@@ -17291,8 +17293,8 @@
                                     "maximum": 99
                                   },
                                   "hours": {
-                                    "type": "integer",
-                                    "minimum": 1,
+                                    "type": "number",
+                                    "minimum": 0.016666666666666666,
                                     "maximum": 720
                                   }
                                 },
@@ -18169,8 +18171,8 @@
                                     "maximum": 99
                                   },
                                   "hours": {
-                                    "type": "integer",
-                                    "minimum": 1,
+                                    "type": "number",
+                                    "minimum": 0.016666666666666666,
                                     "maximum": 720
                                   }
                                 },
@@ -19542,6 +19544,7 @@
                                   "tab": {
                                     "type": "string",
                                     "enum": [
+                                      "situation",
                                       "search",
                                       "intelligence",
                                       "layers",
@@ -20428,8 +20431,8 @@
                                   "maximum": 99
                                 },
                                 "hours": {
-                                  "type": "integer",
-                                  "minimum": 1,
+                                  "type": "number",
+                                  "minimum": 0.016666666666666666,
                                   "maximum": 720
                                 }
                               },
@@ -21450,8 +21453,8 @@
                                     "maximum": 99
                                   },
                                   "hours": {
-                                    "type": "integer",
-                                    "minimum": 1,
+                                    "type": "number",
+                                    "minimum": 0.016666666666666666,
                                     "maximum": 720
                                   }
                                 },
@@ -22328,8 +22331,8 @@
                                     "maximum": 99
                                   },
                                   "hours": {
-                                    "type": "integer",
-                                    "minimum": 1,
+                                    "type": "number",
+                                    "minimum": 0.016666666666666666,
                                     "maximum": 720
                                   }
                                 },
@@ -23564,8 +23567,8 @@
                                   "maximum": 99
                                 },
                                 "hours": {
-                                  "type": "integer",
-                                  "minimum": 1,
+                                  "type": "number",
+                                  "minimum": 0.016666666666666666,
                                   "maximum": 720
                                 }
                               },
@@ -25424,6 +25427,7 @@
                                           "tab": {
                                             "type": "string",
                                             "enum": [
+                                              "situation",
                                               "search",
                                               "intelligence",
                                               "layers",
@@ -25856,6 +25860,7 @@
                                             "tab": {
                                               "type": "string",
                                               "enum": [
+                                                "situation",
                                                 "search",
                                                 "intelligence",
                                                 "layers",
@@ -26598,8 +26603,8 @@
                                 "maximum": 99
                               },
                               "hours": {
-                                "type": "integer",
-                                "minimum": 1,
+                                "type": "number",
+                                "minimum": 0.016666666666666666,
                                 "maximum": 720
                               }
                             },
@@ -27196,6 +27201,7 @@
                                   "tab": {
                                     "type": "string",
                                     "enum": [
+                                      "situation",
                                       "search",
                                       "intelligence",
                                       "layers",
@@ -28082,8 +28088,8 @@
                                   "maximum": 99
                                 },
                                 "hours": {
-                                  "type": "integer",
-                                  "minimum": 1,
+                                  "type": "number",
+                                  "minimum": 0.016666666666666666,
                                   "maximum": 720
                                 }
                               },
@@ -29073,8 +29079,8 @@
                                   "maximum": 99
                                 },
                                 "hours": {
-                                  "type": "integer",
-                                  "minimum": 1,
+                                  "type": "number",
+                                  "minimum": 0.016666666666666666,
                                   "maximum": 720
                                 }
                               },
@@ -29951,8 +29957,8 @@
                                   "maximum": 99
                                 },
                                 "hours": {
-                                  "type": "integer",
-                                  "minimum": 1,
+                                  "type": "number",
+                                  "minimum": 0.016666666666666666,
                                   "maximum": 720
                                 }
                               },
@@ -30650,6 +30656,7 @@
                                   "tab": {
                                     "type": "string",
                                     "enum": [
+                                      "situation",
                                       "search",
                                       "intelligence",
                                       "layers",
@@ -31536,8 +31543,8 @@
                                   "maximum": 99
                                 },
                                 "hours": {
-                                  "type": "integer",
-                                  "minimum": 1,
+                                  "type": "number",
+                                  "minimum": 0.016666666666666666,
                                   "maximum": 720
                                 }
                               },
@@ -32236,6 +32243,7 @@
                               "tab": {
                                 "type": "string",
                                 "enum": [
+                                  "situation",
                                   "search",
                                   "intelligence",
                                   "layers",
@@ -33115,8 +33123,8 @@
                               "maximum": 99
                             },
                             "hours": {
-                              "type": "integer",
-                              "minimum": 1,
+                              "type": "number",
+                              "minimum": 0.016666666666666666,
                               "maximum": 720
                             }
                           },
@@ -33946,6 +33954,7 @@
                             "tab": {
                               "type": "string",
                               "enum": [
+                                "situation",
                                 "search",
                                 "intelligence",
                                 "layers",
@@ -35771,6 +35780,7 @@
                               "tab": {
                                 "type": "string",
                                 "enum": [
+                                  "situation",
                                   "search",
                                   "intelligence",
                                   "layers",
@@ -37385,6 +37395,7 @@
                         "tab": {
                           "type": "string",
                           "enum": [
+                            "situation",
                             "search",
                             "intelligence",
                             "layers",
@@ -37648,6 +37659,7 @@
                             "tab": {
                               "type": "string",
                               "enum": [
+                                "situation",
                                 "search",
                                 "intelligence",
                                 "layers",
@@ -39876,6 +39888,7 @@
                                         "tab": {
                                           "type": "string",
                                           "enum": [
+                                            "situation",
                                             "search",
                                             "intelligence",
                                             "layers",
@@ -40179,6 +40192,7 @@
                                   "tab": {
                                     "type": "string",
                                     "enum": [
+                                      "situation",
                                       "search",
                                       "intelligence",
                                       "layers",
@@ -40453,6 +40467,7 @@
                                 "tab": {
                                   "type": "string",
                                   "enum": [
+                                    "situation",
                                     "search",
                                     "intelligence",
                                     "layers",
@@ -40767,6 +40782,7 @@
                                       "tab": {
                                         "type": "string",
                                         "enum": [
+                                          "situation",
                                           "search",
                                           "intelligence",
                                           "layers",

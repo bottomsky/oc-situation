@@ -175,6 +175,7 @@ export function startFusionEvents() {
         void catchUp();
       }
     },
+    { flush: 'sync' },
   );
   onMounted(() => {
     connect();

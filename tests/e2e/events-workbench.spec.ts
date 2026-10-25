@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { chartFixture } from './fixtures/chart-fixture';
+import { selectLeftTab } from './chart-helpers';
 const mapErrors = new WeakMap<Page, string[]>();
 test.beforeEach(({ page }) => {
   const errors: string[] = [];
@@ -101,7 +102,8 @@ test('viewer只读与海图问句预填', async ({ page }) => {
   await page.getByRole('button', { name: /近海船舶异常事件/ }).click();
   await expect(page.getByLabel('事件标题', { exact: true })).toBeDisabled();
   await page.getByRole('link', { name: '海图定位与分析 ↗' }).click();
-  await expect(page.getByLabel('人工关注集合')).toContainText('近海船舶异常事件');
+  await selectLeftTab(page, '海洋态势');
+  await expect(page.getByTestId('maritime-situation-panel')).toContainText('近海船舶异常事件');
   await expect(page.locator('.composer-input')).toHaveValue('分析这个事件：近海船舶异常事件');
 });
 test('人工事件地图绘制点线面并保存真实几何', async ({ page }) => {

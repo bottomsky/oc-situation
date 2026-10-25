@@ -127,7 +127,7 @@ export class MapPointSnapshotService {
     try {
       // A single statement fixes MVCC visibility; an extra row detects overflow without a full COUNT window.
       const result = await this.infra.pool.query(
-        `SELECT p.observation FROM positions_latest p JOIN vessels v USING(mmsi) WHERE p.observed_at>=now()-make_interval(hours=>$1) AND ($2::text IS NULL OR p.source_id=$2) AND ($3::integer IS NULL OR v.ship_type=$3) AND (${spatial}) ORDER BY p.mmsi LIMIT $${values.length}`,
+        `SELECT p.observation FROM positions_latest p JOIN vessels v USING(mmsi) WHERE p.observed_at>=now()-make_interval(secs=>$1::double precision*3600) AND ($2::text IS NULL OR p.source_id=$2) AND ($3::integer IS NULL OR v.ship_type=$3) AND (${spatial}) ORDER BY p.mmsi LIMIT $${values.length}`,
         values,
       );
       if (result.rows.length > this.maxPoints) throw new MapPointSnapshotError('data_limit');

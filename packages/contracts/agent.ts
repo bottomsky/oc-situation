@@ -77,7 +77,11 @@ export const AgentTimeRangeSchema = z
 export const AgentFiltersSchema = z.strictObject({
   sourceId: z.string().min(1).max(200).optional(),
   shipType: z.number().int().min(1).max(99).optional(),
-  hours: z.number().int().min(1).max(720).optional(),
+  hours: z
+    .number()
+    .min(1 / 60)
+    .max(720)
+    .optional(),
 });
 export const VesselCircleRequestSchema = z.strictObject({
   mmsi: z.string().regex(/^[1-9]\d{8}$/),
