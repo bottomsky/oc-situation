@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
             <ChartIcon name="X" :size="16" />
           </button>
         </header>
-        <div class="chart-detail-scroll"><slot /></div>
+        <div class="chart-detail-scroll" tabindex="0"><slot /></div>
       </aside>
     </Transition>
   </Teleport>

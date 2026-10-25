@@ -3,7 +3,7 @@
 .detail-content,
 .chart-evidence-dialog {
   --detail-ink: #d4e9f2;
-  --detail-muted: #82a8b9;
+  --detail-muted: var(--detail-floating-muted, #82a8b9);
   --detail-accent: #62d5e6;
   --detail-line: #245064;
   --control-bg: #092230;
@@ -17,13 +17,15 @@
   color-scheme: dark;
 }
 .chart-detail-float {
-  --detail-fade-width: 48px;
+  --detail-fade-width: 144px;
+  --detail-safe-inset: 60px;
+  --detail-floating-muted: #a8c6d3;
   --detail-spacing: 18px;
   --detail-fade-angle: 90deg;
   --detail-left-border: 1px;
   --detail-right-border: 0px;
   --detail-inset-left: var(--detail-spacing);
-  --detail-inset-right: calc(var(--detail-fade-width) + 12px);
+  --detail-inset-right: var(--detail-safe-inset);
   position: fixed;
   z-index: 50;
   display: flex;
@@ -36,8 +38,10 @@
   border-radius: 0;
   background: linear-gradient(
     var(--detail-fade-angle),
-    rgb(6 27 40 / 98%) 0%,
-    rgb(6 27 40 / 94%) calc(100% - var(--detail-fade-width)),
+    rgb(6 27 40 / 86%) 0%,
+    rgb(6 27 40 / 82%) calc(100% - var(--detail-fade-width)),
+    rgb(6 27 40 / 76%) calc(100% - var(--detail-safe-inset)),
+    rgb(6 27 40 / 44%) calc(100% - 24px),
     rgb(6 27 40 / 0%) 100%
   );
   box-shadow: none;
@@ -46,7 +50,7 @@
   --detail-fade-angle: 270deg;
   --detail-left-border: 0px;
   --detail-right-border: 1px;
-  --detail-inset-left: calc(var(--detail-fade-width) + 12px);
+  --detail-inset-left: var(--detail-safe-inset);
   --detail-inset-right: var(--detail-spacing);
 }
 .chart-detail-float::before,
@@ -93,7 +97,7 @@
 .chart-detail-heading small {
   display: block;
   margin-top: 5px;
-  color: #7cb1bf;
+  color: var(--detail-floating-muted, #7cb1bf);
   font-size: 8px;
   line-height: 1.4;
   letter-spacing: 0.16em;
@@ -111,7 +115,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #9bc3cf;
+  color: var(--detail-ink);
 }
 .chart-detail-float .chart-detail-close:is(:hover, :active, :focus-visible) {
   background: transparent;
@@ -124,9 +128,13 @@
   overflow: auto;
   overscroll-behavior: contain;
   padding: 18px var(--detail-inset-right) 24px var(--detail-inset-left);
-  scrollbar-width: thin;
-  scrollbar-color: #3a6879 transparent;
+  scrollbar-width: none;
   overflow-wrap: anywhere;
+}
+.chart-detail-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 .detail-content {
   display: grid;
@@ -155,7 +163,7 @@
   gap: 7px;
 }
 .detail-content .detail-eyebrow {
-  color: #6d9daa;
+  color: var(--detail-floating-muted, #6d9daa);
   font-size: 9px;
   line-height: 1.5;
   letter-spacing: 0.12em;

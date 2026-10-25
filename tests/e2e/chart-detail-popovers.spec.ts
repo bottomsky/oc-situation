@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openLeftPanel, selectLeftTab } from './chart-helpers';
 import { chartFixture } from './fixtures/chart-fixture';
 import { chartResult } from './fixtures/chart-data';
+import { captureChartMap } from './fixtures/chart-map';
 import type { AgentIntelligenceResult } from '@ais/contracts';
 
 const event = {
@@ -190,6 +191,8 @@ async function detailPresentation(
   await expect(close).toHaveCSS('border-width', '0px');
   const surface = await detail.evaluate((element) => {
     const style = getComputedStyle(element);
+    const scroll = element.querySelector<HTMLElement>('.chart-detail-scroll')!;
+    const scrollStyle = getComputedStyle(scroll);
     const colors = [...style.backgroundImage.matchAll(/rgba?\(([^)]+)\)/g)].map((match) =>
       match[1]!
         .split(/[\s,/]+/)
@@ -207,13 +210,14 @@ async function detailPresentation(
       leftBorder: parseFloat(style.borderLeftWidth),
       rightBorder: parseFloat(style.borderRightWidth),
       opacity: Number(style.opacity),
+      contentOpacity: Number(getComputedStyle(scroll.firstElementChild!).opacity),
+      scrollbar: scrollStyle.scrollbarWidth,
+      webkitScrollbar: getComputedStyle(scroll, '::-webkit-scrollbar').display,
+      overflowY: scrollStyle.overflowY,
+      fadeWidth: parseFloat(style.getPropertyValue('--detail-fade-width')),
       angle: style.backgroundImage.match(/^linear-gradient\((90deg|270deg|to right|to left),/)?.[1],
-      insetLeft: parseFloat(
-        getComputedStyle(element.querySelector('.chart-detail-scroll')!).paddingLeft,
-      ),
-      insetRight: parseFloat(
-        getComputedStyle(element.querySelector('.chart-detail-scroll')!).paddingRight,
-      ),
+      insetLeft: parseFloat(scrollStyle.paddingLeft),
+      insetRight: parseFloat(scrollStyle.paddingRight),
       alphas: colors.map((color) => (color.length === 4 ? color[3]! : 1)),
     };
   });
@@ -222,9 +226,16 @@ async function detailPresentation(
   expect(surface.leftBorder).toBe(fadeTo === 'left' ? 0 : 1);
   expect(surface.rightBorder).toBe(fadeTo === 'left' ? 1 : 0);
   expect(surface.opacity).toBe(1);
+  expect(surface.contentOpacity).toBe(1);
+  expect(surface.scrollbar).toBe('none');
+  expect(surface.webkitScrollbar).toBe('none');
+  expect(surface.overflowY).toBe('auto');
   expect(surface.angle).toMatch(fadeTo === 'left' ? /^(270deg|to left)$/ : /^(90deg|to right)$/);
-  expect(fadeTo === 'left' ? surface.insetLeft : surface.insetRight).toBeGreaterThanOrEqual(60);
-  expect(surface.alphas.length).toBeGreaterThanOrEqual(2);
+  const safeInset = fadeTo === 'left' ? surface.insetLeft : surface.insetRight;
+  expect(safeInset).toBe(60);
+  expect(surface.fadeWidth).toBeGreaterThan(safeInset * 2);
+  expect(surface.alphas.length).toBeGreaterThanOrEqual(5);
+  expect(surface.alphas[0]).toBeLessThan(0.9);
   expect(surface.alphas[0]).toBeGreaterThan(surface.alphas.at(-1)!);
   expect(surface.alphas.at(-1)).toBeLessThanOrEqual(0.05);
   await expect
@@ -373,6 +384,58 @@ test('船舶搜索详情在左侧独立浮层，切换情报仅保留一个浮�
   await openManualDetail(page);
   await expect(detail).toHaveCount(1);
   await expect(detail.locator('.vessel-detail')).toHaveCount(0);
+});
+
+test('隐藏滚动条的详情支持滚轮与键盘滚动，标题和地图保持稳定', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await fixture(page);
+  await page.goto('/');
+  const map = page.getByTestId('sea-map');
+  await expect(map).toHaveAttribute('data-ready', 'true');
+  const instance = await map.getAttribute('data-map-instance');
+  await captureChartMap(page, '__detailScrollingMap');
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !(
+            globalThis as typeof globalThis & { __detailScrollingMap: import('maplibre-gl').Map }
+          ).__detailScrollingMap.isMoving(),
+      ),
+    )
+    .toBe(true);
+  const camera = () =>
+    page.evaluate(() => {
+      const map = (
+        globalThis as typeof globalThis & { __detailScrollingMap: import('maplibre-gl').Map }
+      ).__detailScrollingMap;
+      return { center: map.getCenter().toArray(), zoom: map.getZoom() };
+    });
+  const { detail } = await openManualDetail(page);
+  const before = await camera();
+  const scroll = detail.locator('.chart-detail-scroll');
+  await expect(scroll).toHaveCSS('scrollbar-width', 'none');
+  await expect(scroll).toHaveAttribute('tabindex', '0');
+  await scroll.hover();
+  await page.mouse.wheel(0, 400);
+  await expect.poll(() => scroll.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await scroll.focus();
+  const afterWheel = await scroll.evaluate((element) => element.scrollTop);
+  await scroll.press('PageDown');
+  await expect
+    .poll(() => scroll.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(afterWheel);
+  await scroll.press('End');
+  await expect
+    .poll(() =>
+      scroll.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop),
+    )
+    .toBeLessThanOrEqual(1);
+  await visibleInViewport(page, detail.getByRole('heading', { name: '情报证据', exact: true }));
+  await visibleInViewport(page, detail.getByRole('button', { name: '关闭详情', exact: true }));
+  expect(await camera()).toEqual(before);
+  await expect(map).toHaveAttribute('data-map-instance', instance!);
+  await page.screenshot({ path: test.info().outputPath('manual-detail-hidden-scrollbar.png') });
 });
 
 for (const width of [1920, 390]) {
