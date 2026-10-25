@@ -22,6 +22,66 @@ import { trainMotionResiduals } from '../../packages/domain/reachability-backtes
 import { predictionResultBbox } from './prediction-bounds';
 import type { PredictionCoordinate } from '../../packages/contracts/reachability';
 import { REACHABILITY_MODEL_VERSION } from '../../packages/contracts/reachability';
+import type { IntelligenceEvent } from '../../packages/contracts/intelligence';
+
+const WARNING_EVIDENCE_BYTES = 32 * 1024 * 1024;
+const EMBEDDED_WARNING_DOCUMENTS = 100;
+
+/** Retain revisions until logical latest selection, so a withdrawal cannot revive an older notice. */
+function warningDocumentCandidates(documents: IntelligenceEvent[]) {
+  const latest = new Map<string, IntelligenceEvent>();
+  for (const document of documents) {
+    const key = JSON.stringify([document.sourceId, document.externalId]);
+    if ((latest.get(key)?.version ?? -1) < document.version) latest.set(key, document);
+  }
+  return [...latest.values()]
+    .filter(
+      (document) =>
+        document.category === 'navigation-warning' &&
+        document.reviewStatus === 'confirmed' &&
+        document.status !== 'withdrawn',
+    )
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+async function readWarningRelations(
+  infra: Infrastructure,
+  documents: IntelligenceEvent[],
+  asOf: string,
+  signal: AbortSignal,
+  deadline: number,
+  bytes: number,
+) {
+  const relations: unknown[] = [];
+  signal.throwIfAborted();
+  if (deadline <= Date.now()) throw new Error('Prediction request deadline exceeded');
+  if (bytes > WARNING_EVIDENCE_BYTES)
+    throw new Error('航警证据总量超过32 MiB，请缩小分析范围后重试；本次未生成影响判断。');
+  if (!documents.length) return relations;
+  let cursor: string | null = null;
+  for (;;) {
+    signal.throwIfAborted();
+    const page: { rows: { id: string; relation: unknown }[] } = await predictionQuery(
+      infra,
+      `WITH page AS (SELECT id,data || jsonb_build_object('geometry',ST_AsGeoJSON(geom)::jsonb) AS relation FROM (SELECT DISTINCT ON(id) * FROM intelligence_relations WHERE event_id=ANY($1::text[]) AND ($2::text IS NULL OR id>$2) AND recorded_at<=$3::timestamptz ORDER BY id,revision DESC) r ORDER BY id LIMIT 1000) SELECT id,CASE WHEN sum(octet_length(relation::text)) OVER () <= $4 THEN relation ELSE NULL END relation FROM page ORDER BY id`,
+      [documents.map((document) => document.id), cursor, asOf, WARNING_EVIDENCE_BYTES - bytes],
+      signal,
+      deadline,
+    );
+    for (const row of page.rows) {
+      if (row.relation === null)
+        throw new Error('航警证据总量超过32 MiB，请缩小分析范围后重试；本次未生成影响判断。');
+      bytes += Buffer.byteLength(JSON.stringify(row.relation), 'utf8');
+      if (bytes > WARNING_EVIDENCE_BYTES)
+        throw new Error('航警证据总量超过32 MiB，请缩小分析范围后重试；本次未生成影响判断。');
+      relations.push(row.relation);
+    }
+    if (page.rows.length < 1000) return relations;
+    const next: string = page.rows.at(-1)!.id;
+    if (!next || next === cursor) throw new Error('航警关联分页游标未推进，本次未生成影响判断。');
+    cursor = next;
+  }
+}
 
 export async function executePredictionTopic(
   infra: Infrastructure,
@@ -44,8 +104,6 @@ export async function executePredictionTopic(
     signal,
     deadline,
   });
-  if (input.intelligence.length > 100)
-    throw new Error('Prediction warning evidence exceeds 100-document capacity');
   const ais: TopicAisEvidence[] = input.ais.map((point) => ({
     ...point,
     courseOverGround: point.raw.cogDegrees ?? null,
@@ -84,17 +142,15 @@ export async function executePredictionTopic(
     ais,
     intelligence: input.intelligence.map((document) => ({ ...document, kind: document.category })),
   };
-  const relations = (
-    await predictionQuery(
-      infra,
-      `SELECT data || jsonb_build_object('geometry',ST_AsGeoJSON(geom)::jsonb) AS relation FROM (SELECT DISTINCT ON(id) * FROM intelligence_relations WHERE event_id=ANY($1::text[]) ORDER BY id,revision DESC) r ORDER BY id LIMIT 1001`,
-      [input.intelligence.map((document) => document.id)],
-      signal,
-      deadline,
-    )
-  ).rows.map((row) => row.relation);
-  if (relations.length > 1000)
-    throw new Error('Prediction warning relations exceed 1000-item capacity');
+  const candidates = warningDocumentCandidates(input.intelligence);
+  const relations = await readWarningRelations(
+    infra,
+    candidates,
+    asOf,
+    signal,
+    deadline,
+    Buffer.byteLength(JSON.stringify(input.intelligence), 'utf8'),
+  );
   const latest = [...ais]
     .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt))
     .at(-1);
@@ -184,6 +240,29 @@ export async function executePredictionTopic(
   );
   const now = new Date().toISOString();
   const summary = output.prediction.summary;
+  const impactPriority = new Map<string, { hit: number; probability: number }>();
+  for (const impact of output.impacts) {
+    if (!impact.documentId) continue;
+    const previous = impactPriority.get(impact.documentId);
+    impactPriority.set(impact.documentId, {
+      hit: Math.max(previous?.hit ?? 0, Number(impact.hitPaths > 0)),
+      probability: Math.max(previous?.probability ?? 0, impact.probability),
+    });
+  }
+  const rankedDocuments = [...candidates].sort((a, b) => {
+    const x = impactPriority.get(a.id),
+      y = impactPriority.get(b.id);
+    return (
+      (y?.hit ?? 0) - (x?.hit ?? 0) ||
+      (y?.probability ?? 0) - (x?.probability ?? 0) ||
+      Number(Boolean(y)) - Number(Boolean(x)) ||
+      a.id.localeCompare(b.id)
+    );
+  });
+  const documentEvidence = rankedDocuments
+    .slice(0, EMBEDDED_WARNING_DOCUMENTS)
+    .map((document) => ({ ...document, kind: document.category }));
+  const evidenceOmitted = rankedDocuments.length - documentEvidence.length;
   function* geometryCoordinates(): Generator<PredictionCoordinate> {
     if (latest) yield [latest.longitude, latest.latitude];
     for (const path of output.prediction.paths)
@@ -231,7 +310,7 @@ export async function executePredictionTopic(
     artifactRef: { resultId: id, revision: 1 },
     evidence: {
       ais: [...ais, ...trainingEvidence],
-      documents: dataset.intelligence,
+      documents: documentEvidence,
       steps: [
         {
           id: 'motion-training',
@@ -261,10 +340,21 @@ export async function executePredictionTopic(
             (reference) => `${reference.documentId}:${reference.relationId}:${reference.revision}`,
           ),
         },
+        {
+          id: 'warning-evidence',
+          rule: '完整输入与全部航警引用保存在运行快照；结果嵌入最多100份固定版本原文，优先展示命中及高概率公告',
+          outcome: `检索 ${input.intelligence.length} 份情报修订，筛选 ${candidates.length} 份最新已审核航警，评估 ${output.impacts.length} 个适用区域；本结果展示 ${documentEvidence.length} 份原文，其余 ${evidenceOmitted} 份及全部输入可查看运行快照 ${lease.run.id}。`,
+          references: [lease.run.id],
+        },
       ],
       limitations: [
         ...summary.limitations,
         '单船模型假定近期运动模式继续，结果供研判使用。',
+        ...(evidenceOmitted
+          ? [
+              `本次纳入 ${candidates.length} 份最新审核航警，结果嵌入 ${documentEvidence.length} 份原文，其余 ${evidenceOmitted} 份及完整评估证据保存在运行快照 ${lease.run.id}；评估与固定引用完整保留。`,
+            ]
+          : []),
         ...warnings.skipped.map((item) => `${item.warningId}：${item.reason}`),
         ...output.skipped.map((item) => `${item.warningId}：${item.reason}`),
       ],
